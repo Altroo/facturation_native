@@ -1,0 +1,12 @@
+<svg width="28" height="20" viewBox="0 0 28 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <clipPath id="flag-en-clip">
+    <rect width="28" height="20" rx="2"/>
+  </clipPath>
+  <g clip-path="url(#flag-en-clip)">
+    <rect width="28" height="20" fill="#012169"/>
+    <path d="M0 0L28 20M28 0L0 20" stroke="#fff" stroke-width="4"/>
+    <path d="M0 0L28 20M28 0L0 20" stroke="#C8102E" stroke-width="2"/>
+    <path d="M14 0V20M0 10H28" stroke="#fff" stroke-width="7"/>
+    <path d="M14 0V20M0 10H28" stroke="#C8102E" stroke-width="4"/>
+  </g>
+</svg>
