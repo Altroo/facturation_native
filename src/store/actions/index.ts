@@ -1,0 +1,22 @@
+// Initialize the APP
+export const INIT_APP = 'INIT_APP';
+export const INIT_APP_SESSION_TOKENS = 'INIT_APP_SESSION_TOKENS';
+export const REFRESH_APP_TOKEN_STATES = 'REFRESH_APP_TOKEN_STATES';
+// Account
+export const ACCOUNT_SET_PROFIL = 'ACCOUNT_SET_PROFIL';
+export const ACCOUNT_EDIT_PROFIL = 'ACCOUNT_EDIT_PROFIL';
+export const ACCOUNT_SET_GROUPES = 'ACCOUNT_SET_GROUPES';
+// Companies
+export const COMPANIES_SET_USER_COMPANIES = 'COMPANIES_SET_USER_COMPANIES';
+// WS Events
+export const WS_USER_AVATAR = 'WS_USER_AVATAR';
+export const WS_MAINTENANCE = 'WS_MAINTENANCE';
+export const WS_RECONNECTED = 'WS_RECONNECTED';
+export const WS_NOTIFICATION = 'WS_NOTIFICATION';
+
+// Native session and foreground lifecycle
+export const INIT_MAINTENANCE = 'INIT_MAINTENANCE';
+export const WS_START = 'WS_START';
+export const WS_STOP = 'WS_STOP';
+export const ACCOUNT_LOGIN = 'ACCOUNT_LOGIN';
+export const ACCOUNT_LOGOUT = 'ACCOUNT_LOGOUT';
