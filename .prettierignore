@@ -1,0 +1,10 @@
+node_modules
+.expo
+bun.lock
+dist
+coverage
+src/uniwind-types.d.ts
+AGENTS.md
+.claude
+ios
+android

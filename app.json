@@ -1,25 +1,65 @@
 {
-  "expo": {
-    "name": "facturation_native",
-    "slug": "facturation_native",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "ios": {
-      "supportsTablet": true
-    },
-    "android": {
-      "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
-      },
-      "predictiveBackGestureEnabled": false
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    }
-  }
+	"expo": {
+		"name": "E.B.H Facturation",
+		"slug": "facturation-native",
+		"scheme": "facturation-native",
+		"version": "3.8.4",
+		"orientation": "portrait",
+		"userInterfaceStyle": "automatic",
+		"icon": "./assets/icon.png",
+		"ios": {
+			"supportsTablet": true,
+			"bundleIdentifier": "ma.facturation.mobile",
+			"infoPlist": {
+				"NSAppTransportSecurity": {
+					"NSAllowsLocalNetworking": true
+				}
+			}
+		},
+		"android": {
+			"package": "ma.facturation.mobile",
+			"adaptiveIcon": {
+				"foregroundImage": "./assets/android-icon-foreground.png",
+				"backgroundColor": "#ffffff"
+			}
+		},
+		"web": {
+			"bundler": "metro",
+			"output": "static",
+			"favicon": "./assets/favicon.png"
+		},
+		"plugins": [
+			["expo-router", { "apiRoutes": true }],
+			"expo-font",
+			"expo-secure-store",
+			[
+				"expo-image-picker",
+				{
+					"photosPermission": "Choisir une photo de profil, un logo ou un cachet.",
+					"cameraPermission": false,
+					"microphonePermission": false
+				}
+			],
+			"@react-native-community/datetimepicker",
+			"expo-image",
+			"expo-asset",
+			[
+				"expo-splash-screen",
+				{
+					"image": "./assets/facturation-logo.png",
+					"imageWidth": 120,
+					"resizeMode": "contain",
+					"backgroundColor": "#ffffff",
+					"dark": {
+						"backgroundColor": "#121722"
+					}
+				}
+			],
+			"expo-status-bar"
+		],
+		"experiments": {
+			"typedRoutes": true,
+			"reactCompiler": true
+		}
+	}
 }
