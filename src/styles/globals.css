@@ -1,0 +1,16 @@
+@import 'tailwindcss';
+@import 'uniwind';
+
+/* Uniwind scans relative to this file; include all application components. */
+@source '../';
+
+@theme {
+	--color-brand: #0274d7;
+	--color-ink: #0d070b;
+	--color-night: #121722;
+	--color-panel: #222c3d;
+	/* Each family selects a loaded font file. Use one font family per Text. */
+	--font-sans: 'Poppins';
+	--font-poppins-medium: 'PoppinsMedium';
+	--font-poppins-semibold: 'PoppinsSemiBold';
+}
