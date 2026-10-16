@@ -1,0 +1,295 @@
+import { configureStore } from '@reduxjs/toolkit';
+import _initReducer, { setAuthenticated, initToken } from '@/store/slices/_initSlice';
+import accountReducer, { setProfil, setGroupes } from '@/store/slices/accountSlice';
+import companiesReducer, { setUserCompanies } from '@/store/slices/companiesSlice';
+import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
+import { router, Stack } from 'expo-router';
+import { Text } from 'react-native';
+import { Provider } from 'react-redux';
+import { RootNavigator } from '@/app/_layout';
+import UsersForm from '@/app/(app)/users/form';
+import CompaniesForm from '@/app/(app)/companies/form';
+import UsersLayout, { unstable_settings as usersSettings } from '@/app/(app)/users/_layout';
+import CompaniesLayout, { unstable_settings as companiesSettings } from '@/app/(app)/companies/_layout';
+
+import {
+	useGetUserQuery,
+	useGetUsersListQuery,
+	useAddUserMutation,
+	useEditUserMutation,
+	useCheckEmailMutation,
+} from '@/store/services/account';
+import {
+	companyApi,
+	useGetCompanyQuery,
+	useGetCompaniesListQuery,
+	useAddCompanyMutation,
+	useEditCompanyMutation,
+} from '@/store/services/company';
+import { COMPANIES_ADD, COMPANIES_EDIT, USERS_ADD, USERS_EDIT } from '@/utils/routes';
+import type { CompanyClass, UserClass } from '@/models/classes';
+import type { UserWithCompaniesResponseType } from '@/types/usersTypes';
+import { translations } from '@/translations';
+jest.mock('@/contexts/InitContext', () => ({ useInitAccessToken: () => 'test-access' }));
+
+jest.mock('@/styles/globals.css', () => ({}));
+jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
+jest.mock('@expo/vector-icons', () => ({ MaterialIcons: 'Icon' }));
+jest.mock('react-native-gesture-handler', () => ({
+	GestureHandlerRootView: jest.requireActual<typeof import('react-native')>('react-native').View,
+}));
+jest.mock('expo-router/drawer', () => ({
+	DrawerToggleButton: jest.requireActual('expo-router/build/react-navigation/drawer/views/DrawerToggleButton')
+		.DrawerToggleButton,
+}));
+jest.mock('@/components/layouts/navigationBar/navigationBar', () => ({
+	NavigationDrawer: () => null,
+	Notifications: () => null,
+}));
+jest.mock('@/components/shared/themeToggle/themeToggle', () => () => null);
+jest.mock('@/components/shared/languageSwitcher/languageSwitcher', () => () => null);
+jest.mock('@/components/formikElements/customSquareImageUploading/customSquareImageUploading', () => () => null);
+jest.mock('@/utils/hooks', () => ({
+	...jest.requireActual<typeof import('@/utils/hooks')>('@/utils/hooks'),
+	useLanguage: () => ({
+		t: jest.requireActual<typeof import('@/translations')>('@/translations').translations.fr,
+		language: 'fr',
+	}),
+	useToast: () => ({ onSuccess: jest.fn(), onError: jest.fn() }),
+}));
+jest.mock('@/store/services/account', () => ({
+	...jest.requireActual<typeof import('@/store/services/account')>('@/store/services/account'),
+	useGetUserQuery: jest.fn(),
+	useGetUsersListQuery: jest.fn(),
+	useAddUserMutation: jest.fn(),
+	useEditUserMutation: jest.fn(),
+	useCheckEmailMutation: jest.fn(),
+}));
+jest.mock('@/store/services/company', () => ({
+	...jest.requireActual<typeof import('@/store/services/company')>('@/store/services/company'),
+	useGetCompanyQuery: jest.fn(),
+	useGetCompaniesListQuery: jest.fn(),
+	useAddCompanyMutation: jest.fn(),
+	useEditCompanyMutation: jest.fn(),
+}));
+
+const t = translations.fr;
+const profile: UserClass = {
+	id: 1,
+	first_name: 'Staff',
+	last_name: 'User',
+	email: 'staff@example.invalid',
+	gender: 'Homme',
+	avatar: null,
+	avatar_cropped: null,
+	is_staff: true,
+	is_active: true,
+	default_password_set: false,
+	date_joined: null,
+	date_updated: null,
+	last_login: null,
+};
+const user = (id: number): UserWithCompaniesResponseType => ({
+	...profile,
+	id,
+	first_name: 'User ' + id,
+	email: 'user' + id + '@example.invalid',
+	companies: [],
+});
+const company = (id: number): CompanyClass => ({
+	id,
+	date_created: null,
+	date_updated: null,
+	raison_sociale: 'Company ' + id,
+	email: null,
+	logo: null,
+	logo_cropped: null,
+	cachet: null,
+	cachet_cropped: null,
+	nbr_employe: '1 à 5',
+	civilite_responsable: '',
+	nom_responsable: null,
+	gsm_responsable: null,
+	adresse: null,
+	telephone: null,
+	fax: null,
+	site_web: null,
+	numero_du_compte: null,
+	ICE: '123456789012345',
+	registre_de_commerce: null,
+	identifiant_fiscal: null,
+	tax_professionnelle: null,
+	CNSS: null,
+	managed_by: [],
+	admins: [],
+	uses_foreign_currency: false,
+	stock_management_enabled: false,
+	inventory_management_enabled: false,
+});
+const addUser = jest.fn();
+const addCompany = jest.fn();
+const memberships = [{ id: 4, raison_sociale: 'Company Four', role: 'Caissier', uses_foreign_currency: false }];
+
+const setup = async (initialUrl: string, access: 'staff' | 'guest' | 'nonstaff' = 'staff') => {
+	const store = configureStore({
+		reducer: { _init: _initReducer, account: accountReducer, companies: companiesReducer },
+	});
+	if (access === 'guest') store.dispatch(initToken());
+	else {
+		store.dispatch(setProfil({ ...profile, is_staff: access === 'staff' }));
+		store.dispatch(setUserCompanies(memberships));
+		store.dispatch(setAuthenticated());
+	}
+	store.dispatch(setGroupes({ group_titles: ['Caissier', 'Commercial', 'Lecture'] }));
+	return renderRouter(
+		{
+			_layout: () => (
+				<Provider store={store}>
+					<RootNavigator />
+				</Provider>
+			),
+			login: () => <Text>Guest login</Text>,
+			'reset-password/index': () => <Text>Recovery</Text>,
+			'(app)/_layout': () => <Stack screenOptions={{ headerShown: false }} />,
+			'(app)/index': () => <Text>Dashboard</Text>,
+			'(app)/users/_layout': { default: UsersLayout, unstable_settings: usersSettings },
+			'(app)/users/index': () => <Text>Users list</Text>,
+			'(app)/users/[id]/index': () => <Text>User details</Text>,
+			'(app)/users/form': UsersForm,
+			'(app)/companies/_layout': { default: CompaniesLayout, unstable_settings: companiesSettings },
+			'(app)/companies/index': () => <Text>Companies list</Text>,
+			'(app)/companies/[id]/index': () => <Text>Company details</Text>,
+			'(app)/companies/form': CompaniesForm,
+		},
+		{ initialUrl },
+	);
+};
+
+beforeEach(() => {
+	jest.clearAllMocks();
+	jest.mocked(useGetUserQuery).mockImplementation(((arg, options) => ({
+		currentData: options?.skip || typeof arg !== 'object' ? undefined : user(arg.id),
+		refetch: jest.fn(),
+	})) as typeof useGetUserQuery);
+	jest.mocked(useGetCompanyQuery).mockImplementation(((arg, options) => ({
+		currentData: options?.skip || typeof arg !== 'object' ? undefined : company(arg.id),
+		refetch: jest.fn(),
+	})) as typeof useGetCompanyQuery);
+	jest.mocked(useGetUsersListQuery).mockReturnValue({ data: [], refetch: jest.fn() } as never);
+	jest.mocked(useGetCompaniesListQuery).mockReturnValue({ data: [], refetch: jest.fn() } as never);
+	jest.mocked(useAddUserMutation).mockReturnValue([addUser, {}] as never);
+	jest.mocked(useAddCompanyMutation).mockReturnValue([addCompany, {}] as never);
+	jest.mocked(useEditUserMutation).mockReturnValue([jest.fn(), {}] as never);
+	jest.mocked(useEditCompanyMutation).mockReturnValue([jest.fn(), {}] as never);
+	jest.mocked(useCheckEmailMutation).mockReturnValue([jest.fn(() => ({ unwrap: async () => undefined })), {}] as never);
+	addUser.mockReturnValue({ unwrap: async () => undefined });
+	addCompany.mockReturnValue({ unwrap: async () => company(9) });
+	jest
+		.spyOn(companyApi.endpoints.getUserCompanies, 'initiate')
+		.mockImplementation((() => () => ({ unwrap: async () => memberships, unsubscribe: jest.fn() })) as never);
+});
+afterEach(() => jest.restoreAllMocks());
+
+describe.each(['users', 'companies'] as const)('%s form route', (entity) => {
+	const label = entity === 'users' ? t.users.fieldNom : t.companies.fieldRaisonSociale + ' *';
+	const addRoute = entity === 'users' ? USERS_ADD : COMPANIES_ADD;
+	const editRoute = entity === 'users' ? USERS_EDIT : COMPANIES_EDIT;
+	const editTitle = entity === 'users' ? t.users.editTitle : t.companies.editTitle;
+	const addTitle = entity === 'users' ? t.users.addTitle : t.companies.addTitle;
+	const fieldValue = (id: number) => (entity === 'users' ? 'User ' : 'Company ') + id;
+
+	it('reads edit IDs from the actual router and discards drafts when the ID changes', async () => {
+		await setup('/' + entity + '/form?id=7');
+		expect(await screen.findByLabelText(label)).toHaveProp('value', fieldValue(7));
+		await fireEvent.changeText(screen.getByLabelText(label), 'Unsaved seven');
+		await act(async () => router.setParams({ id: '8' }));
+		await waitFor(() => expect(screen.getByLabelText(label)).toHaveProp('value', fieldValue(8)));
+		expect(screen.getAllByText(editTitle).length).toBeGreaterThan(0);
+	});
+
+	it('opens a fresh create form after editing, using the same route helper as the drawer', async () => {
+		const result = await setup('/' + entity + '/form?id=7');
+		await screen.findByLabelText(label);
+		await fireEvent.changeText(screen.getByLabelText(label), 'Unsaved edit');
+		await act(async () => router.push(addRoute));
+		await waitFor(() => expect(screen.getByLabelText(label)).toHaveProp('value', ''));
+		expect(result.getSearchParams()).not.toHaveProperty('id');
+		expect(screen.getAllByText(addTitle).length).toBeGreaterThan(0);
+		expect(screen.queryByText(editTitle)).toBeNull();
+	});
+
+	it('clears the edit mode and header when the current route ID is removed', async () => {
+		await setup('/' + entity + '/form?id=7');
+		await screen.findByLabelText(label);
+		await act(async () => router.setParams({ id: undefined }));
+		await waitFor(() => expect(screen.getByLabelText(label)).toHaveProp('value', ''));
+		expect(screen.queryByText(editTitle)).toBeNull();
+		expect(screen.getAllByText(addTitle).length).toBeGreaterThan(0);
+	});
+
+	it.each(['id=', 'id=0', 'id=7&id=8'])(
+		'rejects malformed parameters %s without requesting a record',
+		async (query) => {
+			const result = await setup('/' + entity + '/form?' + query);
+			expect(await screen.findByRole('alert')).toHaveTextContent(t.notFound.message);
+			expect(screen.queryByLabelText(label)).toBeNull();
+			const requests = entity === 'users' ? jest.mocked(useGetUserQuery) : jest.mocked(useGetCompanyQuery);
+			expect(requests).not.toHaveBeenCalled();
+			await fireEvent.press(screen.getByRole('button', { name: t.common.back }));
+			await waitFor(() => expect(result.getPathname()).toBe('/' + entity));
+		},
+	);
+
+	it('protects the deep link from guests and nonstaff accounts', async () => {
+		const result = await setup('/' + entity + '/form?id=7', 'guest');
+		await screen.findByText('Guest login');
+		expect(result.getPathname()).toBe('/login');
+		expect(useGetUserQuery).not.toHaveBeenCalled();
+		expect(useGetCompanyQuery).not.toHaveBeenCalled();
+		await result.unmount();
+		await setup('/' + entity + '/form?id=7', 'nonstaff');
+		await screen.findByText(t.noPermission.description);
+		expect(screen.queryByLabelText(label)).toBeNull();
+		expect(jest.mocked(useGetUserQuery).mock.calls.every(([, options]) => options?.skip === true)).toBe(true);
+		expect(jest.mocked(useGetCompanyQuery).mock.calls.every(([, options]) => options?.skip === true)).toBe(true);
+	});
+
+	it('retains Back and the list menu when a cold link is denied', async () => {
+		const result = await setup('/' + entity + '/form?id=7', 'nonstaff');
+		await screen.findByText(t.noPermission.description);
+		expect(screen.getByRole('header', { name: editTitle })).toBeOnTheScreen();
+		expect(router.canGoBack()).toBe(true);
+		// The native stack draws Back outside React; exercise its real router action.
+		await act(async () => router.back());
+		await waitFor(() => expect(result.getPathname()).toBe('/' + entity));
+		expect(screen.getByRole('button', { name: t.common.toggleDrawer })).toBeOnTheScreen();
+		const icon = screen.container.queryAll((node) => node.type === 'Image').find((node) => node.props.tintColor);
+		expect(icon).toHaveProp('tintColor', '#0f172a');
+		expect(jest.mocked(useGetUserQuery).mock.calls.every(([, options]) => options?.skip === true)).toBe(true);
+		expect(jest.mocked(useGetCompanyQuery).mock.calls.every(([, options]) => options?.skip === true)).toBe(true);
+	});
+
+	it('submits a create and dismisses to the existing list, without returning to the edit record', async () => {
+		const result = await setup('/' + entity);
+		await act(async () => router.push(editRoute(7)));
+		await screen.findByLabelText(label);
+		await act(async () => router.push(addRoute));
+		await waitFor(() => expect(screen.getByLabelText(label)).toHaveProp('value', ''));
+		await fireEvent.changeText(screen.getByLabelText(label), 'New record');
+		if (entity === 'users') {
+			await fireEvent.changeText(screen.getByLabelText(t.users.fieldPrenom), 'Person');
+			await fireEvent.changeText(screen.getByLabelText(t.users.fieldEmail), 'new@example.invalid');
+			await fireEvent.press(screen.getByRole('button', { name: t.users.fieldSexe }));
+			await fireEvent.press(screen.getByRole('radio', { name: 'Homme' }));
+		} else {
+			await fireEvent.changeText(screen.getByLabelText(t.companies.fieldICE + ' *'), '123456789012345');
+			await fireEvent.press(screen.getByRole('button', { name: t.companies.fieldNbrEmploye + ' *' }));
+			await fireEvent.press(screen.getByRole('radio', { name: '1 à 5' }));
+		}
+		await fireEvent.press(screen.getByRole('button', { name: addTitle, disabled: false }));
+		await waitFor(() => expect(result.getPathname()).toBe('/' + entity));
+		expect(entity === 'users' ? addUser : addCompany).toHaveBeenCalledTimes(1);
+		expect(screen.queryByLabelText(label)).toBeNull();
+		expect(JSON.stringify(result.getRouterState())).not.toContain('"name":"form"');
+	});
+});
