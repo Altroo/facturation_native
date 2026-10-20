@@ -1,4 +1,4 @@
-import { createQueryMock } from '@/__tests__/setupQuery';
+import { createQueryMock } from '@/store/setupQuery';
 import { configureStore } from '@reduxjs/toolkit';
 import _initReducer, { setAuthenticated } from '@/store/slices/_initSlice';
 import accountReducer, { setProfil } from '@/store/slices/accountSlice';

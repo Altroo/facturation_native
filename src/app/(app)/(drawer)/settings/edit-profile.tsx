@@ -18,7 +18,7 @@ import CustomSquareImageUploading from '@/components/formikElements/customSquare
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
-const EditProfilClient = () => {
+const EditProfilPage = () => {
 	const token = useInitAccessToken();
 	const { onSuccess, onError } = useToast();
 	const { t } = useLanguage();
@@ -251,4 +251,4 @@ const EditProfilClient = () => {
 	);
 };
 
-export default EditProfilClient;
+export default EditProfilPage;

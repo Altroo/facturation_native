@@ -1,5 +1,5 @@
 import { AxiosError, AxiosHeaders, create, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
-import { createAuthClient, InvalidSessionError } from '@/auth';
+import { createAuth, InvalidSessionError } from '@/auth';
 import type { Credentials, Tokens } from '@/types/accountTypes';
 
 const tokens = (overrides: Partial<Tokens> = {}): Tokens => ({
@@ -30,7 +30,7 @@ const setup = async (initial: unknown = tokens()) => {
 	const post = jest
 		.spyOn(transport, 'post')
 		.mockResolvedValue(response(tokens({ access: 'access-2', refresh: 'refresh-2' })));
-	const auth = createAuthClient(transport, storage);
+	const auth = createAuth(transport, storage);
 	const adapter = jest.fn(async (config: InternalAxiosRequestConfig) => {
 		if (config.headers.get('Authorization') === 'Bearer access-1') throw reject(config);
 		return response({ id: 7 }, config);
@@ -288,7 +288,7 @@ it('does not accept a login response after logout cleared the session', async ()
 
 it('forwards browser cookies for logout without setting a forbidden Cookie header', async () => {
 	const transport = create({ withCredentials: true });
-	const auth = createAuthClient(transport, { read: async () => tokens(), write: async () => {} });
+	const auth = createAuth(transport, { read: async () => tokens(), write: async () => {} });
 	await auth.restore();
 	auth.instance.defaults.adapter = async (config) => {
 		expect(config.withCredentials).toBe(true);

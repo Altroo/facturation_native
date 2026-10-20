@@ -2,7 +2,7 @@ import { Text } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { renderRouter, screen, fireEvent, waitFor, act } from 'expo-router/testing-library';
 import ResetPasswordLayout from '@/app/reset-password/_layout';
-import ResetPassword from '@/app/reset-password/index';
+import ResetPasswordPage from '@/app/reset-password/index';
 import EnterCode from '@/app/reset-password/enter-code';
 import SetPassword from '@/app/reset-password/set-password';
 import SetPasswordComplete from '@/app/reset-password/set-password-complete';
@@ -43,7 +43,7 @@ const setup = async (initialUrl = '/reset-password') =>
 			_layout: () => <Stack screenOptions={{ headerShown: false }} />,
 			login: () => <Text>Login destination</Text>,
 			'reset-password/_layout': ResetPasswordLayout,
-			'reset-password/index': ResetPassword,
+			'reset-password/index': ResetPasswordPage,
 			'reset-password/enter-code': EnterCode,
 			'reset-password/set-password': SetPassword,
 			'reset-password/set-password-complete': SetPasswordComplete,

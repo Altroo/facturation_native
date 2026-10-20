@@ -1,4 +1,4 @@
-import { createQueryMock } from '@/__tests__/setupQuery';
+import { createQueryMock } from '@/store/setupQuery';
 import account, { setProfil } from '@/store/slices/accountSlice';
 import companies, { setUserCompanies } from '@/store/slices/companiesSlice';
 import _init, { setAuthenticated } from '@/store/slices/_initSlice';

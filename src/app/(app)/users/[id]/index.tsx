@@ -19,7 +19,7 @@ type UsersViewProps = {
 	id: number;
 };
 
-const UsersViewClient = (props: UsersViewProps) => {
+const UsersViewPageContent = (props: UsersViewProps) => {
 	const { id } = props;
 	const { t } = useLanguage();
 	const { is_staff } = usePermission();
@@ -458,7 +458,7 @@ const UsersViewPage = () => {
 				</View>
 			</ScrollView>
 		);
-	return <UsersViewClient key={id} id={id} />;
+	return <UsersViewPageContent key={id} id={id} />;
 };
 
 export default UsersViewPage;

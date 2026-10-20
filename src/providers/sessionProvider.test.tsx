@@ -18,7 +18,7 @@ import type { UserClass } from '@/models/classes';
 
 jest.mock('@/auth', () => {
 	const { create } = jest.requireActual<typeof import('axios')>('axios');
-	const { createAuthClient } = jest.requireActual<typeof import('@/auth')>('@/auth');
+	const { createAuth } = jest.requireActual<typeof import('@/auth')>('@/auth');
 	const publicInstance = create();
 	const storage = {
 		read: jest.fn(async () => ({
@@ -32,7 +32,7 @@ jest.mock('@/auth', () => {
 	return {
 		...jest.requireActual<typeof import('@/auth')>('@/auth'),
 		publicInstance,
-		auth: createAuthClient(publicInstance, storage),
+		auth: createAuth(publicInstance, storage),
 		storage,
 	};
 });

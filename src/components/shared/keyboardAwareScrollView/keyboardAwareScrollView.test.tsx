@@ -1,7 +1,10 @@
 import { createRef } from 'react';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import type { KeyboardAwareScrollViewRef } from 'react-native-keyboard-controller';
-import { AutocompleteDropdownContextProvider, flushAutocomplete } from '@/__tests__/setupAutocomplete';
+import {
+	AutocompleteDropdownContextProvider,
+	flushAutocomplete,
+} from '@/components/formikElements/customAutoCompleteSelect/setupAutocomplete';
 import CustomAutoCompleteSelect from '@/components/formikElements/customAutoCompleteSelect/customAutoCompleteSelect';
 import KeyboardAwareScrollView from './keyboardAwareScrollView';
 

@@ -14,7 +14,7 @@ import { runWithCleanup, setFormikAutoErrors } from '@/utils/helpers';
 import CustomPasswordInput from '@/components/formikElements/customPasswordInput/customPasswordInput';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 
-const PasswordClient = () => {
+const ChangePasswordPage = () => {
 	const [isPending, setIsPending] = useState(false);
 	const { t } = useLanguage();
 	const { onSuccess, onError } = useToast();
@@ -190,4 +190,4 @@ const PasswordClient = () => {
 	);
 };
 
-export default PasswordClient;
+export default ChangePasswordPage;

@@ -5,7 +5,7 @@ import companiesReducer from '@/store/slices/companiesSlice';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Provider } from 'react-redux';
 
-import LoginClient from '@/app/login';
+import LoginPage from '@/app/login';
 import { translations } from '@/translations';
 import { MINI_INPUT_EMAIL, INPUT_PASSWORD_MIN } from '@/utils/formValidationErrorMessages';
 import { router } from 'expo-router';
@@ -19,7 +19,7 @@ const setup = async () => {
 	const dispatch = jest.spyOn(store, 'dispatch');
 	await render(
 		<Provider store={store}>
-			<LoginClient />
+			<LoginPage />
 		</Provider>,
 	);
 	await act(async () => {});

@@ -28,7 +28,7 @@ import { MODULES_PAGE_SIZE } from '@/utils/rawData';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import SelectAllControl from '@/components/shared/selectAllControl/selectAllControl';
 
-const CompaniesListClient = () => {
+const CompaniesListPage = () => {
 	const { t } = useLanguage();
 	const { onSuccess, onError } = useToast();
 	const dispatch = useAppDispatch();
@@ -612,4 +612,4 @@ const CompaniesListClient = () => {
 	);
 };
 
-export default CompaniesListClient;
+export default CompaniesListPage;

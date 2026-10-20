@@ -114,17 +114,6 @@ const SetPasswordPageContent = (props: SetPasswordPageContentProps) => {
 	);
 };
 
-type SetPasswordProps = {
-	email: string;
-	code: string;
-};
-
-const SetPasswordClient = (props: SetPasswordProps) => (
-	<AuthLayout backHref={AUTH_RESET_PASSWORD_ENTER_CODE}>
-		<SetPasswordPageContent {...props} />
-	</AuthLayout>
-);
-
 const SetPasswordPage = () => {
 	const [recovery, setRecovery] = useState<PasswordResetData | null>(null);
 	const [ready, setReady] = useState(false);
@@ -149,7 +138,11 @@ const SetPasswordPage = () => {
 	if (!ready) return <ApiProgress />;
 	if (passwordResetStorage.isComplete()) return <Redirect href={AUTH_RESET_PASSWORD_COMPLETE} />;
 	if (!recovery?.email || !recovery.code) return <Redirect href={AUTH_RESET_PASSWORD} />;
-	return <SetPasswordClient email={recovery.email} code={recovery.code} />;
+	return (
+		<AuthLayout backHref={AUTH_RESET_PASSWORD_ENTER_CODE}>
+			<SetPasswordPageContent email={recovery.email} code={recovery.code} />
+		</AuthLayout>
+	);
 };
 
 export default SetPasswordPage;

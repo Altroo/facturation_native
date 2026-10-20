@@ -818,7 +818,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 	);
 };
 
-const CompaniesForm = () => {
+const CompaniesFormPage = () => {
 	const params = useLocalSearchParams<{ id?: string | string[] }>();
 	const id = params.id === undefined ? undefined : parseEntityId(params.id);
 	const { t } = useLanguage();
@@ -849,4 +849,4 @@ const CompaniesForm = () => {
 	return <FormikContent key={id ?? 'new'} id={id} />;
 };
 
-export default CompaniesForm;
+export default CompaniesFormPage;

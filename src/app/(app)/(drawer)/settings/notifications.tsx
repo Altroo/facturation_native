@@ -14,7 +14,7 @@ import type { NotificationPreferenceFormValues } from '@/types/notificationTypes
 import CustomDropDownSelect from '@/components/formikElements/customDropDownSelect/customDropDownSelect';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 
-const NotificationsClient = () => {
+const NotificationsPage = () => {
 	const { onSuccess, onError } = useToast();
 	const { t } = useLanguage();
 	const quoteExpiryOptions = t.settings.quoteExpiryOptions;
@@ -164,4 +164,4 @@ const NotificationsClient = () => {
 	);
 };
 
-export default NotificationsClient;
+export default NotificationsPage;

@@ -1,4 +1,4 @@
-import { createQueryMock } from '@/__tests__/setupQuery';
+import { createQueryMock } from '@/store/setupQuery';
 import { configureStore } from '@reduxjs/toolkit';
 import _initReducer, { setAuthenticated } from '@/store/slices/_initSlice';
 import accountReducer, { setProfil, setGroupes } from '@/store/slices/accountSlice';
@@ -6,7 +6,7 @@ import companiesReducer, { setUserCompanies } from '@/store/slices/companiesSlic
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Provider } from 'react-redux';
 import { router } from 'expo-router';
-import CompaniesForm from '@/app/(app)/companies/form';
+import CompaniesFormPage from '@/app/(app)/companies/form';
 import type { CompanyClass } from '@/models/classes';
 import {
 	useGetCompanyQuery,
@@ -17,7 +17,7 @@ import {
 import { useGetUsersListQuery, useGetGroupsQuery } from '@/store/services/account';
 
 import { translations } from '@/translations';
-import { AutocompleteDropdownContextProvider } from '@/__tests__/setupAutocomplete';
+import { AutocompleteDropdownContextProvider } from '@/components/formikElements/customAutoCompleteSelect/setupAutocomplete';
 jest.mock('@/contexts/InitContext', () => ({ useInitAccessToken: () => 'test-access' }));
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
 let mockParams: { id?: string | string[] } = {};
@@ -141,7 +141,7 @@ const setup = async (edit = false, record: CompanyClass = company) => {
 	jest.mocked(useEditCompanyMutation).mockReturnValue([editCompany, {}] as never);
 	await render(
 		<Provider store={store}>
-			<CompaniesForm />
+			<CompaniesFormPage />
 		</Provider>,
 		{ wrapper: AutocompleteDropdownContextProvider },
 	);
@@ -163,7 +163,7 @@ it.each(['', ['4'], '../4', '0'])('blocks malformed edit id %s without requestin
 	jest.mocked(useGetCompanyQuery).mockClear();
 	await screen.rerender(
 		<Provider store={store}>
-			<CompaniesForm />
+			<CompaniesFormPage />
 		</Provider>,
 	);
 	expect(useGetCompanyQuery).not.toHaveBeenCalled();
@@ -316,7 +316,7 @@ it('replaces untouched cached company values and manager permissions after a sam
 	await mockCompanyQuery.setResult({ currentData: fresh, refetch: jest.fn() } as never);
 	await screen.rerender(
 		<Provider store={store}>
-			<CompaniesForm />
+			<CompaniesFormPage />
 		</Provider>,
 	);
 	await waitFor(() =>
@@ -359,7 +359,7 @@ it('reinitializes company edits and managers after a same-ID refresh, matching t
 	} as never);
 	await screen.rerender(
 		<Provider store={store}>
-			<CompaniesForm />
+			<CompaniesFormPage />
 		</Provider>,
 	);
 	await waitFor(() =>
@@ -418,7 +418,7 @@ it.each([0, 503])('uses original form/error rendering after a background refresh
 	} as never);
 	await screen.rerender(
 		<Provider store={store}>
-			<CompaniesForm />
+			<CompaniesFormPage />
 		</Provider>,
 	);
 	if (status === 503) {
@@ -445,7 +445,7 @@ it.each([401, 403, 404])('blocks cached company editing after an authoritative %
 	} as never);
 	await screen.rerender(
 		<Provider store={store}>
-			<CompaniesForm />
+			<CompaniesFormPage />
 		</Provider>,
 	);
 	expect(screen.queryByLabelText(translations.fr.companies.fieldRaisonSociale + ' *')).toBeNull();
@@ -499,7 +499,7 @@ it('shows the original relationship loading state until users are available', as
 	await mockUsersQuery.setResult({ isLoading: true, refetch: jest.fn() } as never);
 	await screen.rerender(
 		<Provider store={store}>
-			<CompaniesForm />
+			<CompaniesFormPage />
 		</Provider>,
 	);
 	expect(screen.getByRole('progressbar')).toBeOnTheScreen();

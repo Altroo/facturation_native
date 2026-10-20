@@ -20,7 +20,7 @@ type CompaniesViewProps = {
 	id: number;
 };
 
-const CompaniesViewClient = (props: CompaniesViewProps) => {
+const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 	const { id } = props;
 	const { t } = useLanguage();
 	const { is_staff } = usePermission();
@@ -683,7 +683,7 @@ const CompaniesViewPage = () => {
 				</View>
 			</ScrollView>
 		);
-	return <CompaniesViewClient key={id} id={id} />;
+	return <CompaniesViewPageContent key={id} id={id} />;
 };
 
 export default CompaniesViewPage;

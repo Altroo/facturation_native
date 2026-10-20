@@ -16,7 +16,7 @@ import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoa
 import CustomTextInput from '@/components/formikElements/customTextInput/customTextInput';
 import CustomPasswordInput from '@/components/formikElements/customPasswordInput/customPasswordInput';
 
-const LoginClient = () => {
+const LoginPage = () => {
 	const { t } = useLanguage();
 	const dispatch = useAppDispatch();
 	const { status, error } = useAppSelector(getInitState);
@@ -103,4 +103,4 @@ const LoginClient = () => {
 	);
 };
 
-export default LoginClient;
+export default LoginPage;

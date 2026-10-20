@@ -1,4 +1,4 @@
-import { toggleAutocomplete } from '@/__tests__/setupAutocomplete';
+import { toggleAutocomplete } from '@/components/formikElements/customAutoCompleteSelect/setupAutocomplete';
 import { configureStore } from '@reduxjs/toolkit';
 import _initReducer, { setAuthenticated } from '@/store/slices/_initSlice';
 import accountReducer, { setProfil } from '@/store/slices/accountSlice';
@@ -8,7 +8,7 @@ import { useState } from 'react';
 
 import { Provider } from 'react-redux';
 import { router } from 'expo-router';
-import UsersListClient from '@/app/(app)/(drawer)/users/index';
+import UsersListPage from '@/app/(app)/(drawer)/users/index';
 import {
 	useGetUsersInfiniteListInfiniteQuery,
 	useDeleteUserMutation,
@@ -123,7 +123,7 @@ const setup = async (role = 'Caissier', staff = true) => {
 	store.dispatch(setAuthenticated());
 	await render(
 		<Provider store={store}>
-			<UsersListClient />
+			<UsersListPage />
 		</Provider>,
 	);
 
@@ -420,7 +420,7 @@ it('drops selected IDs and confirmation when a cache replacement unloads their c
 	resetLoadedPages = true;
 	await screen.rerender(
 		<Provider store={store}>
-			<UsersListClient />
+			<UsersListPage />
 		</Provider>,
 	);
 	expect(screen.queryByText('Last User')).toBeNull();

@@ -2,7 +2,7 @@
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 
-const root = join(__dirname, '../..');
+const root = __dirname;
 const runBabel = (filename?: string) =>
 	JSON.parse(
 		execFileSync(
@@ -52,5 +52,5 @@ it('retains hook dependencies in the drawer web entry', () => {
 });
 
 it('leaves app animation hooks unchanged', () => {
-	expect(runBabel('src/__tests__/babel-config.test.ts')).toEqual([2]);
+	expect(runBabel('babel.config.test.ts')).toEqual([2]);
 });

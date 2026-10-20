@@ -4,7 +4,7 @@ import { Platform } from 'react-native';
 import { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
 import * as ImagePicker from 'expo-image-picker';
 import type { CropZoomProps, CropZoomRefType } from 'react-native-zoom-toolkit';
-import EditProfilClient from '@/app/(app)/(drawer)/settings/edit-profile';
+import EditProfilPage from '@/app/(app)/(drawer)/settings/edit-profile';
 import { makeStore } from '@/store/store';
 import { rootSaga } from '@/store/sagas';
 import { profilApi } from '@/store/services/account';
@@ -126,7 +126,7 @@ afterEach(async () => {
 const setup = async () =>
 	await render(
 		<Provider store={store}>
-			<EditProfilClient />
+			<EditProfilPage />
 		</Provider>,
 	);
 const submit = async () => await fireEvent.press(screen.getByRole('button', { name: t.settings.updateBtn }));

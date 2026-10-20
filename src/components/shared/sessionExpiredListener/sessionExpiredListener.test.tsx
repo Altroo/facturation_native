@@ -7,10 +7,10 @@ import { auth } from '@/auth';
 
 jest.mock('@/auth', () => {
 	const { create } = jest.requireActual<typeof import('axios')>('axios');
-	const { createAuthClient } = jest.requireActual<typeof import('@/auth')>('@/auth');
+	const { createAuth } = jest.requireActual<typeof import('@/auth')>('@/auth');
 	return {
 		...jest.requireActual<typeof import('@/auth')>('@/auth'),
-		auth: createAuthClient(create(), { read: async () => null, write: async () => {} }),
+		auth: createAuth(create(), { read: async () => null, write: async () => {} }),
 	};
 });
 it('uses the current language for expiry, ignores ordinary logout, and unsubscribes on unmount', async () => {

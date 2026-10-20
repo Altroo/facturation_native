@@ -11,6 +11,7 @@ import AuthenticatedLayout, { unstable_settings as appSettings } from '@/app/(ap
 import DrawerLayout from '@/app/(app)/(drawer)/_layout';
 
 import type { UserClass } from '@/models/classes';
+import { translations } from '@/translations';
 
 jest.mock('expo-router/drawer', () => ({
 	Drawer: jest.requireActual<typeof import('expo-router')>('expo-router').Stack,
@@ -73,6 +74,10 @@ const setup = async (required: boolean, initialUrl: string) => {
 			'(app)/(drawer)/settings/_layout': () => <Stack />,
 			'(app)/(drawer)/companies/index': () => <Text>Companies</Text>,
 			'(app)/(drawer)/index': () => <Text>Dashboard</Text>,
+			'(app)/(drawer)/clients/index': () => <Text>Clients list</Text>,
+			'(app)/(drawer)/clients/archived': () => <Text>Archived clients</Text>,
+			'(app)/clients/form': () => <Text>Client form</Text>,
+			'(app)/clients/[id]/index': () => <Text>Client details</Text>,
 			'(app)/(drawer)/users/index': () => <Text>User list</Text>,
 			'(app)/(drawer)/settings/password': () => <Text>Change password</Text>,
 		},
@@ -103,4 +108,10 @@ it('reacts when a refreshed profile requires password change after navigation', 
 	await act(() => store.dispatch(setProfil(profile(true))));
 	await screen.findByText('Change password');
 	expect(rendered.getPathname()).toBe('/settings/password');
+});
+
+it('uses the company details title on the company detail screen', async () => {
+	await setup(false, '/companies/4');
+	await screen.findByText('Company details');
+	expect(screen.getByRole('header', { name: translations.fr.companies.detailsTitle })).toBeOnTheScreen();
 });

@@ -1,7 +1,10 @@
 import { View } from 'react-native';
 import { fireEvent, render as renderComponent, screen } from '@testing-library/react-native';
 import type { ReactElement } from 'react';
-import { AutocompleteDropdownContextProvider, toggleAutocomplete } from '@/__tests__/setupAutocomplete';
+import {
+	AutocompleteDropdownContextProvider,
+	toggleAutocomplete,
+} from '@/components/formikElements/customAutoCompleteSelect/setupAutocomplete';
 import AddManagedBySection, { AddManagedBySectionProps } from './addManagedBySection';
 import { translations } from '@/translations';
 const render = (ui: ReactElement) => renderComponent(ui, { wrapper: AutocompleteDropdownContextProvider });

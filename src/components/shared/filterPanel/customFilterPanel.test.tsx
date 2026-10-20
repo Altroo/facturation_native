@@ -1,5 +1,8 @@
 import type { ReactElement } from 'react';
-import { AutocompleteDropdownContextProvider, toggleAutocomplete } from '@/__tests__/setupAutocomplete';
+import {
+	AutocompleteDropdownContextProvider,
+	toggleAutocomplete,
+} from '@/components/formikElements/customAutoCompleteSelect/setupAutocomplete';
 import { useState } from 'react';
 import { fireEvent, render as renderComponent, screen } from '@testing-library/react-native';
 import { Platform } from 'react-native';

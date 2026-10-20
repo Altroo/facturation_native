@@ -94,10 +94,10 @@ const ResetPasswordPageContent = () => {
 	);
 };
 
-const ResetPasswordClient = () => (
+const ResetPasswordPage = () => (
 	<AuthLayout backHref={AUTH_LOGIN}>
 		<ResetPasswordPageContent />
 	</AuthLayout>
 );
 
-export default ResetPasswordClient;
+export default ResetPasswordPage;

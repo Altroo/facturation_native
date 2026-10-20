@@ -23,14 +23,14 @@ jest.mock('react-native-gesture-handler', () => ({
 }));
 jest.mock('@/auth', () => {
 	const { create } = jest.requireActual<typeof import('axios')>('axios');
-	const { createAuthClient } = jest.requireActual<typeof import('@/auth')>('@/auth');
+	const { createAuth } = jest.requireActual<typeof import('@/auth')>('@/auth');
 	const publicInstance = create({
 		adapter: async (config) => ({ data: { maintenance: false }, status: 200, statusText: 'OK', headers: {}, config }),
 	});
 	return {
 		...jest.requireActual<typeof import('@/auth')>('@/auth'),
 		publicInstance,
-		auth: createAuthClient(publicInstance, { read: async () => null, write: async () => {} }),
+		auth: createAuth(publicInstance, { read: async () => null, write: async () => {} }),
 	};
 });
 const Login = () => {

@@ -26,7 +26,7 @@ import ActionModals from '@/components/nativeElements/modals/actionModal/actionM
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import SelectAllControl from '@/components/shared/selectAllControl/selectAllControl';
 
-const UsersListClient = () => {
+const UsersListPage = () => {
 	const { t } = useLanguage();
 	const { onSuccess, onError } = useToast();
 	const { is_staff } = usePermission();
@@ -539,4 +539,4 @@ const UsersListClient = () => {
 	);
 };
 
-export default UsersListClient;
+export default UsersListPage;

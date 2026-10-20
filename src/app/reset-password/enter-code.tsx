@@ -162,16 +162,6 @@ const EnterCodePageContent = (props: EnterCodePageContentProps) => {
 	);
 };
 
-type EnterCodeProps = {
-	email: string;
-};
-
-const EnterCodeClient = (props: EnterCodeProps) => (
-	<AuthLayout backHref={AUTH_RESET_PASSWORD}>
-		<EnterCodePageContent {...props} />
-	</AuthLayout>
-);
-
 const EnterCodePage = () => {
 	const [recovery, setRecovery] = useState<PasswordResetData | null>(null);
 	const [ready, setReady] = useState(false);
@@ -195,7 +185,11 @@ const EnterCodePage = () => {
 	});
 	if (!ready) return <ApiProgress />;
 	if (!recovery?.email) return <Redirect href={AUTH_RESET_PASSWORD} />;
-	return <EnterCodeClient email={recovery.email} />;
+	return (
+		<AuthLayout backHref={AUTH_RESET_PASSWORD}>
+			<EnterCodePageContent email={recovery.email} />
+		</AuthLayout>
+	);
 };
 
 export default EnterCodePage;

@@ -9,7 +9,7 @@ import { passwordResetStorage } from '@/Storage/passwordResetStorage';
 import { AUTH_LOGIN, AUTH_RESET_PASSWORD } from '@/utils/routes';
 import SuccessIlluSVG from '../../../assets/success-illu.svg';
 
-const SetPasswordCompleteClient = () => {
+const SetPasswordCompletePageContent = () => {
 	const router = useRouter();
 	const { t } = useLanguage();
 	return (
@@ -39,7 +39,7 @@ const SetPasswordCompleteClient = () => {
 
 const SetPasswordCompletePage = () => {
 	if (!passwordResetStorage.isComplete()) return <Redirect href={AUTH_RESET_PASSWORD} />;
-	return <SetPasswordCompleteClient />;
+	return <SetPasswordCompletePageContent />;
 };
 
 export default SetPasswordCompletePage;

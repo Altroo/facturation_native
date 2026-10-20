@@ -2,7 +2,7 @@
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 
-const root = join(__dirname, '../..');
+const root = __dirname;
 const nativeEntry = join(root, 'node_modules/react-native/index.js');
 const uniwindEntry = join(root, 'node_modules/uniwind/src/components/index.ts');
 const webEntry = join(root, 'node_modules/react-native-web/dist/index.js');

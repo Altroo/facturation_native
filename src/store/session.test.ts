@@ -9,7 +9,7 @@ import { getAccessTokenFromSession } from '@/store/session';
 
 jest.mock('@/auth', () => {
 	const { create, AxiosError } = jest.requireActual<typeof import('axios')>('axios');
-	const { createAuthClient } = jest.requireActual<typeof import('@/auth')>('@/auth');
+	const { createAuth } = jest.requireActual<typeof import('@/auth')>('@/auth');
 	const tokens = () => ({
 		access: 'test-access',
 		refresh: 'test-refresh',
@@ -30,7 +30,7 @@ jest.mock('@/auth', () => {
 			config,
 		}),
 	});
-	const client = createAuthClient(transport, storage);
+	const client = createAuth(transport, storage);
 	const instance = client.instance;
 	instance.defaults.adapter = async (config) => {
 		const profile = config.url === '/account/profil/';

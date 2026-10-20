@@ -35,7 +35,7 @@ import { auth, publicInstance, InvalidSessionError } from '@/auth';
 
 jest.mock('@/auth', () => {
 	const { create } = jest.requireActual<typeof import('axios')>('axios');
-	const { createAuthClient } = jest.requireActual<typeof import('@/auth')>('@/auth');
+	const { createAuth } = jest.requireActual<typeof import('@/auth')>('@/auth');
 	const publicInstance = create({ timeout: 15000, withCredentials: true });
 	const tokens = {
 		access: 'access-1',
@@ -47,7 +47,7 @@ jest.mock('@/auth', () => {
 	return {
 		...jest.requireActual<typeof import('@/auth')>('@/auth'),
 		publicInstance,
-		auth: createAuthClient(publicInstance, storage),
+		auth: createAuth(publicInstance, storage),
 	};
 });
 const response = (config: InternalAxiosRequestConfig, data: unknown, status = 200): AxiosResponse => ({

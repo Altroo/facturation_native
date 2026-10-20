@@ -498,7 +498,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 	);
 };
 
-const UsersForm = () => {
+const UsersFormPage = () => {
 	const params = useLocalSearchParams<{
 		id?: string | string[];
 	}>();
@@ -535,4 +535,4 @@ const UsersForm = () => {
 	return <FormikContent key={id ?? 'new'} id={id} />;
 };
 
-export default UsersForm;
+export default UsersFormPage;

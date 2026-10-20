@@ -1,4 +1,4 @@
-import { toggleAutocomplete } from '@/__tests__/setupAutocomplete';
+import { toggleAutocomplete } from '@/components/formikElements/customAutoCompleteSelect/setupAutocomplete';
 import { configureStore } from '@reduxjs/toolkit';
 import _initReducer, { setAuthenticated } from '@/store/slices/_initSlice';
 import accountReducer, { setProfil } from '@/store/slices/accountSlice';
@@ -9,7 +9,7 @@ import { Platform } from 'react-native';
 import type { CompaniesQueryParams } from '@/types/companyTypes';
 import { Provider } from 'react-redux';
 import { router } from 'expo-router';
-import CompaniesList from '@/app/(app)/(drawer)/companies/index';
+import CompaniesListPage from '@/app/(app)/(drawer)/companies/index';
 
 import {
 	useGetCompaniesInfiniteListInfiniteQuery,
@@ -131,7 +131,7 @@ const setup = async (role = 'Caissier') => {
 
 	const rendered = await render(
 		<Provider store={store}>
-			<CompaniesList />
+			<CompaniesListPage />
 		</Provider>,
 	);
 

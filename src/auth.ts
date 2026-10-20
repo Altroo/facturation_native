@@ -11,7 +11,7 @@ export class InvalidSessionError extends Error {}
 const REFRESH_BUFFER_MS = 5 * 60 * 1000;
 
 // Django adapter. axios-auth-refresh owns 401 request queuing and retries.
-export const createAuthClient = (transport: AxiosInstance, storage: TokenStorage) => {
+export const createAuth = (transport: AxiosInstance, storage: TokenStorage) => {
 	let tokens: Tokens | null = null;
 	let generation = 0;
 	let refreshCall: Promise<SessionResult> | null = null;
@@ -250,4 +250,4 @@ export const publicInstance = create({
 	withCredentials: Platform.OS === 'web',
 	headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
 });
-export const auth = createAuthClient(publicInstance, sessionStorage);
+export const auth = createAuth(publicInstance, sessionStorage);

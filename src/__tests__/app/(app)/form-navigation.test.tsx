@@ -9,8 +9,8 @@ import { router } from 'expo-router';
 import { Text } from 'react-native';
 import { Provider } from 'react-redux';
 import { RootNavigator } from '@/app/_layout';
-import UsersForm from '@/app/(app)/users/form';
-import CompaniesForm from '@/app/(app)/companies/form';
+import UsersFormPage from '@/app/(app)/users/form';
+import CompaniesFormPage from '@/app/(app)/companies/form';
 import SettingsLayout from '@/app/(app)/(drawer)/settings/_layout';
 import AuthenticatedLayout, { unstable_settings as appSettings } from '@/app/(app)/_layout';
 import DrawerLayout from '@/app/(app)/(drawer)/_layout';
@@ -174,12 +174,16 @@ const setup = async (initialUrl: string, access: 'staff' | 'guest' | 'nonstaff' 
 			'(app)/_layout': { default: AuthenticatedLayout, unstable_settings: appSettings },
 			'(app)/(drawer)/_layout': DrawerLayout,
 			'(app)/(drawer)/index': () => <Text>Dashboard</Text>,
+			'(app)/(drawer)/clients/index': () => <Text>Clients list</Text>,
+			'(app)/(drawer)/clients/archived': () => <Text>Archived clients</Text>,
+			'(app)/clients/form': () => <Text>Client form</Text>,
+			'(app)/clients/[id]/index': () => <Text>Client details</Text>,
 			'(app)/(drawer)/users/index': () => <Text>Users list</Text>,
 			'(app)/users/[id]/index': () => <Text>User details</Text>,
-			'(app)/users/form': UsersForm,
+			'(app)/users/form': UsersFormPage,
 			'(app)/(drawer)/companies/index': () => <Text>Companies list</Text>,
 			'(app)/companies/[id]/index': () => <Text>Company details</Text>,
-			'(app)/companies/form': CompaniesForm,
+			'(app)/companies/form': CompaniesFormPage,
 			'(app)/(drawer)/settings/_layout': SettingsLayout,
 			'(app)/(drawer)/settings/edit-profile': () => <Text>Profile content</Text>,
 			'(app)/(drawer)/settings/password': () => <Text>Password content</Text>,
@@ -414,3 +418,17 @@ describe.each(['users', 'companies'] as const)('%s form route', (entity) => {
 		expect(JSON.stringify(result.getRouterState())).not.toContain('"name":"form"');
 	});
 });
+
+it.each(['/users', '/companies', '/clients', '/clients/archived', '/clients/form', '/clients/7'])(
+	'keeps the nested private route %s behind the root authentication guard',
+	async (initialUrl) => {
+		const result = await setup(initialUrl, 'guest');
+		await screen.findByText('Guest login');
+		expect(result.getPathname()).toBe('/login');
+		expect(screen.queryByText('Clients list')).toBeNull();
+		expect(screen.queryByText('Users list')).toBeNull();
+		expect(screen.queryByText('Companies list')).toBeNull();
+		expect(screen.queryByText('Client form')).toBeNull();
+		expect(screen.queryByText('Client details')).toBeNull();
+	},
+);

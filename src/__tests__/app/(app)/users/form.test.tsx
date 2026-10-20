@@ -1,4 +1,4 @@
-import { createQueryMock } from '@/__tests__/setupQuery';
+import { createQueryMock } from '@/store/setupQuery';
 import { configureStore } from '@reduxjs/toolkit';
 import _initReducer, { setAuthenticated } from '@/store/slices/_initSlice';
 import accountReducer, { setProfil, setGroupes } from '@/store/slices/accountSlice';
@@ -6,7 +6,7 @@ import companiesReducer, { setUserCompanies } from '@/store/slices/companiesSlic
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Provider } from 'react-redux';
 import { router } from 'expo-router';
-import UsersForm from '@/app/(app)/users/form';
+import UsersFormPage from '@/app/(app)/users/form';
 import {
 	useGetUserQuery,
 	useAddUserMutation,
@@ -16,7 +16,10 @@ import {
 import { useGetCompaniesListQuery } from '@/store/services/company';
 
 import { translations } from '@/translations';
-import { AutocompleteDropdownContextProvider, toggleAutocomplete } from '@/__tests__/setupAutocomplete';
+import {
+	AutocompleteDropdownContextProvider,
+	toggleAutocomplete,
+} from '@/components/formikElements/customAutoCompleteSelect/setupAutocomplete';
 import type { UserWithCompaniesResponseType } from '@/types/usersTypes';
 jest.mock('@/contexts/InitContext', () => ({ useInitAccessToken: () => 'test-access' }));
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
@@ -94,7 +97,7 @@ const setup = async (edit = false, companies: { id: number; raison_sociale: stri
 	jest.mocked(useCheckEmailMutation).mockReturnValue([checkEmail, {}] as never);
 	await render(
 		<Provider store={store}>
-			<UsersForm />
+			<UsersFormPage />
 		</Provider>,
 		{ wrapper: AutocompleteDropdownContextProvider },
 	);
@@ -113,7 +116,7 @@ it.each(['', ['7'], '../7', '0'])('blocks malformed edit id %s without requestin
 	jest.mocked(useGetUserQuery).mockClear();
 	await screen.rerender(
 		<Provider store={store}>
-			<UsersForm />
+			<UsersFormPage />
 		</Provider>,
 	);
 	expect(useGetUserQuery).not.toHaveBeenCalled();
@@ -129,7 +132,7 @@ it('keeps self editing in profile settings instead of the users form', async () 
 	jest.mocked(useGetUserQuery).mockClear();
 	await screen.rerender(
 		<Provider store={store}>
-			<UsersForm />
+			<UsersFormPage />
 		</Provider>,
 	);
 	expect(useGetUserQuery).not.toHaveBeenCalled();
@@ -235,7 +238,7 @@ it('replaces untouched cached values and memberships when the same user is refre
 	await mockUserQuery.setResult({ currentData: fresh, refetch: jest.fn() } as never);
 	await screen.rerender(
 		<Provider store={store}>
-			<UsersForm />
+			<UsersFormPage />
 		</Provider>,
 	);
 	await waitFor(() => expect(screen.getByLabelText(translations.fr.users.fieldNom)).toHaveProp('value', 'Fresh name'));
@@ -256,7 +259,7 @@ it('reinitializes values and memberships after a same-user refresh, matching the
 	} as never);
 	await screen.rerender(
 		<Provider store={store}>
-			<UsersForm />
+			<UsersFormPage />
 		</Provider>,
 	);
 	await waitFor(() => expect(screen.getByLabelText(translations.fr.users.fieldNom)).toHaveProp('value', 'Server name'));
@@ -298,7 +301,7 @@ it.each([0, 503])('uses original form/error rendering after a background refresh
 	} as never);
 	await screen.rerender(
 		<Provider store={store}>
-			<UsersForm />
+			<UsersFormPage />
 		</Provider>,
 	);
 	if (status === 503) {
@@ -321,7 +324,7 @@ it.each([401, 403, 404])('blocks cached user editing after an authoritative %s r
 	} as never);
 	await screen.rerender(
 		<Provider store={store}>
-			<UsersForm />
+			<UsersFormPage />
 		</Provider>,
 	);
 	expect(screen.queryByLabelText(translations.fr.users.fieldNom)).toBeNull();
@@ -384,7 +387,7 @@ it('shows the original relationship loading state until company choices are avai
 	await mockCompaniesQuery.setResult({ isLoading: true, refetch: jest.fn() } as never);
 	await screen.rerender(
 		<Provider store={store}>
-			<UsersForm />
+			<UsersFormPage />
 		</Provider>,
 	);
 	expect(screen.getByRole('progressbar')).toBeOnTheScreen();
