@@ -1,5 +1,18 @@
-import { create, AxiosError, type AxiosInstance, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
-import { getApi, postApi } from '@/utils/apiHelpers';
+import axios, {
+	create,
+	AxiosError,
+	type AxiosInstance,
+	type AxiosResponse,
+	type InternalAxiosRequestConfig,
+} from 'axios';
+import Constants from 'expo-constants';
+import { Platform } from 'react-native';
+import { getApi, getAppVersion, postApi } from '@/utils/apiHelpers';
+
+jest.mock('expo-constants', () => ({
+	__esModule: true,
+	default: { expoConfig: { name: 'test', slug: 'test', hostUri: 'metro.example.invalid:8081' } },
+}));
 
 const adapter = jest.fn<Promise<AxiosResponse>, [InternalAxiosRequestConfig]>();
 const instance = create({ adapter });
@@ -11,6 +24,64 @@ const response = (config: InternalAxiosRequestConfig, data: unknown, status = 20
 	headers: {},
 });
 beforeEach(() => adapter.mockReset());
+
+describe('getAppVersion', () => {
+	const originalDev = __DEV__;
+	beforeEach(() => {
+		Object.defineProperty(globalThis, '__DEV__', { configurable: true, value: true });
+		jest.replaceProperty(Platform, 'OS', 'ios');
+		jest.spyOn(axios, 'create').mockReturnValue(instance);
+	});
+	afterEach(() => {
+		jest.restoreAllMocks();
+		Object.defineProperty(globalThis, '__DEV__', { configurable: true, value: originalDev });
+	});
+
+	it.each(['metro.example.invalid:8081', 'https://metro.example.invalid'])(
+		'uses the Metro origin %s, with no Django authentication',
+		async (hostUri) => {
+			jest.replaceProperty(Constants, 'expoConfig', { name: 'test', slug: 'test', hostUri });
+			adapter.mockImplementation(async (config) => response(config, '{"version":"1.10.0"}'));
+			await expect(getAppVersion()).resolves.toEqual({ status: 200, data: { version: '1.10.0' } });
+			expect(axios.create).toHaveBeenCalledWith({
+				baseURL: hostUri.startsWith('https://') ? hostUri : `http://${hostUri}`,
+			});
+			expect(adapter.mock.calls[0][0]).toMatchObject({
+				url: '/api/app-version',
+				method: 'get',
+				params: { check: expect.any(Number) },
+				timeout: 10_000,
+				responseType: 'json',
+				transitional: expect.objectContaining({ silentJSONParsing: false }),
+				headers: expect.objectContaining({ 'Cache-Control': 'no-store' }),
+			});
+			expect(adapter.mock.calls[0][0].headers.has('Authorization')).toBe(false);
+		},
+	);
+
+	it('uses the current browser origin in production web previews', async () => {
+		jest.replaceProperty(Platform, 'OS', 'web');
+		Object.defineProperty(globalThis, '__DEV__', { configurable: true, value: false });
+		adapter.mockImplementation(async (config) => response(config, { version: '1.10.0' }));
+		await expect(getAppVersion()).resolves.toMatchObject({ status: 200 });
+		expect(axios.create).toHaveBeenCalledWith({ baseURL: undefined });
+	});
+
+	it('does not request a Metro version from a packaged app or without a Metro host', async () => {
+		Object.defineProperty(globalThis, '__DEV__', { configurable: true, value: false });
+		await expect(getAppVersion()).resolves.toEqual({ status: 0, data: null });
+		Object.defineProperty(globalThis, '__DEV__', { configurable: true, value: true });
+		jest.replaceProperty(Constants, 'expoConfig', null);
+		await expect(getAppVersion()).resolves.toEqual({ status: 0, data: null });
+		expect(axios.create).not.toHaveBeenCalled();
+		expect(adapter).not.toHaveBeenCalled();
+	});
+
+	it('rejects malformed JSON instead of accepting a stale or invalid version response', async () => {
+		adapter.mockImplementation(async (config) => response(config, 'bad-json'));
+		await expect(getAppVersion()).rejects.toMatchObject({ code: 'ERR_BAD_RESPONSE' });
+	});
+});
 
 it('keeps POST body fields and returns the original status/data envelope', async () => {
 	const data = { id: 7, is_active: false };

@@ -1,3 +1,7 @@
+import { reloadAppAsync } from 'expo';
+import { Platform } from 'react-native';
+import { isAppVersion, isNewerAppVersion } from '@/utils/appVersion';
+import { getAppVersion } from '@/utils/apiHelpers';
 import axios, { type AxiosInstance, type AxiosResponse } from 'axios';
 import type { APIContentTypeInterface, ApiErrorResponseType } from '@/types/_initTypes';
 import { auth, publicInstance, InvalidSessionError } from '@/auth';
@@ -367,5 +371,52 @@ export const getDjangoNextPageParam = (next: string | null, currentPage: number)
 		return Number.isSafeInteger(page) && page > currentPage ? page : undefined;
 	} catch {
 		return undefined;
+	}
+};
+
+export const checkAppUpdate = async (targetVersion: string): Promise<boolean> => {
+	if (!isAppVersion(targetVersion)) return false;
+	// A packaged mobile app cannot download new code by reloading. This flow
+	// checks the local Metro bundle during development, plus the browser preview.
+	if (!__DEV__ && Platform.OS !== 'web') return false;
+	try {
+		const { status, data } = await getAppVersion();
+		if (status !== 200) return false;
+		return (
+			!!data &&
+			typeof data === 'object' &&
+			'version' in data &&
+			isAppVersion(data.version) &&
+			!isNewerAppVersion(targetVersion, data.version)
+		);
+	} catch {
+		return false;
+	}
+};
+
+export const reloadApp = () => reloadAppAsync();
+
+export const parseEntityId = (value: string | string[] | undefined): number | null => {
+	if (typeof value !== 'string' || !/^[1-9]\d*$/.test(value)) return null;
+	const id = Number(value);
+	return Number.isSafeInteger(id) ? id : null;
+};
+
+export const runWithCleanup = async <T>(action: () => Promise<T>, cleanup: () => void): Promise<T> => {
+	try {
+		return await action();
+	} finally {
+		cleanup();
+	}
+};
+
+export const runWithErrorHandler = async (
+	action: () => Promise<void>,
+	onError: (error: unknown) => void,
+): Promise<void> => {
+	try {
+		await action();
+	} catch (error) {
+		onError(error);
 	}
 };
