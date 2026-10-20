@@ -17,7 +17,10 @@ jest.mock('@/auth', () => {
 		refresh_expiration: new Date(Date.now() + 86400000).toISOString(),
 	});
 	const fixture = { failMembership: false, profileCalls: 0, membershipCalls: 0 };
-	const storage = { read: jest.fn(async () => tokens()), write: jest.fn(async (_value: unknown) => {}) };
+	const storage = {
+		read: jest.fn(async () => tokens()),
+		write: jest.fn<Promise<void>, [unknown]>().mockResolvedValue(undefined),
+	};
 	const transport = create({
 		adapter: async (config) => ({
 			data: tokens(),

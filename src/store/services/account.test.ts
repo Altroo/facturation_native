@@ -254,6 +254,33 @@ it('uses the password-change endpoint and keeps confirmation in the request', as
 	expect(JSON.parse(adapter.mock.calls[0][0].data)).toEqual(data);
 });
 
+it('automatically refreshes a subscribed profile after changing the password', async () => {
+	let changed = false;
+	adapter.mockImplementation(async (config) => {
+		if (config.method === 'put') {
+			changed = true;
+			return response(config, '', 204);
+		}
+		return response(config, { id: 7, default_password_set: !changed });
+	});
+	const subscription = store.dispatch(profilApi.endpoints.getProfil.initiate());
+	await subscription.unwrap();
+	await store
+		.dispatch(
+			profilApi.endpoints.editPassword.initiate({
+				data: { old_password: 'old-example-pass', new_password: 'new-example-pass', new_password2: 'new-example-pass' },
+			}),
+		)
+		.unwrap();
+	await Promise.all(store.dispatch(profilApi.util.getRunningQueriesThunk()).map((request) => request.unwrap()));
+	expect(profilApi.endpoints.getProfil.select()(store.getState()).data).toMatchObject({
+		id: 7,
+		default_password_set: false,
+	});
+	expect(adapter.mock.calls.map(([config]) => config.method)).toEqual(['get', 'put', 'get']);
+	subscription.unsubscribe();
+});
+
 it('loads the existing group endpoint and preserves the role names', async () => {
 	const data = { group_titles: ['Caissier', 'Commercial', 'Comptable', 'Lecture'] };
 	adapter.mockImplementation(async (config) => response(config, data));

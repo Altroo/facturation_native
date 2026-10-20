@@ -139,14 +139,16 @@ export const usersApi = createApi({
 				refetchCachedPages: false,
 				getNextPageParam: (lastPage, _pages, lastPageParam) => getDjangoNextPageParam(lastPage.next, lastPageParam),
 			},
-			query: ({
-				queryArg: { with_pagination: _withPagination, page: _page, pageSize = MODULES_PAGE_SIZE, ...filters },
-				pageParam,
-			}) => ({
-				url: process.env.EXPO_PUBLIC_USERS_ROOT,
-				method: 'GET',
-				params: { ...filters, pagination: true, page: pageParam, page_size: pageSize },
-			}),
+			query: ({ queryArg, pageParam }) => {
+				const { pageSize = MODULES_PAGE_SIZE, ...filters } = queryArg;
+				delete filters.with_pagination;
+				delete filters.page;
+				return {
+					url: process.env.EXPO_PUBLIC_USERS_ROOT,
+					method: 'GET',
+					params: { ...filters, pagination: true, page: pageParam, page_size: pageSize },
+				};
+			},
 			providesTags: ['Users'],
 		}),
 	}),

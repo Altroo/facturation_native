@@ -5,6 +5,7 @@ import { watchWS } from '@/store/sagas/wsSaga';
 import { watchAccount } from '@/store/sagas/accountSaga';
 import { watchCompanies } from '@/store/sagas/companiesSaga';
 
+// .test files only
 export const formatSagaError = (error: unknown): string => {
 	if (error instanceof Error) {
 		return error.stack || error.message;

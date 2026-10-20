@@ -214,6 +214,30 @@ it('creates with POST and suspends through the existing DELETE endpoint', async 
 	expect(adapter.mock.calls[1][0]).toMatchObject({ url: '/company/4/', method: 'delete' });
 });
 
+it.each(['single', 'bulk'])('automatically refreshes subscribed memberships after %s suspension', async (mode) => {
+	const remaining = { id: 8, raison_sociale: 'Remaining Company' };
+	let suspended = false;
+	adapter.mockImplementation(async (config) => {
+		if (config.method !== 'get') {
+			suspended = true;
+			return response(config, mode === 'bulk' ? { suspended: 1 } : '', mode === 'bulk' ? 200 : 204);
+		}
+		return response(config, suspended ? [remaining] : [{ id: 4, raison_sociale: 'Company Four' }, remaining]);
+	});
+	const subscription = store.dispatch(companyApi.endpoints.getUserCompanies.initiate());
+	await subscription.unwrap();
+	if (mode === 'single') await store.dispatch(companyApi.endpoints.suspendCompany.initiate({ id: 4 })).unwrap();
+	else await store.dispatch(companyApi.endpoints.bulkSuspendCompanies.initiate({ ids: [4] })).unwrap();
+	await Promise.all(store.dispatch(companyApi.util.getRunningQueriesThunk()).map((request) => request.unwrap()));
+	expect(companyApi.endpoints.getUserCompanies.select()(store.getState()).data).toEqual([remaining]);
+	expect(adapter.mock.calls.map(([config]) => config.method)).toEqual([
+		'get',
+		mode === 'bulk' ? 'post' : 'delete',
+		'get',
+	]);
+	subscription.unsubscribe();
+});
+
 it('keeps a denied company edit as a typed backend permission error', async () => {
 	const data = { status_code: 403, message: 'Forbidden', details: { error: ['No permission'] } };
 	adapter.mockImplementation(async (config) => {
