@@ -102,28 +102,28 @@ The APK is written to `android/app/build/outputs/apk/release/app-release.apk`. `
 
 ### Project Structure
 
-| Location                                           | Purpose                                                                  |
-| -------------------------------------------------- | ------------------------------------------------------------------------ |
-| `src/app/login.tsx`, `src/app/reset-password/`     | Login and password recovery screens                                      |
-| `src/app/(app)/(drawer)/`                          | Dashboard, user/company lists and account settings                       |
-| `src/app/(app)/users/`, `src/app/(app)/companies/` | Create/edit forms and detail screens                                     |
-| `src/app/api/app-version+api.ts`                   | Local version endpoint, equivalent to the web API route                  |
-| `src/components/formikElements/`                   | Shared form inputs, selects and image upload controls                    |
-| `src/components/nativeElements/`                   | Native buttons, dialogs, sheets and image preview                        |
-| `src/components/shared/`, `layouts/`, `portals/`   | Lists, keyboard-aware scrolling, navigation, auth layout and toasts      |
-| `src/contexts/`, `src/providers/`                  | Initialization, sessions, theme, language and feedback                   |
-| `src/store/`                                       | Actions, services, sagas, slices and selectors                           |
-| `src/models/`, `src/types/`                        | Domain models and shared data contracts                                  |
-| `src/utils/`                                       | API helpers, hooks, routes, `rawData.ts` and separate validation schemas |
-| `src/Storage/`, `src/local/auth/`                  | Session/recovery storage and persistent storage adapters                 |
-| `src/styles/`, `src/translations/`                 | Theme styles and French/English text                                     |
-| `src/__tests__/app/`                               | Route behavior tests, kept outside Expo Router's screen tree             |
+| Location                                                  | Purpose                                                                  |
+| --------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `src/app/login.tsx`, `src/app/reset-password/`            | Login and password recovery screens                                      |
+| `src/app/(app)/(drawer)/`                                 | Dashboard and module folders sharing one navigation stack                |
+| `src/app/(app)/(drawer)/clients/`, `companies/`, `users/` | Each module’s list, form, detail screen, and archive when applicable     |
+| `src/app/api/app-version+api.ts`                          | Local version endpoint, equivalent to the web API route                  |
+| `src/components/formikElements/`                          | Shared form inputs, selects and image upload controls                    |
+| `src/components/nativeElements/`                          | Native buttons, dialogs, sheets and image preview                        |
+| `src/components/shared/`, `layouts/`, `portals/`          | Lists, keyboard-aware scrolling, navigation, auth layout and toasts      |
+| `src/contexts/`, `src/providers/`                         | Initialization, sessions, theme, language and feedback                   |
+| `src/store/`                                              | Actions, services, sagas, slices and selectors                           |
+| `src/models/`, `src/types/`                               | Domain models and shared data contracts                                  |
+| `src/utils/`                                              | API helpers, hooks, routes, `rawData.ts` and separate validation schemas |
+| `src/Storage/`, `src/local/auth/`                         | Session/recovery storage and persistent storage adapters                 |
+| `src/styles/`, `src/translations/`                        | Theme styles and French/English text                                     |
+| `src/__tests__/app/`                                      | Route behavior tests, kept outside Expo Router's screen tree             |
 
-Tests sit beside the files they cover, including `babel.config.test.ts` and `metro.config.test.ts` beside the root configs. Screen and navigation tests are the Expo Router exception: they stay in `src/__tests__/app/` because files inside `src/app/` become routes. Inside `src/__tests__/app/`, folders mirror `src/app/`, including `(app)/(drawer)/companies`, `users`, `settings`, the parent-stack forms and `[id]` views, `reset-password`, and `api`. Test filenames match their screen where possible; `reset-password/flow.test.tsx` covers the complete recovery journey, and `form-navigation.test.tsx` covers navigation across modules. Shared autocomplete test helpers live beside `customAutoCompleteSelect`, and query test helpers live in `src/store/` beside `setupApiStore`.
+Tests sit beside the files they cover, including `babel.config.test.ts` and `metro.config.test.ts` beside the root configs. Screen and navigation tests are the Expo Router exception: they stay in `src/__tests__/app/` because files inside `src/app/` become routes. Inside `src/__tests__/app/`, folders mirror `src/app/`, including `(app)/(drawer)/companies`, `users`, `settings`, each module’s forms and `[id]` views, `reset-password`, and `api`. Test filenames match their screen where possible; `reset-password/flow.test.tsx` covers the complete recovery journey, and `form-navigation.test.tsx` covers navigation across modules. Shared autocomplete test helpers live beside `customAutoCompleteSelect`, and query test helpers live in `src/store/` beside `setupApiStore`.
 
-Route groups such as `(app)` and `(drawer)` organize navigators without adding URL segments. List screens live in the drawer; forms and detail screens use the parent stack so Back returns to the screen that opened them. An optional route ID distinguishes creation from editing.
+Route groups such as `(app)` and `(drawer)` organize navigators without adding URL segments. All authenticated screens live in `src/app/(app)/(drawer)/`, grouped by module: `clients/`, `companies/`, `users/`, and `settings/`. Each module keeps its list (`index.tsx`), archive when applicable (`archived.tsx`), form (`form.tsx`), and detail (`[id]/index.tsx`) together. The drawer wraps one shared stack, so Back follows the actual visit history across modules. The dashboard, lists, and archives show the menu button; forms, details, and settings use Back when history exists. Direct links have the dashboard as their Back destination. An optional route ID distinguishes creation from editing.
 
-Authentication is enforced in `src/app/_layout.tsx`: `Stack.Protected` guards the entire `(app)` group, including its nested drawer lists. `src/app/(app)/_layout.tsx` configures stack screen titles and Back navigation, and redirects accounts that must change their default password. Its `Stack.Screen` entries configure navigation; the parent guard decides whether the group is accessible. Module permissions remain separate checks in the screens and Django API.
+Authentication is enforced in `src/app/_layout.tsx`: `Stack.Protected` guards the entire `(app)` group, including its nested drawer lists. `src/app/(app)/_layout.tsx` provides the drawer and redirects accounts that must change their default password. `src/app/(app)/(drawer)/_layout.tsx` configures every screen’s title and menu or Back header in one stack. Its `Stack.Screen` entries configure navigation; the root guard decides whether the group is accessible. Module permissions remain separate checks in the screens and Django API.
 
 Screens are ordinary client-side React Native components. They own state, Formik forms and query hooks directly. Django handles database operations and permissions. Next.js server-page wrappers and `use client` directives are unnecessary here; server-only API handlers remain separate from device storage.
 
