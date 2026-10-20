@@ -22,6 +22,8 @@ import {
 	COMPANIES_ADD,
 	USERS_LIST,
 	USERS_ADD,
+	CLIENTS_LIST,
+	CLIENTS_ARCHIVED,
 	DASHBOARD_EDIT_PROFILE,
 	DASHBOARD_PASSWORD,
 	DASHBOARD_NOTIFICATIONS,
@@ -123,8 +125,8 @@ const getNavigationMenu = (isStaff: boolean, t: TranslationDictionary) => {
 			title: t.navigation.clients,
 			icon: <MaterialIcons name="people" size={21} color="#64748b" />,
 			items: [
-				{ title: t.navigation.clientsList, label: t.navigation.clientsList, path: undefined },
-				{ title: t.navigation.clientsArchived, label: t.navigation.clientsArchived, path: undefined },
+				{ title: t.navigation.clientsList, label: t.navigation.clientsList, path: CLIENTS_LIST },
+				{ title: t.navigation.clientsArchived, label: t.navigation.clientsArchived, path: CLIENTS_ARCHIVED },
 			],
 		},
 		devis: {
@@ -447,6 +449,8 @@ export const getNotificationDestination = (target?: string) => {
 	if (path === '/dashboard') return DASHBOARD;
 	if (path === '/dashboard/companies') return COMPANIES_LIST;
 	if (path === '/dashboard/companies/new') return COMPANIES_ADD;
+	if (path === '/dashboard/clients') return CLIENTS_LIST;
+	if (path === '/dashboard/clients/archived') return CLIENTS_ARCHIVED;
 	if (path === '/dashboard/users') return USERS_LIST;
 	if (path === '/dashboard/users/new') return USERS_ADD;
 	if (path === '/dashboard/settings/edit-profile') return DASHBOARD_EDIT_PROFILE;

@@ -44,6 +44,16 @@ const AuthenticatedLayout = () => {
 					})}
 				/>
 				<Stack.Screen name="companies/[id]/index" options={{ title: t.companies.detailsTitle }} />
+				<Stack.Screen
+					name="clients/form"
+					options={({ route }) => ({
+						title:
+							route.params && 'id' in route.params && route.params.id !== undefined
+								? t.clients.editTitle
+								: t.clients.addTitle,
+					})}
+				/>
+				<Stack.Screen name="clients/[id]/index" options={{ title: t.clients.detailsTitle }} />
 			</Stack>
 		</>
 	);

@@ -18,6 +18,8 @@ const DrawerLayout = () => {
 			}}
 		>
 			<Drawer.Screen name="index" options={{ title: t.navigation.dashboard }} />
+			<Drawer.Screen name="clients/index" options={{ title: t.clients.listTitle }} />
+			<Drawer.Screen name="clients/archived" options={{ title: t.clients.archivedTitle }} />
 			<Drawer.Screen name="companies/index" options={{ title: t.companies.listTitle }} />
 			<Drawer.Screen name="users/index" options={{ title: t.users.listTitle }} />
 			<Drawer.Screen name="settings" options={{ headerShown: false }} />

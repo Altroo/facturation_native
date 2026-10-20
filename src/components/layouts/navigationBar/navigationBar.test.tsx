@@ -21,6 +21,8 @@ import {
 	USERS_ADD,
 	DASHBOARD_NOTIFICATIONS,
 	BACKEND_SITE_ADMIN,
+	CLIENTS_LIST,
+	CLIENTS_ARCHIVED,
 } from '@/utils/routes';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Provider } from 'react-redux';
@@ -179,10 +181,20 @@ it('navigates to the implemented destination and leaves placeholders disabled', 
 	expect(closeDrawer).toHaveBeenCalledTimes(1);
 	expect(router.navigate).toHaveBeenCalledWith('/');
 	await fireEvent.press(screen.getByText(translations.fr.navigation.clients));
-	const archived = screen.getByRole('button', { name: translations.fr.navigation.clientsArchived });
+	for (const [name, path] of [
+		[translations.fr.navigation.clientsList, CLIENTS_LIST],
+		[translations.fr.navigation.clientsArchived, CLIENTS_ARCHIVED],
+	]) {
+		const entry = screen.getByRole('button', { name });
+		expect(entry).toBeEnabled();
+		await fireEvent.press(entry);
+		expect(router.navigate).toHaveBeenLastCalledWith(path);
+	}
+	await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.articles }));
+	const archived = screen.getByRole('button', { name: translations.fr.navigation.articlesArchived });
 	expect(archived).toBeDisabled();
 	await fireEvent.press(archived);
-	expect(router.navigate).toHaveBeenCalledTimes(1);
+	expect(router.navigate).toHaveBeenCalledTimes(3);
 });
 it('hides staff-only sections for regular users and requests logout', async () => {
 	const store = await setup();
