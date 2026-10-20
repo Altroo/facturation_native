@@ -2,7 +2,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import { Provider } from 'react-redux';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
-import NotificationPreferences from '@/app/(app)/settings/notifications';
+import NotificationPreferences from '@/app/(app)/(drawer)/settings/notifications';
 import { notificationApi } from '@/store/services/notification';
 import { auth } from '@/auth';
 import { translations } from '@/translations';

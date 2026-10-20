@@ -7,17 +7,30 @@ import { Provider } from 'react-redux';
 import { Text } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { renderRouter, screen, waitFor } from 'expo-router/testing-library';
-import AuthenticatedLayout from '@/app/(app)/_layout';
+import AuthenticatedLayout, { unstable_settings as appSettings } from '@/app/(app)/_layout';
+import DrawerLayout from '@/app/(app)/(drawer)/_layout';
 
 import type { UserClass } from '@/models/classes';
 
 jest.mock('expo-router/drawer', () => ({
 	Drawer: jest.requireActual<typeof import('expo-router')>('expo-router').Stack,
+	DrawerToggleButton: () => null,
 }));
-jest.mock('@/components/layouts/navigationBar/navigationBar', () => ({
-	NavigationDrawer: () => null,
-	Notifications: () => null,
-}));
+jest.mock('@/components/layouts/navigationBar/navigationBar', () => {
+	const actual = jest.requireActual<typeof import('@/components/layouts/navigationBar/navigationBar')>(
+		'@/components/layouts/navigationBar/navigationBar',
+	);
+	const { cloneElement } = jest.requireActual<typeof import('react')>('react');
+	return {
+		...actual,
+		NavigationDrawer: () => null,
+		Notifications: () => null,
+		useNavigationHeader: () => {
+			const options = actual.useNavigationHeader();
+			return { ...options, headerRight: () => cloneElement(options.headerRight(), {}, null) };
+		},
+	};
+});
 jest.mock('@/components/shared/themeToggle/themeToggle', () => () => null);
 jest.mock('@/components/shared/languageSwitcher/languageSwitcher', () => () => null);
 jest.mock('@/components/shared/appUpdate/appUpdate', () => () => null);
@@ -51,14 +64,17 @@ const setup = async (required: boolean, initialUrl: string) => {
 					<Stack />
 				</Provider>
 			),
-			'(app)/_layout': AuthenticatedLayout,
-			'(app)/companies/_layout': () => <Stack />,
-			'(app)/users/_layout': () => <Stack />,
-			'(app)/settings/_layout': () => <Stack />,
-			'(app)/companies/index': () => <Text>Companies</Text>,
-			'(app)/index': () => <Text>Dashboard</Text>,
-			'(app)/users/index': () => <Text>User list</Text>,
-			'(app)/settings/password': () => <Text>Change password</Text>,
+			'(app)/_layout': { default: AuthenticatedLayout, unstable_settings: appSettings },
+			'(app)/(drawer)/_layout': DrawerLayout,
+			'(app)/companies/form': () => <Text>Company form</Text>,
+			'(app)/users/form': () => <Text>User form</Text>,
+			'(app)/users/[id]/index': () => <Text>User details</Text>,
+			'(app)/companies/[id]/index': () => <Text>Company details</Text>,
+			'(app)/(drawer)/settings/_layout': () => <Stack />,
+			'(app)/(drawer)/companies/index': () => <Text>Companies</Text>,
+			'(app)/(drawer)/index': () => <Text>Dashboard</Text>,
+			'(app)/(drawer)/users/index': () => <Text>User list</Text>,
+			'(app)/(drawer)/settings/password': () => <Text>Change password</Text>,
 		},
 		{ initialUrl },
 	);

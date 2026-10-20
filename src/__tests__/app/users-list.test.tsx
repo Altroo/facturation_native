@@ -1,3 +1,4 @@
+import { toggleAutocomplete } from '@/__tests__/setupAutocomplete';
 import { configureStore } from '@reduxjs/toolkit';
 import _initReducer, { setAuthenticated } from '@/store/slices/_initSlice';
 import accountReducer, { setProfil } from '@/store/slices/accountSlice';
@@ -7,7 +8,7 @@ import { useState } from 'react';
 
 import { Provider } from 'react-redux';
 import { router } from 'expo-router';
-import UsersListClient from '@/app/(app)/users/index';
+import UsersListClient from '@/app/(app)/(drawer)/users/index';
 import {
 	useGetUsersInfiniteListInfiniteQuery,
 	useDeleteUserMutation,
@@ -238,7 +239,7 @@ it('clears selection and accumulated cards on a new search and selects only its 
 	await fireEvent.press(screen.getByRole('checkbox', { name: t.users.selectLoaded }));
 	await fireEvent.press(screen.getByLabelText(t.common.search));
 	await fireEvent.changeText(screen.getByPlaceholderText(t.dataGrid.searchPlaceholder), 'Sara');
-	await fireEvent.press(screen.getByText(t.dataGrid.searchApply));
+	await fireEvent(screen.getByPlaceholderText(t.dataGrid.searchPlaceholder), 'submitEditing');
 	expect(screen.queryByRole('button', { name: t.users.bulkDeleteBtn(3) })).toBeNull();
 	expect(screen.queryByText('Last User')).toBeNull();
 	expect(screen.queryByText('Amine Test')).toBeNull();
@@ -377,7 +378,8 @@ it('passes descending sort to the server and resets loaded pages and selection w
 it('clears selection on refresh and supports pull-to-refresh', async () => {
 	await setup();
 	await fireEvent.press(screen.getByRole('checkbox', { name: t.users.selectLoaded }));
-	await fireEvent.press(screen.getByRole('button', { name: t.common.refresh }));
+	expect(screen.queryByRole('button', { name: t.common.refresh })).toBeNull();
+	await fireEvent(screen.container.queryAll((node) => typeof node.props.onRefresh === 'function')[0]!, 'refresh');
 	expect(refetch).toHaveBeenCalledTimes(1);
 	expect(screen.queryByRole('button', { name: t.users.bulkDeleteBtn(2) })).toBeNull();
 	await fireEvent(screen.container.queryAll((node) => typeof node.props.onRefresh === 'function')[0]!, 'refresh');
@@ -386,9 +388,9 @@ it('clears selection on refresh and supports pull-to-refresh', async () => {
 it('uses stable gender values and preserves false boolean filters', async () => {
 	await setup();
 	await fireEvent.press(screen.getByLabelText(t.dataGrid.toolbarFilters));
-	await fireEvent.press(screen.getAllByText(t.users.colNom).at(-1)!);
+	await toggleAutocomplete(t.dataGrid.fieldLabel, -1);
 	await fireEvent.press(screen.getAllByText(t.users.colSexe).at(-1)!);
-	await fireEvent.press(screen.getAllByText(t.common.value).at(-1)!);
+	await toggleAutocomplete(t.common.value, -1);
 	await fireEvent.press(screen.getByText(t.users.filterSexeFemme));
 	await fireEvent.press(screen.getByText(t.dataGrid.searchApply));
 	expect(useGetUsersInfiniteListInfiniteQuery).toHaveBeenLastCalledWith(
@@ -397,9 +399,9 @@ it('uses stable gender values and preserves false boolean filters', async () => 
 	);
 	await fireEvent.press(screen.getByLabelText(t.dataGrid.toolbarFilters));
 	await fireEvent.press(screen.getByLabelText(t.common.addFilter));
-	await fireEvent.press(screen.getAllByText(t.users.colNom).at(-1)!);
+	await toggleAutocomplete(t.dataGrid.fieldLabel, -1);
 	await fireEvent.press(screen.getAllByText(t.users.colActive).at(-1)!);
-	await fireEvent.press(screen.getAllByText(t.common.yes).at(-1)!);
+	await toggleAutocomplete(t.common.value, -1);
 	await fireEvent.press(screen.getAllByText(t.common.no).at(-1)!);
 	await fireEvent.press(screen.getByText(t.dataGrid.searchApply));
 	expect(useGetUsersInfiniteListInfiniteQuery).toHaveBeenLastCalledWith(

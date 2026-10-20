@@ -1,16 +1,19 @@
 import { configureStore } from '@reduxjs/toolkit';
+import type { ReactNode } from 'react';
 import _initReducer, { setAuthenticated, initToken } from '@/store/slices/_initSlice';
 import accountReducer, { setProfil, setGroupes } from '@/store/slices/accountSlice';
 import companiesReducer, { setUserCompanies } from '@/store/slices/companiesSlice';
 import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
-import { router, Stack } from 'expo-router';
+import { isHiddenFromAccessibility } from '@testing-library/react-native';
+import { router } from 'expo-router';
 import { Text } from 'react-native';
 import { Provider } from 'react-redux';
 import { RootNavigator } from '@/app/_layout';
 import UsersForm from '@/app/(app)/users/form';
 import CompaniesForm from '@/app/(app)/companies/form';
-import UsersLayout, { unstable_settings as usersSettings } from '@/app/(app)/users/_layout';
-import CompaniesLayout, { unstable_settings as companiesSettings } from '@/app/(app)/companies/_layout';
+import SettingsLayout from '@/app/(app)/(drawer)/settings/_layout';
+import AuthenticatedLayout, { unstable_settings as appSettings } from '@/app/(app)/_layout';
+import DrawerLayout from '@/app/(app)/(drawer)/_layout';
 
 import {
 	useGetUserQuery,
@@ -38,16 +41,28 @@ jest.mock('@expo/vector-icons', () => ({ MaterialIcons: 'Icon' }));
 jest.mock('react-native-gesture-handler', () => ({
 	GestureHandlerRootView: jest.requireActual<typeof import('react-native')>('react-native').View,
 }));
-jest.mock('expo-router/drawer', () => ({
-	DrawerToggleButton: jest.requireActual('expo-router/build/react-navigation/drawer/views/DrawerToggleButton')
-		.DrawerToggleButton,
+jest.mock('react-native-drawer-layout', () => ({
+	Drawer: ({ children }: { children: ReactNode }) => children,
+	useDrawerProgress: () => ({ value: 0 }),
 }));
-jest.mock('@/components/layouts/navigationBar/navigationBar', () => ({
-	NavigationDrawer: () => null,
-	Notifications: () => null,
-}));
+jest.mock('@/components/layouts/navigationBar/navigationBar', () => {
+	const actual = jest.requireActual<typeof import('@/components/layouts/navigationBar/navigationBar')>(
+		'@/components/layouts/navigationBar/navigationBar',
+	);
+	const { cloneElement } = jest.requireActual<typeof import('react')>('react');
+	return {
+		...actual,
+		NavigationDrawer: () => null,
+		Notifications: () => null,
+		useNavigationHeader: () => {
+			const options = actual.useNavigationHeader();
+			return { ...options, headerRight: () => cloneElement(options.headerRight(), {}, null) };
+		},
+	};
+});
 jest.mock('@/components/shared/themeToggle/themeToggle', () => () => null);
 jest.mock('@/components/shared/languageSwitcher/languageSwitcher', () => () => null);
+jest.mock('@/components/shared/appUpdate/appUpdate', () => () => null);
 jest.mock('@/components/formikElements/customSquareImageUploading/customSquareImageUploading', () => () => null);
 jest.mock('@/utils/hooks', () => ({
 	...jest.requireActual<typeof import('@/utils/hooks')>('@/utils/hooks'),
@@ -130,6 +145,12 @@ const addUser = jest.fn();
 const addCompany = jest.fn();
 const memberships = [{ id: 4, raison_sociale: 'Company Four', role: 'Caissier', uses_foreign_currency: false }];
 
+const pressNavbarBack = async () => {
+	const screens = screen.container.queryAll((node) => node.type === 'RNSScreen' && !isHiddenFromAccessibility(node));
+	expect(screens.length).toBeGreaterThan(0);
+	await fireEvent(screens.at(-1)!, 'headerBackButtonClicked');
+};
+
 const setup = async (initialUrl: string, access: 'staff' | 'guest' | 'nonstaff' = 'staff') => {
 	const store = configureStore({
 		reducer: { _init: _initReducer, account: accountReducer, companies: companiesReducer },
@@ -150,16 +171,19 @@ const setup = async (initialUrl: string, access: 'staff' | 'guest' | 'nonstaff' 
 			),
 			login: () => <Text>Guest login</Text>,
 			'reset-password/index': () => <Text>Recovery</Text>,
-			'(app)/_layout': () => <Stack screenOptions={{ headerShown: false }} />,
-			'(app)/index': () => <Text>Dashboard</Text>,
-			'(app)/users/_layout': { default: UsersLayout, unstable_settings: usersSettings },
-			'(app)/users/index': () => <Text>Users list</Text>,
+			'(app)/_layout': { default: AuthenticatedLayout, unstable_settings: appSettings },
+			'(app)/(drawer)/_layout': DrawerLayout,
+			'(app)/(drawer)/index': () => <Text>Dashboard</Text>,
+			'(app)/(drawer)/users/index': () => <Text>Users list</Text>,
 			'(app)/users/[id]/index': () => <Text>User details</Text>,
 			'(app)/users/form': UsersForm,
-			'(app)/companies/_layout': { default: CompaniesLayout, unstable_settings: companiesSettings },
-			'(app)/companies/index': () => <Text>Companies list</Text>,
+			'(app)/(drawer)/companies/index': () => <Text>Companies list</Text>,
 			'(app)/companies/[id]/index': () => <Text>Company details</Text>,
 			'(app)/companies/form': CompaniesForm,
+			'(app)/(drawer)/settings/_layout': SettingsLayout,
+			'(app)/(drawer)/settings/edit-profile': () => <Text>Profile content</Text>,
+			'(app)/(drawer)/settings/password': () => <Text>Password content</Text>,
+			'(app)/(drawer)/settings/notifications': () => <Text>Notification preferences content</Text>,
 		},
 		{ initialUrl },
 	);
@@ -188,6 +212,31 @@ beforeEach(() => {
 		.spyOn(companyApi.endpoints.getUserCompanies, 'initiate')
 		.mockImplementation((() => () => ({ unwrap: async () => memberships, unsubscribe: jest.fn() })) as never);
 });
+
+describe('settings header navigation', () => {
+	it.each(['edit-profile', 'password', 'notifications'])('retains the drawer on a cold %s screen', async (page) => {
+		const result = await setup('/settings/' + page);
+		expect(result.getPathname()).toBe('/settings/' + page);
+		expect(router.canGoBack()).toBe(false);
+		expect(screen.getByRole('button', { name: t.common.toggleDrawer })).toBeOnTheScreen();
+	});
+
+	it.each(['password', 'notifications'])('retains native Back after navigating from profile to %s', async (page) => {
+		const result = await setup('/settings/edit-profile');
+		await act(async () => router.push(('/settings/' + page) as '/settings/password' | '/settings/notifications'));
+		await waitFor(() => expect(result.getPathname()).toBe('/settings/' + page));
+		expect(screen.queryByRole('button', { name: t.common.toggleDrawer })).toBeNull();
+		const headers = screen.container.queryAll(
+			(node) => node.props.backButtonInCustomView !== undefined && node.props.hideBackButton !== undefined,
+		);
+		expect(
+			headers.some((node) => node.props.backButtonInCustomView === true && node.props.hideBackButton === false),
+		).toBe(true);
+		await pressNavbarBack();
+		await waitFor(() => expect(result.getPathname()).toBe('/settings/edit-profile'));
+		expect(screen.getByRole('button', { name: t.common.toggleDrawer })).toBeOnTheScreen();
+	});
+});
 afterEach(() => jest.restoreAllMocks());
 
 describe.each(['users', 'companies'] as const)('%s form route', (entity) => {
@@ -197,6 +246,80 @@ describe.each(['users', 'companies'] as const)('%s form route', (entity) => {
 	const editTitle = entity === 'users' ? t.users.editTitle : t.companies.editTitle;
 	const addTitle = entity === 'users' ? t.users.addTitle : t.companies.addTitle;
 	const fieldValue = (id: number) => (entity === 'users' ? 'User ' : 'Company ') + id;
+
+	it.each(['create', 'edit', 'details'] as const)(
+		'keeps the native back icon visible on a cold %s screen',
+		async (mode) => {
+			const url = '/' + entity + (mode === 'create' ? '/form' : mode === 'edit' ? '/form?id=7' : '/7');
+			const title =
+				mode === 'create'
+					? addTitle
+					: mode === 'edit'
+						? editTitle
+						: entity === 'users'
+							? t.users.detailsTitle
+							: t.companies.detailsTitle;
+			const result = await setup(url);
+			await screen.findAllByRole('header', { name: title });
+			const headers = screen.container.queryAll(
+				(node) => node.props.backButtonInCustomView !== undefined && node.props.hideBackButton !== undefined,
+			);
+			expect(headers.length).toBeGreaterThan(0);
+			expect(
+				headers.some((node) => node.props.backButtonInCustomView === true && node.props.hideBackButton === false),
+			).toBe(true);
+			await pressNavbarBack();
+			await waitFor(() => expect(result.getPathname()).toBe('/'));
+			expect(screen.getByRole('button', { name: t.common.toggleDrawer })).toBeOnTheScreen();
+		},
+	);
+
+	it('returns to the dashboard after opening create directly from its menu', async () => {
+		const result = await setup('/');
+		await act(async () => router.push(addRoute));
+		await screen.findByLabelText(label);
+		await pressNavbarBack();
+		await waitFor(() => expect(result.getPathname()).toBe('/'));
+		expect(screen.getByText('Dashboard')).toBeOnTheScreen();
+	});
+
+	it('returns to the list when create was opened from that list', async () => {
+		const result = await setup('/' + entity);
+		await act(async () => router.push(addRoute));
+		await screen.findByLabelText(label);
+		await pressNavbarBack();
+		await waitFor(() => expect(result.getPathname()).toBe('/' + entity));
+	});
+
+	it('returns to the previous module instead of a fabricated list', async () => {
+		const previous = entity === 'users' ? '/companies/7' : '/users/7';
+		const result = await setup(previous);
+		await act(async () => router.push(addRoute));
+		await screen.findByLabelText(label);
+		await pressNavbarBack();
+		await waitFor(() => expect(result.getPathname()).toBe(previous));
+	});
+
+	it('follows the previous activity after returning to a module that was already visited', async () => {
+		const previous = entity === 'users' ? '/companies/7' : '/users/7';
+		const result = await setup('/' + entity + '/7');
+		await act(async () => router.push(previous));
+		await waitFor(() => expect(result.getPathname()).toBe(previous));
+		await act(async () => router.push(addRoute));
+		await screen.findByLabelText(label);
+		await pressNavbarBack();
+		await waitFor(() => expect(result.getPathname()).toBe(previous));
+	});
+
+	it('returns to the preceding edit screen after opening another create form', async () => {
+		const result = await setup('/' + entity + '/form?id=7');
+		await screen.findByLabelText(label);
+		await act(async () => router.push(addRoute));
+		await waitFor(() => expect(screen.getByLabelText(label)).toHaveProp('value', ''));
+		await pressNavbarBack();
+		await waitFor(() => expect(result.getSearchParams()).toHaveProperty('id', '7'));
+		expect(screen.getByLabelText(label)).toHaveProp('value', fieldValue(7));
+	});
 
 	it('reads edit IDs from the actual router and discards drafts when the ID changes', async () => {
 		await setup('/' + entity + '/form?id=7');
@@ -254,17 +377,15 @@ describe.each(['users', 'companies'] as const)('%s form route', (entity) => {
 		expect(jest.mocked(useGetCompanyQuery).mock.calls.every(([, options]) => options?.skip === true)).toBe(true);
 	});
 
-	it('retains Back and the list menu when a cold link is denied', async () => {
+	it('retains Back to the dashboard when a cold link is denied', async () => {
 		const result = await setup('/' + entity + '/form?id=7', 'nonstaff');
 		await screen.findByText(t.noPermission.description);
 		expect(screen.getByRole('header', { name: editTitle })).toBeOnTheScreen();
 		expect(router.canGoBack()).toBe(true);
 		// The native stack draws Back outside React; exercise its real router action.
-		await act(async () => router.back());
-		await waitFor(() => expect(result.getPathname()).toBe('/' + entity));
+		await pressNavbarBack();
+		await waitFor(() => expect(result.getPathname()).toBe('/'));
 		expect(screen.getByRole('button', { name: t.common.toggleDrawer })).toBeOnTheScreen();
-		const icon = screen.container.queryAll((node) => node.type === 'Image').find((node) => node.props.tintColor);
-		expect(icon).toHaveProp('tintColor', '#0f172a');
 		expect(jest.mocked(useGetUserQuery).mock.calls.every(([, options]) => options?.skip === true)).toBe(true);
 		expect(jest.mocked(useGetCompanyQuery).mock.calls.every(([, options]) => options?.skip === true)).toBe(true);
 	});

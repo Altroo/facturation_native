@@ -1,9 +1,10 @@
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, cleanup, fireEvent, render, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { Provider } from 'react-redux';
+import { Platform } from 'react-native';
 import { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
 import * as ImagePicker from 'expo-image-picker';
 import type { CropZoomProps, CropZoomRefType } from 'react-native-zoom-toolkit';
-import EditProfilClient from '@/app/(app)/settings/edit-profile';
+import EditProfilClient from '@/app/(app)/(drawer)/settings/edit-profile';
 import { makeStore } from '@/store/store';
 import { rootSaga } from '@/store/sagas';
 import { profilApi } from '@/store/services/account';
@@ -130,6 +131,27 @@ const setup = async () =>
 	);
 const submit = async () => await fireEvent.press(screen.getByRole('button', { name: t.settings.updateBtn }));
 
+it('keeps typing and gender selection responsive after correcting validation errors', async () => {
+	adapter.mockImplementation(async (config) =>
+		response(config, { ...profile, first_name: '', last_name: '', gender: '' }),
+	);
+	const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+	await setup();
+	await screen.findByLabelText(t.settings.fieldNom);
+	await submit();
+	expect(screen.getByText(t.common.correctErrors)).toBeOnTheScreen();
+	await user.type(screen.getByLabelText(t.settings.fieldNom), 'Valid');
+	await user.type(screen.getByLabelText(t.settings.fieldPrenom), 'Li');
+	expect(screen.getByLabelText(t.settings.fieldNom)).toHaveProp('value', 'Valid');
+	expect(screen.getByLabelText(t.settings.fieldPrenom)).toHaveProp('value', 'Li');
+	expect(screen.queryByText(t.common.correctErrors)).toBeNull();
+	await user.press(screen.getByRole('button', { name: t.settings.fieldGenre }));
+	expect(screen.getByRole('radio', { name: 'Femme' })).toBeOnTheScreen();
+	await user.press(screen.getByRole('radio', { name: 'Femme' }));
+	expect(screen.getByRole('button', { name: t.settings.fieldGenre })).toHaveTextContent('Femme');
+	expect(screen.queryByTestId('dropdown-options')).toBeNull();
+});
+
 it('preserves existing images and readonly account fields when merging the partial profile PATCH response', async () => {
 	const partial = {
 		first_name: 'Updated',
@@ -187,6 +209,9 @@ it('uploads a selected image and reuses the saved URLs on the next edit', async 
 	});
 	await setup();
 	await fireEvent.press(await screen.findByRole('button', { name: t.common.editPhoto }));
+	const dismissSource = screen.getByTestId('image-source-modal').props.onDismiss as () => void;
+	await fireEvent.press(screen.getByRole('button', { name: t.common.chooseFromGallery }));
+	if (Platform.OS === 'ios') await act(async () => dismissSource());
 	await screen.findByTestId('cropper');
 	expect(adapter.mock.calls.some(([config]) => config.method === 'patch')).toBe(false);
 	await fireEvent.press(screen.getByRole('button', { name: t.common.confirm }));

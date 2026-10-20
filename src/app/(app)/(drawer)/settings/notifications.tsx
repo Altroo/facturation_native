@@ -1,6 +1,6 @@
+import CustomSwitch from '@/components/formikElements/customSwitch/customSwitch';
 import { useState } from 'react';
-import { runWithCleanup } from '@/utils/runWithCleanup';
-import { ScrollView, Text, View, Switch } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import ApiProgress from '@/components/formikElements/apiLoading/apiProgress/apiProgress';
 import ApiAlert from '@/components/formikElements/apiLoading/apiAlert/apiAlert';
 import { useFormik } from 'formik';
@@ -9,7 +9,7 @@ import {
 	useUpdateNotificationPreferencesMutation,
 } from '@/store/services/notification';
 import { useLanguage, useToast } from '@/utils/hooks';
-import { normalizeApiError, setFormikAutoErrors } from '@/utils/helpers';
+import { normalizeApiError, runWithCleanup, setFormikAutoErrors } from '@/utils/helpers';
 import type { NotificationPreferenceFormValues } from '@/types/notificationTypes';
 import CustomDropDownSelect from '@/components/formikElements/customDropDownSelect/customDropDownSelect';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
@@ -98,96 +98,36 @@ const NotificationsClient = () => {
 				{t.settings.notificationPreferences}
 			</Text>
 			<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
-				<View className={'flex-row items-center gap-3 py-2 ' + (isPending ? 'opacity-60' : '')}>
-					<View className="flex-1 gap-1">
-						<Text className="text-ink dark:text-slate-100 font-poppins-medium text-sm">
-							{t.settings.notifyOverdueInvoice}
-						</Text>
-					</View>
-					<Switch
-						accessibilityLabel={t.settings.notifyOverdueInvoice}
-						value={formik.values.notify_overdue_invoice}
-						onValueChange={(value) => void formik.setFieldValue('notify_overdue_invoice', value)}
-						disabled={isPending}
-						trackColor={{
-							false: '#cbd5e1',
-							true: '#0274d7',
-						}}
-						thumbColor="#fff"
-					/>
-				</View>
-				<View className={'flex-row items-center gap-3 py-2 ' + (isPending ? 'opacity-60' : '')}>
-					<View className="flex-1 gap-1">
-						<Text className="text-ink dark:text-slate-100 font-poppins-medium text-sm">
-							{t.settings.notifyExpiringQuote}
-						</Text>
-					</View>
-					<Switch
-						accessibilityLabel={t.settings.notifyExpiringQuote}
-						value={formik.values.notify_expiring_quote}
-						onValueChange={(value) => void formik.setFieldValue('notify_expiring_quote', value)}
-						disabled={isPending}
-						trackColor={{
-							false: '#cbd5e1',
-							true: '#0274d7',
-						}}
-						thumbColor="#fff"
-					/>
-				</View>
-				<View className={'flex-row items-center gap-3 py-2 ' + (isPending ? 'opacity-60' : '')}>
-					<View className="flex-1 gap-1">
-						<Text className="text-ink dark:text-slate-100 font-poppins-medium text-sm">
-							{t.settings.notifyUninvoicedBdl}
-						</Text>
-					</View>
-					<Switch
-						accessibilityLabel={t.settings.notifyUninvoicedBdl}
-						value={formik.values.notify_uninvoiced_bdl}
-						onValueChange={(value) => void formik.setFieldValue('notify_uninvoiced_bdl', value)}
-						disabled={isPending}
-						trackColor={{
-							false: '#cbd5e1',
-							true: '#0274d7',
-						}}
-						thumbColor="#fff"
-					/>
-				</View>
-				<View className={'flex-row items-center gap-3 py-2 ' + (isPending ? 'opacity-60' : '')}>
-					<View className="flex-1 gap-1">
-						<Text className="text-ink dark:text-slate-100 font-poppins-medium text-sm">
-							{t.settings.notifyDocumentCreated}
-						</Text>
-					</View>
-					<Switch
-						accessibilityLabel={t.settings.notifyDocumentCreated}
-						value={formik.values.notify_document_created}
-						onValueChange={(value) => void formik.setFieldValue('notify_document_created', value)}
-						disabled={isPending}
-						trackColor={{
-							false: '#cbd5e1',
-							true: '#0274d7',
-						}}
-						thumbColor="#fff"
-					/>
-				</View>
-				<View className={'flex-row items-center gap-3 py-2 ' + (isPending ? 'opacity-60' : '')}>
-					<View className="flex-1 gap-1">
-						<Text className="text-ink dark:text-slate-100 font-poppins-medium text-sm">
-							{t.settings.notifyLowStock}
-						</Text>
-					</View>
-					<Switch
-						accessibilityLabel={t.settings.notifyLowStock}
-						value={formik.values.notify_low_stock}
-						onValueChange={(value) => void formik.setFieldValue('notify_low_stock', value)}
-						disabled={isPending}
-						trackColor={{
-							false: '#cbd5e1',
-							true: '#0274d7',
-						}}
-						thumbColor="#fff"
-					/>
-				</View>
+				<CustomSwitch
+					label={t.settings.notifyOverdueInvoice}
+					value={formik.values.notify_overdue_invoice}
+					onValueChange={(value) => void formik.setFieldValue('notify_overdue_invoice', value)}
+					disabled={isPending}
+				/>
+				<CustomSwitch
+					label={t.settings.notifyExpiringQuote}
+					value={formik.values.notify_expiring_quote}
+					onValueChange={(value) => void formik.setFieldValue('notify_expiring_quote', value)}
+					disabled={isPending}
+				/>
+				<CustomSwitch
+					label={t.settings.notifyUninvoicedBdl}
+					value={formik.values.notify_uninvoiced_bdl}
+					onValueChange={(value) => void formik.setFieldValue('notify_uninvoiced_bdl', value)}
+					disabled={isPending}
+				/>
+				<CustomSwitch
+					label={t.settings.notifyDocumentCreated}
+					value={formik.values.notify_document_created}
+					onValueChange={(value) => void formik.setFieldValue('notify_document_created', value)}
+					disabled={isPending}
+				/>
+				<CustomSwitch
+					label={t.settings.notifyLowStock}
+					value={formik.values.notify_low_stock}
+					onValueChange={(value) => void formik.setFieldValue('notify_low_stock', value)}
+					disabled={isPending}
+				/>
 				<CustomDropDownSelect
 					label={t.settings.lowStockRepeatHours}
 					value={formik.values.low_stock_repeat_hours + ' h'}
@@ -212,11 +152,7 @@ const NotificationsClient = () => {
 					helperText={formik.errors.quote_expiry_days}
 					error={Boolean(formik.errors.quote_expiry_days)}
 				/>
-				{!!formik.errors.globalError && (
-					<Text accessibilityRole="alert" className="font-sans dark:text-slate-100 text-red-600">
-						{formik.errors.globalError}
-					</Text>
-				)}
+				{!!formik.errors.globalError && <ApiAlert errorDetails={formik.errors.globalError} />}
 				<PrimaryLoadingButton
 					buttonText={t.settings.save}
 					loading={isPending || isUpdateLoading}

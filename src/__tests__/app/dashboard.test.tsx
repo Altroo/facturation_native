@@ -4,7 +4,7 @@ import accountReducer from '@/store/slices/accountSlice';
 import companiesReducer, { setUserCompanies } from '@/store/slices/companiesSlice';
 import { render } from '@testing-library/react-native';
 import { Provider } from 'react-redux';
-import DashboardPage from '@/app/(app)';
+import DashboardPage from '@/app/(app)/(drawer)';
 
 jest.mock('@/utils/hooks', () => ({
 	...jest.requireActual<typeof import('@/utils/hooks')>('@/utils/hooks'),

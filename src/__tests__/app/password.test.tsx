@@ -1,7 +1,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Provider } from 'react-redux';
 import { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
-import Password from '@/app/(app)/settings/password';
+import Password from '@/app/(app)/(drawer)/settings/password';
 import { makeStore } from '@/store/store';
 import { rootSaga } from '@/store/sagas';
 import { profilApi } from '@/store/services/account';
@@ -89,11 +89,8 @@ const fill = async (confirmation = 'new-example-pass') => {
 };
 const submit = async () => await fireEvent.press(screen.getByRole('button', { name: t.settings.changePasswordBtn }));
 
-it('changes the password, clears the default-password warning, refreshes the profile, and resets the form', async () => {
-	const refreshed = { ...profile, default_password_set: false, date_updated: '2026-10-14T10:00:00Z' };
-	adapter.mockImplementation(async (config) =>
-		response(config, config.method === 'put' ? '' : refreshed, config.method === 'put' ? 204 : 200),
-	);
+it('changes the password, clears the default-password warning through its action, and resets the form', async () => {
+	adapter.mockImplementation(async (config) => response(config, '', 204));
 	await setup();
 	expect(screen.getByText(t.settings.defaultPasswordWarning)).toBeOnTheScreen();
 	await fill();
@@ -105,8 +102,8 @@ it('changes the password, clears the default-password warning, refreshes the pro
 		new_password: 'new-example-pass',
 		new_password2: 'new-example-pass',
 	});
-	expect(adapter.mock.calls[1][0]).toMatchObject({ method: 'get', url: '/account/profil/' });
-	expect(getProfilState(store.getState())).toEqual(refreshed);
+	expect(adapter).toHaveBeenCalledTimes(1);
+	expect(getProfilState(store.getState())).toEqual({ ...profile, default_password_set: false });
 	expect(screen.queryByText(t.settings.defaultPasswordWarning)).toBeNull();
 	for (const label of [t.settings.fieldOldPassword, t.settings.fieldNewPassword, t.settings.fieldConfirmPassword])
 		expect(screen.getByLabelText(label)).toHaveProp('value', '');
@@ -114,11 +111,16 @@ it('changes the password, clears the default-password warning, refreshes the pro
 });
 
 it('keeps a successful password change and cleared default flag when the follow-up profile request fails', async () => {
+	let profileReads = 0;
 	adapter.mockImplementation(async (config) =>
 		config.method === 'put'
 			? response(config, '', 204)
-			: reject(config, { detail: ['Profile temporarily unavailable'] }, 503),
+			: ++profileReads === 1
+				? response(config, profile)
+				: reject(config, { detail: ['Profile temporarily unavailable'] }, 503),
 	);
+	const subscription = store.dispatch(profilApi.endpoints.getProfil.initiate());
+	await subscription.unwrap();
 	await setup();
 	await fill();
 	await submit();
@@ -127,6 +129,8 @@ it('keeps a successful password change and cleared default flag when the follow-
 	expect(screen.queryByText(t.settings.defaultPasswordWarning)).toBeNull();
 	expect(screen.getByLabelText(t.settings.fieldOldPassword)).toHaveProp('value', '');
 	expect(mockError).not.toHaveBeenCalled();
+	await waitFor(() => expect(profileReads).toBe(2));
+	subscription.unsubscribe();
 });
 
 it('shows an incorrect current-password error without clearing the inputs or the default flag', async () => {

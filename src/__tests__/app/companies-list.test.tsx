@@ -1,3 +1,4 @@
+import { toggleAutocomplete } from '@/__tests__/setupAutocomplete';
 import { configureStore } from '@reduxjs/toolkit';
 import _initReducer, { setAuthenticated } from '@/store/slices/_initSlice';
 import accountReducer, { setProfil } from '@/store/slices/accountSlice';
@@ -8,7 +9,7 @@ import { Platform } from 'react-native';
 import type { CompaniesQueryParams } from '@/types/companyTypes';
 import { Provider } from 'react-redux';
 import { router } from 'expo-router';
-import CompaniesList from '@/app/(app)/companies/index';
+import CompaniesList from '@/app/(app)/(drawer)/companies/index';
 
 import {
 	useGetCompaniesInfiniteListInfiniteQuery,
@@ -60,8 +61,6 @@ const selectionResponse = (value: unknown) => ({
 	abort: abortAllIds,
 	unsubscribe: unsubscribeAllIds,
 });
-const refreshMemberships = jest.fn();
-const unsubscribe = jest.fn();
 const refetch = jest.fn();
 const fetchNextPage = jest.fn();
 type QueryState = { pageCount: number; status: 'ready' | 'loading' | 'error' };
@@ -144,15 +143,11 @@ beforeEach(() => {
 	fetchNextPage.mockReset().mockResolvedValue(undefined);
 	jest.mocked(useGetCompaniesInfiniteListInfiniteQuery).mockImplementation(useCompaniesQuery as never);
 	suspend.mockReturnValue({ unwrap: () => Promise.resolve() });
-	refreshMemberships.mockResolvedValue([]);
 	jest.mocked(useSuspendCompanyMutation).mockReturnValue([suspend, {}] as never);
 	bulkSuspend.mockReturnValue({ unwrap: () => Promise.resolve({ suspended: 2 }) });
 	fetchAllCompanyIds.mockReset().mockReturnValue(selectionResponse(companyPage([4, 8])));
 	jest.mocked(useBulkSuspendCompaniesMutation).mockReturnValue([bulkSuspend, {}] as never);
 	jest.mocked(useLazyGetCompaniesListQuery).mockReturnValue([fetchAllCompanyIds, { isFetching: false }] as never);
-	jest
-		.mocked(companyApi.endpoints.getUserCompanies.initiate)
-		.mockImplementation((() => () => ({ unwrap: refreshMemberships, unsubscribe })) as never);
 });
 
 it('renders every original company column in its card and translates employee counts', async () => {
@@ -230,7 +225,7 @@ it('appends companies in ten-item requests and starts a new result set when sear
 
 	await fireEvent.press(screen.getByLabelText(translations.fr.common.search));
 	await fireEvent.changeText(screen.getByPlaceholderText(translations.fr.dataGrid.searchPlaceholder), 'Company Search');
-	await fireEvent.press(screen.getByText(translations.fr.dataGrid.searchApply));
+	await fireEvent(screen.getByPlaceholderText(translations.fr.dataGrid.searchPlaceholder), 'submitEditing');
 	expect(useGetCompaniesInfiniteListInfiniteQuery).toHaveBeenLastCalledWith(
 		{ pageSize: 10, search: 'Company Search' },
 		{ skip: false, refetchOnMountOrArgChange: true },
@@ -276,7 +271,7 @@ it('supports both pull-to-refresh and the explicit refresh action', async () => 
 	await setup();
 	await fireEvent(screen.container.queryAll((node) => typeof node.props.onRefresh === 'function')[0]!, 'refresh');
 	expect(refetch).toHaveBeenCalledTimes(1);
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.refresh }));
+	await fireEvent(screen.container.queryAll((node) => typeof node.props.onRefresh === 'function')[0]!, 'refresh');
 	expect(refetch).toHaveBeenCalledTimes(2);
 });
 it('allows staff company creation regardless of membership role', async () => {
@@ -310,8 +305,7 @@ it('suspends the chosen company and removes its accessible membership before ref
 	await waitFor(() => expect(mockSuccess).toHaveBeenCalledWith(translations.fr.companies.suspendSuccess));
 	expect(suspend).toHaveBeenCalledWith({ id: 4 });
 	expect(dispatch).toHaveBeenCalledWith(companiesSetUserCompaniesAction([]));
-	expect(refreshMemberships).toHaveBeenCalledTimes(1);
-	expect(unsubscribe).toHaveBeenCalledTimes(1);
+	expect(companyApi.endpoints.getUserCompanies.initiate).not.toHaveBeenCalled();
 	expect(screen.queryByTestId('action-modal')).toBeNull();
 });
 it('closes the modal on suspension failure and does not remove memberships', async () => {
@@ -327,10 +321,9 @@ it('closes the modal on suspension failure and does not remove memberships', asy
 	expect(screen.queryByTestId('action-modal')).toBeNull();
 	expect(mockError).toHaveBeenCalledWith(translations.fr.companies.suspendError);
 	expect(dispatch).not.toHaveBeenCalledWith(companiesSetUserCompaniesAction([]));
-	expect(refreshMemberships).not.toHaveBeenCalled();
+	expect(companyApi.endpoints.getUserCompanies.initiate).not.toHaveBeenCalled();
 });
-it('keeps successful suspension when refreshing memberships fails', async () => {
-	refreshMemberships.mockRejectedValue(new Error('Refresh unavailable'));
+it('finishes suspension without starting a separate membership request', async () => {
 	const { dispatch } = await setup();
 	await fireEvent.press(screen.getByRole('button', { name: translations.fr.companies.suspendBtn }));
 	await fireEvent.press(
@@ -341,7 +334,6 @@ it('keeps successful suspension when refreshing memberships fails', async () => 
 	await waitFor(() => expect(mockSuccess).toHaveBeenCalledWith(translations.fr.companies.suspendSuccess));
 	expect(dispatch).toHaveBeenCalledWith(companiesSetUserCompaniesAction([]));
 	expect(mockError).not.toHaveBeenCalled();
-	expect(unsubscribe).toHaveBeenCalledTimes(1);
 });
 it('targets an appended company for suspension and preserves the earlier membership', async () => {
 	const { dispatch } = await setup();
@@ -381,7 +373,7 @@ it('passes company ordering to the server and resets loaded pages and all-matchi
 	const t = translations.fr;
 	await reachEnd();
 	await screen.findByText('Company Eight');
-	await fireEvent.press(screen.getByRole('button', { name: t.shared.selectAllMatching(2) }));
+	await fireEvent.press(screen.getByRole('checkbox', { name: t.shared.selectAllMatching(2) }));
 	await screen.findByText(t.shared.allMatchingSelected(2));
 	await fireEvent.press(screen.getByRole('button', { name: t.dataGrid.toolbarSort }));
 	await fireEvent.press(screen.getByRole('button', { name: t.dataGrid.sortField }));
@@ -421,24 +413,26 @@ it('does not offer unsupported OR filtering', async () => {
 	expect(screen.getByText(translations.fr.filterPanel.and)).toBeOnTheScreen();
 	expect(screen.queryByText(translations.fr.filterPanel.or)).toBeNull();
 });
-it('keeps the applied search after a fast Apply and after cancelling a later draft', async () => {
+it('keeps inline search open after submitting and clears a later draft directly', async () => {
 	await setup();
 	await fireEvent.press(screen.getByLabelText(translations.fr.common.search));
 	await fireEvent.changeText(screen.getByPlaceholderText(translations.fr.dataGrid.searchPlaceholder), 'Company Search');
-	await fireEvent.press(screen.getByText(translations.fr.dataGrid.searchApply));
+	await fireEvent(screen.getByPlaceholderText(translations.fr.dataGrid.searchPlaceholder), 'submitEditing');
 	await waitFor(() =>
 		expect(useGetCompaniesInfiniteListInfiniteQuery).toHaveBeenLastCalledWith(
 			expect.objectContaining({ search: 'Company Search' }),
 			expect.anything(),
 		),
 	);
-	await fireEvent.press(screen.getByLabelText(translations.fr.common.search));
+	expect(screen.getByPlaceholderText(translations.fr.dataGrid.searchPlaceholder)).toHaveProp('value', 'Company Search');
 	await fireEvent.changeText(screen.getByPlaceholderText(translations.fr.dataGrid.searchPlaceholder), 'Discard me');
-	await fireEvent.press(screen.getByText(translations.fr.common.cancel));
+	await fireEvent.press(screen.getByRole('button', { name: translations.fr.dataGrid.searchClear }));
 	expect(useGetCompaniesInfiniteListInfiniteQuery).toHaveBeenLastCalledWith(
-		expect.objectContaining({ search: 'Company Search' }),
+		expect.objectContaining({ search: '' }),
 		expect.anything(),
 	);
+	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.close }));
+	expect(screen.queryByPlaceholderText(translations.fr.dataGrid.searchPlaceholder)).toBeNull();
 });
 
 it('combines both date bounds in the web preview using the Django date contract', async () => {
@@ -446,13 +440,13 @@ it('combines both date bounds in the web preview using the Django date contract'
 	try {
 		await setup();
 		await fireEvent.press(screen.getByLabelText(translations.fr.dataGrid.toolbarFilters));
-		await fireEvent.press(screen.getAllByText(translations.fr.companies.colRaisonSociale).at(-1)!);
+		await toggleAutocomplete(translations.fr.dataGrid.fieldLabel, -1);
 		await fireEvent.press(screen.getAllByText(translations.fr.common.dateCreation).at(-1)!);
 		await fireEvent.changeText(screen.getByPlaceholderText('YYYY-MM-DD'), '2026-10-01');
 		await fireEvent.press(screen.getByLabelText(translations.fr.common.addFilter));
-		await fireEvent.press(screen.getAllByText(translations.fr.companies.colRaisonSociale).at(-1)!);
+		await toggleAutocomplete(translations.fr.dataGrid.fieldLabel, -1);
 		await fireEvent.press(screen.getAllByText(translations.fr.common.dateCreation).at(-1)!);
-		await fireEvent.press(screen.getAllByText(translations.fr.dataGrid.operatorLabels.onOrBefore).at(-1)!);
+		await toggleAutocomplete(translations.fr.dataGrid.operatorLabel, -1);
 		await fireEvent.press(screen.getByText(translations.fr.dataGrid.operatorLabels.onOrAfter));
 		await fireEvent.changeText(screen.getAllByPlaceholderText('YYYY-MM-DD').at(-1)!, '2026-01-01');
 		await fireEvent.press(screen.getByText(translations.fr.dataGrid.searchApply));
@@ -470,7 +464,7 @@ it('combines both date bounds in the web preview using the Django date contract'
 
 it('selects matching companies beyond loaded cards and suspends the explicit IDs only after confirmation', async () => {
 	const { dispatch } = await setup();
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.shared.selectAllMatching(2) }));
+	await fireEvent.press(screen.getByRole('checkbox', { name: translations.fr.shared.selectAllMatching(2) }));
 	await screen.findByText(translations.fr.shared.allMatchingSelected(2));
 	expect(screen.queryByText('Company Eight')).toBeNull();
 	expect(fetchAllCompanyIds).toHaveBeenCalledWith({ with_pagination: true, page: 1, pageSize: 10, search: '' }, false);
@@ -489,7 +483,6 @@ it('selects matching companies beyond loaded cards and suspends the explicit IDs
 	await waitFor(() => expect(mockSuccess).toHaveBeenCalledWith(translations.fr.companies.bulkSuspendSuccess(2)));
 	expect(bulkSuspend).toHaveBeenCalledWith({ ids: [4, 8] });
 	expect(dispatch).toHaveBeenCalledWith(companiesSetUserCompaniesAction([]));
-	expect(unsubscribe).toHaveBeenCalledTimes(1);
 	expect(screen.queryByTestId('action-modal')).toBeNull();
 	expect(screen.queryByRole('button', { name: translations.fr.companies.bulkSuspendBtn(2) })).toBeNull();
 });
@@ -503,11 +496,11 @@ it('collects only matching IDs from every filtered page, never the unrelated unp
 	await setup();
 	await fireEvent.press(screen.getByLabelText(translations.fr.common.search));
 	await fireEvent.changeText(screen.getByPlaceholderText(translations.fr.dataGrid.searchPlaceholder), 'Company');
-	await fireEvent.press(screen.getByText(translations.fr.dataGrid.searchApply));
+	await fireEvent(screen.getByPlaceholderText(translations.fr.dataGrid.searchPlaceholder), 'submitEditing');
 	await fireEvent.press(screen.getByLabelText(translations.fr.dataGrid.toolbarFilters));
 	await fireEvent.changeText(screen.getByPlaceholderText(translations.fr.common.value), 'Démo');
 	await fireEvent.press(screen.getByText(translations.fr.dataGrid.searchApply));
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.shared.selectAllMatching(1) }));
+	await fireEvent.press(screen.getByRole('checkbox', { name: translations.fr.shared.selectAllMatching(1) }));
 	await screen.findByText(translations.fr.shared.allMatchingSelected(2));
 	expect(fetchAllCompanyIds.mock.calls).toEqual(
 		[1, 3].map((page) => [
@@ -535,7 +528,7 @@ it.each(['search', 'filter'])('ignores all-matching results after a pending %s c
 			}),
 	});
 	await setup();
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.shared.selectAllMatching(2) }));
+	await fireEvent.press(screen.getByRole('checkbox', { name: translations.fr.shared.selectAllMatching(2) }));
 	await waitFor(() => expect(fetchAllCompanyIds).toHaveBeenCalledTimes(2));
 	await fireEvent.press(
 		screen.getByLabelText(kind === 'search' ? translations.fr.common.search : translations.fr.dataGrid.toolbarFilters),
@@ -546,7 +539,9 @@ it.each(['search', 'filter'])('ignores all-matching results after a pending %s c
 		),
 		'New value',
 	);
-	await fireEvent.press(screen.getByText(translations.fr.dataGrid.searchApply));
+	if (kind === 'search')
+		await fireEvent(screen.getByPlaceholderText(translations.fr.dataGrid.searchPlaceholder), 'submitEditing');
+	else await fireEvent.press(screen.getByText(translations.fr.dataGrid.searchApply));
 	expect(abortAllIds).toHaveBeenCalledTimes(1);
 	await act(async () => finish(companyPage([8])));
 	expect(fetchAllCompanyIds).toHaveBeenCalledTimes(2);
@@ -559,7 +554,7 @@ it.each(['search', 'filter'])('ignores all-matching results after a pending %s c
 it('clears selected IDs and closes the bulk modal after rejection, as on web', async () => {
 	bulkSuspend.mockReturnValueOnce({ unwrap: () => Promise.reject(new Error('Denied')) });
 	await setup();
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.shared.selectAllMatching(2) }));
+	await fireEvent.press(screen.getByRole('checkbox', { name: translations.fr.shared.selectAllMatching(2) }));
 	await screen.findByText(translations.fr.shared.allMatchingSelected(2));
 	await fireEvent.press(screen.getByRole('button', { name: translations.fr.companies.bulkSuspendBtn(2) }));
 	await fireEvent.press(
@@ -569,9 +564,9 @@ it('clears selected IDs and closes the bulk modal after rejection, as on web', a
 	);
 	await waitFor(() => expect(mockError).toHaveBeenCalledWith(translations.fr.companies.bulkSuspendError));
 	expect(screen.queryByTestId('action-modal')).toBeNull();
-	expect(refreshMemberships).not.toHaveBeenCalled();
+	expect(companyApi.endpoints.getUserCompanies.initiate).not.toHaveBeenCalled();
 	expect(screen.queryByText(translations.fr.shared.allMatchingSelected(2))).toBeNull();
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.shared.selectAllMatching(2) }));
+	await fireEvent.press(screen.getByRole('checkbox', { name: translations.fr.shared.selectAllMatching(2) }));
 	await screen.findByText(translations.fr.shared.allMatchingSelected(2));
 	await fireEvent.press(screen.getByRole('button', { name: translations.fr.companies.bulkSuspendBtn(2) }));
 	await fireEvent.press(
@@ -585,11 +580,8 @@ it('clears selected IDs and closes the bulk modal after rejection, as on web', a
 
 it('reports the actual suspended count and does not optimistically remove skipped companies', async () => {
 	bulkSuspend.mockReturnValue({ unwrap: () => Promise.resolve({ suspended: 1 }) });
-	refreshMemberships.mockResolvedValue([
-		{ id: 4, raison_sociale: 'Company Four', role: 'Caissier', uses_foreign_currency: false },
-	]);
 	const { dispatch } = await setup();
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.shared.selectAllMatching(2) }));
+	await fireEvent.press(screen.getByRole('checkbox', { name: translations.fr.shared.selectAllMatching(2) }));
 	await screen.findByText(translations.fr.shared.allMatchingSelected(2));
 	await fireEvent.press(screen.getByRole('button', { name: translations.fr.companies.bulkSuspendBtn(2) }));
 	await fireEvent.press(
@@ -599,10 +591,8 @@ it('reports the actual suspended count and does not optimistically remove skippe
 	);
 	await waitFor(() => expect(mockSuccess).toHaveBeenCalledWith(translations.fr.companies.bulkSuspendSuccess(1)));
 	expect(dispatch).not.toHaveBeenCalledWith(companiesSetUserCompaniesAction([]));
-	expect(dispatch).toHaveBeenCalledWith(
-		companiesSetUserCompaniesAction([
-			{ id: 4, raison_sociale: 'Company Four', role: 'Caissier', uses_foreign_currency: false },
-		]),
+	expect(dispatch).not.toHaveBeenCalledWith(
+		expect.objectContaining({ type: companiesSetUserCompaniesAction([]).type }),
 	);
 });
 
@@ -612,8 +602,37 @@ it('supports individual card selection and clears selection when refreshing', as
 		screen.getByRole('checkbox', { name: translations.fr.shared.selectCompany + ': Company Four' }),
 	);
 	expect(screen.getByRole('button', { name: translations.fr.companies.bulkSuspendBtn(1) })).toBeOnTheScreen();
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.refresh }));
+	expect(screen.queryByRole('button', { name: translations.fr.common.refresh })).toBeNull();
+	await fireEvent(screen.container.queryAll((node) => typeof node.props.onRefresh === 'function')[0]!, 'refresh');
 	expect(screen.queryByRole('button', { name: translations.fr.companies.bulkSuspendBtn(1) })).toBeNull();
+});
+
+it('uses the shared selection checkbox to select and clear all matching companies', async () => {
+	await setup();
+	const control = () => screen.getByRole('checkbox', { name: translations.fr.shared.selectAllMatching(2) });
+	expect(control()).not.toBeChecked();
+	await fireEvent.press(control());
+	await waitFor(() => expect(control()).toBeChecked());
+	expect(screen.getByRole('button', { name: translations.fr.companies.bulkSuspendBtn(2) })).toBeOnTheScreen();
+	await fireEvent.press(control());
+	expect(control()).not.toBeChecked();
+	expect(screen.queryByRole('button', { name: translations.fr.companies.bulkSuspendBtn(2) })).toBeNull();
+	expect(fetchAllCompanyIds).toHaveBeenCalledTimes(1);
+});
+
+it('recognizes all manually selected companies without fetching the same IDs again', async () => {
+	await setup();
+	await reachEnd();
+	await screen.findByText('Company Eight');
+	for (const name of ['Company Four', 'Company Eight']) {
+		await fireEvent.press(screen.getByRole('checkbox', { name: translations.fr.shared.selectCompany + ': ' + name }));
+	}
+	const control = screen.getByRole('checkbox', { name: translations.fr.shared.selectAllMatching(2) });
+	expect(control).toBeChecked();
+	await fireEvent.press(control);
+	expect(screen.getByRole('checkbox', { name: translations.fr.shared.selectAllMatching(2) })).not.toBeChecked();
+	expect(screen.queryByRole('button', { name: translations.fr.companies.bulkSuspendBtn(2) })).toBeNull();
+	expect(fetchAllCompanyIds).not.toHaveBeenCalled();
 });
 
 it('keeps manual selection and reports a failed all-matching request', async () => {
@@ -626,7 +645,7 @@ it('keeps manual selection and reports a failed all-matching request', async () 
 	await fireEvent.press(
 		screen.getByRole('checkbox', { name: translations.fr.shared.selectCompany + ': Company Four' }),
 	);
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.shared.selectAllMatching(2) }));
+	await fireEvent.press(screen.getByRole('checkbox', { name: translations.fr.shared.selectAllMatching(2) }));
 	await waitFor(() => expect(mockError).toHaveBeenCalledWith(translations.fr.companies.fetchIdsError));
 	expect(screen.getByRole('button', { name: translations.fr.companies.bulkSuspendBtn(1) })).toBeOnTheScreen();
 	expect(screen.queryByText(translations.fr.shared.allMatchingSelected(2))).toBeNull();
@@ -642,13 +661,13 @@ it('keeps selection unchanged when a later page fails and releases the operation
 	await fireEvent.press(
 		screen.getByRole('checkbox', { name: translations.fr.shared.selectCompany + ': Company Four' }),
 	);
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.shared.selectAllMatching(2) }));
+	await fireEvent.press(screen.getByRole('checkbox', { name: translations.fr.shared.selectAllMatching(2) }));
 	await waitFor(() => expect(mockError).toHaveBeenCalledWith(translations.fr.companies.fetchIdsError));
 	expect(screen.getByRole('checkbox', { name: translations.fr.shared.selectCompany + ': Company Four' })).toBeChecked();
 	expect(screen.getByRole('button', { name: translations.fr.companies.bulkSuspendBtn(1) })).toBeOnTheScreen();
 	expect(screen.queryByText(translations.fr.shared.allMatchingSelected(2))).toBeNull();
 	expect(unsubscribeAllIds).toHaveBeenCalledTimes(2);
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.shared.selectAllMatching(2) }));
+	await fireEvent.press(screen.getByRole('checkbox', { name: translations.fr.shared.selectAllMatching(2) }));
 	await screen.findByText(translations.fr.shared.allMatchingSelected(2));
 	expect(fetchAllCompanyIds).toHaveBeenCalledTimes(3);
 });
@@ -665,15 +684,15 @@ it('keeps the whole page collection busy and cancels it when refreshing', async 
 	});
 	await setup();
 	const label = translations.fr.shared.selectAllMatching(2);
-	await fireEvent.press(screen.getByRole('button', { name: label }));
+	await fireEvent.press(screen.getByRole('checkbox', { name: label }));
 	await waitFor(() => expect(fetchAllCompanyIds).toHaveBeenCalledTimes(2));
-	expect(screen.getByRole('button', { name: label })).toBeDisabled();
-	await fireEvent.press(screen.getByRole('button', { name: label }));
+	expect(screen.getByRole('checkbox', { name: label })).toBeDisabled();
+	await fireEvent.press(screen.getByRole('checkbox', { name: label }));
 	expect(fetchAllCompanyIds).toHaveBeenCalledTimes(2);
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.refresh }));
+	await fireEvent(screen.container.queryAll((node) => typeof node.props.onRefresh === 'function')[0]!, 'refresh');
 	expect(abortAllIds).toHaveBeenCalledTimes(1);
 	expect(refetch).toHaveBeenCalledTimes(1);
-	expect(screen.getByRole('button', { name: label })).toBeEnabled();
+	expect(screen.getByRole('checkbox', { name: label })).toBeEnabled();
 	await act(async () => finish(companyPage([8])));
 	expect(screen.queryByText(translations.fr.shared.allMatchingSelected(2))).toBeNull();
 	expect(screen.queryByRole('button', { name: translations.fr.companies.bulkSuspendBtn(2) })).toBeNull();
@@ -689,12 +708,12 @@ it.each(['?page=1', '?page=0', '?page=2.5', 'not-a-page', 'http://['])(
 		await fireEvent.press(
 			screen.getByRole('checkbox', { name: translations.fr.shared.selectCompany + ': Company Four' }),
 		);
-		await fireEvent.press(screen.getByRole('button', { name: translations.fr.shared.selectAllMatching(2) }));
+		await fireEvent.press(screen.getByRole('checkbox', { name: translations.fr.shared.selectAllMatching(2) }));
 		await waitFor(() => expect(mockError).toHaveBeenCalledWith(translations.fr.companies.fetchIdsError));
 		expect(fetchAllCompanyIds).toHaveBeenCalledTimes(1);
 		expect(screen.getByRole('button', { name: translations.fr.companies.bulkSuspendBtn(1) })).toBeOnTheScreen();
 		expect(screen.queryByText(translations.fr.shared.allMatchingSelected(1))).toBeNull();
-		expect(screen.getByRole('button', { name: translations.fr.shared.selectAllMatching(2) })).toBeEnabled();
+		expect(screen.getByRole('checkbox', { name: translations.fr.shared.selectAllMatching(2) })).toBeEnabled();
 	},
 );
 
@@ -703,7 +722,7 @@ it('stops a repeated next page rather than looping or claiming all matching IDs 
 		.mockReturnValueOnce(selectionResponse(companyPage([4], '?page=2')))
 		.mockReturnValue(selectionResponse(companyPage([8], '?page=2')));
 	await setup();
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.shared.selectAllMatching(2) }));
+	await fireEvent.press(screen.getByRole('checkbox', { name: translations.fr.shared.selectAllMatching(2) }));
 	await waitFor(() => expect(mockError).toHaveBeenCalledWith(translations.fr.companies.fetchIdsError));
 	expect(fetchAllCompanyIds).toHaveBeenCalledTimes(2);
 	expect(screen.queryByRole('button', { name: translations.fr.companies.bulkSuspendBtn(2) })).toBeNull();
@@ -715,7 +734,7 @@ it.each([[{ id: 99 }], { count: 1, results: [{ id: 99 }] }, { count: 1, next: nu
 	async (data) => {
 		fetchAllCompanyIds.mockReturnValue(selectionResponse(data));
 		await setup();
-		await fireEvent.press(screen.getByRole('button', { name: translations.fr.shared.selectAllMatching(2) }));
+		await fireEvent.press(screen.getByRole('checkbox', { name: translations.fr.shared.selectAllMatching(2) }));
 		await waitFor(() => expect(mockError).toHaveBeenCalledWith(translations.fr.companies.fetchIdsError));
 		expect(screen.queryByRole('button', { name: translations.fr.companies.bulkSuspendBtn(1) })).toBeNull();
 	},
@@ -732,7 +751,7 @@ it('aborts the current lazy request on unmount and ignores a late page response'
 		unsubscribe: unsubscribeAllIds,
 	});
 	const { unmount } = await setup();
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.shared.selectAllMatching(2) }));
+	await fireEvent.press(screen.getByRole('checkbox', { name: translations.fr.shared.selectAllMatching(2) }));
 	await unmount();
 	expect(abortAllIds).toHaveBeenCalledTimes(1);
 	await act(async () => finish(companyPage([4, 8])));

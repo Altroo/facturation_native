@@ -1,9 +1,8 @@
-import type { EntityImageProps } from '@/types/uiTypes';
-import ImagePreview from '@/components/nativeElements/modals/imagePreview/imagePreview';
+import EntityImage from '@/components/shared/entityImage/entityImage';
 import NoPermission from '@/components/shared/noPermission/noPermission';
 import ApiAlert from '@/components/formikElements/apiLoading/apiAlert/apiAlert';
-import { useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Text, View, Image, Pressable } from 'react-native';
+import { useRef, useState } from 'react';
+import { ActivityIndicator, Text, View, Pressable } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router } from 'expo-router';
 import type { ColumnDef, FilterModel, SortModel } from 'expo-flash-datagrid';
@@ -20,64 +19,12 @@ import {
 } from '@/store/services/account';
 import { getProfilState } from '@/store/selectors';
 import { useAppSelector, useLanguage, usePermission, useToast } from '@/utils/hooks';
-import { extractApiErrorMessage, normalizeApiError, formatDate } from '@/utils/helpers';
+import { extractApiErrorMessage, normalizeApiError, formatDate, runWithCleanup } from '@/utils/helpers';
 import { USERS_ADD, USERS_VIEW, USERS_EDIT } from '@/utils/routes';
 import { MODULES_PAGE_SIZE } from '@/utils/rawData';
-import { runWithCleanup } from '@/utils/runWithCleanup';
 import ActionModals from '@/components/nativeElements/modals/actionModal/actionModals';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
-
-const EntityImage = ({
-	image,
-	previewImage,
-	label,
-	icon = 'business',
-	avatar = false,
-	large = false,
-}: EntityImageProps) => {
-	const [open, setOpen] = useState(false);
-	const [failedUri, setFailedUri] = useState<string | null>(null);
-	const uri = typeof image === 'string' ? image : '';
-	const fullUri = typeof previewImage === 'string' && previewImage ? previewImage : uri;
-	const visibleImage = !!uri && failedUri !== uri;
-	const size = large ? 88 : 56;
-	return (
-		<>
-			<Pressable
-				accessibilityRole={visibleImage ? 'button' : undefined}
-				accessibilityLabel={label}
-				disabled={!visibleImage}
-				onPress={() => setOpen(true)}
-				className={
-					'items-center justify-center overflow-hidden border border-slate-200 bg-blue-50 dark:border-slate-700 dark:bg-slate-800 ' +
-					(avatar ? 'rounded-full' : 'rounded-2xl')
-				}
-				style={{
-					width: size,
-					height: size,
-				}}
-			>
-				{visibleImage ? (
-					<Image
-						accessibilityLabel={label}
-						source={{
-							uri,
-						}}
-						onError={() => setFailedUri(uri)}
-						style={{
-							width: size,
-							height: size,
-						}}
-						resizeMode={avatar ? 'cover' : 'contain'}
-					/>
-				) : (
-					<MaterialIcons name={icon} size={large ? 38 : 27} color="#0274d7" />
-				)}
-			</Pressable>
-			{open && <ImagePreview uri={fullUri} label={label} visible onClose={() => setOpen(false)} />}
-		</>
-	);
-};
+import SelectAllControl from '@/components/shared/selectAllControl/selectAllControl';
 
 const UsersListClient = () => {
 	const { t } = useLanguage();
@@ -112,10 +59,7 @@ const UsersListClient = () => {
 		},
 	);
 	const data = query.currentData;
-	const rows = useMemo(
-		() => getInfiniteRows(data?.pages).filter((user) => user.id !== profile?.id),
-		[data, profile?.id],
-	);
+	const rows = getInfiniteRows(data?.pages).filter((user) => user.id !== profile?.id);
 	const loadedIds = rows.flatMap(({ id }) => (typeof id === 'number' && id > 0 ? [id] : []));
 	const loadedIdsKey = loadedIds.join(',');
 	const [previousLoadedIdsKey, setPreviousLoadedIdsKey] = useState(loadedIdsKey);
@@ -185,9 +129,6 @@ const UsersListClient = () => {
 	const showDeleteModalCall = (id: number) => {
 		setSelectedUserId(id);
 		setShowDeleteModal(true);
-	};
-	const handleSelectionChange = (ids: number[]) => {
-		setSelectedUserIds(ids);
 	};
 	const bulkDeleteHandler = async () => {
 		if (
@@ -452,8 +393,8 @@ const UsersListClient = () => {
 						</Text>
 					</View>
 				</View>
-				<View className="flex-row flex-wrap gap-2">
-					{editable && (
+				{editable && (
+					<View className="flex-row flex-wrap gap-2">
 						<PrimaryLoadingButton
 							buttonText={t.users.newUser}
 							onClick={() => router.push(USERS_ADD)}
@@ -461,25 +402,15 @@ const UsersListClient = () => {
 							loading={false}
 							startIcon={<MaterialIcons name="person-add" size={20} color={'#fff'} />}
 						/>
-					)}
-					<PrimaryLoadingButton
-						buttonText={t.common.refresh}
-						inverted
-						onClick={refresh}
-						active={!(query.isFetching || deleting)}
-						loading={false}
-						startIcon={<MaterialIcons name="refresh" size={20} color={'#0274d7'} />}
-					/>
-				</View>
+					</View>
+				)}
 				{editable && (
 					<View className="gap-2">
-						<Pressable
-							accessibilityRole="checkbox"
+						<SelectAllControl
 							accessibilityLabel={t.users.selectLoaded}
-							accessibilityState={{
-								checked: allLoadedSelected ? true : someLoadedSelected ? 'mixed' : false,
-								disabled: deleting || query.isFetching || !!query.error || !loadedIds.length,
-							}}
+							description={t.shared.loadedItems(loadedIds.length)}
+							checked={allLoadedSelected ? true : someLoadedSelected ? 'mixed' : false}
+							selectedCount={selectedUserIds.length}
 							disabled={deleting || query.isFetching || !!query.error || !loadedIds.length}
 							onPress={() =>
 								setSelectedUserIds((previous) =>
@@ -488,24 +419,7 @@ const UsersListClient = () => {
 										: [...new Set([...previous, ...loadedIds])],
 								)
 							}
-							className={
-								'min-h-11 flex-row items-center gap-3 py-2 ' +
-								(deleting || query.isFetching || !!query.error || !loadedIds.length ? 'opacity-50' : '')
-							}
-						>
-							<MaterialIcons
-								name={
-									(allLoadedSelected ? true : someLoadedSelected ? 'mixed' : false) === 'mixed'
-										? 'indeterminate-check-box'
-										: (allLoadedSelected ? true : someLoadedSelected ? 'mixed' : false)
-											? 'check-box'
-											: 'check-box-outline-blank'
-								}
-								size={24}
-								color={(allLoadedSelected ? true : someLoadedSelected ? 'mixed' : false) ? '#0274d7' : '#94a3b8'}
-							/>
-							<Text className="font-sans text-ink dark:text-slate-100 flex-1 text-sm">{t.users.selectLoaded}</Text>
-						</Pressable>
+						/>
 						{!!selectedUserIds.length && (
 							<View className="flex-row flex-wrap gap-2">
 								<PrimaryLoadingButton
@@ -552,7 +466,6 @@ const UsersListClient = () => {
 					</View>
 				)}
 				<PaginatedDataGrid<Partial<UserClass>>
-					key={JSON.stringify([searchTerm, filterModel, ordering])}
 					testID="users-grid"
 					rows={rows}
 					columns={columns}
@@ -569,10 +482,10 @@ const UsersListClient = () => {
 					}}
 					getRowId={(row) => String(row.id)}
 					rowCount={count ?? 0}
-					isLoading={query.isFetching && !rows.length}
+					isLoading={query.isFetching && !data}
 					disabled={deleting}
 					onRefresh={refresh}
-					refreshing={query.isFetching && !query.isFetchingNextPage && !!rows.length}
+					refreshing={query.isFetching && !query.isFetchingNextPage && !!data}
 					onEndReached={loadMore}
 					isFetchingNextPage={query.isFetchingNextPage}
 					hasNextPage={query.hasNextPage}
@@ -596,10 +509,6 @@ const UsersListClient = () => {
 						setShowBulkDeleteModal(false);
 					}}
 					selectedIds={selectedUserIds}
-					onSelectionChange={(ids) => {
-						if (editable && !deleting)
-							handleSelectionChange(ids.filter((id) => Number.isInteger(id) && id > 0 && id !== profile?.id));
-					}}
 				/>
 			</View>
 			{showDeleteModal && editable && (

@@ -1,10 +1,9 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { Dimensions } from 'react-native';
 import type { ReactNode } from 'react';
+import DrawerLayout from '@/app/(app)/(drawer)/_layout';
 import AuthenticatedLayout from '@/app/(app)/_layout';
-import CompaniesLayout from '@/app/(app)/companies/_layout';
-import UsersLayout from '@/app/(app)/users/_layout';
-import SettingsLayout from '@/app/(app)/settings/_layout';
+import SettingsLayout from '@/app/(app)/(drawer)/settings/_layout';
 
 const mockNavigator = ({
 	screenOptions,
@@ -34,10 +33,21 @@ jest.mock('@/utils/hooks', () => ({
 	...jest.requireActual<typeof import('@/utils/hooks')>('@/utils/hooks'),
 	useAppSelector: () => null,
 }));
-jest.mock('@/components/layouts/navigationBar/navigationBar', () => ({
-	NavigationDrawer: () => null,
-	Notifications: () => null,
-}));
+jest.mock('@/components/layouts/navigationBar/navigationBar', () => {
+	const actual = jest.requireActual<typeof import('@/components/layouts/navigationBar/navigationBar')>(
+		'@/components/layouts/navigationBar/navigationBar',
+	);
+	const { cloneElement } = jest.requireActual<typeof import('react')>('react');
+	return {
+		...actual,
+		NavigationDrawer: () => null,
+		Notifications: () => null,
+		useNavigationHeader: () => {
+			const options = actual.useNavigationHeader();
+			return { ...options, headerRight: () => cloneElement(options.headerRight(), {}, null) };
+		},
+	};
+});
 jest.mock('@/components/shared/themeToggle/themeToggle', () => () => null);
 jest.mock('@/components/shared/languageSwitcher/languageSwitcher', () => () => null);
 jest.mock('@/components/shared/appUpdate/appUpdate', () => () => null);
@@ -45,7 +55,7 @@ jest.mock('@/components/shared/appUpdate/appUpdate', () => () => null);
 const originalWindow = Dimensions.get('window');
 beforeEach(() => Dimensions.set({ window: { width: 320, height: 640, scale: 2, fontScale: 1 } }));
 afterAll(() => Dimensions.set({ window: originalWindow }));
-it.each([AuthenticatedLayout, CompaniesLayout, UsersLayout, SettingsLayout])(
+it.each([DrawerLayout, AuthenticatedLayout, SettingsLayout])(
 	'keeps the title and controls separate at narrow widths in %p',
 	async (Layout) => {
 		await render(<Layout />);

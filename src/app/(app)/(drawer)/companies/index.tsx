@@ -1,10 +1,8 @@
-import { runWithCleanup } from '@/utils/runWithCleanup';
-import type { EntityImageProps } from '@/types/uiTypes';
-import ImagePreview from '@/components/nativeElements/modals/imagePreview/imagePreview';
+import EntityImage from '@/components/shared/entityImage/entityImage';
 import NoPermission from '@/components/shared/noPermission/noPermission';
 import ApiAlert from '@/components/formikElements/apiLoading/apiAlert/apiAlert';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Text, View, Image, Pressable } from 'react-native';
+import { ActivityIndicator, Text, View, Pressable } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router } from 'expo-router';
 import type { ColumnDef, FilterModel, SortModel } from 'expo-flash-datagrid';
@@ -18,69 +16,17 @@ import {
 	useSuspendCompanyMutation,
 	useBulkSuspendCompaniesMutation,
 	useLazyGetCompaniesListQuery,
-	companyApi,
 } from '@/store/services/company';
 import { companiesSetUserCompaniesAction } from '@/store/actions/companiesActions';
 import type { CompanyClass } from '@/models/classes';
 import ActionModals from '@/components/nativeElements/modals/actionModal/actionModals';
 import { getUserCompaniesState } from '@/store/selectors';
 import { useAppDispatch, useAppSelector, useLanguage, usePermission, useToast } from '@/utils/hooks';
-import { getDjangoNextPageParam, normalizeApiError, formatDate } from '@/utils/helpers';
+import { getDjangoNextPageParam, normalizeApiError, formatDate, runWithCleanup } from '@/utils/helpers';
 import { COMPANIES_ADD, COMPANIES_VIEW, COMPANIES_EDIT } from '@/utils/routes';
 import { MODULES_PAGE_SIZE } from '@/utils/rawData';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
-
-const EntityImage = ({
-	image,
-	previewImage,
-	label,
-	icon = 'business',
-	avatar = false,
-	large = false,
-}: EntityImageProps) => {
-	const [open, setOpen] = useState(false);
-	const [failedUri, setFailedUri] = useState<string | null>(null);
-	const uri = typeof image === 'string' ? image : '';
-	const fullUri = typeof previewImage === 'string' && previewImage ? previewImage : uri;
-	const visibleImage = !!uri && failedUri !== uri;
-	const size = large ? 88 : 56;
-	return (
-		<>
-			<Pressable
-				accessibilityRole={visibleImage ? 'button' : undefined}
-				accessibilityLabel={label}
-				disabled={!visibleImage}
-				onPress={() => setOpen(true)}
-				className={
-					'items-center justify-center overflow-hidden border border-slate-200 bg-blue-50 dark:border-slate-700 dark:bg-slate-800 ' +
-					(avatar ? 'rounded-full' : 'rounded-2xl')
-				}
-				style={{
-					width: size,
-					height: size,
-				}}
-			>
-				{visibleImage ? (
-					<Image
-						accessibilityLabel={label}
-						source={{
-							uri,
-						}}
-						onError={() => setFailedUri(uri)}
-						style={{
-							width: size,
-							height: size,
-						}}
-						resizeMode={avatar ? 'cover' : 'contain'}
-					/>
-				) : (
-					<MaterialIcons name={icon} size={large ? 38 : 27} color="#0274d7" />
-				)}
-			</Pressable>
-			{open && <ImagePreview uri={fullUri} label={label} visible onClose={() => setOpen(false)} />}
-		</>
-	);
-};
+import SelectAllControl from '@/components/shared/selectAllControl/selectAllControl';
 
 const CompaniesListClient = () => {
 	const { t } = useLanguage();
@@ -109,6 +55,7 @@ const CompaniesListClient = () => {
 	const [showBulkSuspendModal, setShowBulkSuspendModal] = useState(false);
 	const [isAllMatchingSelected, setIsAllMatchingSelected] = useState(false);
 	const selectionRequest = useRef(0);
+
 	useEffect(
 		() => () => {
 			selectionRequest.current += 1;
@@ -119,6 +66,7 @@ const CompaniesListClient = () => {
 		},
 		[is_staff],
 	);
+
 	const query = useGetCompaniesInfiniteListInfiniteQuery(
 		{
 			pageSize: MODULES_PAGE_SIZE,
@@ -134,6 +82,7 @@ const CompaniesListClient = () => {
 	const data = query.currentData;
 	const rows = getInfiniteRows(data?.pages);
 	const count = data?.pages[0]?.count ?? 0;
+	const allSelected = isAllMatchingSelected || (count > 0 && selectedIds.length === count);
 	const loadedIds = rows.flatMap(({ id }) => (typeof id === 'number' && id > 0 ? [id] : []));
 	const loadedIdsKey = loadedIds.join(',');
 	const [previousLoadedIds, setPreviousLoadedIds] = useState(loadedIds);
@@ -254,18 +203,6 @@ const CompaniesListClient = () => {
 						id,
 					}).unwrap();
 					dispatch(companiesSetUserCompaniesAction(memberships.filter((company) => company.id !== id)));
-					const request = dispatch(
-						companyApi.endpoints.getUserCompanies.initiate(undefined, {
-							forceRefetch: true,
-						}),
-					);
-					try {
-						dispatch(companiesSetUserCompaniesAction(await request.unwrap()));
-					} catch {
-						/* InitEffects retries memberships every 60 seconds and when the app returns to the foreground. */
-					} finally {
-						request.unsubscribe();
-					}
 					onSuccess(t.companies.suspendSuccess);
 				} catch {
 					onError(t.companies.suspendError);
@@ -294,18 +231,6 @@ const CompaniesListClient = () => {
 					}).unwrap();
 					if (result.suspended === ids.length) {
 						dispatch(companiesSetUserCompaniesAction(memberships.filter((company) => !ids.includes(company.id))));
-					}
-					const request = dispatch(
-						companyApi.endpoints.getUserCompanies.initiate(undefined, {
-							forceRefetch: true,
-						}),
-					);
-					try {
-						dispatch(companiesSetUserCompaniesAction(await request.unwrap()));
-					} catch {
-						/* InitEffects retries memberships every 60 seconds and when the app returns to the foreground. */
-					} finally {
-						request.unsubscribe();
 					}
 					onSuccess(t.companies.bulkSuspendSuccess(result.suspended));
 				} catch {
@@ -546,8 +471,8 @@ const CompaniesListClient = () => {
 						</Text>
 					</View>
 				</View>
-				<View className="flex-row flex-wrap gap-2">
-					{is_staff && (
+				{is_staff && (
+					<View className="flex-row flex-wrap gap-2">
 						<PrimaryLoadingButton
 							buttonText={t.companies.newCompany}
 							onClick={() => router.push(COMPANIES_ADD)}
@@ -555,32 +480,21 @@ const CompaniesListClient = () => {
 							loading={false}
 							startIcon={<MaterialIcons name="add" size={20} color={'#fff'} />}
 						/>
-					)}
-					<PrimaryLoadingButton
-						buttonText={t.common.refresh}
-						inverted
-						onClick={refresh}
-						active={!(query.isFetching || suspending)}
-						loading={false}
-						startIcon={<MaterialIcons name="refresh" size={20} color={'#0274d7'} />}
-					/>
-				</View>
+					</View>
+				)}
 				<View className="gap-2">
-					{isAllMatchingSelected ? (
-						<Text className="font-sans text-ink dark:text-slate-100">
-							{t.shared.allMatchingSelected(selectedIds.length)}
-						</Text>
-					) : (
-						count > 0 && (
-							<PrimaryLoadingButton
-								buttonText={t.shared.selectAllMatching(count)}
-								inverted
-								loading={isLoadingAllIds}
-								onClick={() => void handleSelectAllMatching()}
-								active={!(suspending || query.isFetching || !!query.error)}
-							/>
-						)
-					)}
+					<SelectAllControl
+						accessibilityLabel={t.shared.selectAllMatching(count)}
+						description={allSelected ? t.shared.allMatchingSelected(selectedIds.length) : t.shared.matchingItems(count)}
+						checked={allSelected ? true : selectedIds.length ? 'mixed' : false}
+						selectedCount={selectedIds.length}
+						loading={isLoadingAllIds}
+						disabled={suspending || query.isFetching || !!query.error || count === 0}
+						onPress={() => {
+							if (allSelected) handleClearAllMatching();
+							else void handleSelectAllMatching();
+						}}
+					/>
 					{selectedIds.length > 0 && (
 						<View className="flex-row flex-wrap gap-2">
 							<PrimaryLoadingButton
@@ -628,7 +542,6 @@ const CompaniesListClient = () => {
 					</View>
 				)}
 				<PaginatedDataGrid<Partial<CompanyClass>>
-					key={JSON.stringify([searchTerm, filterModel, ordering])}
 					testID="companies-grid"
 					rows={rows}
 					columns={columns}
@@ -644,10 +557,10 @@ const CompaniesListClient = () => {
 					}}
 					getRowId={(row) => String(row.id)}
 					rowCount={count ?? 0}
-					isLoading={query.isFetching && !rows.length}
+					isLoading={query.isFetching && !data}
 					disabled={suspending}
 					onRefresh={refresh}
-					refreshing={query.isFetching && !query.isFetchingNextPage && !!rows.length}
+					refreshing={query.isFetching && !query.isFetchingNextPage && !!data}
 					onEndReached={loadMore}
 					isFetchingNextPage={query.isFetchingNextPage}
 					hasNextPage={query.hasNextPage}
@@ -669,9 +582,6 @@ const CompaniesListClient = () => {
 						setSearchTerm(value);
 					}}
 					selectedIds={selectedIds}
-					onSelectionChange={(ids) => {
-						if (!suspending) handleSelectionChange(ids.filter((id) => Number.isInteger(id) && id > 0));
-					}}
 				/>
 			</View>
 			{showSuspendModal && (

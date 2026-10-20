@@ -1,15 +1,16 @@
+import ApiAlert from '@/components/formikElements/apiLoading/apiAlert/apiAlert';
 import { useState } from 'react';
-import { runWithCleanup } from '@/utils/runWithCleanup';
-import { Text, View, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { Text, View, Platform } from 'react-native';
+import KeyboardAwareScrollView from '@/components/shared/keyboardAwareScrollView/keyboardAwareScrollView';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useFormik } from 'formik';
 import { toFormikValidationSchema } from 'zod-formik-adapter';
-import { useEditPasswordMutation, profilApi } from '@/store/services/account';
+import { useEditPasswordMutation } from '@/store/services/account';
 import { accountEditProfilAction } from '@/store/actions/accountActions';
 import { getProfilState } from '@/store/selectors';
 import { useAppDispatch, useAppSelector, useLanguage, useToast } from '@/utils/hooks';
 import { changePasswordSchema } from '@/utils/formValidationSchemas';
-import { setFormikAutoErrors } from '@/utils/helpers';
+import { runWithCleanup, setFormikAutoErrors } from '@/utils/helpers';
 import CustomPasswordInput from '@/components/formikElements/customPasswordInput/customPasswordInput';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 
@@ -48,18 +49,6 @@ const PasswordClient = () => {
 									default_password_set: false,
 								}),
 							);
-						const request = dispatch(
-							profilApi.endpoints.getProfil.initiate(undefined, {
-								forceRefetch: true,
-							}),
-						);
-						try {
-							dispatch(accountEditProfilAction(await request.unwrap()));
-						} catch {
-							/* A failed refresh does not undo a successful password change. */
-						} finally {
-							request.unsubscribe();
-						}
 						onSuccess(t.settings.passwordChangeSuccess);
 						resetForm();
 					} catch (e) {
@@ -72,15 +61,16 @@ const PasswordClient = () => {
 		},
 	});
 	return (
-		<KeyboardAvoidingView
+		<View
+			className="bg-slate-50 dark:bg-night"
 			style={{
 				flex: 1,
 			}}
-			behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-			keyboardVerticalOffset={100}
 		>
-			<ScrollView
-				className="flex-1 bg-slate-50 dark:bg-night"
+			<KeyboardAwareScrollView
+				style={{ flex: 1 }}
+				bottomOffset={32}
+				keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
 				keyboardShouldPersistTaps="handled"
 				contentContainerStyle={{
 					padding: 20,
@@ -184,15 +174,7 @@ const PasswordClient = () => {
 					</View>
 					<>
 						{formik.errors.globalError || (formik.submitCount > 0 && !formik.isValid) ? (
-							<View className="flex-row items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950">
-								<MaterialIcons name="error-outline" size={22} color="#dc2626" />
-								<Text
-									accessibilityRole="alert"
-									className="font-sans flex-1 text-sm leading-6 text-red-700 dark:text-red-300"
-								>
-									{formik.errors.globalError || t.common.correctErrors}
-								</Text>
-							</View>
+							<ApiAlert variant="banner" errorDetails={formik.errors.globalError || t.common.correctErrors} />
 						) : null}
 					</>
 					<PrimaryLoadingButton
@@ -203,8 +185,8 @@ const PasswordClient = () => {
 						startIcon={<MaterialIcons name="lock-reset" size={20} color={'#fff'} />}
 					/>
 				</>
-			</ScrollView>
-		</KeyboardAvoidingView>
+			</KeyboardAwareScrollView>
+		</View>
 	);
 };
 

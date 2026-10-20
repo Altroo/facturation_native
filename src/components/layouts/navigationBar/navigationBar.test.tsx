@@ -24,7 +24,7 @@ import {
 } from '@/utils/routes';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Provider } from 'react-redux';
-import { Platform } from 'react-native';
+import { Dimensions, Platform } from 'react-native';
 import type { DrawerContentComponentProps } from 'expo-router/drawer';
 import { router, useGlobalSearchParams, usePathname } from 'expo-router';
 import {
@@ -46,6 +46,9 @@ jest.mock('expo-router/drawer', () => ({
 	DrawerContentScrollView: jest.requireActual<typeof import('react-native')>('react-native').ScrollView,
 }));
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
+jest.mock('@shopify/flash-list', () => ({
+	FlashList: jest.requireActual<typeof import('react-native')>('react-native').FlatList,
+}));
 jest.mock('expo-linking', () => ({ openURL: jest.fn().mockResolvedValue(true) }));
 jest.mock('expo-notifications', () => ({
 	AndroidImportance: { DEFAULT: 3 },
@@ -315,6 +318,29 @@ describe('notification popup', () => {
 		await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.notifications }));
 		await screen.findByText('Company changed');
 	};
+	it('shows the empty state without a mark-all action and preserves half-screen sizing', async () => {
+		adapter.mockImplementation(async (config) =>
+			response(
+				config,
+				config.url === '/notifications/unread-count/'
+					? { count: 0 }
+					: { count: 0, next: null, previous: null, results: [] },
+			),
+		);
+		await render(
+			<Provider store={store}>
+				<Notifications />
+			</Provider>,
+		);
+		await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.notifications }));
+		await screen.findByText(translations.fr.navigation.noNotifications);
+		expect(screen.queryByRole('button', { name: translations.fr.navigation.markAllRead })).toBeNull();
+		expect(screen.getByTestId('notifications-sheet-panel')).toHaveStyle({
+			minHeight: Dimensions.get('window').height * 0.5,
+			maxHeight: Dimensions.get('window').height * 0.75,
+		});
+		expect(adapter.mock.calls.some(([config]) => config.method === 'post')).toBe(false);
+	});
 	it.each(['undetermined', 'granted', 'denied'] as const)(
 		'checks OS permission on authenticated mount and prompts only when %s needs it',
 		async (status) => {
@@ -385,10 +411,16 @@ describe('notification popup', () => {
 	it('loads on demand, appends older notifications, and refreshes the first page when reopened', async () => {
 		await open();
 		expect(screen.queryByRole('button', { name: 'Page précédente' })).toBeNull();
-		await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.loadMore }));
+		expect(screen.queryByRole('button', { name: translations.fr.navigation.loadMore })).toBeNull();
+		await fireEvent(screen.getByTestId('notifications-list'), 'endReached');
 		await screen.findByText('Invoice reminder');
 		expect(screen.getByText('Company changed')).toBeOnTheScreen();
 		expect(screen.queryByRole('button', { name: translations.fr.navigation.loadMore })).toBeNull();
+		await fireEvent(screen.getByTestId('notifications-list'), 'endReached');
+		await fireEvent(screen.getByTestId('notifications-list'), 'endReached');
+		expect(
+			adapter.mock.calls.filter(([config]) => config.url === '/notifications/').map(([config]) => config.params.page),
+		).toEqual([1, 2]);
 		await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.close }));
 		await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.notifications }));
 		await waitFor(() => expect(screen.queryByText('Invoice reminder')).toBeNull());
@@ -399,6 +431,29 @@ describe('notification popup', () => {
 		expect(adapter.mock.calls.some(([config]) => config.url === '/notifications/' && config.params.page === 2)).toBe(
 			true,
 		);
+	});
+	it('refreshes back to the newest server page when pulled down', async () => {
+		await open();
+		await fireEvent(screen.getByTestId('notifications-list'), 'endReached');
+		await screen.findByText('Invoice reminder');
+		let finish!: () => void;
+		adapter.mockImplementationOnce(
+			(config) =>
+				new Promise((resolve) => {
+					finish = () => resolve(response(config, { count: 2, next: '?page=2', previous: null, results: [items[0]] }));
+				}),
+		);
+		await fireEvent(screen.getByTestId('notifications-list'), 'refresh');
+		expect(screen.getByTestId('notifications-list')).toHaveProp('refreshing', true);
+		expect(screen.getByText('Company changed')).toBeOnTheScreen();
+		expect(screen.getByText('Invoice reminder')).toBeOnTheScreen();
+		expect(screen.queryByText(translations.fr.common.loading)).toBeNull();
+		await act(async () => finish());
+		await waitFor(() => expect(screen.queryByText('Invoice reminder')).toBeNull());
+		expect(screen.getByText('Company changed')).toBeOnTheScreen();
+		expect(
+			adapter.mock.calls.filter(([config]) => config.url === '/notifications/').map(([config]) => config.params.page),
+		).toEqual([1, 2, 1]);
 	});
 	it('marks one notification before navigating to an implemented mobile destination', async () => {
 		await open();
@@ -412,10 +467,10 @@ describe('notification popup', () => {
 		'closes through %s and restarts at the first page when reopened',
 		async (method) => {
 			await open();
-			await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.loadMore }));
+			await fireEvent(screen.getByTestId('notifications-list'), 'endReached');
 			await screen.findByText('Invoice reminder');
 			if (method === 'backdrop')
-				await fireEvent.press(screen.getByTestId('notifications-backdrop', { includeHiddenElements: true }));
+				await fireEvent.press(screen.getByTestId('notifications-sheet-backdrop', { includeHiddenElements: true }));
 			else await fireEvent(screen.getByTestId('notifications-sheet'), method);
 			expect(screen.queryByText('Invoice reminder')).toBeNull();
 			await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.notifications }));
@@ -426,7 +481,7 @@ describe('notification popup', () => {
 	);
 	it('marks unsupported destinations read without inventing a route, and marks all using an empty body', async () => {
 		await open();
-		await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.loadMore }));
+		await fireEvent(screen.getByTestId('notifications-list'), 'endReached');
 		await screen.findByText('Invoice reminder');
 		await fireEvent.press(screen.getByText('Invoice reminder'));
 		await waitFor(() => expect(store.getState().notification.unreadCount).toBe(1));
@@ -439,7 +494,7 @@ describe('notification popup', () => {
 		const requests = adapter.mock.calls.filter(([config]) => config.method === 'post');
 		expect(JSON.parse(requests[0][0].data)).toEqual({ ids: [2] });
 		expect(JSON.parse(requests[1][0].data)).toEqual({});
-		expect(screen.getByRole('button', { name: translations.fr.navigation.markAllRead })).toBeDisabled();
+		expect(screen.queryByRole('button', { name: translations.fr.navigation.markAllRead })).toBeNull();
 	});
 	it('keeps the popup and unread state on failed acknowledgement instead of navigating', async () => {
 		await open();
@@ -468,7 +523,7 @@ describe('notification popup', () => {
 		await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.markAllRead }));
 		await waitFor(() => expect(store.getState().notification.unreadCount).toBe(0));
 		expect(screen.queryByRole('alert')).toBeNull();
-		expect(screen.getByRole('button', { name: translations.fr.navigation.markAllRead })).toBeDisabled();
+		expect(screen.queryByRole('button', { name: translations.fr.navigation.markAllRead })).toBeNull();
 	});
 
 	it('retains visible notifications after a load-more error and retries the same next page', async () => {
@@ -476,9 +531,11 @@ describe('notification popup', () => {
 		adapter.mockImplementationOnce(async (config) => {
 			throw new AxiosError('Offline', 'ERR_NETWORK', config);
 		});
-		await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.loadMore }));
+		await fireEvent(screen.getByTestId('notifications-list'), 'endReached');
 		await screen.findByText(translations.fr.errors.networkError);
 		expect(screen.getByText('Company changed')).toBeOnTheScreen();
+		await fireEvent(screen.getByTestId('notifications-list'), 'endReached');
+		expect(adapter.mock.calls.filter(([config]) => config.url === '/notifications/')).toHaveLength(2);
 		await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.retry }));
 		await screen.findByText('Invoice reminder');
 		expect(screen.getByText('Company changed')).toBeOnTheScreen();
@@ -489,7 +546,7 @@ describe('notification popup', () => {
 
 	it('preserves the appended list when a refresh on reopen fails, then retries page one', async () => {
 		await open();
-		await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.loadMore }));
+		await fireEvent(screen.getByTestId('notifications-list'), 'endReached');
 		await screen.findByText('Invoice reminder');
 		await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.close }));
 		adapter.mockImplementationOnce(async (config) => {
@@ -513,8 +570,9 @@ describe('notification popup', () => {
 					finish = () => resolve(response(config, { count: 2, next: null, previous: '?page=1', results: [items[1]] }));
 				}),
 		);
-		await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.loadMore }));
-		await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.loadMore }));
+		await fireEvent(screen.getByTestId('notifications-list'), 'endReached');
+		expect(screen.getByLabelText(translations.fr.common.loading)).toBeOnTheScreen();
+		await fireEvent(screen.getByTestId('notifications-list'), 'endReached');
 		await waitFor(() =>
 			expect(
 				adapter.mock.calls.filter(([config]) => config.url === '/notifications/' && config.params.page === 2),
@@ -537,7 +595,7 @@ describe('notification popup', () => {
 		adapter.mockImplementationOnce(async (config) =>
 			response(config, { count: 2, next: null, previous: '?page=1', results: [items[0], items[1]] }),
 		);
-		await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.loadMore }));
+		await fireEvent(screen.getByTestId('notifications-list'), 'endReached');
 		await screen.findByText('Invoice reminder');
 		expect(screen.getAllByText('Company changed')).toHaveLength(1);
 	});

@@ -1,3 +1,4 @@
+import { FlashList } from '@shopify/flash-list';
 import ApiAlert from '@/components/formikElements/apiLoading/apiAlert/apiAlert';
 import { format, isValid, parseISO } from 'date-fns';
 import {
@@ -28,7 +29,17 @@ import {
 } from '@/utils/routes';
 import { getProfilState, getUnreadNotificationCount } from '@/store/selectors';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
-import { Text, Image, Modal, Platform, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
+import {
+	ActivityIndicator,
+	Text,
+	Image,
+	Platform,
+	Pressable,
+	FlatList,
+	View,
+	useWindowDimensions,
+	type ColorValue,
+} from 'react-native';
 import { openURL } from 'expo-linking';
 import {
 	AndroidImportance,
@@ -42,7 +53,56 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useLanguage, useAppDispatch, useAppSelector, useToast } from '@/utils/hooks';
 import { accountLogoutAction } from '@/store/actions/accountActions';
 import Button from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
+import BottomSheet from '@/components/nativeElements/modals/bottomSheet/bottomSheet';
 import type { TranslationDictionary } from '@/types/languageTypes';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import ThemeToggle from '@/components/shared/themeToggle/themeToggle';
+import LanguageSwitcher from '@/components/shared/languageSwitcher/languageSwitcher';
+
+type NavigationHeaderTitleProps = {
+	children: string;
+	tintColor?: ColorValue;
+};
+
+export const useNavigationHeader = () => {
+	const { mode } = useColorMode();
+	const [controlsWidth, setControlsWidth] = useState(180);
+	const { width } = useWindowDimensions();
+	const insets = useSafeAreaInsets();
+	return {
+		headerStyle: { backgroundColor: mode === 'dark' ? colors.panel : colors.white },
+		headerTintColor: mode === 'dark' ? colors.white : colors.ink,
+		headerTitleAlign: 'left' as const,
+		headerTitle: ({ children, tintColor }: NavigationHeaderTitleProps) => (
+			<Text
+				accessibilityRole="header"
+				accessibilityLabel={children}
+				numberOfLines={1}
+				ellipsizeMode="tail"
+				style={{
+					maxWidth: Math.max(0, width - insets.left - insets.right - controlsWidth - 80),
+					minWidth: 0,
+					flexShrink: 1,
+					fontFamily: 'PoppinsSemiBold',
+					fontSize: 15,
+					color: tintColor,
+				}}
+			>
+				{children}
+			</Text>
+		),
+		headerRight: () => (
+			<View
+				className="flex-row items-center gap-1"
+				onLayout={({ nativeEvent }) => setControlsWidth(Math.ceil(nativeEvent.layout.width))}
+			>
+				<Notifications />
+				<ThemeToggle />
+				<LanguageSwitcher />
+			</View>
+		),
+	};
+};
 
 const getNavigationMenu = (isStaff: boolean, t: TranslationDictionary) => {
 	return {
@@ -275,7 +335,7 @@ export const NavigationDrawer = (props: DrawerContentComponentProps) => {
 			contentContainerStyle={{ paddingBottom: 28 }}
 		>
 			<View className="gap-4 border-b border-slate-200 px-5 pb-6 pt-3 dark:border-slate-700">
-				<View className="flex-row items-center gap-3">
+				<View className="flex-row items-center gap-4">
 					<Pressable
 						accessibilityRole="button"
 						accessibilityLabel={t.navigation.myProfile}
@@ -283,19 +343,19 @@ export const NavigationDrawer = (props: DrawerContentComponentProps) => {
 							props.navigation.closeDrawer();
 							router.navigate(DASHBOARD_EDIT_PROFILE);
 						}}
-						className="h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-blue-50 dark:bg-panel"
+						className="h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-blue-50 dark:bg-panel"
 					>
 						{typeof avatar_cropped === 'string' && avatar_cropped ? (
-							<Image source={{ uri: avatar_cropped }} className="h-11 w-11" />
+							<Image source={{ uri: avatar_cropped }} className="h-16 w-16" />
 						) : (
-							<Text className="dark:text-slate-100 font-poppins-semibold text-brand">
+							<Text className="dark:text-slate-100 font-poppins-semibold text-2xl text-brand">
 								{name.slice(0, 1).toUpperCase()}
 							</Text>
 						)}
 					</Pressable>
-					<View className="flex-1">
-						<Text className="font-sans dark:text-slate-100 text-xs text-slate-500">{welcome}</Text>
-						<Text numberOfLines={1} className="text-ink dark:text-slate-100 font-poppins-medium text-sm">
+					<View className="min-w-0 flex-1 gap-1">
+						<Text className="font-sans dark:text-slate-100 text-sm text-slate-500">{welcome}</Text>
+						<Text numberOfLines={2} className="text-ink dark:text-slate-100 font-poppins-semibold text-xl">
 							{name}
 						</Text>
 					</View>
@@ -466,12 +526,15 @@ export const Notifications = () => {
 			setListError(null);
 		}
 	}
+
 	useEffect(() => {
 		if (unread.data) dispatch(setUnreadCount(unread.data.count));
 	}, [unread.data, dispatch]);
+
 	useEffect(() => {
 		notificationVersion.current += 1;
 	}, [firstPageQuery.data]);
+
 	const refreshFirstNotificationsPage = async () => {
 		const version = ++notificationVersion.current;
 		setLoadingMore(false);
@@ -494,7 +557,7 @@ export const Notifications = () => {
 		setOpen(false);
 	};
 	const handleLoadMore = async () => {
-		if (!hasMore || loadingMore || refreshing || query.isFetching || mutation.isLoading) return;
+		if (!open || !hasMore || loadingMore || refreshing || query.isFetching || mutation.isLoading) return;
 		const version = notificationVersion.current;
 		const nextPage = notifPage + 1;
 		setLoadingMore(true);
@@ -560,6 +623,81 @@ export const Notifications = () => {
 		}
 	};
 	const axiosError = normalizeApiError(listError);
+	const listProps = {
+		testID: 'notifications-list',
+		data: allNotifications,
+		keyExtractor: (item: NotificationType) => String(item.id),
+		ItemSeparatorComponent: () => <View className="h-3" />,
+		onEndReachedThreshold: 0.3,
+		onEndReached: () => {
+			if (!listError) void handleLoadMore();
+		},
+		refreshing,
+		onRefresh: () => {
+			if (!refreshing && !loadingMore && !mutation.isLoading) void refreshFirstNotificationsPage();
+		},
+		ListHeaderComponent:
+			refreshing && !allNotifications.length ? (
+				<Text className="font-sans text-ink dark:text-slate-100">{t.common.loading}</Text>
+			) : undefined,
+		ListEmptyComponent:
+			!refreshing && !listError ? (
+				<View className="items-center justify-center gap-4 px-6 py-8" style={{ minHeight: height * 0.32 }}>
+					<View className="h-20 w-20 items-center justify-center rounded-full bg-blue-50 dark:bg-slate-800">
+						<MaterialIcons name="notifications-none" size={36} color="#0274d7" />
+						<View
+							className="absolute right-0 top-0 h-4 w-4 rounded-full border-4 border-white bg-blue-200
+						dark:border-panel dark:bg-blue-900"
+						/>
+					</View>
+					<Text className="text-center font-poppins-medium text-base text-slate-500 dark:text-slate-300">
+						{t.navigation.noNotifications}
+					</Text>
+				</View>
+			) : undefined,
+		ListFooterComponent: loadingMore ? (
+			<ActivityIndicator accessibilityLabel={t.common.loading} color="#0274d7" style={{ padding: 16 }} />
+		) : undefined,
+		renderItem: ({ item }: { item: NotificationType }) => {
+			const date = parseISO(item.date_created);
+			return (
+				<Pressable
+					accessibilityRole="button"
+					disabled={
+						mutation.isLoading ||
+						refreshing ||
+						loadingMore ||
+						(item.is_read && !getNotificationDestination(item.target_url))
+					}
+					onPress={() => void handleNotificationClick(item)}
+				>
+					<View
+						className={
+							'gap-3 rounded-2xl border p-4 ' +
+							(item.is_read
+								? 'border-slate-200 bg-white dark:border-slate-700 dark:bg-panel'
+								: 'border-blue-100 bg-blue-50/50 dark:border-slate-600 dark:bg-slate-800')
+						}
+					>
+						<View className="flex-row items-start gap-3">
+							<MaterialIcons
+								name={item.is_read ? 'notifications-none' : 'notifications-active'}
+								size={22}
+								color={item.is_read ? '#64748b' : '#0274d7'}
+							/>
+							<View className="flex-1 gap-1">
+								<Text className="text-ink dark:text-slate-100 font-poppins-semibold">{item.title}</Text>
+								<Text className="font-sans text-sm leading-5 text-slate-600 dark:text-slate-300">{item.message}</Text>
+								<Text className="font-sans text-xs text-slate-400 dark:text-slate-400">
+									{isValid(date) ? format(date, 'dd/MM/yyyy HH:mm') : ''}
+								</Text>
+							</View>
+						</View>
+					</View>
+				</Pressable>
+			);
+		},
+	};
 	return (
 		<>
 			<Pressable
@@ -577,122 +715,66 @@ export const Notifications = () => {
 					</View>
 				)}
 			</Pressable>
-			<Modal
+			<BottomSheet
 				visible={open}
-				transparent
-				animationType="slide"
-				onRequestClose={handleNotifClose}
+				title={t.navigation.notifications}
+				titleIcon={
+					<View className="h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 dark:bg-slate-800">
+						<MaterialIcons name="notifications" size={24} color="#0274d7" />
+					</View>
+				}
+				onClose={handleNotifClose}
 				onDismiss={handleNotifClose}
 				testID="notifications-sheet"
+				style={{ minHeight: height * 0.5, maxHeight: height * 0.75 }}
 			>
-				<View className="flex-1 justify-end bg-black/40">
+				{unreadCount > 0 && (
 					<Pressable
-						testID="notifications-backdrop"
-						accessible={false}
-						onPress={handleNotifClose}
-						className="absolute inset-0"
-					/>
-
-					<View
-						accessibilityViewIsModal
-						className="gap-4 rounded-t-3xl bg-white px-5 pb-8 pt-5 dark:bg-panel"
-						style={{ maxHeight: height * 0.75 }}
+						accessibilityRole="button"
+						accessibilityLabel={t.navigation.markAllRead}
+						accessibilityState={{ busy: mutation.isLoading, disabled: mutation.isLoading || refreshing || loadingMore }}
+						disabled={mutation.isLoading || refreshing || loadingMore}
+						onPress={() => void handleMarkAllRead()}
+						className="min-h-11 flex-row items-center justify-end gap-2 self-end rounded-lg px-2 py-2
+						active:bg-blue-50 dark:active:bg-slate-800"
 					>
-						<View className="flex-row items-center gap-3">
-							<MaterialIcons name="notifications" size={24} color="#0274d7" />
-							<Text className="text-ink dark:text-slate-100 flex-1 font-poppins-semibold text-xl">
-								{t.navigation.notifications}
-							</Text>
-							<Pressable
-								accessibilityRole="button"
-								accessibilityLabel={t.common.close}
-								onPress={handleNotifClose}
-								className="min-h-11 min-w-11 items-center justify-center"
-							>
-								<MaterialIcons name="close" size={24} color="#64748b" />
-							</Pressable>
-						</View>
-						<Button
-							buttonText={t.navigation.markAllRead}
-							inverted
-							loading={mutation.isLoading}
-							onClick={() => void handleMarkAllRead()}
-							active={!(unreadCount === 0 || refreshing || loadingMore)}
-						/>
-						{!!actionError && <ApiAlert errorDetails={actionError} />}
-						{!!listError && (
-							<>
-								<ApiAlert
-									errorDetails={
-										axiosError.status_code === 0
-											? t.errors.networkError
-											: axiosError.status_code === 403
-												? t.noPermission.description
-												: axiosError.status_code === 404
-													? t.notFound.message
-													: axiosError.message
-									}
-								/>
-								<Button
-									buttonText={t.common.retry}
-									inverted
-									onClick={() => void (failedPage === 1 ? refreshFirstNotificationsPage() : handleLoadMore())}
-									active={!(refreshing || loadingMore)}
-									loading={false}
-								/>
-							</>
-						)}
-						<ScrollView nestedScrollEnabled style={{ flexGrow: 0, flexShrink: 1 }} contentContainerStyle={{ gap: 12 }}>
-							{refreshing && <Text className="font-sans text-ink dark:text-slate-100">{t.common.loading}</Text>}
-							{!refreshing && !listError && !allNotifications.length && (
-								<Text className="font-sans text-ink dark:text-slate-100">{t.navigation.noNotifications}</Text>
+						<View className="h-5 w-5 items-center justify-center">
+							{mutation.isLoading ? (
+								<ActivityIndicator size="small" color="#0274d7" />
+							) : (
+								<MaterialIcons name="done-all" size={18} color="#0274d7" />
 							)}
-							{allNotifications.map((item) => {
-								const date = parseISO(item.date_created);
-								return (
-									<Pressable
-										key={item.id}
-										accessibilityRole="button"
-										disabled={
-											mutation.isLoading ||
-											refreshing ||
-											loadingMore ||
-											(item.is_read && !getNotificationDestination(item.target_url))
-										}
-										onPress={() => void handleNotificationClick(item)}
-									>
-										<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
-											<View className="flex-row items-start gap-3">
-												<MaterialIcons
-													name={item.is_read ? 'notifications-none' : 'notifications-active'}
-													size={22}
-													color={item.is_read ? '#64748b' : '#0274d7'}
-												/>
-												<View className="flex-1 gap-1">
-													<Text className="text-ink dark:text-slate-100 font-poppins-semibold">{item.title}</Text>
-													<Text className="font-sans text-ink dark:text-slate-100 text-sm">{item.message}</Text>
-													<Text className="font-sans dark:text-slate-100 text-xs text-slate-500">
-														{isValid(date) ? format(date, 'dd/MM/yyyy HH:mm') : ''}
-													</Text>
-												</View>
-											</View>
-										</View>
-									</Pressable>
-								);
-							})}
-						</ScrollView>
-						{hasMore && !listError && (
-							<Button
-								buttonText={t.navigation.loadMore}
-								inverted
-								loading={loadingMore}
-								onClick={() => void handleLoadMore()}
-								active={!(refreshing || mutation.isLoading)}
-							/>
-						)}
-					</View>
+						</View>
+						<Text className="font-poppins-medium text-sm text-brand">{t.navigation.markAllRead}</Text>
+					</Pressable>
+				)}
+				{!!actionError && <ApiAlert errorDetails={actionError} />}
+				{!!listError && (
+					<>
+						<ApiAlert
+							errorDetails={
+								axiosError.status_code === 0
+									? t.errors.networkError
+									: axiosError.status_code === 403
+										? t.noPermission.description
+										: axiosError.status_code === 404
+											? t.notFound.message
+											: axiosError.message
+							}
+						/>
+						<Button
+							buttonText={t.common.retry}
+							inverted
+							onClick={() => void (failedPage === 1 ? refreshFirstNotificationsPage() : handleLoadMore())}
+							active={!(refreshing || loadingMore)}
+							loading={false}
+						/>
+					</>
+				)}
+				<View style={{ height: height * 0.45, flexShrink: 1 }}>
+					{Platform.OS === 'web' ? <FlatList {...listProps} /> : <FlashList {...listProps} />}
 				</View>
-			</Modal>
+			</BottomSheet>
 		</>
 	);
 };

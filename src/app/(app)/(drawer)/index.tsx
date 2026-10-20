@@ -1,5 +1,5 @@
 import { ScrollView, Text, Image, View } from 'react-native';
-import Logo from '../../../assets/facturation-logo.png';
+import Logo from '../../../../assets/facturation-logo.png';
 
 const DashboardPage = () => {
 	return (
