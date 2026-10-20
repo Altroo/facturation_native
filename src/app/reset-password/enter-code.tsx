@@ -1,6 +1,7 @@
+import ApiAlert from '@/components/formikElements/apiLoading/apiAlert/apiAlert';
 import ApiProgress from '@/components/formikElements/apiLoading/apiProgress/apiProgress';
-import { useCallback, useRef, useState } from 'react';
-import { Text, TextInput, View, type TextInputInstance } from 'react-native';
+import { useRef, useState } from 'react';
+import { ScrollView, Text, TextInput, View, type TextInputInstance } from 'react-native';
 import { useFocusEffect, useRouter, Redirect } from 'expo-router';
 import { useFormik } from 'formik';
 import { toFormikValidationSchema } from 'zod-formik-adapter';
@@ -8,21 +9,20 @@ import AuthLayout from '@/components/layouts/auth/authLayout';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import { usePasswordResetMutation, useSendPasswordResetCodeMutation } from '@/store/services/account';
 import { passwordResetCodeSchema } from '@/utils/formValidationSchemas';
-import { normalizeApiError, setFormikAutoErrors } from '@/utils/helpers';
+import { normalizeApiError, runWithCleanup, setFormikAutoErrors } from '@/utils/helpers';
 import { useLanguage, useToast } from '@/utils/hooks';
 import { passwordResetStorage } from '@/Storage/passwordResetStorage';
 import { passwordResetCodeFields as fields } from '@/utils/rawData';
 import { AUTH_RESET_PASSWORD, AUTH_RESET_PASSWORD_SET_PASSWORD } from '@/utils/routes';
-import { runWithCleanup } from '@/utils/runWithCleanup';
-import type {
-	EnterCodePageContentProps,
-	EnterCodeProps,
-	PasswordResetCodeField as FieldKey,
-	PasswordResetData,
-} from '@/types/accountTypes';
+import type { PasswordResetCodeField as FieldKey, PasswordResetData } from '@/types/accountTypes';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
-const EnterCodePageContent = ({ email }: EnterCodePageContentProps) => {
+type EnterCodePageContentProps = {
+	email: string;
+};
+
+const EnterCodePageContent = (props: EnterCodePageContentProps) => {
+	const { email } = props;
 	const router = useRouter();
 	const { t } = useLanguage();
 	const { onSuccess, onError } = useToast();
@@ -93,10 +93,20 @@ const EnterCodePageContent = ({ email }: EnterCodePageContentProps) => {
 	return (
 		<View className="gap-6">
 			<Text className="text-ink dark:text-slate-100 font-poppins-semibold text-3xl">{t.auth.enterCodeTitle}</Text>
-			<Text className="font-sans text-sm leading-6 text-slate-500 dark:text-slate-400">
-				{t.auth.codeSentTo}
-				{email}
-			</Text>
+			<View className="gap-1">
+				<Text className="font-sans text-sm leading-6 text-slate-500 dark:text-slate-400">
+					{t.auth.codeSentTo.trimEnd()}
+				</Text>
+				<ScrollView horizontal showsHorizontalScrollIndicator={false}>
+					<Text
+						selectable
+						numberOfLines={1}
+						className="font-poppins-medium text-sm leading-6 text-ink dark:text-slate-100"
+					>
+						{email}
+					</Text>
+				</ScrollView>
+			</View>
 			<View className="flex-row gap-2">
 				{fields.map((field, index) => (
 					<View key={field} className="flex-1 gap-1">
@@ -130,15 +140,9 @@ const EnterCodePageContent = ({ email }: EnterCodePageContentProps) => {
 				))}
 			</View>
 			{fields.some((field) => formik.touched[field] && formik.errors[field]) && (
-				<Text accessibilityRole="alert" className="font-sans text-sm text-red-600 dark:text-red-300">
-					{fields.map((field) => formik.errors[field]).find(Boolean)}
-				</Text>
+				<ApiAlert errorDetails={fields.map((field) => formik.errors[field]).find(Boolean)} />
 			)}
-			{!!formik.errors.globalError && (
-				<Text accessibilityRole="alert" className="font-sans text-sm text-red-600 dark:text-red-300">
-					{formik.errors.globalError}
-				</Text>
-			)}
+			{!!formik.errors.globalError && <ApiAlert errorDetails={formik.errors.globalError} />}
 			<PrimaryLoadingButton
 				buttonText={t.auth.confirmCode}
 				loading={(isPending && !isResendLoading) || isPasswordResetLoading}
@@ -154,19 +158,16 @@ const EnterCodePageContent = ({ email }: EnterCodePageContentProps) => {
 				active={!pending}
 				startIcon={<MaterialIcons name="send" size={20} color="#0274d7" />}
 			/>
-			<PrimaryLoadingButton
-				buttonText={t.common.back}
-				inverted
-				onClick={() => router.dismissTo(AUTH_RESET_PASSWORD)}
-				active={!pending}
-				loading={false}
-				startIcon={<MaterialIcons name="arrow-back" size={20} color={'#0274d7'} />}
-			/>
 		</View>
 	);
 };
+
+type EnterCodeProps = {
+	email: string;
+};
+
 const EnterCodeClient = (props: EnterCodeProps) => (
-	<AuthLayout>
+	<AuthLayout backHref={AUTH_RESET_PASSWORD}>
 		<EnterCodePageContent {...props} />
 	</AuthLayout>
 );
@@ -174,26 +175,24 @@ const EnterCodeClient = (props: EnterCodeProps) => (
 const EnterCodePage = () => {
 	const [recovery, setRecovery] = useState<PasswordResetData | null>(null);
 	const [ready, setReady] = useState(false);
-	useFocusEffect(
-		useCallback(() => {
-			let mounted = true;
-			setReady(false);
-			void passwordResetStorage
-				.read()
-				.then((value) => {
-					if (mounted) setRecovery(value);
-				})
-				.catch(() => {
-					if (mounted) setRecovery(null);
-				})
-				.finally(() => {
-					if (mounted) setReady(true);
-				});
-			return () => {
-				mounted = false;
-			};
-		}, []),
-	);
+	useFocusEffect(() => {
+		let mounted = true;
+		setReady(false);
+		void passwordResetStorage
+			.read()
+			.then((value) => {
+				if (mounted) setRecovery(value);
+			})
+			.catch(() => {
+				if (mounted) setRecovery(null);
+			})
+			.finally(() => {
+				if (mounted) setReady(true);
+			});
+		return () => {
+			mounted = false;
+		};
+	});
 	if (!ready) return <ApiProgress />;
 	if (!recovery?.email) return <Redirect href={AUTH_RESET_PASSWORD} />;
 	return <EnterCodeClient email={recovery.email} />;

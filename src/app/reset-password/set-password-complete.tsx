@@ -4,7 +4,6 @@ import { Text, View } from 'react-native';
 import { useRouter, Redirect } from 'expo-router';
 import AuthLayout from '@/components/layouts/auth/authLayout';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
-
 import { useLanguage } from '@/utils/hooks';
 import { passwordResetStorage } from '@/Storage/passwordResetStorage';
 import { AUTH_LOGIN, AUTH_RESET_PASSWORD } from '@/utils/routes';

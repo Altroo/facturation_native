@@ -1,5 +1,6 @@
+import ApiAlert from '@/components/formikElements/apiLoading/apiAlert/apiAlert';
 import ApiProgress from '@/components/formikElements/apiLoading/apiProgress/apiProgress';
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { Text, View } from 'react-native';
 import { useFocusEffect, useRouter, Redirect } from 'expo-router';
 import { useFormik } from 'formik';
@@ -9,15 +10,20 @@ import CustomPasswordInput from '@/components/formikElements/customPasswordInput
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import { useSetPasswordMutation } from '@/store/services/account';
 import { passwordResetConfirmationSchema } from '@/utils/formValidationSchemas';
-import { normalizeApiError, setFormikAutoErrors } from '@/utils/helpers';
+import { normalizeApiError, runWithCleanup, setFormikAutoErrors } from '@/utils/helpers';
 import { useLanguage } from '@/utils/hooks';
 import { passwordResetStorage } from '@/Storage/passwordResetStorage';
 import { AUTH_RESET_PASSWORD_COMPLETE, AUTH_RESET_PASSWORD_ENTER_CODE, AUTH_RESET_PASSWORD } from '@/utils/routes';
-import { runWithCleanup } from '@/utils/runWithCleanup';
-import type { SetPasswordPageContentProps, SetPasswordProps, PasswordResetData } from '@/types/accountTypes';
+import type { PasswordResetData } from '@/types/accountTypes';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
-const SetPasswordPageContent = ({ email, code }: SetPasswordPageContentProps) => {
+type SetPasswordPageContentProps = {
+	email: string;
+	code: string;
+};
+
+const SetPasswordPageContent = (props: SetPasswordPageContentProps) => {
+	const { email, code } = props;
 	const router = useRouter();
 	const { t } = useLanguage();
 	const [isPending, setIsPending] = useState(false);
@@ -96,11 +102,7 @@ const SetPasswordPageContent = ({ email, code }: SetPasswordPageContentProps) =>
 					/>
 				}
 			/>
-			{!!formik.errors.globalError && (
-				<Text accessibilityRole="alert" className="font-sans text-sm text-red-600 dark:text-red-300">
-					{formik.errors.globalError}
-				</Text>
-			)}
+			{!!formik.errors.globalError && <ApiAlert errorDetails={formik.errors.globalError} />}
 			<PrimaryLoadingButton
 				buttonText={t.auth.changePasswordButton}
 				loading={pending}
@@ -108,19 +110,17 @@ const SetPasswordPageContent = ({ email, code }: SetPasswordPageContentProps) =>
 				active
 				startIcon={<MaterialIcons name="edit" size={20} color={'#fff'} />}
 			/>
-			<PrimaryLoadingButton
-				buttonText={t.common.back}
-				inverted
-				onClick={() => router.dismissTo(AUTH_RESET_PASSWORD_ENTER_CODE)}
-				active={!pending}
-				loading={false}
-				startIcon={<MaterialIcons name="arrow-back" size={20} color={'#0274d7'} />}
-			/>
 		</View>
 	);
 };
+
+type SetPasswordProps = {
+	email: string;
+	code: string;
+};
+
 const SetPasswordClient = (props: SetPasswordProps) => (
-	<AuthLayout>
+	<AuthLayout backHref={AUTH_RESET_PASSWORD_ENTER_CODE}>
 		<SetPasswordPageContent {...props} />
 	</AuthLayout>
 );
@@ -128,26 +128,24 @@ const SetPasswordClient = (props: SetPasswordProps) => (
 const SetPasswordPage = () => {
 	const [recovery, setRecovery] = useState<PasswordResetData | null>(null);
 	const [ready, setReady] = useState(false);
-	useFocusEffect(
-		useCallback(() => {
-			let mounted = true;
-			setReady(false);
-			void passwordResetStorage
-				.read()
-				.then((value) => {
-					if (mounted) setRecovery(value);
-				})
-				.catch(() => {
-					if (mounted) setRecovery(null);
-				})
-				.finally(() => {
-					if (mounted) setReady(true);
-				});
-			return () => {
-				mounted = false;
-			};
-		}, []),
-	);
+	useFocusEffect(() => {
+		let mounted = true;
+		setReady(false);
+		void passwordResetStorage
+			.read()
+			.then((value) => {
+				if (mounted) setRecovery(value);
+			})
+			.catch(() => {
+				if (mounted) setRecovery(null);
+			})
+			.finally(() => {
+				if (mounted) setReady(true);
+			});
+		return () => {
+			mounted = false;
+		};
+	});
 	if (!ready) return <ApiProgress />;
 	if (passwordResetStorage.isComplete()) return <Redirect href={AUTH_RESET_PASSWORD_COMPLETE} />;
 	if (!recovery?.email || !recovery.code) return <Redirect href={AUTH_RESET_PASSWORD} />;

@@ -36,24 +36,6 @@ export interface PasswordResetResponse extends TokenType {
 	};
 }
 
-export type EnterCodePageContentProps = {
-	email: string;
-};
-
-export type EnterCodeProps = {
-	email: string;
-};
-
-export type SetPasswordPageContentProps = {
-	email: string;
-	code: string;
-};
-
-export type SetPasswordProps = {
-	email: string;
-	code: string;
-};
-
 export type Tokens = {
 	access: string;
 	refresh: string;

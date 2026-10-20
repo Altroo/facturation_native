@@ -22,7 +22,10 @@ const response = (
 const reject = (config: InternalAxiosRequestConfig, status = 401) =>
 	new AxiosError('Rejected', 'ERR_BAD_REQUEST', config, undefined, { ...response({}, config), status });
 const setup = async (initial: unknown = tokens()) => {
-	const storage = { read: jest.fn(async () => initial), write: jest.fn(async (_value: Tokens | null) => {}) };
+	const storage = {
+		read: jest.fn(async () => initial),
+		write: jest.fn<Promise<void>, [Tokens | null]>().mockResolvedValue(undefined),
+	};
 	const transport = create();
 	const post = jest
 		.spyOn(transport, 'post')
@@ -73,6 +76,22 @@ it('returns a restore read failure so startup can show Retry', async () => {
 	storage.read.mockRejectedValueOnce(error);
 	await expect(auth.restore()).resolves.toEqual({ success: false, error });
 	expect(auth.getSession()).toBeNull();
+});
+it('does not restore a session after logout while storage is still loading', async () => {
+	const { auth, storage } = await setup(null);
+	let finish!: (value: unknown) => void;
+	storage.read.mockImplementationOnce(
+		() =>
+			new Promise((resolve) => {
+				finish = resolve;
+			}),
+	);
+	const restoring = auth.restore();
+	await auth.clear();
+	finish(tokens());
+	await expect(restoring).resolves.toMatchObject({ success: false, error: { message: 'Session changed' } });
+	expect(auth.getSession()).toBeNull();
+	expect(storage.write).toHaveBeenLastCalledWith(null);
 });
 it('keeps a new login when an old logout finishes late', async () => {
 	const { auth, adapter } = await setup();

@@ -1,6 +1,5 @@
 import { Text } from 'react-native';
-import type { PropsWithChildren } from 'react';
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { renderRouter, screen, fireEvent, waitFor, act } from 'expo-router/testing-library';
 import ResetPasswordLayout from '@/app/reset-password/_layout';
 import ResetPassword from '@/app/reset-password/index';
@@ -36,10 +35,6 @@ jest.mock('@/utils/hooks', () => ({
 	}),
 	useToast: () => ({ onSuccess: mockSuccess, onError: mockError }),
 }));
-jest.mock('@/components/layouts/auth/authLayout', () => {
-	const { View } = jest.requireActual<typeof import('react-native')>('react-native');
-	return { __esModule: true, default: ({ children }: PropsWithChildren) => <View>{children}</View> };
-});
 const t = translations.fr;
 const email = 'recovery@example.invalid';
 const setup = async (initialUrl = '/reset-password') =>
@@ -71,6 +66,12 @@ const enterPasswords = async () => {
 	await fireEvent.changeText(screen.getByLabelText(t.auth.passwordLabel), 'new-example-pass');
 	await fireEvent.changeText(screen.getByLabelText(t.auth.confirmPasswordLabel), 'new-example-pass');
 };
+it('uses the top-bar back action to leave a recovery deep link without a body return button', async () => {
+	await setup();
+	expect(screen.queryByRole('button', { name: t.auth.backToLogin })).toBeNull();
+	await fireEvent.press(screen.getByRole('button', { name: t.common.back }));
+	await screen.findByText('Login destination');
+});
 it('shows the original required-digit message when submitting an empty code', async () => {
 	jest.mocked(passwordResetStorage.read).mockResolvedValue({ email, code: '' });
 	await setup('/reset-password/enter-code');
@@ -111,6 +112,21 @@ it('restores a previously verified code after reopening the set-password route',
 	await setup('/reset-password/set-password');
 	await screen.findByLabelText(t.auth.passwordLabel);
 	expect(mockVerifyCode).not.toHaveBeenCalled();
+});
+it.each([
+	['/reset-password/enter-code', `${t.auth.enterCodeTitle} 1`],
+	['/reset-password/set-password', t.auth.passwordLabel],
+])('reads recovery once per focus and checks it again when returning to %s', async (path, inputLabel) => {
+	jest.mocked(passwordResetStorage.read).mockResolvedValue({ email, code: '012345' });
+	await setup(path);
+	await screen.findByLabelText(inputLabel);
+	expect(passwordResetStorage.read).toHaveBeenCalledTimes(1);
+	await act(async () => router.push('/login'));
+	await screen.findByText('Login destination');
+	jest.mocked(passwordResetStorage.read).mockResolvedValue(null);
+	await act(async () => router.back());
+	await screen.findByLabelText(t.auth.emailLabel);
+	expect(passwordResetStorage.read).toHaveBeenCalledTimes(2);
 });
 it('waits for secure storage hydration before deciding whether a recovery deep link is allowed', async () => {
 	let finish!: (value: { email: string; code: string }) => void;

@@ -29,7 +29,7 @@ it('keeps authentication children interactive with preferences visible', async (
 		'handled',
 	);
 });
-it.each(['ios', 'android'] as const)('uses the appropriate keyboard behavior on %s', async (platform) => {
+it.each(['ios', 'android'] as const)('keeps keyboard scrolling and dismissal enabled on %s', async (platform) => {
 	const original = jest.replaceProperty(Platform, 'OS', platform);
 	try {
 		await render(
@@ -37,9 +37,8 @@ it.each(['ios', 'android'] as const)('uses the appropriate keyboard behavior on 
 				<Text>Mot de passe</Text>
 			</AuthLayout>,
 		);
-		const keyboardView = screen.container.queryAll((node) => typeof node.props.onLayout === 'function')[0]!;
-		if (platform === 'ios') expect(keyboardView).toHaveStyle({ paddingBottom: 0 });
-		else expect(keyboardView).not.toHaveStyle({ paddingBottom: 0 });
+		const scrollView = screen.container.queryAll((node) => node.type === 'RCTScrollView')[0]!;
+		expect(scrollView.props.keyboardDismissMode).toBe(platform === 'ios' ? 'interactive' : 'on-drag');
 		expect(screen.getByText('Mot de passe')).toBeOnTheScreen();
 	} finally {
 		original.restore();

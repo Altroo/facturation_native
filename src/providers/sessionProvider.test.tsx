@@ -27,7 +27,7 @@ jest.mock('@/auth', () => {
 			access_expiration: '2030-01-01T00:00:00Z',
 			refresh_expiration: '2031-01-01T00:00:00Z',
 		})),
-		write: jest.fn(async (_value: Tokens | null) => {}),
+		write: jest.fn<Promise<void>, [Tokens | null]>().mockResolvedValue(undefined),
 	};
 	return {
 		...jest.requireActual<typeof import('@/auth')>('@/auth'),

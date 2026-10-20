@@ -1,3 +1,4 @@
+import ApiAlert from '@/components/formikElements/apiLoading/apiAlert/apiAlert';
 import { useCallback, useState } from 'react';
 import { Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -8,11 +9,10 @@ import CustomTextInput from '@/components/formikElements/customTextInput/customT
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import { useSendPasswordResetCodeMutation } from '@/store/services/account';
 import { emailSchema } from '@/utils/formValidationSchemas';
-import { normalizeApiError, setFormikAutoErrors } from '@/utils/helpers';
+import { normalizeApiError, runWithCleanup, setFormikAutoErrors } from '@/utils/helpers';
 import { useLanguage } from '@/utils/hooks';
 import { passwordResetStorage } from '@/Storage/passwordResetStorage';
 import { AUTH_LOGIN, AUTH_RESET_PASSWORD_ENTER_CODE } from '@/utils/routes';
-import { runWithCleanup } from '@/utils/runWithCleanup';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 const ResetPasswordPageContent = () => {
@@ -82,11 +82,7 @@ const ResetPasswordPageContent = () => {
 					/>
 				}
 			/>
-			{!!formik.errors.globalError && (
-				<Text accessibilityRole="alert" className="font-sans text-sm text-red-600 dark:text-red-300">
-					{formik.errors.globalError}
-				</Text>
-			)}
+			{!!formik.errors.globalError && <ApiAlert errorDetails={formik.errors.globalError} />}
 			<PrimaryLoadingButton
 				buttonText={t.auth.sendCodeButton}
 				loading={pending}
@@ -94,20 +90,12 @@ const ResetPasswordPageContent = () => {
 				active
 				startIcon={<MaterialIcons name="send" size={20} color={'#fff'} />}
 			/>
-			<PrimaryLoadingButton
-				buttonText={t.auth.backToLogin}
-				inverted
-				onClick={() => router.dismissTo(AUTH_LOGIN)}
-				active={!pending}
-				loading={false}
-				startIcon={<MaterialIcons name="arrow-back" size={20} color={'#0274d7'} />}
-			/>
 		</View>
 	);
 };
 
 const ResetPasswordClient = () => (
-	<AuthLayout>
+	<AuthLayout backHref={AUTH_LOGIN}>
 		<ResetPasswordPageContent />
 	</AuthLayout>
 );
