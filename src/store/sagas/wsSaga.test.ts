@@ -23,7 +23,7 @@ import {
 import { accountLogoutAction } from '@/store/actions/accountActions';
 import type { WSAction } from '@/types/wsTypes';
 import type { Tokens } from '@/types/accountTypes';
-import type { NotificationType } from '@/types/facturationTypes';
+import type { NotificationType } from '@/types/notificationTypes';
 import { notificationApi } from '@/store/services/notification';
 import { incrementUnreadCount, setLatestNotification } from '@/store/slices/notificationSlice';
 import { Platform } from 'react-native';

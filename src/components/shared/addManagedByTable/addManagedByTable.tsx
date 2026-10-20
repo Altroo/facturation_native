@@ -2,7 +2,7 @@ import { type FC } from 'react';
 import { Text, Switch, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import CustomDropDownSelect from '@/components/formikElements/customDropDownSelect/customDropDownSelect';
-import PrimaryLoadingButton from '@/components/htmlElements/buttons/primaryLoadingButton/primaryLoadingButton';
+import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import AddManagedBySection from '@/components/shared/addManagedBySection/addManagedBySection';
 import { useLanguage } from '@/utils/hooks';
 import type { ManagedByTableSectionProps } from '@/types/companyTypes';

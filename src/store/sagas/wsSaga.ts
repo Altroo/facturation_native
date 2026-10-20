@@ -16,7 +16,7 @@ import { auth } from '@/auth';
 import { notificationApi } from '@/store/services/notification';
 import { incrementUnreadCount, setLatestNotification } from '@/store/slices/notificationSlice';
 import type { Action } from 'redux';
-import type { NotificationType } from '@/types/facturationTypes';
+import type { NotificationType } from '@/types/notificationTypes';
 import Logo from '../../../assets/facturation-logo.png';
 
 type WSChannelAction = Action & {

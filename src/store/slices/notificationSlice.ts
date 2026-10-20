@@ -1,5 +1,5 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import type { NotificationType } from '@/types/facturationTypes';
+import type { NotificationType } from '@/types/notificationTypes';
 import { initToken } from '@/store/slices/_initSlice';
 
 interface NotificationState {

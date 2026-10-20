@@ -1,5 +1,5 @@
 import * as types from './index';
-import type { NotificationType } from '@/types/facturationTypes';
+import type { NotificationType } from '@/types/notificationTypes';
 
 export const WSUserAvatarAction = (pk: number, avatar: string) => {
 	return {

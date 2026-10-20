@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Platform, Text } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import ActionModals from '@/components/htmlElements/modals/actionModal/actionModals';
+import ActionModals from '@/components/nativeElements/modals/actionModal/actionModals';
 import { useAppSelector, useLanguage, useToast } from '@/utils/hooks';
 import { getAppVersions } from '@/store/selectors';
 import { isNewerAppVersion } from '@/utils/appVersion';

@@ -2,7 +2,7 @@ import { createApi } from '@reduxjs/toolkit/query/react';
 import { isAuthenticatedInstance } from '@/utils/helpers';
 import { axiosBaseQuery } from '@/utils/axiosBaseQuery';
 import type { PaginationResponseType } from '@/types/_initTypes';
-import type { NotificationType, NotificationPreferenceType } from '@/types/facturationTypes';
+import type { NotificationType, NotificationPreferenceType } from '@/types/notificationTypes';
 
 export const notificationApi = createApi({
 	reducerPath: 'notificationApi',

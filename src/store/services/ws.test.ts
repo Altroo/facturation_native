@@ -7,7 +7,7 @@ import {
 	WSUserAvatarAction,
 } from '@/store/actions/wsActions';
 import type { WSAction } from '@/types/wsTypes';
-import type { NotificationType } from '@/types/facturationTypes';
+import type { NotificationType } from '@/types/notificationTypes';
 
 type SocketStub = {
 	onopen: null | (() => void);

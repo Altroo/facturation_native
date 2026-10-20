@@ -1,4 +1,4 @@
-import type { NotificationType } from '@/types/facturationTypes';
+import type { NotificationType } from '@/types/notificationTypes';
 import * as types from './index';
 import {
 	WSMaintenanceAction,

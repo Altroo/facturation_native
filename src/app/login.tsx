@@ -12,7 +12,7 @@ import { toFormikValidationSchema } from 'zod-formik-adapter';
 import { useLanguage, useAppDispatch, useAppSelector } from '@/utils/hooks';
 import { accountLoginAction } from '@/store/actions/accountActions';
 import { loginSchema } from '@/utils/formValidationSchemas';
-import PrimaryLoadingButton from '@/components/htmlElements/buttons/primaryLoadingButton/primaryLoadingButton';
+import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import CustomTextInput from '@/components/formikElements/customTextInput/customTextInput';
 import CustomPasswordInput from '@/components/formikElements/customPasswordInput/customPasswordInput';
 import { AuthThemeToggle } from '@/components/shared/themeToggle/themeToggle';

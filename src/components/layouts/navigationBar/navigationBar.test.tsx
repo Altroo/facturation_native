@@ -3,7 +3,7 @@ import { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 
 import notification from '@/store/slices/notificationSlice';
 import { notificationApi } from '@/store/services/notification';
 import { auth } from '@/auth';
-import type { NotificationType } from '@/types/facturationTypes';
+import type { NotificationType } from '@/types/notificationTypes';
 import { useToast } from '@/utils/hooks';
 import { openURL } from 'expo-linking';
 import { getPermissionsAsync, requestPermissionsAsync, setNotificationChannelAsync } from 'expo-notifications';

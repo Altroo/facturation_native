@@ -10,9 +10,9 @@ import {
 } from '@/store/services/notification';
 import { useLanguage, useToast } from '@/utils/hooks';
 import { normalizeApiError, setFormikAutoErrors } from '@/utils/helpers';
-import type { NotificationPreferenceFormValues } from '@/types/facturationTypes';
+import type { NotificationPreferenceFormValues } from '@/types/notificationTypes';
 import CustomDropDownSelect from '@/components/formikElements/customDropDownSelect/customDropDownSelect';
-import PrimaryLoadingButton from '@/components/htmlElements/buttons/primaryLoadingButton/primaryLoadingButton';
+import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 
 const NotificationsClient = () => {
 	const { onSuccess, onError } = useToast();

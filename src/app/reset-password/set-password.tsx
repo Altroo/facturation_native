@@ -6,7 +6,7 @@ import { useFormik } from 'formik';
 import { toFormikValidationSchema } from 'zod-formik-adapter';
 import AuthLayout from '@/components/layouts/auth/authLayout';
 import CustomPasswordInput from '@/components/formikElements/customPasswordInput/customPasswordInput';
-import PrimaryLoadingButton from '@/components/htmlElements/buttons/primaryLoadingButton/primaryLoadingButton';
+import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import { useSetPasswordMutation } from '@/store/services/account';
 import { passwordResetConfirmationSchema } from '@/utils/formValidationSchemas';
 import { normalizeApiError, setFormikAutoErrors } from '@/utils/helpers';

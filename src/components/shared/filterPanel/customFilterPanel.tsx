@@ -6,7 +6,7 @@ import { format } from 'date-fns';
 import { getFilterOperatorsForColumn, type FilterItem } from 'expo-flash-datagrid';
 import CustomAutoCompleteSelect from '@/components/formikElements/customAutoCompleteSelect/customAutoCompleteSelect';
 import CustomTextInput from '@/components/formikElements/customTextInput/customTextInput';
-import PrimaryLoadingButton from '@/components/htmlElements/buttons/primaryLoadingButton/primaryLoadingButton';
+import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import { useColorMode } from '@/providers/themeProvider';
 import type { CustomFilterPanelProps } from '@/types/uiTypes';
 import { valueLessFilterOperators } from '@/utils/rawData';

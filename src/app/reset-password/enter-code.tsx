@@ -5,7 +5,7 @@ import { useFocusEffect, useRouter, Redirect } from 'expo-router';
 import { useFormik } from 'formik';
 import { toFormikValidationSchema } from 'zod-formik-adapter';
 import AuthLayout from '@/components/layouts/auth/authLayout';
-import PrimaryLoadingButton from '@/components/htmlElements/buttons/primaryLoadingButton/primaryLoadingButton';
+import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import { usePasswordResetMutation, useSendPasswordResetCodeMutation } from '@/store/services/account';
 import { passwordResetCodeSchema } from '@/utils/formValidationSchemas';
 import { normalizeApiError, setFormikAutoErrors } from '@/utils/helpers';

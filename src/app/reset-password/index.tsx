@@ -5,7 +5,7 @@ import { useFormik } from 'formik';
 import { toFormikValidationSchema } from 'zod-formik-adapter';
 import AuthLayout from '@/components/layouts/auth/authLayout';
 import CustomTextInput from '@/components/formikElements/customTextInput/customTextInput';
-import PrimaryLoadingButton from '@/components/htmlElements/buttons/primaryLoadingButton/primaryLoadingButton';
+import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import { useSendPasswordResetCodeMutation } from '@/store/services/account';
 import { emailSchema } from '@/utils/formValidationSchemas';
 import { normalizeApiError, setFormikAutoErrors } from '@/utils/helpers';

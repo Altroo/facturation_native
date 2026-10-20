@@ -8,8 +8,8 @@ import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { CropZoom, type CropZoomRefType } from 'react-native-zoom-toolkit';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import PrimaryLoadingButton from '@/components/htmlElements/buttons/primaryLoadingButton/primaryLoadingButton';
-import ImagePreview from '@/components/htmlElements/modals/imagePreview/imagePreview';
+import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
+import ImagePreview from '@/components/nativeElements/modals/imagePreview/imagePreview';
 import { useLanguage, useToast } from '@/utils/hooks';
 import type { CustomSquareImageUploadingProps as Props } from '@/types/uiTypes';
 

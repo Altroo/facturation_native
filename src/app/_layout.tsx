@@ -28,7 +28,7 @@ import { getInitState } from '@/store/selectors';
 import { initAppAction } from '@/store/actions/_initActions';
 import { accountLogoutAction } from '@/store/actions/accountActions';
 import { colors } from '@/utils/themes';
-import PrimaryLoadingButton from '@/components/htmlElements/buttons/primaryLoadingButton/primaryLoadingButton';
+import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 
 // Keep the native launch screen above React until local resources and preferences are ready.
 void SplashScreen.preventAutoHideAsync().catch((error: unknown) => {

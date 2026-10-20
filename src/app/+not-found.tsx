@@ -1,7 +1,7 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import { ScrollView, Text, View } from 'react-native';
-import PrimaryLoadingButton from '@/components/htmlElements/buttons/primaryLoadingButton/primaryLoadingButton';
+import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import { getInitState } from '@/store/selectors';
 import { useAppSelector, useLanguage } from '@/utils/hooks';
 import { AUTH_LOGIN, DASHBOARD } from '@/utils/routes';

@@ -1,7 +1,7 @@
 import { runWithCleanup } from '@/utils/runWithCleanup';
 import type { CompaniesViewInfoRowProps, CompaniesViewProps } from '@/types/companyTypes';
 import type { EntityImageProps } from '@/types/uiTypes';
-import ImagePreview from '@/components/htmlElements/modals/imagePreview/imagePreview';
+import ImagePreview from '@/components/nativeElements/modals/imagePreview/imagePreview';
 import NoPermission from '@/components/shared/noPermission/noPermission';
 import ApiAlert from '@/components/formikElements/apiLoading/apiAlert/apiAlert';
 import ApiProgress from '@/components/formikElements/apiLoading/apiProgress/apiProgress';
@@ -15,8 +15,8 @@ import { useAppDispatch, useAppSelector, useLanguage, usePermission, useToast } 
 import { getUserCompaniesState } from '@/store/selectors';
 import { normalizeApiError, formatDate } from '@/utils/helpers';
 import { COMPANIES_EDIT, COMPANIES_LIST, parseEntityId } from '@/utils/routes';
-import PrimaryLoadingButton from '@/components/htmlElements/buttons/primaryLoadingButton/primaryLoadingButton';
-import ActionModals from '@/components/htmlElements/modals/actionModal/actionModals';
+import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
+import ActionModals from '@/components/nativeElements/modals/actionModal/actionModals';
 const InfoRow = ({ icon, label, value }: CompaniesViewInfoRowProps) => {
 	const { t } = useLanguage();
 	const empty = value === null || value === undefined || value === '';

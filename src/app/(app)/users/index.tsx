@@ -1,5 +1,5 @@
 import type { EntityImageProps } from '@/types/uiTypes';
-import ImagePreview from '@/components/htmlElements/modals/imagePreview/imagePreview';
+import ImagePreview from '@/components/nativeElements/modals/imagePreview/imagePreview';
 import NoPermission from '@/components/shared/noPermission/noPermission';
 import ApiAlert from '@/components/formikElements/apiLoading/apiAlert/apiAlert';
 import { useMemo, useRef, useState } from 'react';
@@ -24,8 +24,8 @@ import { extractApiErrorMessage, normalizeApiError, formatDate } from '@/utils/h
 import { USERS_ADD, USERS_VIEW, USERS_EDIT } from '@/utils/routes';
 import { MODULES_PAGE_SIZE } from '@/utils/rawData';
 import { runWithCleanup } from '@/utils/runWithCleanup';
-import ActionModals from '@/components/htmlElements/modals/actionModal/actionModals';
-import PrimaryLoadingButton from '@/components/htmlElements/buttons/primaryLoadingButton/primaryLoadingButton';
+import ActionModals from '@/components/nativeElements/modals/actionModal/actionModals';
+import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 
 const EntityImage = ({
 	image,

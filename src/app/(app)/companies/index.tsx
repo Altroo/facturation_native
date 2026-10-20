@@ -1,6 +1,6 @@
 import { runWithCleanup } from '@/utils/runWithCleanup';
 import type { EntityImageProps } from '@/types/uiTypes';
-import ImagePreview from '@/components/htmlElements/modals/imagePreview/imagePreview';
+import ImagePreview from '@/components/nativeElements/modals/imagePreview/imagePreview';
 import NoPermission from '@/components/shared/noPermission/noPermission';
 import ApiAlert from '@/components/formikElements/apiLoading/apiAlert/apiAlert';
 import { useEffect, useRef, useState } from 'react';
@@ -22,13 +22,13 @@ import {
 } from '@/store/services/company';
 import { companiesSetUserCompaniesAction } from '@/store/actions/companiesActions';
 import type { CompanyClass } from '@/models/classes';
-import ActionModals from '@/components/htmlElements/modals/actionModal/actionModals';
+import ActionModals from '@/components/nativeElements/modals/actionModal/actionModals';
 import { getUserCompaniesState } from '@/store/selectors';
 import { useAppDispatch, useAppSelector, useLanguage, usePermission, useToast } from '@/utils/hooks';
 import { getDjangoNextPageParam, normalizeApiError, formatDate } from '@/utils/helpers';
 import { COMPANIES_ADD, COMPANIES_VIEW, COMPANIES_EDIT } from '@/utils/routes';
 import { MODULES_PAGE_SIZE } from '@/utils/rawData';
-import PrimaryLoadingButton from '@/components/htmlElements/buttons/primaryLoadingButton/primaryLoadingButton';
+import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 
 const EntityImage = ({
 	image,

@@ -7,7 +7,7 @@ import { notificationApi } from '@/store/services/notification';
 import { auth } from '@/auth';
 import { translations } from '@/translations';
 import { useToast } from '@/utils/hooks';
-import type { NotificationPreferenceType } from '@/types/facturationTypes';
+import type { NotificationPreferenceType } from '@/types/notificationTypes';
 
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
 jest.mock('@/auth', () => {

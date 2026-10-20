@@ -1,7 +1,7 @@
 import { runWithCleanup } from '@/utils/runWithCleanup';
 import type { UsersViewInfoRowProps, UsersViewProps } from '@/types/usersTypes';
 import type { EntityImageProps } from '@/types/uiTypes';
-import ImagePreview from '@/components/htmlElements/modals/imagePreview/imagePreview';
+import ImagePreview from '@/components/nativeElements/modals/imagePreview/imagePreview';
 import NoPermission from '@/components/shared/noPermission/noPermission';
 import ApiAlert from '@/components/formikElements/apiLoading/apiAlert/apiAlert';
 import ApiProgress from '@/components/formikElements/apiLoading/apiProgress/apiProgress';
@@ -14,8 +14,8 @@ import { getProfilState } from '@/store/selectors';
 import { useAppSelector, useLanguage, usePermission, useToast } from '@/utils/hooks';
 import { parseEntityId, USERS_EDIT, USERS_LIST } from '@/utils/routes';
 import { extractApiErrorMessage, normalizeApiError, formatDate } from '@/utils/helpers';
-import PrimaryLoadingButton from '@/components/htmlElements/buttons/primaryLoadingButton/primaryLoadingButton';
-import ActionModals from '@/components/htmlElements/modals/actionModal/actionModals';
+import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
+import ActionModals from '@/components/nativeElements/modals/actionModal/actionModals';
 
 const InfoRow = ({ icon, label, value }: UsersViewInfoRowProps) => {
 	const { t } = useLanguage();

@@ -8,7 +8,7 @@ import {
 } from '@/store/services/notification';
 import { setUnreadCount } from '@/store/slices/notificationSlice';
 import { normalizeApiError } from '@/utils/helpers';
-import type { NotificationType } from '@/types/facturationTypes';
+import type { NotificationType } from '@/types/notificationTypes';
 import { useColorMode } from '@/providers/themeProvider';
 import { colors } from '@/utils/themes';
 import {
@@ -41,7 +41,7 @@ import { DrawerContentScrollView, type DrawerContentComponentProps } from 'expo-
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useLanguage, useAppDispatch, useAppSelector, useToast } from '@/utils/hooks';
 import { accountLogoutAction } from '@/store/actions/accountActions';
-import Button from '@/components/htmlElements/buttons/primaryLoadingButton/primaryLoadingButton';
+import Button from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import type { TranslationDictionary } from '@/types/languageTypes';
 
 const getNavigationMenu = (isStaff: boolean, t: TranslationDictionary) => {

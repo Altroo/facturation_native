@@ -11,7 +11,7 @@ import { useAppDispatch, useAppSelector, useLanguage, useToast } from '@/utils/h
 import { changePasswordSchema } from '@/utils/formValidationSchemas';
 import { setFormikAutoErrors } from '@/utils/helpers';
 import CustomPasswordInput from '@/components/formikElements/customPasswordInput/customPasswordInput';
-import PrimaryLoadingButton from '@/components/htmlElements/buttons/primaryLoadingButton/primaryLoadingButton';
+import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 
 const PasswordClient = () => {
 	const [isPending, setIsPending] = useState(false);

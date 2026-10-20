@@ -14,8 +14,8 @@ import type { DateRangeFilterValue, GridFilterResult, PaginatedDataGridProps } f
 import type { PaginationResponseType } from '@/types/_initTypes';
 import { useLanguage, useToast } from '@/utils/hooks';
 import { dataGridThemes } from '@/utils/themes';
-import PrimaryLoadingButton from '@/components/htmlElements/buttons/primaryLoadingButton/primaryLoadingButton';
-import ActionModals from '@/components/htmlElements/modals/actionModal/actionModals';
+import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
+import ActionModals from '@/components/nativeElements/modals/actionModal/actionModals';
 import CustomTextInput from '@/components/formikElements/customTextInput/customTextInput';
 import CustomDropDownSelect from '@/components/formikElements/customDropDownSelect/customDropDownSelect';
 import ApiAlert from '@/components/formikElements/apiLoading/apiAlert/apiAlert';

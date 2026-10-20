@@ -1,4 +1,4 @@
-import type { NotificationType } from '@/types/facturationTypes';
+import type { NotificationType } from '@/types/notificationTypes';
 import { initToken } from '@/store/slices/_initSlice';
 import reducer, { incrementUnreadCount, setLatestNotification, setUnreadCount } from './notificationSlice';
 

@@ -7,7 +7,7 @@ import {
 	WSUserAvatarAction,
 } from '@/store/actions/wsActions';
 import type { WSAction, WSEnvelope } from '@/types/wsTypes';
-import type { NotificationType } from '@/types/facturationTypes';
+import type { NotificationType } from '@/types/notificationTypes';
 
 const isObjectRecord = (value: unknown): value is Record<string, unknown> => {
 	return typeof value === 'object' && value !== null;
