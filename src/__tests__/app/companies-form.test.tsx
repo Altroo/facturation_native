@@ -1,3 +1,4 @@
+import { createQueryMock } from '@/__tests__/setupQuery';
 import { configureStore } from '@reduxjs/toolkit';
 import _initReducer, { setAuthenticated } from '@/store/slices/_initSlice';
 import accountReducer, { setProfil, setGroupes } from '@/store/slices/accountSlice';
@@ -16,6 +17,7 @@ import {
 import { useGetUsersListQuery, useGetGroupsQuery } from '@/store/services/account';
 
 import { translations } from '@/translations';
+import { AutocompleteDropdownContextProvider } from '@/__tests__/setupAutocomplete';
 jest.mock('@/contexts/InitContext', () => ({ useInitAccessToken: () => 'test-access' }));
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
 let mockParams: { id?: string | string[] } = {};
@@ -35,13 +37,22 @@ jest.mock('@/utils/hooks', () => ({
 }));
 
 jest.mock('@/store/services/company', () => ({
-	useGetCompanyQuery: jest.fn(),
+	useGetCompanyQuery: jest.fn(function useGetCompanyQuery() {
+		return mockCompanyQuery.useResult();
+	}),
 	useAddCompanyMutation: jest.fn(),
 	useEditCompanyMutation: jest.fn(),
 	companyApi: { endpoints: { getUserCompanies: { initiate: jest.fn() } } },
 }));
-jest.mock('@/store/services/account', () => ({ useGetUsersListQuery: jest.fn(), useGetGroupsQuery: jest.fn() }));
+jest.mock('@/store/services/account', () => ({
+	useGetUsersListQuery: jest.fn(function useGetUsersListQuery() {
+		return mockUsersQuery.useResult();
+	}),
+	useGetGroupsQuery: jest.fn(),
+}));
 jest.mock('@/components/formikElements/customSquareImageUploading/customSquareImageUploading', () => () => null);
+const mockCompanyQuery = createQueryMock<ReturnType<typeof useGetCompanyQuery>>({} as never);
+const mockUsersQuery = createQueryMock<ReturnType<typeof useGetUsersListQuery>>({} as never);
 const creator = {
 	id: 7,
 	first_name: 'Test',
@@ -123,10 +134,8 @@ const setup = async (edit = false, record: CompanyClass = company) => {
 	store.dispatch(setAuthenticated());
 	store.dispatch(setGroupes({ group_titles: ['Caissier', 'Commercial', 'Lecture'] }));
 	const dispatch = jest.spyOn(store, 'dispatch');
-	jest
-		.mocked(useGetCompanyQuery)
-		.mockReturnValue({ currentData: edit ? record : undefined, refetch: jest.fn() } as never);
-	jest.mocked(useGetUsersListQuery).mockReturnValue({ data: [creator], refetch: jest.fn() } as never);
+	await mockCompanyQuery.setResult({ currentData: edit ? record : undefined, refetch: jest.fn() } as never);
+	await mockUsersQuery.setResult({ data: [creator], refetch: jest.fn() } as never);
 	jest.mocked(useGetGroupsQuery).mockReturnValue({ isFetching: false, refetch: jest.fn() } as never);
 	jest.mocked(useAddCompanyMutation).mockReturnValue([addCompany, {}] as never);
 	jest.mocked(useEditCompanyMutation).mockReturnValue([editCompany, {}] as never);
@@ -134,6 +143,7 @@ const setup = async (edit = false, record: CompanyClass = company) => {
 		<Provider store={store}>
 			<CompaniesForm />
 		</Provider>,
+		{ wrapper: AutocompleteDropdownContextProvider },
 	);
 	return { store, dispatch };
 };
@@ -167,14 +177,8 @@ it('creates with the original creator role and locked permissions, strips global
 	await setup();
 	expect(screen.getByText('Test Creator')).toBeOnTheScreen();
 	expect(screen.getByText('Caissier')).toBeOnTheScreen();
-	expect(screen.getByRole('switch', { name: translations.fr.managedByTable.invoiceValidation })).toHaveProp(
-		'disabled',
-		true,
-	);
-	expect(screen.getByRole('switch', { name: translations.fr.managedByTable.documentStatusChange })).toHaveProp(
-		'disabled',
-		true,
-	);
+	expect(screen.getByRole('switch', { name: translations.fr.managedByTable.invoiceValidation })).toBeDisabled();
+	expect(screen.getByRole('switch', { name: translations.fr.managedByTable.documentStatusChange })).toBeDisabled();
 	expect(screen.getByRole('button', { name: translations.fr.common.delete })).toBeDisabled();
 	await fireEvent.changeText(screen.getByLabelText(translations.fr.companies.fieldRaisonSociale + ' *'), 'New Company');
 	await fireEvent.changeText(screen.getByLabelText(translations.fr.companies.fieldICE + ' *'), '123456789012345');
@@ -196,18 +200,11 @@ it('creates with the original creator role and locked permissions, strips global
 });
 it('preserves original administrative data, images and manager permissions on edit and cannot disable existing stock', async () => {
 	await setup(true);
-	expect(screen.getByRole('switch', { name: translations.fr.companies.stockManagementLabel })).toHaveProp(
-		'disabled',
-		true,
-	);
-	expect(screen.getAllByRole('switch', { name: translations.fr.managedByTable.invoiceValidation })[0]).toHaveProp(
-		'disabled',
-		true,
-	);
-	expect(screen.getAllByRole('switch', { name: translations.fr.managedByTable.documentStatusChange })[0]).toHaveProp(
-		'disabled',
-		true,
-	);
+	expect(screen.getByRole('switch', { name: translations.fr.companies.stockManagementLabel })).toBeDisabled();
+	expect(screen.getAllByRole('switch', { name: translations.fr.managedByTable.invoiceValidation })[0]).toBeDisabled();
+	expect(
+		screen.getAllByRole('switch', { name: translations.fr.managedByTable.documentStatusChange })[0],
+	).toBeDisabled();
 	expect(screen.getAllByRole('button', { name: translations.fr.common.delete, disabled: false })).toHaveLength(1);
 	await fireEvent.changeText(
 		screen.getByLabelText(translations.fr.companies.fieldRaisonSociale + ' *'),
@@ -271,6 +268,30 @@ it('keeps edits and shows a backend field error without refreshing memberships o
 	expect(companyApi.endpoints.getUserCompanies.initiate).not.toHaveBeenCalled();
 	expect(router.dismissTo).not.toHaveBeenCalled();
 });
+
+it('keeps the company form visible and disabled while its save button is busy', async () => {
+	let finish!: () => void;
+	editCompany.mockReturnValue({
+		unwrap: () =>
+			new Promise<void>((resolve) => {
+				finish = resolve;
+			}),
+	});
+	await setup(true);
+	const label = translations.fr.companies.fieldRaisonSociale + ' *';
+	await fireEvent.changeText(screen.getByLabelText(label), 'Updated Company');
+	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.update }));
+	await waitFor(() => expect(editCompany).toHaveBeenCalledTimes(1));
+	expect(screen.getByLabelText(label)).toHaveProp('value', 'Updated Company');
+	expect(screen.getByLabelText(label)).toHaveProp('editable', false);
+	expect(screen.getByRole('button', { name: translations.fr.common.update })).toHaveProp('accessibilityState', {
+		busy: true,
+		disabled: true,
+	});
+	await act(async () => finish());
+	await waitFor(() => expect(screen.getByLabelText(label)).toHaveProp('editable', true));
+	expect(mockSuccess).toHaveBeenCalledWith(translations.fr.companies.updateSuccess);
+});
 it('uses the original validation toast and keeps invalid company fields without calling the API', async () => {
 	await setup(true);
 	await act(
@@ -292,7 +313,7 @@ it('replaces untouched cached company values and manager permissions after a sam
 		ICE: '987654321012345',
 		admins: [company.admins[0], { ...company.admins[1], role: 'Lecture', can_validate_factures: true }],
 	};
-	jest.mocked(useGetCompanyQuery).mockReturnValue({ currentData: fresh, refetch: jest.fn() } as never);
+	await mockCompanyQuery.setResult({ currentData: fresh, refetch: jest.fn() } as never);
 	await screen.rerender(
 		<Provider store={store}>
 			<CompaniesForm />
@@ -332,7 +353,7 @@ it('reinitializes company edits and managers after a same-ID refresh, matching t
 			'Unsaved Company',
 		),
 	);
-	jest.mocked(useGetCompanyQuery).mockReturnValue({
+	await mockCompanyQuery.setResult({
 		currentData: { ...company, raison_sociale: 'Server Company', ICE: '987654321012345', admins: [company.admins[0]] },
 		refetch: jest.fn(),
 	} as never);
@@ -390,7 +411,7 @@ it.each([0, 503])('uses original form/error rendering after a background refresh
 			'Unsaved Company',
 		),
 	);
-	jest.mocked(useGetCompanyQuery).mockReturnValue({
+	await mockCompanyQuery.setResult({
 		currentData: company,
 		error: { status_code: status, message: 'Refresh unavailable', details: {} },
 		refetch: jest.fn(),
@@ -417,7 +438,7 @@ it.each([0, 503])('uses original form/error rendering after a background refresh
 
 it.each([401, 403, 404])('blocks cached company editing after an authoritative %s response', async (status) => {
 	const { store } = await setup(true);
-	jest.mocked(useGetCompanyQuery).mockReturnValue({
+	await mockCompanyQuery.setResult({
 		currentData: company,
 		error: { status_code: status, message: 'Unavailable', details: {} },
 		refetch: jest.fn(),
@@ -475,7 +496,7 @@ it('renders the original add title and sections without duplicating header Back'
 });
 it('shows the original relationship loading state until users are available', async () => {
 	const { store } = await setup();
-	jest.mocked(useGetUsersListQuery).mockReturnValue({ isLoading: true, refetch: jest.fn() } as never);
+	await mockUsersQuery.setResult({ isLoading: true, refetch: jest.fn() } as never);
 	await screen.rerender(
 		<Provider store={store}>
 			<CompaniesForm />

@@ -1,5 +1,4 @@
 import type { UserClass } from '@/models/classes';
-import type { ReactNode } from 'react';
 
 export type UserCompaniesType = {
 	membership_id: number;
@@ -26,18 +25,6 @@ export type UsersFormValuesType = {
 	companies: Array<UserCompaniesType>;
 	globalError: string;
 };
-
-export type UsersFormFormikContentProps = { id?: number };
-
-export interface UsersViewInfoRowProps {
-	icon: ReactNode;
-	label: string;
-	value: string | number | null | undefined | ReactNode;
-}
-
-export interface UsersViewProps {
-	id: number;
-}
 
 export type UsersQueryParams = {
 	with_pagination?: boolean;

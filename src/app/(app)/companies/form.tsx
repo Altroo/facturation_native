@@ -1,10 +1,12 @@
+import CustomSwitch from '@/components/formikElements/customSwitch/customSwitch';
 import type { UserClass } from '@/models/classes';
 import { useInitAccessToken } from '@/contexts/InitContext';
-import { runWithCleanup } from '@/utils/runWithCleanup';
 import type { DropDownType } from '@/types/accountTypes';
 import ApiAlert from '@/components/formikElements/apiLoading/apiAlert/apiAlert';
 import NoPermission from '@/components/shared/noPermission/noPermission';
-import { ScrollView, View, KeyboardAvoidingView, Platform, Text, Switch, type ScrollViewInstance } from 'react-native';
+import { ScrollView, View, Platform, Text } from 'react-native';
+import type { KeyboardAwareScrollViewRef } from 'react-native-keyboard-controller';
+import KeyboardAwareScrollView from '@/components/shared/keyboardAwareScrollView/keyboardAwareScrollView';
 import ApiProgress from '@/components/formikElements/apiLoading/apiProgress/apiProgress';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState, type FC } from 'react';
@@ -14,21 +16,21 @@ import { useGetCompanyQuery, useAddCompanyMutation, useEditCompanyMutation } fro
 import { useGetUsersListQuery } from '@/store/services/account';
 import { getProfilState, getGroupesState } from '@/store/selectors';
 import { useAppSelector, useLanguage, usePermission, useToast } from '@/utils/hooks';
-import { normalizeApiError, setFormikAutoErrors, getLabelForKey } from '@/utils/helpers';
+import { normalizeApiError, setFormikAutoErrors, getLabelForKey, parseEntityId, runWithCleanup } from '@/utils/helpers';
 import { companySchema } from '@/utils/formValidationSchemas';
 import { nbrEmployeItemsList, civiliteItemsList } from '@/utils/rawData';
-import { COMPANIES_LIST, parseEntityId } from '@/utils/routes';
-import type {
-	ManagedByType,
-	CompanyFormValuesType,
-	CompaniesFormFormikContentProps as FormikContentProps,
-} from '@/types/companyTypes';
+import { COMPANIES_LIST } from '@/utils/routes';
+import type { CompanyFormValuesType } from '@/types/companyTypes';
 import CustomTextInput from '@/components/formikElements/customTextInput/customTextInput';
 import CustomDropDownSelect from '@/components/formikElements/customDropDownSelect/customDropDownSelect';
 import CustomSquareImageUploading from '@/components/formikElements/customSquareImageUploading/customSquareImageUploading';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
-import ManagedByTableSection from '@/components/shared/addManagedByTable/addManagedByTable';
+import ManagedByTableSection, { type ManagedByType } from '@/components/shared/addManagedByTable/addManagedByTable';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+
+type FormikContentProps = {
+	id?: number;
+};
 
 const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 	const { id } = props;
@@ -36,7 +38,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 	const { first_name, last_name } = useAppSelector(getProfilState);
 	const { onSuccess, onError } = useToast();
 	const { t } = useLanguage();
-	const scrollRef = useRef<ScrollViewInstance>(null);
+	const scrollRef = useRef<KeyboardAwareScrollViewRef>(null);
 	const isEditMode = id !== undefined;
 
 	const {
@@ -126,7 +128,8 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 		onSubmit: async (data, { setFieldError }) => {
 			setHasAttemptedSubmit(true);
 			setIsPending(true);
-			const { globalError: _globalError, ...payload } = data;
+			// eslint-disable-next-line @typescript-eslint/no-unused-vars
+			const { globalError, ...payload } = data;
 			await runWithCleanup(
 				async () => {
 					try {
@@ -244,8 +247,8 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 
 	const hasValidationErrors = Object.keys(validationErrors).length > 0;
 
-	const isLoading = isUsersLoading || isAddLoading || isUpdateLoading || isPending || (isEditMode && isDataLoading);
-	const shouldShowError = (axiosError?.status_code ?? 0) > 400 && !isLoading;
+	const isLoading = isUsersLoading || (isEditMode && isDataLoading);
+	const shouldShowError = !!dataError && (axiosError?.status_code ?? 0) > 400 && !isLoading;
 
 	const validationMessage = [
 		formik.errors.globalError,
@@ -272,16 +275,16 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 	if (shouldShowError) return <ApiAlert errorDetails={axiosError?.details} />;
 
 	return (
-		<KeyboardAvoidingView
+		<View
+			className="bg-slate-50 dark:bg-night"
 			style={{
 				flex: 1,
 			}}
-			behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-			keyboardVerticalOffset={100}
 		>
-			<ScrollView
+			<KeyboardAwareScrollView
 				ref={scrollRef}
-				className="flex-1 bg-slate-50 dark:bg-night"
+				style={{ flex: 1 }}
+				keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
 				keyboardShouldPersistTaps="handled"
 				contentContainerStyle={{
 					padding: 20,
@@ -306,15 +309,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 					</View>
 					<>
 						{formik.errors.globalError || hasValidationErrors ? (
-							<View className="flex-row items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950">
-								<MaterialIcons name="error-outline" size={22} color="#dc2626" />
-								<Text
-									accessibilityRole="alert"
-									className="font-sans flex-1 text-sm leading-6 text-red-700 dark:text-red-300"
-								>
-									{validationMessage || t.common.correctErrors}
-								</Text>
-							</View>
+							<ApiAlert variant="banner" errorDetails={validationMessage || t.common.correctErrors} />
 						) : null}
 					</>
 					<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
@@ -724,97 +719,33 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 							</View>
 						</View>
 						<>
-							<View className={'flex-row items-center gap-3 py-2 ' + (isPending ? 'opacity-60' : '')}>
-								<View className="h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800">
-									<MaterialIcons name={'currency-exchange'} size={21} color="#64748b" />
-								</View>
-								<View className="flex-1 gap-1">
-									<Text className="text-ink dark:text-slate-100 font-poppins-medium text-sm">
-										{t.companies.foreignCurrencyLabel}
-									</Text>
-									{!!t.companies.foreignCurrencyHelper && (
-										<Text className="font-sans text-xs leading-5 text-slate-500 dark:text-slate-400">
-											{t.companies.foreignCurrencyHelper}
-										</Text>
-									)}
-								</View>
-								<Switch
-									accessibilityLabel={t.companies.foreignCurrencyLabel}
-									value={formik.values.uses_foreign_currency}
-									onValueChange={(value) => void formik.setFieldValue('uses_foreign_currency', value)}
-									disabled={isPending}
-									trackColor={{
-										false: '#cbd5e1',
-										true: '#0274d7',
-									}}
-									thumbColor="#fff"
-								/>
-							</View>
-							<View
-								className={
-									'flex-row items-center gap-3 py-2 ' +
-									(!!rawData?.stock_management_enabled || isPending ? 'opacity-60' : '')
-								}
-							>
-								<View className="h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800">
-									<MaterialIcons name={'inventory-2'} size={21} color="#64748b" />
-								</View>
-								<View className="flex-1 gap-1">
-									<Text className="text-ink dark:text-slate-100 font-poppins-medium text-sm">
-										{t.companies.stockManagementLabel}
-									</Text>
-									{!!t.companies.stockManagementHelper && (
-										<Text className="font-sans text-xs leading-5 text-slate-500 dark:text-slate-400">
-											{t.companies.stockManagementHelper}
-										</Text>
-									)}
-								</View>
-								<Switch
-									accessibilityLabel={t.companies.stockManagementLabel}
-									value={formik.values.stock_management_enabled}
-									onValueChange={(value) => {
-										void formik.setFieldValue('stock_management_enabled', value);
-										if (!value) void formik.setFieldValue('inventory_management_enabled', false);
-									}}
-									disabled={!!rawData?.stock_management_enabled || isPending}
-									trackColor={{
-										false: '#cbd5e1',
-										true: '#0274d7',
-									}}
-									thumbColor="#fff"
-								/>
-							</View>
-							<View
-								className={
-									'flex-row items-center gap-3 py-2 ' +
-									(!formik.values.stock_management_enabled || isPending ? 'opacity-60' : '')
-								}
-							>
-								<View className="h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800">
-									<MaterialIcons name={'fact-check'} size={21} color="#64748b" />
-								</View>
-								<View className="flex-1 gap-1">
-									<Text className="text-ink dark:text-slate-100 font-poppins-medium text-sm">
-										{t.companies.inventoryManagementLabel}
-									</Text>
-									{!!t.companies.inventoryManagementHelper && (
-										<Text className="font-sans text-xs leading-5 text-slate-500 dark:text-slate-400">
-											{t.companies.inventoryManagementHelper}
-										</Text>
-									)}
-								</View>
-								<Switch
-									accessibilityLabel={t.companies.inventoryManagementLabel}
-									value={formik.values.inventory_management_enabled}
-									onValueChange={(value) => void formik.setFieldValue('inventory_management_enabled', value)}
-									disabled={!formik.values.stock_management_enabled || isPending}
-									trackColor={{
-										false: '#cbd5e1',
-										true: '#0274d7',
-									}}
-									thumbColor="#fff"
-								/>
-							</View>
+							<CustomSwitch
+								label={t.companies.foreignCurrencyLabel}
+								value={formik.values.uses_foreign_currency}
+								onValueChange={(value) => void formik.setFieldValue('uses_foreign_currency', value)}
+								disabled={isPending}
+								startIcon={<MaterialIcons name={'currency-exchange'} size={21} color="#64748b" />}
+								helperText={t.companies.foreignCurrencyHelper}
+							/>
+							<CustomSwitch
+								label={t.companies.stockManagementLabel}
+								value={formik.values.stock_management_enabled}
+								onValueChange={(value) => {
+									void formik.setFieldValue('stock_management_enabled', value);
+									if (!value) void formik.setFieldValue('inventory_management_enabled', false);
+								}}
+								disabled={!!rawData?.stock_management_enabled || isPending}
+								startIcon={<MaterialIcons name={'inventory-2'} size={21} color="#64748b" />}
+								helperText={t.companies.stockManagementHelper}
+							/>
+							<CustomSwitch
+								label={t.companies.inventoryManagementLabel}
+								value={formik.values.inventory_management_enabled}
+								onValueChange={(value) => void formik.setFieldValue('inventory_management_enabled', value)}
+								disabled={!formik.values.stock_management_enabled || isPending}
+								startIcon={<MaterialIcons name={'fact-check'} size={21} color="#64748b" />}
+								helperText={t.companies.inventoryManagementHelper}
+							/>
 						</>
 					</View>
 
@@ -864,20 +795,12 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 					/>
 					<>
 						{formik.errors.globalError || hasValidationErrors ? (
-							<View className="flex-row items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950">
-								<MaterialIcons name="error-outline" size={22} color="#dc2626" />
-								<Text
-									accessibilityRole="alert"
-									className="font-sans flex-1 text-sm leading-6 text-red-700 dark:text-red-300"
-								>
-									{validationMessage || t.common.correctErrors}
-								</Text>
-							</View>
+							<ApiAlert variant="banner" errorDetails={validationMessage || t.common.correctErrors} />
 						) : null}
 					</>
 					<PrimaryLoadingButton
 						buttonText={isEditMode ? t.common.update : t.companies.addTitle}
-						loading={isPending}
+						loading={isPending || isAddLoading || isUpdateLoading}
 						onClick={() => {
 							setHasAttemptedSubmit(true);
 							void formik.submitForm();
@@ -890,8 +813,8 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 						startIcon={<MaterialIcons name={isEditMode ? 'save' : 'add'} size={20} color={'#fff'} />}
 					/>
 				</>
-			</ScrollView>
-		</KeyboardAvoidingView>
+			</KeyboardAwareScrollView>
+		</View>
 	);
 };
 

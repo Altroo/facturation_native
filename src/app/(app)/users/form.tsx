@@ -1,10 +1,12 @@
+import CustomSwitch from '@/components/formikElements/customSwitch/customSwitch';
 import type { CompanyClass } from '@/models/classes';
 import { useInitAccessToken } from '@/contexts/InitContext';
-import { runWithCleanup, runWithErrorHandler } from '@/utils/runWithCleanup';
 import type { DropDownType } from '@/types/accountTypes';
 import ApiAlert from '@/components/formikElements/apiLoading/apiAlert/apiAlert';
 import NoPermission from '@/components/shared/noPermission/noPermission';
-import { ScrollView, View, KeyboardAvoidingView, Platform, Text, Switch, type ScrollViewInstance } from 'react-native';
+import { ScrollView, View, Platform, Text } from 'react-native';
+import type { KeyboardAwareScrollViewRef } from 'react-native-keyboard-controller';
+import KeyboardAwareScrollView from '@/components/shared/keyboardAwareScrollView/keyboardAwareScrollView';
 import ApiProgress from '@/components/formikElements/apiLoading/apiProgress/apiProgress';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState, type FC } from 'react';
@@ -19,15 +21,18 @@ import {
 import { useGetCompaniesListQuery } from '@/store/services/company';
 import { getProfilState, getGroupesState } from '@/store/selectors';
 import { useAppSelector, useLanguage, useToast } from '@/utils/hooks';
-import { normalizeApiError, setFormikAutoErrors, getLabelForKey } from '@/utils/helpers';
+import {
+	normalizeApiError,
+	setFormikAutoErrors,
+	getLabelForKey,
+	parseEntityId,
+	runWithCleanup,
+	runWithErrorHandler,
+} from '@/utils/helpers';
 import { userSchema } from '@/utils/formValidationSchemas';
 import { genderItemsList } from '@/utils/rawData';
-import { USERS_LIST, parseEntityId } from '@/utils/routes';
-import type {
-	UserCompaniesType,
-	UsersFormValuesType,
-	UsersFormFormikContentProps as FormikContentProps,
-} from '@/types/usersTypes';
+import { USERS_LIST } from '@/utils/routes';
+import type { UserCompaniesType, UsersFormValuesType } from '@/types/usersTypes';
 import CustomTextInput from '@/components/formikElements/customTextInput/customTextInput';
 import CustomDropDownSelect from '@/components/formikElements/customDropDownSelect/customDropDownSelect';
 import CustomSquareImageUploading from '@/components/formikElements/customSquareImageUploading/customSquareImageUploading';
@@ -35,12 +40,16 @@ import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoa
 import ManagedByTableSection from '@/components/shared/addManagedByTable/addManagedByTable';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
+type FormikContentProps = {
+	id?: number;
+};
+
 const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 	const { id } = props;
 	const token = useInitAccessToken();
 	const { onSuccess, onError } = useToast();
 	const { t } = useLanguage();
-	const scrollRef = useRef<ScrollViewInstance>(null);
+	const scrollRef = useRef<KeyboardAwareScrollViewRef>(null);
 	const isEditMode = id !== undefined;
 
 	const {
@@ -90,7 +99,8 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 		onSubmit: async (data, { setFieldError }) => {
 			setHasAttemptedSubmit(true);
 			setIsPending(true);
-			const { globalError: _globalError, ...payload } = data;
+			// eslint-disable-next-line @typescript-eslint/no-unused-vars -- Exclude the local Formik error from the API payload.
+			const { globalError, ...payload } = data;
 			await runWithCleanup(
 				async () => {
 					await runWithErrorHandler(
@@ -208,14 +218,8 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 
 	const hasValidationErrors = Object.keys(validationErrors).length > 0;
 
-	const isLoading: boolean =
-		isCompaniesLoading ||
-		isAddLoading ||
-		isCheckEmailLoading ||
-		isUpdateLoading ||
-		isPending ||
-		(isEditMode && isDataLoading);
-	const shouldShowError = (axiosError?.status_code ?? 0) > 400 && !isLoading;
+	const isLoading = isCompaniesLoading || (isEditMode && isDataLoading);
+	const shouldShowError = !!dataError && (axiosError?.status_code ?? 0) > 400 && !isLoading;
 
 	const validationMessage = [
 		formik.errors.globalError,
@@ -242,16 +246,16 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 	if (shouldShowError) return <ApiAlert errorDetails={axiosError?.details} />;
 
 	return (
-		<KeyboardAvoidingView
+		<View
+			className="bg-slate-50 dark:bg-night"
 			style={{
 				flex: 1,
 			}}
-			behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-			keyboardVerticalOffset={100}
 		>
-			<ScrollView
+			<KeyboardAwareScrollView
 				ref={scrollRef}
-				className="flex-1 bg-slate-50 dark:bg-night"
+				style={{ flex: 1 }}
+				keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
 				keyboardShouldPersistTaps="handled"
 				contentContainerStyle={{
 					padding: 20,
@@ -278,15 +282,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 					</View>
 					<>
 						{formik.errors.globalError || hasValidationErrors ? (
-							<View className="flex-row items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950">
-								<MaterialIcons name="error-outline" size={22} color="#dc2626" />
-								<Text
-									accessibilityRole="alert"
-									className="font-sans flex-1 text-sm leading-6 text-red-700 dark:text-red-300"
-								>
-									{validationMessage || t.common.correctErrors}
-								</Text>
-							</View>
+							<ApiAlert variant="banner" errorDetails={validationMessage || t.common.correctErrors} />
 						) : null}
 					</>
 					<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
@@ -420,48 +416,20 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 							</View>
 						</View>
 						<>
-							<View className={'flex-row items-center gap-3 py-2 ' + (isPending ? 'opacity-60' : '')}>
-								<View className="h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800">
-									<MaterialIcons name={'check-circle-outline'} size={21} color="#64748b" />
-								</View>
-								<View className="flex-1 gap-1">
-									<Text className="text-ink dark:text-slate-100 font-poppins-medium text-sm">
-										{t.users.isActiveLabel}
-									</Text>
-								</View>
-								<Switch
-									accessibilityLabel={t.users.isActiveLabel}
-									value={formik.values.is_active}
-									onValueChange={(value) => void formik.setFieldValue('is_active', value)}
-									disabled={isPending}
-									trackColor={{
-										false: '#cbd5e1',
-										true: '#0274d7',
-									}}
-									thumbColor="#fff"
-								/>
-							</View>
-							<View className={'flex-row items-center gap-3 py-2 ' + (isPending ? 'opacity-60' : '')}>
-								<View className="h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800">
-									<MaterialIcons name={'admin-panel-settings'} size={21} color="#64748b" />
-								</View>
-								<View className="flex-1 gap-1">
-									<Text className="text-ink dark:text-slate-100 font-poppins-medium text-sm">
-										{t.users.isAdminLabel}
-									</Text>
-								</View>
-								<Switch
-									accessibilityLabel={t.users.isAdminLabel}
-									value={formik.values.is_staff}
-									onValueChange={(value) => void formik.setFieldValue('is_staff', value)}
-									disabled={isPending}
-									trackColor={{
-										false: '#cbd5e1',
-										true: '#0274d7',
-									}}
-									thumbColor="#fff"
-								/>
-							</View>
+							<CustomSwitch
+								label={t.users.isActiveLabel}
+								value={formik.values.is_active}
+								onValueChange={(value) => void formik.setFieldValue('is_active', value)}
+								disabled={isPending}
+								startIcon={<MaterialIcons name={'check-circle-outline'} size={21} color="#64748b" />}
+							/>
+							<CustomSwitch
+								label={t.users.isAdminLabel}
+								value={formik.values.is_staff}
+								onValueChange={(value) => void formik.setFieldValue('is_staff', value)}
+								disabled={isPending}
+								startIcon={<MaterialIcons name={'admin-panel-settings'} size={21} color="#64748b" />}
+							/>
 						</>
 					</View>
 
@@ -507,20 +475,12 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 					/>
 					<>
 						{formik.errors.globalError || hasValidationErrors ? (
-							<View className="flex-row items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950">
-								<MaterialIcons name="error-outline" size={22} color="#dc2626" />
-								<Text
-									accessibilityRole="alert"
-									className="font-sans flex-1 text-sm leading-6 text-red-700 dark:text-red-300"
-								>
-									{validationMessage || t.common.correctErrors}
-								</Text>
-							</View>
+							<ApiAlert variant="banner" errorDetails={validationMessage || t.common.correctErrors} />
 						) : null}
 					</>
 					<PrimaryLoadingButton
 						buttonText={isEditMode ? t.common.update : t.users.addTitle}
-						loading={isPending}
+						loading={isPending || isAddLoading || isCheckEmailLoading || isUpdateLoading}
 						onClick={() => {
 							setHasAttemptedSubmit(true);
 							void formik.submitForm();
@@ -533,8 +493,8 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 						startIcon={<MaterialIcons name={isEditMode ? 'save' : 'person-add'} size={20} color={'#fff'} />}
 					/>
 				</>
-			</ScrollView>
-		</KeyboardAvoidingView>
+			</KeyboardAwareScrollView>
+		</View>
 	);
 };
 

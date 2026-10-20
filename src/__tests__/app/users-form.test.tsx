@@ -1,3 +1,4 @@
+import { createQueryMock } from '@/__tests__/setupQuery';
 import { configureStore } from '@reduxjs/toolkit';
 import _initReducer, { setAuthenticated } from '@/store/slices/_initSlice';
 import accountReducer, { setProfil, setGroupes } from '@/store/slices/accountSlice';
@@ -15,18 +16,25 @@ import {
 import { useGetCompaniesListQuery } from '@/store/services/company';
 
 import { translations } from '@/translations';
+import { AutocompleteDropdownContextProvider, toggleAutocomplete } from '@/__tests__/setupAutocomplete';
 import type { UserWithCompaniesResponseType } from '@/types/usersTypes';
 jest.mock('@/contexts/InitContext', () => ({ useInitAccessToken: () => 'test-access' }));
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
 let mockParams: { id?: string | string[] } = {};
 jest.mock('expo-router', () => ({ useLocalSearchParams: () => mockParams, router: { dismissTo: jest.fn() } }));
 jest.mock('@/store/services/account', () => ({
-	useGetUserQuery: jest.fn(),
+	useGetUserQuery: jest.fn(function useGetUserQuery() {
+		return mockUserQuery.useResult();
+	}),
 	useAddUserMutation: jest.fn(),
 	useEditUserMutation: jest.fn(),
 	useCheckEmailMutation: jest.fn(),
 }));
-jest.mock('@/store/services/company', () => ({ useGetCompaniesListQuery: jest.fn() }));
+jest.mock('@/store/services/company', () => ({
+	useGetCompaniesListQuery: jest.fn(function useGetCompaniesListQuery() {
+		return mockCompaniesQuery.useResult();
+	}),
+}));
 jest.mock('@/components/formikElements/customSquareImageUploading/customSquareImageUploading', () => () => null);
 const mockSuccess = jest.fn();
 const mockError = jest.fn();
@@ -38,6 +46,8 @@ jest.mock('@/utils/hooks', () => ({
 	}),
 	useToast: () => ({ onSuccess: mockSuccess, onError: mockError }),
 }));
+const mockUserQuery = createQueryMock<ReturnType<typeof useGetUserQuery>>({} as never);
+const mockCompaniesQuery = createQueryMock<ReturnType<typeof useGetCompaniesListQuery>>({} as never);
 const user: UserWithCompaniesResponseType = {
 	id: 7,
 	first_name: 'Example',
@@ -77,8 +87,8 @@ const setup = async (edit = false, companies: { id: number; raison_sociale: stri
 		setUserCompanies([{ id: 4, raison_sociale: 'Company Four', role: 'Caissier', uses_foreign_currency: false }]),
 	);
 	store.dispatch(setAuthenticated());
-	jest.mocked(useGetUserQuery).mockReturnValue({ currentData: edit ? user : undefined, refetch: jest.fn() } as never);
-	jest.mocked(useGetCompaniesListQuery).mockReturnValue({ data: companies, refetch: jest.fn() } as never);
+	await mockUserQuery.setResult({ currentData: edit ? user : undefined, refetch: jest.fn() } as never);
+	await mockCompaniesQuery.setResult({ data: companies, refetch: jest.fn() } as never);
 	jest.mocked(useAddUserMutation).mockReturnValue([addUser, {}] as never);
 	jest.mocked(useEditUserMutation).mockReturnValue([editUser, {}] as never);
 	jest.mocked(useCheckEmailMutation).mockReturnValue([checkEmail, {}] as never);
@@ -86,6 +96,7 @@ const setup = async (edit = false, companies: { id: number; raison_sociale: stri
 		<Provider store={store}>
 			<UsersForm />
 		</Provider>,
+		{ wrapper: AutocompleteDropdownContextProvider },
 	);
 	return store;
 };
@@ -191,6 +202,29 @@ it('shows backend field errors without navigating away or losing edited text', a
 	expect(router.dismissTo).not.toHaveBeenCalled();
 });
 
+it('keeps the user form visible and disabled while its save button is busy', async () => {
+	let finish!: () => void;
+	editUser.mockReturnValue({
+		unwrap: () =>
+			new Promise<void>((resolve) => {
+				finish = resolve;
+			}),
+	});
+	await setup(true);
+	await fireEvent.changeText(screen.getByLabelText(translations.fr.users.fieldNom), 'Updated');
+	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.update }));
+	await waitFor(() => expect(editUser).toHaveBeenCalledTimes(1));
+	expect(screen.getByLabelText(translations.fr.users.fieldNom)).toHaveProp('value', 'Updated');
+	expect(screen.getByLabelText(translations.fr.users.fieldNom)).toHaveProp('editable', false);
+	expect(screen.getByRole('button', { name: translations.fr.common.update })).toHaveProp('accessibilityState', {
+		busy: true,
+		disabled: true,
+	});
+	await act(async () => finish());
+	await waitFor(() => expect(screen.getByLabelText(translations.fr.users.fieldNom)).toHaveProp('editable', true));
+	expect(mockSuccess).toHaveBeenCalledWith(translations.fr.users.updateSuccess);
+});
+
 it('replaces untouched cached values and memberships when the same user is refreshed', async () => {
 	const store = await setup(true);
 	const fresh = {
@@ -198,7 +232,7 @@ it('replaces untouched cached values and memberships when the same user is refre
 		first_name: 'Fresh name',
 		companies: [{ ...user.companies[0], membership_id: 12, role: 'Lecture', can_validate_factures: true }],
 	};
-	jest.mocked(useGetUserQuery).mockReturnValue({ currentData: fresh, refetch: jest.fn() } as never);
+	await mockUserQuery.setResult({ currentData: fresh, refetch: jest.fn() } as never);
 	await screen.rerender(
 		<Provider store={store}>
 			<UsersForm />
@@ -216,7 +250,7 @@ it('reinitializes values and memberships after a same-user refresh, matching the
 	await waitFor(() =>
 		expect(screen.getByLabelText(translations.fr.users.fieldNom)).toHaveProp('value', 'Unsaved name'),
 	);
-	jest.mocked(useGetUserQuery).mockReturnValue({
+	await mockUserQuery.setResult({
 		currentData: { ...user, first_name: 'Server name', companies: [] },
 		refetch: jest.fn(),
 	} as never);
@@ -257,7 +291,7 @@ it.each([0, 503])('uses original form/error rendering after a background refresh
 	await waitFor(() =>
 		expect(screen.getByLabelText(translations.fr.users.fieldNom)).toHaveProp('value', 'Unsaved name'),
 	);
-	jest.mocked(useGetUserQuery).mockReturnValue({
+	await mockUserQuery.setResult({
 		currentData: user,
 		error: { status_code: status, message: 'Refresh unavailable', details: {} },
 		refetch: jest.fn(),
@@ -280,7 +314,7 @@ it.each([0, 503])('uses original form/error rendering after a background refresh
 
 it.each([401, 403, 404])('blocks cached user editing after an authoritative %s response', async (status) => {
 	const store = await setup(true);
-	jest.mocked(useGetUserQuery).mockReturnValue({
+	await mockUserQuery.setResult({
 		currentData: user,
 		error: { status_code: status, message: 'Unavailable', details: {} },
 		refetch: jest.fn(),
@@ -301,16 +335,16 @@ it('adds companies by ID, excludes duplicates and clears both add selectors afte
 		{ id: 5, raison_sociale: 'Same Name' },
 		{ id: 6, raison_sociale: 'Same Name' },
 	]);
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.shared.selectCompany }));
+	await toggleAutocomplete(translations.fr.shared.selectCompany);
 	expect(screen.queryByRole('radio', { name: 'Company Four' })).toBeNull();
 	await fireEvent.press(screen.getAllByRole('radio', { name: 'Same Name' })[1]);
 	await fireEvent.press(screen.getAllByRole('button', { name: translations.fr.managedByTable.role }).at(-1)!);
 	await fireEvent.press(screen.getByRole('radio', { name: 'Lecture' }));
 	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.add }));
 	await waitFor(() => expect(screen.getByRole('button', { name: translations.fr.common.add })).toBeDisabled());
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.shared.selectCompany }));
+	await toggleAutocomplete(translations.fr.shared.selectCompany);
 	expect(screen.getAllByRole('radio', { name: 'Same Name' })).toHaveLength(1);
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.shared.selectCompany }));
+	await toggleAutocomplete(translations.fr.shared.selectCompany);
 	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.update }));
 	await waitFor(() => expect(editUser).toHaveBeenCalled());
 	expect(editUser.mock.calls[0][0].data.companies).toEqual([
@@ -347,7 +381,7 @@ it('renders the original add title, explicit personal fields, sections, and back
 });
 it('shows the original relationship loading state until company choices are available', async () => {
 	const store = await setup();
-	jest.mocked(useGetCompaniesListQuery).mockReturnValue({ isLoading: true, refetch: jest.fn() } as never);
+	await mockCompaniesQuery.setResult({ isLoading: true, refetch: jest.fn() } as never);
 	await screen.rerender(
 		<Provider store={store}>
 			<UsersForm />

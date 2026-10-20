@@ -1,99 +1,27 @@
-import { runWithCleanup } from '@/utils/runWithCleanup';
-import type { CompaniesViewInfoRowProps, CompaniesViewProps } from '@/types/companyTypes';
-import type { EntityImageProps } from '@/types/uiTypes';
-import ImagePreview from '@/components/nativeElements/modals/imagePreview/imagePreview';
+import InfoRow from '@/components/shared/infoRow/infoRow';
+import EntityImage from '@/components/shared/entityImage/entityImage';
 import NoPermission from '@/components/shared/noPermission/noPermission';
 import ApiAlert from '@/components/formikElements/apiLoading/apiAlert/apiAlert';
 import ApiProgress from '@/components/formikElements/apiLoading/apiProgress/apiProgress';
-import { useRef, useState, isValidElement } from 'react';
-import { ActivityIndicator, ScrollView, Text, View, Image, Pressable } from 'react-native';
+import { useRef, useState } from 'react';
+import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useGetCompanyQuery, useSuspendCompanyMutation, companyApi } from '@/store/services/company';
+import { useGetCompanyQuery, useSuspendCompanyMutation } from '@/store/services/company';
 import { companiesSetUserCompaniesAction } from '@/store/actions/companiesActions';
 import { useAppDispatch, useAppSelector, useLanguage, usePermission, useToast } from '@/utils/hooks';
 import { getUserCompaniesState } from '@/store/selectors';
-import { normalizeApiError, formatDate } from '@/utils/helpers';
-import { COMPANIES_EDIT, COMPANIES_LIST, parseEntityId } from '@/utils/routes';
+import { normalizeApiError, formatDate, parseEntityId, runWithCleanup } from '@/utils/helpers';
+import { COMPANIES_EDIT, COMPANIES_LIST } from '@/utils/routes';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import ActionModals from '@/components/nativeElements/modals/actionModal/actionModals';
-const InfoRow = ({ icon, label, value }: CompaniesViewInfoRowProps) => {
-	const { t } = useLanguage();
-	const empty = value === null || value === undefined || value === '';
-	return (
-		<View className="flex-row items-start gap-3 py-2">
-			{icon}
-			<View className="flex-1 gap-1">
-				<Text className="font-sans text-xs text-slate-500 dark:text-slate-400">{label}</Text>
-				{isValidElement(value) ? (
-					value
-				) : (
-					<Text
-						selectable
-						className={
-							'text-sm leading-6 ' +
-							(empty ? 'font-sans text-slate-400' : 'font-poppins-medium text-ink dark:text-slate-100')
-						}
-					>
-						{empty ? t.common.noData : value}
-					</Text>
-				)}
-			</View>
-		</View>
-	);
+
+type CompaniesViewProps = {
+	id: number;
 };
-const EntityImage = ({
-	image,
-	previewImage,
-	label,
-	icon = 'business',
-	avatar = false,
-	large = false,
-}: EntityImageProps) => {
-	const [open, setOpen] = useState(false);
-	const [failedUri, setFailedUri] = useState<string | null>(null);
-	const uri = typeof image === 'string' ? image : '';
-	const fullUri = typeof previewImage === 'string' && previewImage ? previewImage : uri;
-	const visibleImage = !!uri && failedUri !== uri;
-	const size = large ? 88 : 56;
-	return (
-		<>
-			<Pressable
-				accessibilityRole={visibleImage ? 'button' : undefined}
-				accessibilityLabel={label}
-				disabled={!visibleImage}
-				onPress={() => setOpen(true)}
-				className={
-					'items-center justify-center overflow-hidden border border-slate-200 bg-blue-50 dark:border-slate-700 dark:bg-slate-800 ' +
-					(avatar ? 'rounded-full' : 'rounded-2xl')
-				}
-				style={{
-					width: size,
-					height: size,
-				}}
-			>
-				{visibleImage ? (
-					<Image
-						accessibilityLabel={label}
-						source={{
-							uri,
-						}}
-						onError={() => setFailedUri(uri)}
-						style={{
-							width: size,
-							height: size,
-						}}
-						resizeMode={avatar ? 'cover' : 'contain'}
-					/>
-				) : (
-					<MaterialIcons name={icon} size={large ? 38 : 27} color="#0274d7" />
-				)}
-			</Pressable>
-			{open && <ImagePreview uri={fullUri} label={label} visible onClose={() => setOpen(false)} />}
-		</>
-	);
-};
-const CompaniesViewClient = ({ id }: CompaniesViewProps) => {
+
+const CompaniesViewClient = (props: CompaniesViewProps) => {
+	const { id } = props;
 	const { t } = useLanguage();
 	const { is_staff } = usePermission();
 	const { onSuccess, onError } = useToast();
@@ -121,18 +49,6 @@ const CompaniesViewClient = ({ id }: CompaniesViewProps) => {
 						id,
 					}).unwrap();
 					dispatch(companiesSetUserCompaniesAction(memberships.filter((company) => company.id !== id)));
-					const request = dispatch(
-						companyApi.endpoints.getUserCompanies.initiate(undefined, {
-							forceRefetch: true,
-						}),
-					);
-					try {
-						dispatch(companiesSetUserCompaniesAction(await request.unwrap()));
-					} catch {
-						/* InitEffects retries membership loading on its interval and when the app returns to the foreground. */
-					} finally {
-						request.unsubscribe();
-					}
 					onSuccess(t.companies.suspendSuccess);
 					router.dismissTo(COMPANIES_LIST);
 				} catch {
@@ -736,6 +652,7 @@ const CompaniesViewClient = ({ id }: CompaniesViewProps) => {
 		</>
 	);
 };
+
 const CompaniesViewPage = () => {
 	const { t } = useLanguage();
 	const params = useLocalSearchParams<{
@@ -768,4 +685,5 @@ const CompaniesViewPage = () => {
 		);
 	return <CompaniesViewClient key={id} id={id} />;
 };
+
 export default CompaniesViewPage;

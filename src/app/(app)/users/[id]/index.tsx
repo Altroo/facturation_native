@@ -1,100 +1,26 @@
-import { runWithCleanup } from '@/utils/runWithCleanup';
-import type { UsersViewInfoRowProps, UsersViewProps } from '@/types/usersTypes';
-import type { EntityImageProps } from '@/types/uiTypes';
-import ImagePreview from '@/components/nativeElements/modals/imagePreview/imagePreview';
+import InfoRow from '@/components/shared/infoRow/infoRow';
+import EntityImage from '@/components/shared/entityImage/entityImage';
 import NoPermission from '@/components/shared/noPermission/noPermission';
 import ApiAlert from '@/components/formikElements/apiLoading/apiAlert/apiAlert';
 import ApiProgress from '@/components/formikElements/apiLoading/apiProgress/apiProgress';
-import { useRef, useState, isValidElement } from 'react';
-import { ActivityIndicator, ScrollView, Text, View, Image, Pressable } from 'react-native';
+import { useRef, useState } from 'react';
+import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useGetUserQuery, useDeleteUserMutation } from '@/store/services/account';
 import { getProfilState } from '@/store/selectors';
 import { useAppSelector, useLanguage, usePermission, useToast } from '@/utils/hooks';
-import { parseEntityId, USERS_EDIT, USERS_LIST } from '@/utils/routes';
-import { extractApiErrorMessage, normalizeApiError, formatDate } from '@/utils/helpers';
+import { USERS_EDIT, USERS_LIST } from '@/utils/routes';
+import { extractApiErrorMessage, normalizeApiError, formatDate, parseEntityId, runWithCleanup } from '@/utils/helpers';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import ActionModals from '@/components/nativeElements/modals/actionModal/actionModals';
 
-const InfoRow = ({ icon, label, value }: UsersViewInfoRowProps) => {
-	const { t } = useLanguage();
-	const empty = value === null || value === undefined || value === '';
-	return (
-		<View className="flex-row items-start gap-3 py-2">
-			{icon}
-			<View className="flex-1 gap-1">
-				<Text className="font-sans text-xs text-slate-500 dark:text-slate-400">{label}</Text>
-				{isValidElement(value) ? (
-					value
-				) : (
-					<Text
-						selectable
-						className={
-							'text-sm leading-6 ' +
-							(empty ? 'font-sans text-slate-400' : 'font-poppins-medium text-ink dark:text-slate-100')
-						}
-					>
-						{empty ? t.common.noData : value}
-					</Text>
-				)}
-			</View>
-		</View>
-	);
+type UsersViewProps = {
+	id: number;
 };
 
-const EntityImage = ({
-	image,
-	previewImage,
-	label,
-	icon = 'business',
-	avatar = false,
-	large = false,
-}: EntityImageProps) => {
-	const [open, setOpen] = useState(false);
-	const [failedUri, setFailedUri] = useState<string | null>(null);
-	const uri = typeof image === 'string' ? image : '';
-	const fullUri = typeof previewImage === 'string' && previewImage ? previewImage : uri;
-	const visibleImage = !!uri && failedUri !== uri;
-	const size = large ? 88 : 56;
-	return (
-		<>
-			<Pressable
-				accessibilityRole={visibleImage ? 'button' : undefined}
-				accessibilityLabel={label}
-				disabled={!visibleImage}
-				onPress={() => setOpen(true)}
-				className={
-					'items-center justify-center overflow-hidden border border-slate-200 bg-blue-50 dark:border-slate-700 dark:bg-slate-800 ' +
-					(avatar ? 'rounded-full' : 'rounded-2xl')
-				}
-				style={{
-					width: size,
-					height: size,
-				}}
-			>
-				{visibleImage ? (
-					<Image
-						accessibilityLabel={label}
-						source={{
-							uri,
-						}}
-						onError={() => setFailedUri(uri)}
-						style={{
-							width: size,
-							height: size,
-						}}
-						resizeMode={avatar ? 'cover' : 'contain'}
-					/>
-				) : (
-					<MaterialIcons name={icon} size={large ? 38 : 27} color="#0274d7" />
-				)}
-			</Pressable>
-			{open && <ImagePreview uri={fullUri} label={label} visible onClose={() => setOpen(false)} />}
-		</>
-	);
-};
-const UsersViewClient = ({ id }: UsersViewProps) => {
+const UsersViewClient = (props: UsersViewProps) => {
+	const { id } = props;
 	const { t } = useLanguage();
 	const { is_staff } = usePermission();
 	const { onSuccess, onError } = useToast();
@@ -211,11 +137,15 @@ const UsersViewClient = ({ id }: UsersViewProps) => {
 							icon="person-outline"
 							large
 						/>
-						<View className="flex-1 gap-2">
+						<View className="min-w-0 flex-1 gap-2">
 							<Text accessibilityRole="header" className="text-ink dark:text-slate-100 font-poppins-semibold text-2xl">
 								{name}
 							</Text>
-							<Text className="font-sans text-sm text-slate-500 dark:text-slate-400">{userData.email}</Text>
+							<ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }}>
+								<Text numberOfLines={1} selectable className="font-sans text-sm text-slate-500 dark:text-slate-400">
+									{userData.email}
+								</Text>
+							</ScrollView>
 						</View>
 					</View>
 					<View className="flex-row flex-wrap gap-2">

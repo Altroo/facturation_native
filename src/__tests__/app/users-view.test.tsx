@@ -1,3 +1,4 @@
+import { createQueryMock } from '@/__tests__/setupQuery';
 import { configureStore } from '@reduxjs/toolkit';
 import _initReducer, { setAuthenticated } from '@/store/slices/_initSlice';
 import accountReducer, { setProfil } from '@/store/slices/accountSlice';
@@ -15,7 +16,12 @@ jest.mock('expo-router', () => ({
 	useLocalSearchParams: jest.fn(() => ({ id: '7' })),
 	router: { dismissTo: jest.fn(), push: jest.fn() },
 }));
-jest.mock('@/store/services/account', () => ({ useGetUserQuery: jest.fn(), useDeleteUserMutation: jest.fn() }));
+jest.mock('@/store/services/account', () => ({
+	useGetUserQuery: jest.fn(function useGetUserQuery() {
+		return mockUserQuery.useResult();
+	}),
+	useDeleteUserMutation: jest.fn(),
+}));
 const mockSuccess = jest.fn();
 const mockError = jest.fn();
 jest.mock('@/utils/hooks', () => ({
@@ -26,6 +32,7 @@ jest.mock('@/utils/hooks', () => ({
 	}),
 	useToast: () => ({ onSuccess: mockSuccess, onError: mockError }),
 }));
+const mockUserQuery = createQueryMock<ReturnType<typeof useGetUserQuery>>({} as never);
 const user: UserWithCompaniesResponseType = {
 	id: 7,
 	first_name: 'Example',
@@ -59,7 +66,7 @@ const setup = async (role = 'Caissier', record = user) => {
 	store.dispatch(setProfil({ ...user, id: 1, is_staff: true }));
 	store.dispatch(setUserCompanies([{ id: 4, raison_sociale: 'Company Four', role, uses_foreign_currency: false }]));
 	store.dispatch(setAuthenticated());
-	jest.mocked(useGetUserQuery).mockReturnValue({ currentData: record, refetch: jest.fn() } as never);
+	await mockUserQuery.setResult({ currentData: record, refetch: jest.fn() } as never);
 	jest.mocked(useDeleteUserMutation).mockReturnValue([remove, { isLoading: false }] as never);
 	const view = await render(
 		<Provider store={store}>
@@ -120,7 +127,7 @@ it('closes the previous user confirmation when the route changes to another user
 	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.delete }));
 	expect(screen.getByTestId('action-modal')).toBeOnTheScreen();
 	jest.mocked(useLocalSearchParams).mockReturnValue({ id: '8' });
-	jest.mocked(useGetUserQuery).mockReturnValue({ currentData: { ...user, id: 8 }, refetch: jest.fn() } as never);
+	await mockUserQuery.setResult({ currentData: { ...user, id: 8 }, refetch: jest.fn() } as never);
 	await view.rerender(
 		<Provider store={store}>
 			<UsersView />
@@ -190,7 +197,7 @@ it('submits only once while a detail destructive request is unresolved, then per
 
 it.each(['loading', 'error'])('keeps edit actions hidden while the original detail state is %s', async (state) => {
 	const { store } = await setup();
-	jest.mocked(useGetUserQuery).mockReturnValue({
+	await mockUserQuery.setResult({
 		currentData: undefined,
 		isLoading: state === 'loading',
 		error: state === 'error' ? { status_code: 404, message: 'Missing', details: {} } : undefined,

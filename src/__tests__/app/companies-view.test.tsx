@@ -1,3 +1,4 @@
+import { createQueryMock } from '@/__tests__/setupQuery';
 import account, { setProfil } from '@/store/slices/accountSlice';
 import companies, { setUserCompanies } from '@/store/slices/companiesSlice';
 import _init, { setAuthenticated } from '@/store/slices/_initSlice';
@@ -28,10 +29,13 @@ jest.mock('@/utils/hooks', () => ({
 }));
 
 jest.mock('@/store/services/company', () => ({
-	useGetCompanyQuery: jest.fn(),
+	useGetCompanyQuery: jest.fn(function useGetCompanyQuery() {
+		return mockCompanyQuery.useResult();
+	}),
 	useSuspendCompanyMutation: jest.fn(),
 	companyApi: { endpoints: { getUserCompanies: { initiate: jest.fn() } } },
 }));
+const mockCompanyQuery = createQueryMock<ReturnType<typeof useGetCompanyQuery>>({} as never);
 const creator = {
 	id: 7,
 	first_name: 'Test',
@@ -108,10 +112,7 @@ const memberships = [
 	{ id: 4, raison_sociale: 'Example Company', role: 'Caissier', uses_foreign_currency: false },
 	remainingMembership,
 ];
-const refreshedMemberships = [{ ...remainingMembership, can_change_document_status: true }];
 const suspend = jest.fn();
-const refreshMemberships = jest.fn();
-const unsubscribe = jest.fn();
 const sagaTasks: Task[] = [];
 const setup = async (record = company) => {
 	const middleware = createSagaMiddleware();
@@ -123,7 +124,7 @@ const setup = async (record = company) => {
 	store.dispatch(setProfil(creator));
 	store.dispatch(setUserCompanies(memberships));
 	store.dispatch(setAuthenticated());
-	jest.mocked(useGetCompanyQuery).mockReturnValue({ currentData: record, refetch: jest.fn() } as never);
+	await mockCompanyQuery.setResult({ currentData: record, refetch: jest.fn() } as never);
 	jest.mocked(useSuspendCompanyMutation).mockReturnValue([suspend, { isLoading: false }] as never);
 	await render(
 		<Provider store={store}>
@@ -144,10 +145,6 @@ const confirm = async () =>
 beforeEach(() => {
 	jest.clearAllMocks();
 	suspend.mockReturnValue({ unwrap: () => Promise.resolve() });
-	refreshMemberships.mockResolvedValue(refreshedMemberships);
-	jest
-		.mocked(companyApi.endpoints.getUserCompanies.initiate)
-		.mockImplementation((() => () => ({ unwrap: refreshMemberships, unsubscribe })) as never);
 });
 afterEach(() => {
 	sagaTasks.splice(0).forEach((task) => task.cancel());
@@ -183,15 +180,14 @@ it('opens the original logo from the cropped thumbnail and closes the preview', 
 	expect(screen.queryByRole('button', { name: translations.fr.common.close })).toBeNull();
 	expect(screen.getByRole('button', { name: translations.fr.companies.logoLabel })).toBeOnTheScreen();
 });
-it('suspends only after confirmation, applies refreshed memberships and returns to the company list', async () => {
+it('suspends only after confirmation, dispatches the membership update and returns to the company list', async () => {
 	const store = await setup();
 	await openModal();
 	await confirm();
 	await waitFor(() => expect(mockSuccess).toHaveBeenCalledWith(translations.fr.companies.suspendSuccess));
 	expect(suspend).toHaveBeenCalledWith({ id: 4 });
-	expect(companyApi.endpoints.getUserCompanies.initiate).toHaveBeenCalledWith(undefined, { forceRefetch: true });
-	expect(store.getState().companies.user_companies).toEqual(refreshedMemberships);
-	expect(unsubscribe).toHaveBeenCalledTimes(1);
+	expect(companyApi.endpoints.getUserCompanies.initiate).not.toHaveBeenCalled();
+	expect(store.getState().companies.user_companies).toEqual([remainingMembership]);
 	expect(screen.queryByTestId('action-modal')).toBeNull();
 	expect(router.dismissTo).toHaveBeenCalledWith('/companies');
 });
@@ -207,15 +203,13 @@ it('closes the confirmation on a failed suspend, without changing memberships or
 	expect(companyApi.endpoints.getUserCompanies.initiate).not.toHaveBeenCalled();
 	expect(router.dismissTo).not.toHaveBeenCalled();
 });
-it('removes a successfully suspended company even when membership refresh fails', async () => {
-	refreshMemberships.mockRejectedValue(new Error('Refresh unavailable'));
+it('finishes suspension without starting a separate membership request', async () => {
 	const store = await setup();
 	await openModal();
 	await confirm();
 	await waitFor(() => expect(mockSuccess).toHaveBeenCalledWith(translations.fr.companies.suspendSuccess));
 	expect(store.getState().companies.user_companies).toEqual([remainingMembership]);
 	expect(mockError).not.toHaveBeenCalled();
-	expect(unsubscribe).toHaveBeenCalledTimes(1);
 	expect(router.dismissTo).toHaveBeenCalledWith('/companies');
 });
 
@@ -254,7 +248,7 @@ it('submits only once while a detail destructive request is unresolved, then per
 
 it.each(['loading', 'error'])('keeps edit actions hidden while the original detail state is %s', async (state) => {
 	const store = await setup();
-	jest.mocked(useGetCompanyQuery).mockReturnValue({
+	await mockCompanyQuery.setResult({
 		currentData: undefined,
 		isLoading: state === 'loading',
 		error: state === 'error' ? { status_code: 404, message: 'Missing', details: {} } : undefined,
