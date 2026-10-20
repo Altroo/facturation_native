@@ -6,6 +6,7 @@ import CustomTextInput, {
 	type CustomTextInputProps,
 } from '@/components/formikElements/customTextInput/customTextInput';
 import { useLanguage } from '@/utils/hooks';
+import { colors } from '@/utils/themes';
 
 export type Props = Omit<CustomTextInputProps, 'secureTextEntry' | 'endIcon'>;
 
@@ -34,7 +35,7 @@ const CustomPasswordInput = (props: Props) => {
 					<MaterialIcons
 						name={showpassword ? 'visibility-off' : 'visibility'}
 						size={22}
-						color={theme === 'dark' ? '#cbd5e1' : '#64748b'}
+						color={theme === 'dark' ? colors.slate[300] : colors.slate[500]}
 					/>
 				</Pressable>
 			}

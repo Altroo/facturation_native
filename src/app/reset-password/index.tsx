@@ -14,6 +14,8 @@ import { useLanguage } from '@/utils/hooks';
 import { passwordResetStorage } from '@/Storage/passwordResetStorage';
 import { AUTH_LOGIN, AUTH_RESET_PASSWORD_ENTER_CODE } from '@/utils/routes';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { colors } from '@/utils/themes';
+import { EMAIL_MAX_LENGTH } from '@/utils/rawData';
 
 const ResetPasswordPageContent = () => {
 	const router = useRouter();
@@ -69,7 +71,7 @@ const ResetPasswordPageContent = () => {
 				autoCorrect={false}
 				autoComplete="email"
 				keyboardType="email-address"
-				maxLength={254}
+				maxLength={EMAIL_MAX_LENGTH}
 				onSubmitEditing={() => formik.handleSubmit()}
 				disabled={pending}
 				error={Boolean(formik.touched.email ? formik.errors.email : undefined)}
@@ -78,7 +80,7 @@ const ResetPasswordPageContent = () => {
 					<MaterialIcons
 						name="email"
 						size={20}
-						color={(formik.touched.email ? formik.errors.email : undefined) ? '#dc2626' : '#94a3b8'}
+						color={(formik.touched.email ? formik.errors.email : undefined) ? colors.danger : colors.slate[400]}
 					/>
 				}
 			/>
@@ -88,7 +90,7 @@ const ResetPasswordPageContent = () => {
 				loading={pending}
 				onClick={() => formik.handleSubmit()}
 				active
-				startIcon={<MaterialIcons name="send" size={20} color={'#fff'} />}
+				startIcon={<MaterialIcons name="send" size={20} color={colors.white} />}
 			/>
 		</View>
 	);

@@ -15,6 +15,7 @@ import { useLanguage } from '@/utils/hooks';
 import { useColorMode } from '@/providers/themeProvider';
 import type { DropDownType } from '@/types/accountTypes';
 import { KeyboardSuggestionsContext } from '@/components/shared/keyboardAwareScrollView/keyboardAwareScrollView';
+import { colors, fonts } from '@/utils/themes';
 
 export type Props = {
 	id?: string;
@@ -89,7 +90,7 @@ const CustomAutoCompleteSelect: FC<Props> = (props: Props) => {
 					{option.archived ? ' (' + t.common.archived + ')' : ''}
 				</Text>
 				<View className="h-6 w-6 items-center justify-center">
-					{value?.value === option.value && <MaterialIcons name="check-circle" size={22} color="#0274d7" />}
+					{value?.value === option.value && <MaterialIcons name="check-circle" size={22} color={colors.brand} />}
 				</View>
 			</Pressable>
 		);
@@ -138,8 +139,8 @@ const CustomAutoCompleteSelect: FC<Props> = (props: Props) => {
 						alignItems: 'center',
 						borderRadius: 12,
 						borderWidth: 1,
-						borderColor: error ? '#ef4444' : dark ? '#475569' : '#cbd5e1',
-						backgroundColor: dark ? '#222c3d' : '#ffffff',
+						borderColor: error ? colors.dangerBorder : dark ? colors.slate[600] : colors.slate[300],
+						backgroundColor: dark ? colors.panel : colors.white,
 					}}
 					textInputProps={{
 						nativeID: id,
@@ -153,14 +154,14 @@ const CustomAutoCompleteSelect: FC<Props> = (props: Props) => {
 							if (!open) void controller.current?.open();
 						},
 						placeholder: t.common.selectValue,
-						placeholderTextColor: dark ? '#94a3b8' : '#64748b',
+						placeholderTextColor: dark ? colors.slate[400] : colors.slate[500],
 						selectTextOnFocus: true,
 						autoCapitalize: 'none',
 						autoCorrect: false,
 						style: {
-							fontFamily: 'Poppins',
+							fontFamily: fonts.regular,
 							fontSize: 14,
-							color: dark ? '#f1f5f9' : '#0d070b',
+							color: dark ? colors.slate[100] : colors.ink,
 							paddingLeft: startIcon ? 0 : 12,
 							paddingRight: value && expanded ? 88 : 44,
 						},
@@ -168,8 +169,8 @@ const CustomAutoCompleteSelect: FC<Props> = (props: Props) => {
 					suggestionsListContainerStyle={{
 						borderRadius: 12,
 						borderWidth: 1,
-						borderColor: dark ? '#475569' : '#e2e8f0',
-						backgroundColor: dark ? '#222c3d' : '#ffffff',
+						borderColor: dark ? colors.slate[600] : colors.slate[200],
+						backgroundColor: dark ? colors.panel : colors.white,
 					}}
 					EmptyResultComponent={
 						<Text className="font-sans py-4 text-center text-slate-400 dark:text-slate-100">{noOptionsText}</Text>
@@ -211,7 +212,7 @@ const CustomAutoCompleteSelect: FC<Props> = (props: Props) => {
 						}}
 						className="absolute right-11 top-0 h-12 w-11 items-center justify-center"
 					>
-						<MaterialIcons name="close" size={20} color="#94a3b8" />
+						<MaterialIcons name="close" size={20} color={colors.slate[400]} />
 					</Pressable>
 				)}
 				<Pressable
@@ -229,7 +230,9 @@ const CustomAutoCompleteSelect: FC<Props> = (props: Props) => {
 					}}
 					className="absolute right-0 top-0 h-12 w-11 items-center justify-center"
 				>
-					{endIcon || <MaterialIcons name={expanded ? 'expand-less' : 'expand-more'} size={22} color="#94a3b8" />}
+					{endIcon || (
+						<MaterialIcons name={expanded ? 'expand-less' : 'expand-more'} size={22} color={colors.slate[400]} />
+					)}
 				</Pressable>
 			</View>
 			{!!helperText && (

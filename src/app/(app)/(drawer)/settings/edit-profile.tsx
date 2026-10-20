@@ -17,6 +17,7 @@ import CustomDropDownSelect from '@/components/formikElements/customDropDownSele
 import CustomSquareImageUploading from '@/components/formikElements/customSquareImageUploading/customSquareImageUploading';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { colors } from '@/utils/themes';
 
 const EditProfilPage = () => {
 	const token = useInitAccessToken();
@@ -105,7 +106,6 @@ const EditProfilPage = () => {
 		>
 			<KeyboardAwareScrollView
 				style={{ flex: 1 }}
-				bottomOffset={32}
 				keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
 				keyboardShouldPersistTaps="handled"
 				contentContainerStyle={{
@@ -118,7 +118,7 @@ const EditProfilPage = () => {
 				<>
 					<View className="flex-row items-center gap-4 py-1">
 						<View className="h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 dark:bg-panel">
-							<MaterialIcons name={'account-circle'} size={25} color="#0274d7" />
+							<MaterialIcons name={'account-circle'} size={25} color={colors.brand} />
 						</View>
 						<View className="flex-1 gap-1">
 							<Text accessibilityRole="header" className="text-ink dark:text-slate-100 font-poppins-semibold text-2xl">
@@ -134,7 +134,7 @@ const EditProfilPage = () => {
 					<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
 						<View className="mb-1 flex-row items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
 							<View className="h-10 w-10 items-center justify-center rounded-xl bg-blue-50 dark:bg-slate-800">
-								<MaterialIcons name={'add-photo-alternate'} size={21} color="#0274d7" />
+								<MaterialIcons name={'add-photo-alternate'} size={21} color={colors.brand} />
 							</View>
 							<View className="flex-1 gap-1">
 								<Text
@@ -161,7 +161,7 @@ const EditProfilPage = () => {
 					<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
 						<View className="mb-1 flex-row items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
 							<View className="h-10 w-10 items-center justify-center rounded-xl bg-blue-50 dark:bg-slate-800">
-								<MaterialIcons name={'person-outline'} size={21} color="#0274d7" />
+								<MaterialIcons name={'person-outline'} size={21} color={colors.brand} />
 							</View>
 							<View className="flex-1 gap-1">
 								<Text
@@ -180,7 +180,7 @@ const EditProfilPage = () => {
 								value={profilData?.email}
 								keyboardType="email-address"
 								disabled={true}
-								startIcon={<MaterialIcons name="mail-outline" size={20} color={'#94a3b8'} />}
+								startIcon={<MaterialIcons name="mail-outline" size={20} color={colors.slate[400]} />}
 							/>
 							<CustomTextInput
 								id="first_name"
@@ -197,7 +197,11 @@ const EditProfilPage = () => {
 									<MaterialIcons
 										name="person-outline"
 										size={20}
-										color={(formik.touched.first_name ? formik.errors.first_name : undefined) ? '#dc2626' : '#94a3b8'}
+										color={
+											(formik.touched.first_name ? formik.errors.first_name : undefined)
+												? colors.danger
+												: colors.slate[400]
+										}
 									/>
 								}
 							/>
@@ -216,7 +220,11 @@ const EditProfilPage = () => {
 									<MaterialIcons
 										name="badge"
 										size={20}
-										color={(formik.touched.last_name ? formik.errors.last_name : undefined) ? '#dc2626' : '#94a3b8'}
+										color={
+											(formik.touched.last_name ? formik.errors.last_name : undefined)
+												? colors.danger
+												: colors.slate[400]
+										}
 									/>
 								}
 							/>
@@ -229,7 +237,7 @@ const EditProfilPage = () => {
 								helperText={formik.touched.gender ? formik.errors.gender : undefined}
 								disabled={isPending}
 								error={Boolean(formik.touched.gender ? formik.errors.gender : undefined)}
-								startIcon={<MaterialIcons name="groups" size={20} color={'#94a3b8'} />}
+								startIcon={<MaterialIcons name="groups" size={20} color={colors.slate[400]} />}
 							/>
 						</>
 					</View>
@@ -243,7 +251,7 @@ const EditProfilPage = () => {
 						loading={isPending || isEditLoading}
 						onClick={() => void formik.submitForm()}
 						active
-						startIcon={<MaterialIcons name="save" size={20} color={'#fff'} />}
+						startIcon={<MaterialIcons name="save" size={20} color={colors.white} />}
 					/>
 				</>
 			</KeyboardAwareScrollView>

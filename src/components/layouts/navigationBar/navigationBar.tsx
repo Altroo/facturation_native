@@ -11,7 +11,7 @@ import { setUnreadCount } from '@/store/slices/notificationSlice';
 import { normalizeApiError } from '@/utils/helpers';
 import type { NotificationType } from '@/types/notificationTypes';
 import { useColorMode } from '@/providers/themeProvider';
-import { colors } from '@/utils/themes';
+import { colors, fonts } from '@/utils/themes';
 import {
 	COMPANIES_VIEW,
 	COMPANIES_EDIT,
@@ -60,6 +60,7 @@ import type { TranslationDictionary } from '@/types/languageTypes';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ThemeToggle from '@/components/shared/themeToggle/themeToggle';
 import LanguageSwitcher from '@/components/shared/languageSwitcher/languageSwitcher';
+import { INFINITE_SCROLL_THRESHOLD } from '@/utils/rawData';
 
 type NavigationHeaderTitleProps = {
 	children: string;
@@ -85,7 +86,7 @@ export const useNavigationHeader = () => {
 					maxWidth: Math.max(0, width - insets.left - insets.right - controlsWidth - 80),
 					minWidth: 0,
 					flexShrink: 1,
-					fontFamily: 'PoppinsSemiBold',
+					fontFamily: fonts.semibold,
 					fontSize: 15,
 					color: tintColor,
 				}}
@@ -110,12 +111,12 @@ const getNavigationMenu = (isStaff: boolean, t: TranslationDictionary) => {
 	return {
 		dashboard: {
 			title: t.navigation.dashboard,
-			icon: <MaterialIcons name="dashboard" size={21} color="#64748b" />,
+			icon: <MaterialIcons name="dashboard" size={21} color={colors.slate[500]} />,
 			items: [{ title: t.navigation.dashboard, label: t.navigation.viewDashboard, path: DASHBOARD }],
 		},
 		articles: {
 			title: t.navigation.articles,
-			icon: <MaterialIcons name="library-books" size={21} color="#64748b" />,
+			icon: <MaterialIcons name="library-books" size={21} color={colors.slate[500]} />,
 			items: [
 				{ title: t.navigation.articlesList, label: t.navigation.articlesList, path: undefined },
 				{ title: t.navigation.articlesArchived, label: t.navigation.articlesArchived, path: undefined },
@@ -123,7 +124,7 @@ const getNavigationMenu = (isStaff: boolean, t: TranslationDictionary) => {
 		},
 		clients: {
 			title: t.navigation.clients,
-			icon: <MaterialIcons name="people" size={21} color="#64748b" />,
+			icon: <MaterialIcons name="people" size={21} color={colors.slate[500]} />,
 			items: [
 				{ title: t.navigation.clientsList, label: t.navigation.clientsList, path: CLIENTS_LIST },
 				{ title: t.navigation.clientsArchived, label: t.navigation.clientsArchived, path: CLIENTS_ARCHIVED },
@@ -131,12 +132,12 @@ const getNavigationMenu = (isStaff: boolean, t: TranslationDictionary) => {
 		},
 		devis: {
 			title: t.navigation.devis,
-			icon: <MaterialIcons name="request-quote" size={21} color="#64748b" />,
+			icon: <MaterialIcons name="request-quote" size={21} color={colors.slate[500]} />,
 			items: [{ title: t.navigation.devisList, label: t.navigation.devisList, path: undefined }],
 		},
 		factures_proformat: {
 			title: t.navigation.facturesProforma,
-			icon: <MaterialIcons name="receipt-long" size={21} color="#64748b" />,
+			icon: <MaterialIcons name="receipt-long" size={21} color={colors.slate[500]} />,
 			items: [
 				{
 					title: t.navigation.facturesProformaList,
@@ -147,7 +148,7 @@ const getNavigationMenu = (isStaff: boolean, t: TranslationDictionary) => {
 		},
 		factures: {
 			title: t.navigation.facturesClient,
-			icon: <MaterialIcons name="receipt-long" size={21} color="#64748b" />,
+			icon: <MaterialIcons name="receipt-long" size={21} color={colors.slate[500]} />,
 			items: [
 				{ title: t.navigation.facturesClientList, label: t.navigation.facturesClientList, path: undefined },
 				{ title: t.navigation.facturesImpayees, label: t.navigation.facturesImpayees, path: undefined },
@@ -155,12 +156,12 @@ const getNavigationMenu = (isStaff: boolean, t: TranslationDictionary) => {
 		},
 		facturesAvoir: {
 			title: t.navigation.facturesAvoir,
-			icon: <MaterialIcons name="credit-score" size={21} color="#64748b" />,
+			icon: <MaterialIcons name="credit-score" size={21} color={colors.slate[500]} />,
 			items: [{ title: t.navigation.facturesAvoirList, label: t.navigation.facturesAvoirList, path: undefined }],
 		},
 		bonsLivraison: {
 			title: t.navigation.bonsLivraison,
-			icon: <MaterialIcons name="local-shipping" size={21} color="#64748b" />,
+			icon: <MaterialIcons name="local-shipping" size={21} color={colors.slate[500]} />,
 			items: [
 				{ title: t.navigation.bonsLivraisonList, label: t.navigation.bonsLivraisonList, path: undefined },
 				{
@@ -172,7 +173,7 @@ const getNavigationMenu = (isStaff: boolean, t: TranslationDictionary) => {
 		},
 		logistique: {
 			title: t.navigation.logistique,
-			icon: <MaterialIcons name="warehouse" size={21} color="#64748b" />,
+			icon: <MaterialIcons name="warehouse" size={21} color={colors.slate[500]} />,
 			items: [
 				{
 					title: t.navigation.logistiqueDashboard,
@@ -189,7 +190,7 @@ const getNavigationMenu = (isStaff: boolean, t: TranslationDictionary) => {
 		},
 		stock: {
 			title: t.navigation.stock,
-			icon: <MaterialIcons name="inventory-2" size={21} color="#64748b" />,
+			icon: <MaterialIcons name="inventory-2" size={21} color={colors.slate[500]} />,
 			items: [
 				{ title: t.navigation.stockState, label: t.navigation.stockState, path: undefined },
 				{ title: t.navigation.stockMovements, label: t.navigation.stockMovements, path: undefined },
@@ -199,13 +200,13 @@ const getNavigationMenu = (isStaff: boolean, t: TranslationDictionary) => {
 		},
 		reglement: {
 			title: t.navigation.reglement,
-			icon: <MaterialIcons name="payments" size={21} color="#64748b" />,
+			icon: <MaterialIcons name="payments" size={21} color={colors.slate[500]} />,
 			items: [{ title: t.navigation.reglementsList, label: t.navigation.reglementsList, path: undefined }],
 		},
 		...(isStaff && {
 			societe: {
 				title: t.navigation.companies,
-				icon: <MaterialIcons name="business" size={21} color="#64748b" />,
+				icon: <MaterialIcons name="business" size={21} color={colors.slate[500]} />,
 				items: [
 					{ title: t.navigation.companiesList, label: t.navigation.companiesList, path: COMPANIES_LIST },
 					{ title: t.navigation.newCompany, label: t.navigation.newCompany, path: COMPANIES_ADD },
@@ -213,7 +214,7 @@ const getNavigationMenu = (isStaff: boolean, t: TranslationDictionary) => {
 			},
 			utilisateurs: {
 				title: t.navigation.users,
-				icon: <MaterialIcons name="people" size={21} color="#64748b" />,
+				icon: <MaterialIcons name="people" size={21} color={colors.slate[500]} />,
 				items: [
 					{ title: t.navigation.usersList, label: t.navigation.usersList, path: USERS_LIST },
 					{ title: t.navigation.newUser, label: t.navigation.newUser, path: USERS_ADD },
@@ -222,7 +223,7 @@ const getNavigationMenu = (isStaff: boolean, t: TranslationDictionary) => {
 		}),
 		parametres: {
 			title: t.navigation.settings,
-			icon: <MaterialIcons name="settings" size={21} color="#64748b" />,
+			icon: <MaterialIcons name="settings" size={21} color={colors.slate[500]} />,
 			items: [
 				{ title: t.navigation.myProfile, label: t.navigation.myProfile, path: DASHBOARD_EDIT_PROFILE },
 				{ title: t.navigation.changePassword, label: t.navigation.changePassword, path: DASHBOARD_PASSWORD },
@@ -322,7 +323,7 @@ export const NavigationDrawer = (props: DrawerContentComponentProps) => {
 			onError(t.common.genericError);
 		}
 	};
-	const ink = theme === 'dark' ? '#cbd5e1' : '#475569';
+	const ink = theme === 'dark' ? colors.slate[300] : colors.slate[600];
 	const name = [first_name, last_name].filter(Boolean).join(' ') || email || '';
 	const welcome =
 		gender === 'Femme'
@@ -433,7 +434,7 @@ export const NavigationDrawer = (props: DrawerContentComponentProps) => {
 							onClick={() => void administrationHandler()}
 							active
 							loading={false}
-							startIcon={<MaterialIcons name="business" size={20} color="#0274d7" />}
+							startIcon={<MaterialIcons name="business" size={20} color={colors.brand} />}
 						/>
 					)}
 					<Button buttonText={t.navigation.logout} inverted onClick={logOutHandler} active loading={false} />
@@ -632,7 +633,7 @@ export const Notifications = () => {
 		data: allNotifications,
 		keyExtractor: (item: NotificationType) => String(item.id),
 		ItemSeparatorComponent: () => <View className="h-3" />,
-		onEndReachedThreshold: 0.3,
+		onEndReachedThreshold: INFINITE_SCROLL_THRESHOLD,
 		onEndReached: () => {
 			if (!listError) void handleLoadMore();
 		},
@@ -648,7 +649,7 @@ export const Notifications = () => {
 			!refreshing && !listError ? (
 				<View className="items-center justify-center gap-4 px-6 py-8" style={{ minHeight: height * 0.32 }}>
 					<View className="h-20 w-20 items-center justify-center rounded-full bg-blue-50 dark:bg-slate-800">
-						<MaterialIcons name="notifications-none" size={36} color="#0274d7" />
+						<MaterialIcons name="notifications-none" size={36} color={colors.brand} />
 						<View
 							className="absolute right-0 top-0 h-4 w-4 rounded-full border-4 border-white bg-blue-200
 						dark:border-panel dark:bg-blue-900"
@@ -660,7 +661,7 @@ export const Notifications = () => {
 				</View>
 			) : undefined,
 		ListFooterComponent: loadingMore ? (
-			<ActivityIndicator accessibilityLabel={t.common.loading} color="#0274d7" style={{ padding: 16 }} />
+			<ActivityIndicator accessibilityLabel={t.common.loading} color={colors.brand} style={{ padding: 16 }} />
 		) : undefined,
 		renderItem: ({ item }: { item: NotificationType }) => {
 			const date = parseISO(item.date_created);
@@ -687,7 +688,7 @@ export const Notifications = () => {
 							<MaterialIcons
 								name={item.is_read ? 'notifications-none' : 'notifications-active'}
 								size={22}
-								color={item.is_read ? '#64748b' : '#0274d7'}
+								color={item.is_read ? colors.slate[500] : colors.brand}
 							/>
 							<View className="flex-1 gap-1">
 								<Text className="text-ink dark:text-slate-100 font-poppins-semibold">{item.title}</Text>
@@ -710,7 +711,11 @@ export const Notifications = () => {
 				onPress={handleNotifOpen}
 				className="h-10 w-10 items-center justify-center rounded-full"
 			>
-				<MaterialIcons name="notifications-none" size={23} color={theme === 'dark' ? '#e2e8f0' : '#334155'} />
+				<MaterialIcons
+					name="notifications-none"
+					size={23}
+					color={theme === 'dark' ? colors.slate[200] : colors.slate[700]}
+				/>
 				{unreadCount > 0 && (
 					<View className="absolute right-0 top-0 min-w-4 rounded-full bg-red-600 px-1">
 						<Text className="font-sans text-center text-[10px] text-white">
@@ -724,7 +729,7 @@ export const Notifications = () => {
 				title={t.navigation.notifications}
 				titleIcon={
 					<View className="h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 dark:bg-slate-800">
-						<MaterialIcons name="notifications" size={24} color="#0274d7" />
+						<MaterialIcons name="notifications" size={24} color={colors.brand} />
 					</View>
 				}
 				onClose={handleNotifClose}
@@ -744,9 +749,9 @@ export const Notifications = () => {
 					>
 						<View className="h-5 w-5 items-center justify-center">
 							{mutation.isLoading ? (
-								<ActivityIndicator size="small" color="#0274d7" />
+								<ActivityIndicator size="small" color={colors.brand} />
 							) : (
-								<MaterialIcons name="done-all" size={18} color="#0274d7" />
+								<MaterialIcons name="done-all" size={18} color={colors.brand} />
 							)}
 						</View>
 						<Text className="font-poppins-medium text-sm text-brand">{t.navigation.markAllRead}</Text>

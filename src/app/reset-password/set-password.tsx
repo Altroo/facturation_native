@@ -16,6 +16,7 @@ import { passwordResetStorage } from '@/Storage/passwordResetStorage';
 import { AUTH_RESET_PASSWORD_COMPLETE, AUTH_RESET_PASSWORD_ENTER_CODE, AUTH_RESET_PASSWORD } from '@/utils/routes';
 import type { PasswordResetData } from '@/types/accountTypes';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { colors } from '@/utils/themes';
 
 type SetPasswordPageContentProps = {
 	email: string;
@@ -79,7 +80,9 @@ const SetPasswordPageContent = (props: SetPasswordPageContentProps) => {
 					<MaterialIcons
 						name="lock"
 						size={20}
-						color={(formik.touched.new_password ? formik.errors.new_password : undefined) ? '#dc2626' : '#94a3b8'}
+						color={
+							(formik.touched.new_password ? formik.errors.new_password : undefined) ? colors.danger : colors.slate[400]
+						}
 					/>
 				}
 			/>
@@ -98,7 +101,11 @@ const SetPasswordPageContent = (props: SetPasswordPageContentProps) => {
 					<MaterialIcons
 						name="lock"
 						size={20}
-						color={(formik.touched.new_password2 ? formik.errors.new_password2 : undefined) ? '#dc2626' : '#94a3b8'}
+						color={
+							(formik.touched.new_password2 ? formik.errors.new_password2 : undefined)
+								? colors.danger
+								: colors.slate[400]
+						}
 					/>
 				}
 			/>
@@ -108,7 +115,7 @@ const SetPasswordPageContent = (props: SetPasswordPageContentProps) => {
 				loading={pending}
 				onClick={() => formik.handleSubmit()}
 				active
-				startIcon={<MaterialIcons name="edit" size={20} color={'#fff'} />}
+				startIcon={<MaterialIcons name="edit" size={20} color={colors.white} />}
 			/>
 		</View>
 	);

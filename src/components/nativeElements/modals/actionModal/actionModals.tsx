@@ -1,6 +1,7 @@
 import type { FC, ReactNode } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useColorMode } from '@/providers/themeProvider';
+import { colors } from '@/utils/themes';
 
 type Action = {
 	active: boolean;
@@ -83,8 +84,8 @@ const ActionModals: FC<Props> = (props: Props) => {
 					</ScrollView>
 					<View className={['gap-3', ...(actionsStyle ?? [])].join(' ')}>
 						{actions.map((action, index) => {
-							const solid = action.color ?? (mode === 'dark' ? '#e2e8f0' : '#0D070B');
-							const textColor = action.active ? (action.color || mode !== 'dark' ? '#ffffff' : '#0D070B') : solid;
+							const solid = action.color ?? (mode === 'dark' ? colors.slate[200] : colors.ink);
+							const textColor = action.active ? (action.color || mode !== 'dark' ? colors.white : colors.ink) : solid;
 							return (
 								<Pressable
 									key={index}
@@ -95,7 +96,7 @@ const ActionModals: FC<Props> = (props: Props) => {
 									onPress={action.onClick}
 									className="min-h-12 flex-row items-center justify-center gap-2 rounded-xl border px-5 py-3"
 									style={{
-										backgroundColor: action.active ? solid : mode === 'dark' ? '#1e293b' : '#ffffff',
+										backgroundColor: action.active ? solid : mode === 'dark' ? colors.slate[800] : colors.white,
 										borderColor: solid,
 										opacity: action.disabled ? 0.5 : 1,
 									}}

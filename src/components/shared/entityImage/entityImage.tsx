@@ -2,6 +2,7 @@ import { type ComponentProps, useState } from 'react';
 import { Image, Pressable } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import ImagePreview from '@/components/nativeElements/modals/imagePreview/imagePreview';
+import { colors } from '@/utils/themes';
 
 type IconName = ComponentProps<typeof MaterialIcons>['name'];
 
@@ -53,7 +54,7 @@ const EntityImage = (props: Props) => {
 						resizeMode={avatar ? 'cover' : 'contain'}
 					/>
 				) : (
-					<MaterialIcons name={icon} size={large ? 38 : 27} color="#0274d7" />
+					<MaterialIcons name={icon} size={large ? 38 : 27} color={colors.brand} />
 				)}
 			</Pressable>
 			{open && <ImagePreview uri={fullUri} label={label} visible onClose={() => setOpen(false)} />}

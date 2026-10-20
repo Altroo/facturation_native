@@ -5,6 +5,7 @@ import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoa
 import { getInitState } from '@/store/selectors';
 import { useAppSelector, useLanguage } from '@/utils/hooks';
 import { AUTH_LOGIN, DASHBOARD } from '@/utils/routes';
+import { colors } from '@/utils/themes';
 
 const NotFound = () => {
 	const router = useRouter();
@@ -20,7 +21,7 @@ const NotFound = () => {
 			contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: 24 }}
 		>
 			<View className="w-full max-w-lg items-center gap-4 rounded-2xl bg-white p-6 dark:bg-panel">
-				<MaterialIcons name="sentiment-dissatisfied" size={80} color="#0274d7" accessible={false} />
+				<MaterialIcons name="sentiment-dissatisfied" size={80} color={colors.brand} accessible={false} />
 				<Text className="font-poppins-semibold text-brand text-6xl dark:text-blue-300">404</Text>
 				<Text
 					accessibilityRole="header"
@@ -34,7 +35,7 @@ const NotFound = () => {
 					onClick={handleGoHome}
 					active
 					loading={false}
-					startIcon={<MaterialIcons name="home" size={20} color="#fff" />}
+					startIcon={<MaterialIcons name="home" size={20} color={colors.white} />}
 				/>
 			</View>
 		</ScrollView>

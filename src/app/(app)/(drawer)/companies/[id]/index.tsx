@@ -15,6 +15,7 @@ import { normalizeApiError, formatDate, parseEntityId, runWithCleanup } from '@/
 import { COMPANIES_EDIT, COMPANIES_LIST } from '@/utils/routes';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import ActionModals from '@/components/nativeElements/modals/actionModal/actionModals';
+import { colors } from '@/utils/themes';
 
 type CompaniesViewProps = {
 	id: number;
@@ -65,19 +66,19 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 		{
 			text: t.common.cancel,
 			active: false,
-			color: '#64748b',
+			color: colors.slate[500],
 			disabled: mutation.isLoading,
 			onClick: () => setShowSuspendModal(false),
 		},
 		{
 			text: t.companies.suspendBtn,
 			active: true,
-			color: '#dc2626',
+			color: colors.danger,
 			disabled: mutation.isLoading,
 			icon: mutation.isLoading ? (
-				<ActivityIndicator color="#ffffff" />
+				<ActivityIndicator color={colors.white} />
 			) : (
-				<MaterialIcons name="delete-outline" size={20} color="#ffffff" />
+				<MaterialIcons name="delete-outline" size={20} color={colors.white} />
 			),
 			onClick: () => void handleSuspend(),
 		},
@@ -142,7 +143,7 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 								ID: {companyData.id}
 							</Text>
 							<View className="flex-row items-center gap-1.5 self-start rounded-full px-3 py-1.5 bg-blue-50 dark:bg-slate-800">
-								<MaterialIcons name="business" size={14} color="#0274d7" />
+								<MaterialIcons name="business" size={14} color={colors.brand} />
 								<Text className="font-poppins-medium text-xs text-brand dark:text-blue-300">
 									{t.companies.companyChip}
 								</Text>
@@ -154,13 +155,13 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 						onClick={() => router.push(COMPANIES_EDIT(id))}
 						active={!mutation.isLoading}
 						loading={false}
-						startIcon={<MaterialIcons name="edit" size={20} color="#fff" />}
+						startIcon={<MaterialIcons name="edit" size={20} color={colors.white} />}
 					/>
 				</View>
 				<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
 					<View className="mb-1 flex-row items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
 						<View className="h-10 w-10 items-center justify-center rounded-xl bg-blue-50 dark:bg-slate-800">
-							<MaterialIcons name="business" size={21} color="#0274d7" />
+							<MaterialIcons name="business" size={21} color={colors.brand} />
 						</View>
 						<View className="flex-1 gap-1">
 							<Text accessibilityRole="header" className="text-ink dark:text-slate-100 font-poppins-semibold text-base">
@@ -174,7 +175,7 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 								<MaterialIcons
 									name="business"
 									size={20}
-									color="#94a3b8"
+									color={colors.slate[400]}
 									style={{
 										marginTop: 3,
 									}}
@@ -188,7 +189,7 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 								<MaterialIcons
 									name="groups"
 									size={20}
-									color="#94a3b8"
+									color={colors.slate[400]}
 									style={{
 										marginTop: 3,
 									}}
@@ -202,7 +203,7 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 								<MaterialIcons
 									name="location-on"
 									size={20}
-									color="#94a3b8"
+									color={colors.slate[400]}
 									style={{
 										marginTop: 3,
 									}}
@@ -216,7 +217,7 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 								<MaterialIcons
 									name="language"
 									size={20}
-									color="#94a3b8"
+									color={colors.slate[400]}
 									style={{
 										marginTop: 3,
 									}}
@@ -230,7 +231,7 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 								<MaterialIcons
 									name="event"
 									size={20}
-									color="#94a3b8"
+									color={colors.slate[400]}
 									style={{
 										marginTop: 3,
 									}}
@@ -244,7 +245,7 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 								<MaterialIcons
 									name="update"
 									size={20}
-									color="#94a3b8"
+									color={colors.slate[400]}
 									style={{
 										marginTop: 3,
 									}}
@@ -258,7 +259,7 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 				<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
 					<View className="mb-1 flex-row items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
 						<View className="h-10 w-10 items-center justify-center rounded-xl bg-blue-50 dark:bg-slate-800">
-							<MaterialIcons name="account-balance" size={21} color="#0274d7" />
+							<MaterialIcons name="account-balance" size={21} color={colors.brand} />
 						</View>
 						<View className="flex-1 gap-1">
 							<Text accessibilityRole="header" className="text-ink dark:text-slate-100 font-poppins-semibold text-base">
@@ -272,7 +273,7 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 								<MaterialIcons
 									name="credit-card"
 									size={20}
-									color="#94a3b8"
+									color={colors.slate[400]}
 									style={{
 										marginTop: 3,
 									}}
@@ -286,7 +287,7 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 								<MaterialIcons
 									name="fingerprint"
 									size={20}
-									color="#94a3b8"
+									color={colors.slate[400]}
 									style={{
 										marginTop: 3,
 									}}
@@ -300,7 +301,7 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 								<MaterialIcons
 									name="description"
 									size={20}
-									color="#94a3b8"
+									color={colors.slate[400]}
 									style={{
 										marginTop: 3,
 									}}
@@ -314,7 +315,7 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 								<MaterialIcons
 									name="badge"
 									size={20}
-									color="#94a3b8"
+									color={colors.slate[400]}
 									style={{
 										marginTop: 3,
 									}}
@@ -328,7 +329,7 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 								<MaterialIcons
 									name="receipt-long"
 									size={20}
-									color="#94a3b8"
+									color={colors.slate[400]}
 									style={{
 										marginTop: 3,
 									}}
@@ -342,7 +343,7 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 								<MaterialIcons
 									name="verified-user"
 									size={20}
-									color="#94a3b8"
+									color={colors.slate[400]}
 									style={{
 										marginTop: 3,
 									}}
@@ -356,7 +357,7 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 				<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
 					<View className="mb-1 flex-row items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
 						<View className="h-10 w-10 items-center justify-center rounded-xl bg-blue-50 dark:bg-slate-800">
-							<MaterialIcons name="person-outline" size={21} color="#0274d7" />
+							<MaterialIcons name="person-outline" size={21} color={colors.brand} />
 						</View>
 						<View className="flex-1 gap-1">
 							<Text accessibilityRole="header" className="text-ink dark:text-slate-100 font-poppins-semibold text-base">
@@ -370,7 +371,7 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 								<MaterialIcons
 									name="person"
 									size={20}
-									color="#94a3b8"
+									color={colors.slate[400]}
 									style={{
 										marginTop: 3,
 									}}
@@ -384,7 +385,7 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 								<MaterialIcons
 									name="badge"
 									size={20}
-									color="#94a3b8"
+									color={colors.slate[400]}
 									style={{
 										marginTop: 3,
 									}}
@@ -398,7 +399,7 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 								<MaterialIcons
 									name="smartphone"
 									size={20}
-									color="#94a3b8"
+									color={colors.slate[400]}
 									style={{
 										marginTop: 3,
 									}}
@@ -412,7 +413,7 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 				<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
 					<View className="mb-1 flex-row items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
 						<View className="h-10 w-10 items-center justify-center rounded-xl bg-blue-50 dark:bg-slate-800">
-							<MaterialIcons name="contacts" size={21} color="#0274d7" />
+							<MaterialIcons name="contacts" size={21} color={colors.brand} />
 						</View>
 						<View className="flex-1 gap-1">
 							<Text accessibilityRole="header" className="text-ink dark:text-slate-100 font-poppins-semibold text-base">
@@ -426,7 +427,7 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 								<MaterialIcons
 									name="mail-outline"
 									size={20}
-									color="#94a3b8"
+									color={colors.slate[400]}
 									style={{
 										marginTop: 3,
 									}}
@@ -440,7 +441,7 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 								<MaterialIcons
 									name="phone"
 									size={20}
-									color="#94a3b8"
+									color={colors.slate[400]}
 									style={{
 										marginTop: 3,
 									}}
@@ -454,7 +455,7 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 								<MaterialIcons
 									name="print"
 									size={20}
-									color="#94a3b8"
+									color={colors.slate[400]}
 									style={{
 										marginTop: 3,
 									}}
@@ -468,7 +469,7 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 				<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
 					<View className="mb-1 flex-row items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
 						<View className="h-10 w-10 items-center justify-center rounded-xl bg-blue-50 dark:bg-slate-800">
-							<MaterialIcons name="image" size={21} color="#0274d7" />
+							<MaterialIcons name="image" size={21} color={colors.brand} />
 						</View>
 						<View className="flex-1 gap-1">
 							<Text accessibilityRole="header" className="text-ink dark:text-slate-100 font-poppins-semibold text-base">
@@ -489,7 +490,7 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 				<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
 					<View className="mb-1 flex-row items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
 						<View className="h-10 w-10 items-center justify-center rounded-xl bg-blue-50 dark:bg-slate-800">
-							<MaterialIcons name="settings" size={21} color="#0274d7" />
+							<MaterialIcons name="settings" size={21} color={colors.brand} />
 						</View>
 						<View className="flex-1 gap-1">
 							<Text accessibilityRole="header" className="text-ink dark:text-slate-100 font-poppins-semibold text-base">
@@ -503,7 +504,7 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 								<MaterialIcons
 									name="currency-exchange"
 									size={20}
-									color="#94a3b8"
+									color={colors.slate[400]}
 									style={{
 										marginTop: 3,
 									}}
@@ -517,7 +518,7 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 								<MaterialIcons
 									name="inventory-2"
 									size={20}
-									color="#94a3b8"
+									color={colors.slate[400]}
 									style={{
 										marginTop: 3,
 									}}
@@ -531,7 +532,7 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 								<MaterialIcons
 									name="fact-check"
 									size={20}
-									color="#94a3b8"
+									color={colors.slate[400]}
 									style={{
 										marginTop: 3,
 									}}
@@ -545,7 +546,7 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 				<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
 					<View className="mb-1 flex-row items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
 						<View className="h-10 w-10 items-center justify-center rounded-xl bg-blue-50 dark:bg-slate-800">
-							<MaterialIcons name="manage-accounts" size={21} color="#0274d7" />
+							<MaterialIcons name="manage-accounts" size={21} color={colors.brand} />
 						</View>
 						<View className="flex-1 gap-1">
 							<Text accessibilityRole="header" className="text-ink dark:text-slate-100 font-poppins-semibold text-base">
@@ -575,7 +576,7 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 										</Text>
 										<Text className="font-sans text-xs text-slate-500 dark:text-slate-400">ID: {entry.id}</Text>
 										<View className="flex-row items-center gap-1.5 self-start rounded-full px-3 py-1.5 bg-blue-50 dark:bg-slate-800">
-											<MaterialIcons name="shield" size={14} color="#0274d7" />
+											<MaterialIcons name="shield" size={14} color={colors.brand} />
 											<Text className="font-poppins-medium text-xs text-brand dark:text-blue-300">
 												{entry.role || t.common.noData}
 											</Text>
@@ -587,7 +588,7 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 										<MaterialIcons
 											name="verified"
 											size={20}
-											color="#94a3b8"
+											color={colors.slate[400]}
 											style={{
 												marginTop: 3,
 											}}
@@ -601,7 +602,7 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 										<MaterialIcons
 											name="published-with-changes"
 											size={20}
-											color="#94a3b8"
+											color={colors.slate[400]}
 											style={{
 												marginTop: 3,
 											}}
@@ -628,15 +629,15 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 					}}
 					active={!mutation.isLoading}
 					loading={false}
-					startIcon={<MaterialIcons name="block" size={20} color="#dc2626" />}
+					startIcon={<MaterialIcons name="block" size={20} color={colors.danger} />}
 				/>
 			</ScrollView>
 			{showSuspendModal && (
 				<ActionModals
 					title={t.companies.suspendModalTitle}
 					body={t.companies.suspendModalBody}
-					titleIcon={<MaterialIcons name="warning-amber" size={30} color="#dc2626" />}
-					titleIconColor="#fef2f2"
+					titleIcon={<MaterialIcons name="warning-amber" size={30} color={colors.danger} />}
+					titleIconColor={colors.dangerBackground}
 					maxWidth="xs"
 					fullWidth
 					onClose={() => setShowSuspendModal(false)}

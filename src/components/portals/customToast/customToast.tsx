@@ -2,6 +2,7 @@ import { useContext, useEffect, type FC, type ReactNode, type Dispatch, type Set
 import { Pressable, Text, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { LanguageContext } from '@/contexts/languageContext';
+import { colors } from '@/utils/themes';
 
 export type CustomToastProps = {
 	message: string;
@@ -29,25 +30,25 @@ const CustomToast: FC<CustomToastProps> = (props: CustomToastProps) => {
 	const severity = {
 		success: {
 			icon: 'check-circle-outline',
-			color: '#059669',
+			color: colors.success,
 			container: 'border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950',
 			text: 'text-emerald-800 dark:text-emerald-200',
 		},
 		error: {
 			icon: 'error-outline',
-			color: '#dc2626',
+			color: colors.danger,
 			container: 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950',
 			text: 'text-red-800 dark:text-red-200',
 		},
 		info: {
 			icon: 'info-outline',
-			color: '#0284c7',
+			color: colors.info,
 			container: 'border-sky-200 bg-sky-50 dark:border-sky-800 dark:bg-sky-950',
 			text: 'text-sky-800 dark:text-sky-200',
 		},
 		warning: {
 			icon: 'warning-amber',
-			color: '#d97706',
+			color: colors.warning,
 			container: 'border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950',
 			text: 'text-amber-800 dark:text-amber-200',
 		},

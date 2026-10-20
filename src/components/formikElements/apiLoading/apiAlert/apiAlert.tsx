@@ -3,6 +3,7 @@ import { type StyleProp, Text, View, type ViewStyle } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useLanguage } from '@/utils/hooks';
 import { globalErrorKeys } from '@/utils/rawData';
+import { colors } from '@/utils/themes';
 
 const formatErrorKey = (key: string) =>
 	key
@@ -51,7 +52,7 @@ const ApiAlert: FC<ApiAlertProps> = (props: ApiAlertProps) => {
 					: undefined
 			}
 		>
-			{props.variant === 'banner' && <MaterialIcons name="error-outline" size={22} color="#dc2626" />}
+			{props.variant === 'banner' && <MaterialIcons name="error-outline" size={22} color={colors.danger} />}
 			<Text
 				className={
 					(props.variant === 'banner' ? 'flex-1 ' : '') + 'font-sans text-sm leading-6 text-red-700 dark:text-red-300'

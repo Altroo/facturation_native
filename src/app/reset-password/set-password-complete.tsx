@@ -8,6 +8,7 @@ import { useLanguage } from '@/utils/hooks';
 import { passwordResetStorage } from '@/Storage/passwordResetStorage';
 import { AUTH_LOGIN, AUTH_RESET_PASSWORD } from '@/utils/routes';
 import SuccessIlluSVG from '../../../assets/success-illu.svg';
+import { colors } from '@/utils/themes';
 
 const SetPasswordCompletePageContent = () => {
 	const router = useRouter();
@@ -30,7 +31,7 @@ const SetPasswordCompletePageContent = () => {
 					}}
 					active
 					loading={false}
-					startIcon={<MaterialIcons name="login" size={20} color={'#fff'} />}
+					startIcon={<MaterialIcons name="login" size={20} color={colors.white} />}
 				/>
 			</View>
 		</AuthLayout>

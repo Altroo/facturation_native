@@ -6,6 +6,7 @@ import { useAppSelector, useLanguage, useToast } from '@/utils/hooks';
 import { getAppVersions } from '@/store/selectors';
 import { isNewerAppVersion } from '@/utils/appVersion';
 import { checkAppUpdate, reloadApp } from '@/utils/helpers';
+import { colors } from '@/utils/themes';
 
 const AppUpdate = () => {
 	const { localVersion, serverVersion, maintenance } = useAppSelector(getAppVersions);
@@ -64,8 +65,8 @@ const AppUpdate = () => {
 			fullWidth
 			title={t.appUpdate.title}
 			body={t.appUpdate.body}
-			titleIcon={<MaterialIcons name="refresh" size={24} color="#ffffff" />}
-			titleIconColor="#0274d7"
+			titleIcon={<MaterialIcons name="refresh" size={24} color={colors.white} />}
+			titleIconColor={colors.brand}
 			onClose={dismiss}
 			actions={[
 				{ active: false, text: t.appUpdate.later, onClick: dismiss, disabled: updating },
@@ -74,7 +75,7 @@ const AppUpdate = () => {
 					text: updating ? t.appUpdate.updating : t.appUpdate.update,
 					onClick: () => void update(),
 					disabled: updating,
-					color: '#0274d7',
+					color: colors.brand,
 				},
 			]}
 		>

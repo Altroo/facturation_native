@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AutocompleteDropdownContextProvider } from 'react-native-autocomplete-dropdown';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useLanguage } from '@/utils/hooks';
+import { colors } from '@/utils/themes';
 
 type Props = {
 	visible: boolean;
@@ -75,7 +76,7 @@ const BottomSheet: FC<Props> = (props: Props) => {
 										onPress={onClose}
 										className="h-11 w-11 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 dark:active:bg-slate-700"
 									>
-										<MaterialIcons name="close" size={22} color="#94a3b8" />
+										<MaterialIcons name="close" size={22} color={colors.slate[400]} />
 									</Pressable>
 								</View>
 								{children}

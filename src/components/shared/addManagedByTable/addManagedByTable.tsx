@@ -10,6 +10,7 @@ import AddManagedBySection, {
 import { useLanguage } from '@/utils/hooks';
 import type { UserCompaniesType } from '@/types/usersTypes';
 import type { DropDownType } from '@/types/accountTypes';
+import { colors } from '@/utils/themes';
 
 export type ManagedByType = {
 	id: number;
@@ -95,7 +96,7 @@ const ManagedByTableSection: FC<ManagedByTableSectionProps> = (props: ManagedByT
 					>
 						<View className="flex-row items-center gap-3">
 							<View className="h-10 w-10 items-center justify-center rounded-xl bg-white dark:bg-panel">
-								<MaterialIcons name={isUserTable ? 'person-outline' : 'business'} size={23} color="#0274d7" />
+								<MaterialIcons name={isUserTable ? 'person-outline' : 'business'} size={23} color={colors.brand} />
 							</View>
 							<Text
 								accessibilityLabel={`${headers[0]}: ${label}`}
@@ -116,7 +117,7 @@ const ManagedByTableSection: FC<ManagedByTableSectionProps> = (props: ManagedByT
 							onChange={(value) => onRoleChange(index, value)}
 							items={roleOptions}
 							disabled={disabled || protectedMember}
-							startIcon={<MaterialIcons name="shield" size={20} color="#94a3b8" />}
+							startIcon={<MaterialIcons name="shield" size={20} color={colors.slate[400]} />}
 						/>
 						{showInvoiceValidationPermission && (
 							<CustomSwitch
@@ -124,7 +125,7 @@ const ManagedByTableSection: FC<ManagedByTableSectionProps> = (props: ManagedByT
 								value={Boolean(item.can_validate_factures)}
 								onValueChange={(checked) => onInvoiceValidationChange?.(index, checked)}
 								disabled={disabled || protectedMember}
-								startIcon={<MaterialIcons name="verified" size={21} color="#64748b" />}
+								startIcon={<MaterialIcons name="verified" size={21} color={colors.slate[500]} />}
 							/>
 						)}
 						{showDocumentStatusChangePermission && (
@@ -133,7 +134,7 @@ const ManagedByTableSection: FC<ManagedByTableSectionProps> = (props: ManagedByT
 								value={Boolean(item.can_change_document_status)}
 								onValueChange={(checked) => onDocumentStatusChangePermissionChange?.(index, checked)}
 								disabled={disabled || protectedMember}
-								startIcon={<MaterialIcons name="published-with-changes" size={21} color="#64748b" />}
+								startIcon={<MaterialIcons name="published-with-changes" size={21} color={colors.slate[500]} />}
 							/>
 						)}
 						<PrimaryLoadingButton
@@ -143,7 +144,7 @@ const ManagedByTableSection: FC<ManagedByTableSectionProps> = (props: ManagedByT
 							onClick={() => onDelete(index)}
 							active={!disabled && !protectedMember}
 							loading={false}
-							startIcon={<MaterialIcons name="person-remove" size={20} color="#dc2626" />}
+							startIcon={<MaterialIcons name="person-remove" size={20} color={colors.danger} />}
 						/>
 					</View>
 				);

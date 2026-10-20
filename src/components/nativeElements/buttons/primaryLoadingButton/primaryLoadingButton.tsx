@@ -1,5 +1,6 @@
 import type { FC, ReactNode } from 'react';
 import { ActivityIndicator, type GestureResponderEvent, Pressable, Text, View } from 'react-native';
+import { colors } from '@/utils/themes';
 
 type Props = {
 	buttonText: string;
@@ -14,7 +15,7 @@ type Props = {
 };
 
 const PrimaryLoadingButton: FC<Props> = (props: Props) => {
-	const foreground = props.inverted ? (props.danger ? '#dc2626' : '#0274d7') : '#fff';
+	const foreground = props.inverted ? (props.danger ? colors.danger : colors.brand) : colors.white;
 	return (
 		<Pressable
 			testID={props.testID}

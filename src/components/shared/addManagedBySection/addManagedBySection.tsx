@@ -6,6 +6,7 @@ import CustomAutoCompleteSelect from '@/components/formikElements/customAutoComp
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import { useLanguage } from '@/utils/hooks';
 import { DropDownType } from '@/types/accountTypes';
+import { colors } from '@/utils/themes';
 
 export interface AddManagedBySectionProps {
 	title: string;
@@ -80,7 +81,7 @@ const AddManagedBySection: FC<AddManagedBySectionProps> = (props: AddManagedBySe
 				onClick={onAdd}
 				active={!disabled && !isAddDisabled}
 				loading={false}
-				startIcon={<MaterialIcons name="add" size={20} color="#0274d7" />}
+				startIcon={<MaterialIcons name="add" size={20} color={colors.brand} />}
 			/>
 		</View>
 	);

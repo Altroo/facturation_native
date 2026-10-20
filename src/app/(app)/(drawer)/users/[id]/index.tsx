@@ -14,6 +14,7 @@ import { USERS_EDIT, USERS_LIST } from '@/utils/routes';
 import { extractApiErrorMessage, normalizeApiError, formatDate, parseEntityId, runWithCleanup } from '@/utils/helpers';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import ActionModals from '@/components/nativeElements/modals/actionModal/actionModals';
+import { colors } from '@/utils/themes';
 
 type UsersViewProps = {
 	id: number;
@@ -64,19 +65,19 @@ const UsersViewPageContent = (props: UsersViewProps) => {
 		{
 			text: t.common.cancel,
 			active: false,
-			color: '#64748b',
+			color: colors.slate[500],
 			disabled: mutation.isLoading,
 			onClick: () => setShowDeleteModal(false),
 		},
 		{
 			text: t.common.delete,
 			active: true,
-			color: '#dc2626',
+			color: colors.danger,
 			disabled: mutation.isLoading,
 			icon: mutation.isLoading ? (
-				<ActivityIndicator color="#ffffff" />
+				<ActivityIndicator color={colors.white} />
 			) : (
-				<MaterialIcons name="delete-outline" size={20} color="#ffffff" />
+				<MaterialIcons name="delete-outline" size={20} color={colors.white} />
 			),
 			onClick: () => void handleDelete(),
 		},
@@ -154,7 +155,7 @@ const UsersViewPageContent = (props: UsersViewProps) => {
 						</Text>
 						{userData.is_staff && (
 							<View className="flex-row items-center gap-1.5 self-start rounded-full px-3 py-1.5 bg-blue-50 dark:bg-slate-800">
-								<MaterialIcons name="admin-panel-settings" size={14} color="#0274d7" />
+								<MaterialIcons name="admin-panel-settings" size={14} color={colors.brand} />
 								<Text className="font-poppins-medium text-xs text-brand dark:text-blue-300">{t.users.adminChip}</Text>
 							</View>
 						)}
@@ -167,7 +168,7 @@ const UsersViewPageContent = (props: UsersViewProps) => {
 							<MaterialIcons
 								name={userData.is_active ? 'check-circle-outline' : 'remove-circle-outline'}
 								size={14}
-								color={userData.is_active ? '#059669' : '#64748b'}
+								color={userData.is_active ? colors.success : colors.slate[500]}
 							/>
 							<Text
 								className={
@@ -185,14 +186,14 @@ const UsersViewPageContent = (props: UsersViewProps) => {
 							onClick={() => router.push(USERS_EDIT(id))}
 							active={!mutation.isLoading}
 							loading={false}
-							startIcon={<MaterialIcons name="edit" size={20} color="#fff" />}
+							startIcon={<MaterialIcons name="edit" size={20} color={colors.white} />}
 						/>
 					)}
 				</View>
 				<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
 					<View className="mb-1 flex-row items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
 						<View className="h-10 w-10 items-center justify-center rounded-xl bg-blue-50 dark:bg-slate-800">
-							<MaterialIcons name="person-outline" size={21} color="#0274d7" />
+							<MaterialIcons name="person-outline" size={21} color={colors.brand} />
 						</View>
 						<View className="flex-1 gap-1">
 							<Text accessibilityRole="header" className="text-ink dark:text-slate-100 font-poppins-semibold text-base">
@@ -206,7 +207,7 @@ const UsersViewPageContent = (props: UsersViewProps) => {
 								<MaterialIcons
 									name="person"
 									size={20}
-									color="#94a3b8"
+									color={colors.slate[400]}
 									style={{
 										marginTop: 3,
 									}}
@@ -220,7 +221,7 @@ const UsersViewPageContent = (props: UsersViewProps) => {
 								<MaterialIcons
 									name="badge"
 									size={20}
-									color="#94a3b8"
+									color={colors.slate[400]}
 									style={{
 										marginTop: 3,
 									}}
@@ -234,7 +235,7 @@ const UsersViewPageContent = (props: UsersViewProps) => {
 								<MaterialIcons
 									name="mail-outline"
 									size={20}
-									color="#94a3b8"
+									color={colors.slate[400]}
 									style={{
 										marginTop: 3,
 									}}
@@ -248,7 +249,7 @@ const UsersViewPageContent = (props: UsersViewProps) => {
 								<MaterialIcons
 									name="groups"
 									size={20}
-									color="#94a3b8"
+									color={colors.slate[400]}
 									style={{
 										marginTop: 3,
 									}}
@@ -262,7 +263,7 @@ const UsersViewPageContent = (props: UsersViewProps) => {
 								<MaterialIcons
 									name="admin-panel-settings"
 									size={20}
-									color="#94a3b8"
+									color={colors.slate[400]}
 									style={{
 										marginTop: 3,
 									}}
@@ -276,7 +277,7 @@ const UsersViewPageContent = (props: UsersViewProps) => {
 								<MaterialIcons
 									name="check-circle-outline"
 									size={20}
-									color="#94a3b8"
+									color={colors.slate[400]}
 									style={{
 										marginTop: 3,
 									}}
@@ -290,7 +291,7 @@ const UsersViewPageContent = (props: UsersViewProps) => {
 								<MaterialIcons
 									name="event"
 									size={20}
-									color="#94a3b8"
+									color={colors.slate[400]}
 									style={{
 										marginTop: 3,
 									}}
@@ -304,7 +305,7 @@ const UsersViewPageContent = (props: UsersViewProps) => {
 								<MaterialIcons
 									name="update"
 									size={20}
-									color="#94a3b8"
+									color={colors.slate[400]}
 									style={{
 										marginTop: 3,
 									}}
@@ -318,7 +319,7 @@ const UsersViewPageContent = (props: UsersViewProps) => {
 								<MaterialIcons
 									name="login"
 									size={20}
-									color="#94a3b8"
+									color={colors.slate[400]}
 									style={{
 										marginTop: 3,
 									}}
@@ -332,7 +333,7 @@ const UsersViewPageContent = (props: UsersViewProps) => {
 				<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
 					<View className="mb-1 flex-row items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
 						<View className="h-10 w-10 items-center justify-center rounded-xl bg-blue-50 dark:bg-slate-800">
-							<MaterialIcons name="business" size={21} color="#0274d7" />
+							<MaterialIcons name="business" size={21} color={colors.brand} />
 						</View>
 						<View className="flex-1 gap-1">
 							<Text accessibilityRole="header" className="text-ink dark:text-slate-100 font-poppins-semibold text-base">
@@ -354,7 +355,7 @@ const UsersViewPageContent = (props: UsersViewProps) => {
 											ID: {entry.membership_id}
 										</Text>
 										<View className="flex-row items-center gap-1.5 self-start rounded-full px-3 py-1.5 bg-blue-50 dark:bg-slate-800">
-											<MaterialIcons name="shield" size={14} color="#0274d7" />
+											<MaterialIcons name="shield" size={14} color={colors.brand} />
 											<Text className="font-poppins-medium text-xs text-brand dark:text-blue-300">{entry.role}</Text>
 										</View>
 									</View>
@@ -364,7 +365,7 @@ const UsersViewPageContent = (props: UsersViewProps) => {
 										<MaterialIcons
 											name="verified"
 											size={20}
-											color="#94a3b8"
+											color={colors.slate[400]}
 											style={{
 												marginTop: 3,
 											}}
@@ -378,7 +379,7 @@ const UsersViewPageContent = (props: UsersViewProps) => {
 										<MaterialIcons
 											name="published-with-changes"
 											size={20}
-											color="#94a3b8"
+											color={colors.slate[400]}
 											style={{
 												marginTop: 3,
 											}}
@@ -406,7 +407,7 @@ const UsersViewPageContent = (props: UsersViewProps) => {
 						}}
 						active={!mutation.isLoading}
 						loading={false}
-						startIcon={<MaterialIcons name="delete-outline" size={20} color="#dc2626" />}
+						startIcon={<MaterialIcons name="delete-outline" size={20} color={colors.danger} />}
 					/>
 				)}
 			</ScrollView>
@@ -414,8 +415,8 @@ const UsersViewPageContent = (props: UsersViewProps) => {
 				<ActionModals
 					title={t.users.deleteModalTitle}
 					body={t.users.deleteModalBody}
-					titleIcon={<MaterialIcons name="warning-amber" size={30} color="#dc2626" />}
-					titleIconColor="#fef2f2"
+					titleIcon={<MaterialIcons name="warning-amber" size={30} color={colors.danger} />}
+					titleIconColor={colors.dangerBackground}
 					maxWidth="xs"
 					fullWidth
 					onClose={() => setShowDeleteModal(false)}

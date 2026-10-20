@@ -26,7 +26,7 @@ const ThemeToggle = () => {
 			<MaterialIcons
 				name={dark ? 'light-mode' : 'dark-mode'}
 				size={21}
-				color={mode === 'dark' ? colors.lightText : '#334155'}
+				color={mode === 'dark' ? colors.slate[100] : colors.slate[700]}
 			/>
 		</Pressable>
 	);

@@ -2,6 +2,7 @@ import type { ReactNode, Ref } from 'react';
 import { useColorMode } from '@/providers/themeProvider';
 import { ScrollView, Text, TextInput, View, type TextInputProps, type TextInputInstance } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { colors } from '@/utils/themes';
 
 export type CustomTextInputProps = Omit<TextInputProps, 'editable'> & {
 	ref?: Ref<TextInputInstance>;
@@ -25,7 +26,7 @@ const CustomTextInput = (props: CustomTextInputProps) => {
 			editable={!disabled}
 			accessibilityLabel={props.accessibilityLabel ?? label}
 			accessibilityState={{ ...props.accessibilityState, disabled: !!disabled }}
-			placeholderTextColor={theme === 'dark' ? '#94a3b8' : '#64748b'}
+			placeholderTextColor={theme === 'dark' ? colors.slate[400] : colors.slate[500]}
 			lineBreakModeIOS={props.lineBreakModeIOS ?? (props.multiline ? 'wordWrapping' : 'clip')}
 			className={
 				'min-h-12 min-w-0 px-4 py-3 font-sans text-base text-ink dark:text-white ' +
@@ -67,7 +68,7 @@ const CustomTextInput = (props: CustomTextInputProps) => {
 				{endIcon}
 				{!endIcon && (
 					<View className="w-7 justify-center">
-						{disabled && <MaterialIcons name="lock-outline" size={16} color="#94a3b8" />}
+						{disabled && <MaterialIcons name="lock-outline" size={16} color={colors.slate[400]} />}
 					</View>
 				)}
 			</View>

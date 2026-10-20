@@ -35,5 +35,8 @@ export const globalErrorKeys = new Set(['detail', 'error', 'globalError', 'messa
 export const SESSION_STORAGE_KEY = 'facturation-native-session';
 
 export const MODULES_PAGE_SIZE = 10;
+// Request the next page when the remaining distance is 30% of the visible list height.
+export const INFINITE_SCROLL_THRESHOLD = 0.3;
+export const EMAIL_MAX_LENGTH = 254;
 
 export const valueLessFilterOperators = new Set(['isEmpty', 'isNotEmpty']);

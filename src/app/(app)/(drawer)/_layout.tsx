@@ -22,7 +22,7 @@ const DrawerStackLayout = () => {
 		<Stack
 			screenOptions={{
 				...headerOptions,
-				contentStyle: { backgroundColor: mode === 'dark' ? colors.night : '#f5f5f5' },
+				contentStyle: { backgroundColor: mode === 'dark' ? colors.night : colors.screenBackground },
 				headerBackVisible: true,
 				headerBackButtonDisplayMode: 'minimal',
 				headerLeft: ({ tintColor, canGoBack }) =>

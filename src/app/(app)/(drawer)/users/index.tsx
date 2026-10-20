@@ -25,6 +25,7 @@ import { MODULES_PAGE_SIZE } from '@/utils/rawData';
 import ActionModals from '@/components/nativeElements/modals/actionModal/actionModals';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import SelectAllControl from '@/components/shared/selectAllControl/selectAllControl';
+import { colors } from '@/utils/themes';
 
 const UsersListPage = () => {
 	const { t } = useLanguage();
@@ -109,8 +110,8 @@ const UsersListPage = () => {
 			text: t.common.cancel,
 			active: false,
 			onClick: () => setShowDeleteModal(false),
-			icon: <MaterialIcons name="close" size={20} color="#64748b" />,
-			color: '#64748b',
+			icon: <MaterialIcons name="close" size={20} color={colors.slate[500]} />,
+			color: colors.slate[500],
 			disabled: deleting,
 		},
 		{
@@ -118,11 +119,11 @@ const UsersListPage = () => {
 			active: true,
 			onClick: deleteHandler,
 			icon: deleting ? (
-				<ActivityIndicator color="#ffffff" />
+				<ActivityIndicator color={colors.white} />
 			) : (
-				<MaterialIcons name="delete-outline" size={20} color="#ffffff" />
+				<MaterialIcons name="delete-outline" size={20} color={colors.white} />
 			),
-			color: '#dc2626',
+			color: colors.danger,
 			disabled: deleting,
 		},
 	];
@@ -160,8 +161,8 @@ const UsersListPage = () => {
 			text: t.common.cancel,
 			active: false,
 			onClick: () => setShowBulkDeleteModal(false),
-			icon: <MaterialIcons name="close" size={20} color="#64748b" />,
-			color: '#64748b',
+			icon: <MaterialIcons name="close" size={20} color={colors.slate[500]} />,
+			color: colors.slate[500],
 			disabled: deleting,
 		},
 		{
@@ -169,11 +170,11 @@ const UsersListPage = () => {
 			active: true,
 			onClick: bulkDeleteHandler,
 			icon: deleting ? (
-				<ActivityIndicator color="#ffffff" />
+				<ActivityIndicator color={colors.white} />
 			) : (
-				<MaterialIcons name="delete-outline" size={20} color="#ffffff" />
+				<MaterialIcons name="delete-outline" size={20} color={colors.white} />
 			),
-			color: '#dc2626',
+			color: colors.danger,
 			disabled: deleting,
 		},
 	];
@@ -257,7 +258,7 @@ const UsersListPage = () => {
 						<MaterialIcons
 							name={selectedUserIds.includes(user.id) ? 'check-box' : 'check-box-outline-blank'}
 							size={24}
-							color={selectedUserIds.includes(user.id) ? '#0274d7' : '#94a3b8'}
+							color={selectedUserIds.includes(user.id) ? colors.brand : colors.slate[400]}
 						/>
 						<Text className="font-sans text-ink dark:text-slate-100 flex-1 text-sm">
 							{t.users.selectUser(
@@ -290,7 +291,7 @@ const UsersListPage = () => {
 								'flex-row items-center gap-1.5 self-start rounded-full px-3 py-1.5 bg-blue-50 dark:bg-slate-800'
 							}
 						>
-							<MaterialIcons name={'admin-panel-settings'} size={14} color={'#0274d7'} />
+							<MaterialIcons name={'admin-panel-settings'} size={14} color={colors.brand} />
 							<Text className={'font-poppins-medium text-xs text-brand dark:text-blue-300'}>{t.users.adminChip}</Text>
 						</View>
 					)}
@@ -303,7 +304,7 @@ const UsersListPage = () => {
 						<MaterialIcons
 							name={user.is_active ? 'check-circle-outline' : 'remove-circle-outline'}
 							size={14}
-							color={user.is_active ? '#059669' : '#64748b'}
+							color={user.is_active ? colors.success : colors.slate[500]}
 						/>
 						<Text
 							className={
@@ -317,19 +318,19 @@ const UsersListPage = () => {
 				</View>
 				<View className="gap-2 border-t border-slate-100 pt-3 dark:border-slate-700">
 					<View className="flex-row items-center gap-2">
-						<MaterialIcons name="groups" size={17} color="#94a3b8" />
+						<MaterialIcons name="groups" size={17} color={colors.slate[400]} />
 						<Text className="font-sans text-xs text-slate-500 dark:text-slate-400">
 							{t.users.colSexe}: {user.gender || '-'}
 						</Text>
 					</View>
 					<View className="flex-row items-center gap-2">
-						<MaterialIcons name="event" size={17} color="#94a3b8" />
+						<MaterialIcons name="event" size={17} color={colors.slate[400]} />
 						<Text className="font-sans text-xs text-slate-500 dark:text-slate-400">
 							{t.users.colDateInscription}: {formatDate(user.date_joined ?? null)}
 						</Text>
 					</View>
 					<View className="flex-row items-center gap-2">
-						<MaterialIcons name="login" size={17} color="#94a3b8" />
+						<MaterialIcons name="login" size={17} color={colors.slate[400]} />
 						<Text className="font-sans text-xs text-slate-500 dark:text-slate-400">
 							{t.users.colDerniereConnexion}: {formatDate(user.last_login ?? null)}
 						</Text>
@@ -345,7 +346,7 @@ const UsersListPage = () => {
 							}}
 							active={!deleting}
 							loading={false}
-							startIcon={<MaterialIcons name="visibility" size={20} color={'#0274d7'} />}
+							startIcon={<MaterialIcons name="visibility" size={20} color={colors.brand} />}
 						/>
 					</View>
 					{editable && (
@@ -358,7 +359,7 @@ const UsersListPage = () => {
 								}}
 								active={!deleting}
 								loading={false}
-								startIcon={<MaterialIcons name="edit" size={20} color={'#0274d7'} />}
+								startIcon={<MaterialIcons name="edit" size={20} color={colors.brand} />}
 							/>
 						</View>
 					)}
@@ -373,7 +374,7 @@ const UsersListPage = () => {
 						}}
 						active={!deleting}
 						loading={false}
-						startIcon={<MaterialIcons name="delete-outline" size={20} color={'#dc2626'} />}
+						startIcon={<MaterialIcons name="delete-outline" size={20} color={colors.danger} />}
 					/>
 				)}
 			</View>
@@ -385,7 +386,7 @@ const UsersListPage = () => {
 			<View className="flex-1 gap-3 bg-slate-50 p-4 dark:bg-night">
 				<View className="flex-row items-center gap-4 py-1">
 					<View className="h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 dark:bg-panel">
-						<MaterialIcons name={'people-outline'} size={25} color="#0274d7" />
+						<MaterialIcons name={'people-outline'} size={25} color={colors.brand} />
 					</View>
 					<View className="flex-1 gap-1">
 						<Text accessibilityRole="header" className="text-ink dark:text-slate-100 font-poppins-semibold text-2xl">
@@ -400,7 +401,7 @@ const UsersListPage = () => {
 							onClick={() => router.push(USERS_ADD)}
 							active={!deleting}
 							loading={false}
-							startIcon={<MaterialIcons name="person-add" size={20} color={'#fff'} />}
+							startIcon={<MaterialIcons name="person-add" size={20} color={colors.white} />}
 						/>
 					</View>
 				)}
@@ -429,7 +430,7 @@ const UsersListPage = () => {
 									onClick={() => setShowBulkDeleteModal(true)}
 									active={!(deleting || query.isFetching || !!query.error)}
 									loading={false}
-									startIcon={<MaterialIcons name="delete-outline" size={20} color={'#dc2626'} />}
+									startIcon={<MaterialIcons name="delete-outline" size={20} color={colors.danger} />}
 								/>
 								<PrimaryLoadingButton
 									buttonText={t.users.clearSelection}
@@ -461,7 +462,7 @@ const UsersListPage = () => {
 							onClick={refresh}
 							active
 							loading={false}
-							startIcon={<MaterialIcons name="refresh" size={20} color={'#0274d7'} />}
+							startIcon={<MaterialIcons name="refresh" size={20} color={colors.brand} />}
 						/>
 					</View>
 				)}
@@ -515,8 +516,8 @@ const UsersListPage = () => {
 				<ActionModals
 					title={t.users.deleteModalTitle}
 					body={t.users.deleteModalBody}
-					titleIcon={<MaterialIcons name="warning-amber" size={30} color="#dc2626" />}
-					titleIconColor="#fef2f2"
+					titleIcon={<MaterialIcons name="warning-amber" size={30} color={colors.danger} />}
+					titleIconColor={colors.dangerBackground}
 					maxWidth="xs"
 					fullWidth
 					onClose={() => setShowDeleteModal(false)}
@@ -527,8 +528,8 @@ const UsersListPage = () => {
 				<ActionModals
 					title={t.users.bulkDeleteModalTitle(selectedUserIds.length)}
 					body={t.users.bulkDeleteModalBody(selectedUserIds.length)}
-					titleIcon={<MaterialIcons name="warning-amber" size={30} color="#dc2626" />}
-					titleIconColor="#fef2f2"
+					titleIcon={<MaterialIcons name="warning-amber" size={30} color={colors.danger} />}
+					titleIconColor={colors.dangerBackground}
 					maxWidth="xs"
 					fullWidth
 					onClose={() => setShowBulkDeleteModal(false)}

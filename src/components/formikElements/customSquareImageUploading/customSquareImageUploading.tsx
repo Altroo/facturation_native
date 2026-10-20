@@ -12,6 +12,7 @@ import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoa
 import ImagePreview from '@/components/nativeElements/modals/imagePreview/imagePreview';
 import BottomSheet from '@/components/nativeElements/modals/bottomSheet/bottomSheet';
 import { useLanguage, useToast } from '@/utils/hooks';
+import { colors } from '@/utils/themes';
 
 export type CustomSquareImageUploadingProps = {
 	image: string | ArrayBuffer | null;
@@ -268,7 +269,7 @@ const CustomSquareImageUploading: FC<CustomSquareImageUploadingProps> = (props: 
 						/>
 					) : (
 						<View className="flex-1 items-center justify-center">
-							<MaterialIcons name={avatar ? 'person-outline' : 'image'} size={46} color="#94a3b8" />
+							<MaterialIcons name={avatar ? 'person-outline' : 'image'} size={46} color={colors.slate[400]} />
 						</View>
 					)}
 				</Pressable>
@@ -280,7 +281,7 @@ const CustomSquareImageUploading: FC<CustomSquareImageUploadingProps> = (props: 
 							onPress={() => setPreviewOpen(true)}
 							className="min-h-11 items-center justify-center"
 						>
-							<MaterialIcons name="zoom-in" size={24} color="#0274d7" />
+							<MaterialIcons name="zoom-in" size={24} color={colors.brand} />
 						</Pressable>
 						<Pressable
 							accessibilityRole="button"
@@ -289,7 +290,7 @@ const CustomSquareImageUploading: FC<CustomSquareImageUploadingProps> = (props: 
 							onPress={() => void handleEditClick()}
 							className="min-h-11 items-center justify-center"
 						>
-							<MaterialIcons name="crop" size={24} color="#0274d7" />
+							<MaterialIcons name="crop" size={24} color={colors.brand} />
 						</Pressable>
 						<Pressable
 							testID="clear-button"
@@ -299,7 +300,7 @@ const CustomSquareImageUploading: FC<CustomSquareImageUploadingProps> = (props: 
 							onPress={handleClear}
 							className="min-h-11 items-center justify-center"
 						>
-							<MaterialIcons name="highlight-off" size={24} color="#dc2626" />
+							<MaterialIcons name="highlight-off" size={24} color={colors.danger} />
 						</Pressable>
 					</View>
 				)}
@@ -309,7 +310,7 @@ const CustomSquareImageUploading: FC<CustomSquareImageUploadingProps> = (props: 
 					loading={busy}
 					onClick={handleImageUploadClick}
 					active={!disabled}
-					startIcon={<MaterialIcons name="add-photo-alternate" size={20} color="#0274d7" />}
+					startIcon={<MaterialIcons name="add-photo-alternate" size={20} color={colors.brand} />}
 				/>
 			</View>
 			{!!error && (
@@ -335,7 +336,7 @@ const CustomSquareImageUploading: FC<CustomSquareImageUploadingProps> = (props: 
 						className="min-h-32 min-w-0 flex-1 items-center justify-center gap-3 rounded-2xl border border-blue-100
 						bg-blue-50 p-4 dark:border-slate-700 dark:bg-slate-800 dark:active:bg-slate-700"
 					>
-						<MaterialIcons name="photo-camera" size={30} color="#0274d7" />
+						<MaterialIcons name="photo-camera" size={30} color={colors.brand} />
 						<Text className="text-center font-poppins-medium text-sm text-ink dark:text-slate-100">
 							{t.common.takePhoto}
 						</Text>
@@ -348,7 +349,7 @@ const CustomSquareImageUploading: FC<CustomSquareImageUploadingProps> = (props: 
 						className="min-h-32 min-w-0 flex-1 items-center justify-center gap-3 rounded-2xl border border-blue-100
 						bg-blue-50 p-4 dark:border-slate-700 dark:bg-slate-800 dark:active:bg-slate-700"
 					>
-						<MaterialIcons name="photo-library" size={30} color="#0274d7" />
+						<MaterialIcons name="photo-library" size={30} color={colors.brand} />
 						<Text className="text-center font-poppins-medium text-sm text-ink dark:text-slate-100">
 							{t.common.chooseFromGallery}
 						</Text>
@@ -358,7 +359,7 @@ const CustomSquareImageUploading: FC<CustomSquareImageUploadingProps> = (props: 
 			{isEditing && source && (
 				<Modal visible animationType="slide" presentationStyle="fullScreen" onRequestClose={handleClose}>
 					<GestureHandlerRootView style={{ flex: 1 }}>
-						<SafeAreaView style={{ flex: 1, backgroundColor: '#0f172a' }}>
+						<SafeAreaView style={{ flex: 1, backgroundColor: colors.slate[900] }}>
 							<Text accessibilityRole="header" className="px-6 py-5 font-poppins-semibold text-lg text-white">
 								{t.common.clickToEditCrop}
 							</Text>
@@ -370,7 +371,7 @@ const CustomSquareImageUploading: FC<CustomSquareImageUploadingProps> = (props: 
 										height: cropSize.height,
 										overflow: 'hidden',
 										borderWidth: 1,
-										borderColor: '#ffffff',
+										borderColor: colors.white,
 									}}
 								>
 									<CropZoom

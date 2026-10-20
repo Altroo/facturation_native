@@ -16,6 +16,7 @@ import { passwordResetCodeFields as fields } from '@/utils/rawData';
 import { AUTH_RESET_PASSWORD, AUTH_RESET_PASSWORD_SET_PASSWORD } from '@/utils/routes';
 import type { PasswordResetCodeField as FieldKey, PasswordResetData } from '@/types/accountTypes';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { colors } from '@/utils/themes';
 
 type EnterCodePageContentProps = {
 	email: string;
@@ -148,7 +149,7 @@ const EnterCodePageContent = (props: EnterCodePageContentProps) => {
 				loading={(isPending && !isResendLoading) || isPasswordResetLoading}
 				onClick={() => formik.handleSubmit()}
 				active={!pending}
-				startIcon={<MaterialIcons name="thumb-up" size={20} color="#ffffff" />}
+				startIcon={<MaterialIcons name="thumb-up" size={20} color={colors.white} />}
 			/>
 			<PrimaryLoadingButton
 				buttonText={t.auth.resendCode}
@@ -156,7 +157,7 @@ const EnterCodePageContent = (props: EnterCodePageContentProps) => {
 				inverted
 				onClick={() => void renvoyerLeCodeHandler()}
 				active={!pending}
-				startIcon={<MaterialIcons name="send" size={20} color="#0274d7" />}
+				startIcon={<MaterialIcons name="send" size={20} color={colors.brand} />}
 			/>
 		</View>
 	);

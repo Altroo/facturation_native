@@ -3,6 +3,7 @@ import { Text, Pressable, ScrollView, View, PressableProps } from 'react-native'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useLanguage } from '@/utils/hooks';
 import type { DropDownType } from '@/types/accountTypes';
+import { colors } from '@/utils/themes';
 
 export type Props = {
 	id?: string;
@@ -51,7 +52,9 @@ const CustomDropDownSelect: FC<Props> = (props: Props) => {
 				>
 					{props.value || t.common.selectValue}
 				</Text>
-				{props.endIcon || <MaterialIcons name={open ? 'expand-less' : 'expand-more'} size={22} color="#94a3b8" />}
+				{props.endIcon || (
+					<MaterialIcons name={open ? 'expand-less' : 'expand-more'} size={22} color={colors.slate[400]} />
+				)}
 			</Pressable>
 			{open && !props.disabled && (
 				<View
@@ -87,7 +90,7 @@ const CustomDropDownSelect: FC<Props> = (props: Props) => {
 										{value || t.common.selectValue}
 									</Text>
 									<View className="h-5 w-5 items-center justify-center">
-										{props.value === value && <MaterialIcons name="check-circle" size={20} color="#0274d7" />}
+										{props.value === value && <MaterialIcons name="check-circle" size={20} color={colors.brand} />}
 									</View>
 								</Pressable>
 							);

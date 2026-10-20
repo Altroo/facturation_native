@@ -29,7 +29,7 @@ import { useAppDispatch, useAppSelector, useLanguage } from '@/utils/hooks';
 import { getInitState } from '@/store/selectors';
 import { initAppAction } from '@/store/actions/_initActions';
 import { accountLogoutAction } from '@/store/actions/accountActions';
-import { colors } from '@/utils/themes';
+import { colors, fonts } from '@/utils/themes';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 
 // Keep the native launch screen above React until local resources and preferences are ready.
@@ -89,7 +89,7 @@ export const RootNavigator = () => {
 		<Stack
 			screenOptions={{
 				headerShown: false,
-				contentStyle: { backgroundColor: mode === 'dark' ? colors.night : '#f5f5f5' },
+				contentStyle: { backgroundColor: mode === 'dark' ? colors.night : colors.screenBackground },
 			}}
 		>
 			<Stack.Protected guard={authenticated}>
@@ -106,15 +106,15 @@ export const RootNavigator = () => {
 const RootLayout = () => {
 	const [loaded, error] = useFonts({
 		...MaterialIcons.font,
-		Poppins,
-		PoppinsMedium,
-		PoppinsSemiBold,
+		[fonts.regular]: Poppins,
+		[fonts.medium]: PoppinsMedium,
+		[fonts.semibold]: PoppinsSemiBold,
 	});
 	const [assets, assetError] = useAssets([Logo]);
 	if ((!loaded && !error) || (!assets && !assetError))
 		return (
 			<View className="flex-1 items-center justify-center bg-white">
-				<ActivityIndicator color="#0274d7" />
+				<ActivityIndicator color={colors.brand} />
 			</View>
 		);
 	return (

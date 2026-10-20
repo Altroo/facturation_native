@@ -4,6 +4,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { reloadAppAsync } from 'expo';
 import { LanguageContext } from '@/contexts/languageContext';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
+import { colors } from '@/utils/themes';
 
 type ErrorBoundaryProps = {
 	children: ReactNode;
@@ -60,7 +61,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 		if (this.props.fallback) return this.props.fallback;
 		return (
 			<View className="flex-1 justify-center gap-5 bg-white p-6 dark:bg-night">
-				<MaterialIcons name="error-outline" size={64} color="#dc2626" />
+				<MaterialIcons name="error-outline" size={64} color={colors.danger} />
 				<Text className="font-poppins-semibold text-xl text-ink dark:text-white">{t.errors.errorOccurred}</Text>
 				<Text className="text-base text-ink dark:text-white">{t.errors.errorOccurredMessage}</Text>
 				{process.env.NODE_ENV !== 'production' && this.state.error && (

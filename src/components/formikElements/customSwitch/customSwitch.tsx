@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Platform, Switch, Text, View } from 'react-native';
+import { colors } from '@/utils/themes';
 
 type Props = {
 	label: string;
@@ -47,8 +48,12 @@ const CustomSwitch = (props: Props) => (
 				accessibilityState={{ disabled: false }}
 				value={props.value}
 				onValueChange={props.disabled ? undefined : props.onValueChange}
-				trackColor={props.disabled ? { false: '#94a3b8', true: '#93c5fd' } : { false: '#cbd5e1', true: '#0274d7' }}
-				thumbColor={props.disabled ? '#e2e8f0' : '#fff'}
+				trackColor={
+					props.disabled
+						? { false: colors.slate[400], true: colors.brandDisabled }
+						: { false: colors.slate[300], true: colors.brand }
+				}
+				thumbColor={props.disabled ? colors.slate[200] : colors.white}
 			/>
 		</View>
 	</View>

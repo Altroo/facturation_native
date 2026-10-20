@@ -4,6 +4,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useAppSelector, useLanguage } from '@/utils/hooks';
 import { getWSMaintenanceState } from '@/store/selectors';
 import Logo from '../../../../assets/facturation-logo.png';
+import { colors } from '@/utils/themes';
 
 const Maintenance: FC = () => {
 	const maintenance = useAppSelector(getWSMaintenanceState);
@@ -27,7 +28,7 @@ const Maintenance: FC = () => {
 				/>
 				<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
 					<View className="flex-row items-center gap-2 self-start rounded-full bg-orange-50 px-3 py-2 dark:bg-panel">
-						<MaterialIcons name="build-circle" size={20} color="#c2410c" />
+						<MaterialIcons name="build-circle" size={20} color={colors.maintenance} />
 						<Text className="font-poppins-semibold text-orange-700 dark:text-orange-300">
 							{t.maintenance.chipLabel}
 						</Text>

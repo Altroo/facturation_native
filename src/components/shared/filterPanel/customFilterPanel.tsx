@@ -16,6 +16,7 @@ import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoa
 import { useColorMode } from '@/providers/themeProvider';
 import { valueLessFilterOperators } from '@/utils/rawData';
 import { useLanguage } from '@/utils/hooks';
+import { colors } from '@/utils/themes';
 
 /** Check if a filter item has a meaningful value */
 export const filterHasValue = (item: FilterItem): boolean => {
@@ -192,7 +193,7 @@ const CustomFilterPanel = <TRow,>(props: Props<TRow>) => {
 												onPress={() => setDatePickerId(datePickerId === id ? null : id)}
 												className="min-h-12 min-w-12 items-center justify-center"
 											>
-												<MaterialIcons name="calendar-today" size={22} color="#0274d7" />
+												<MaterialIcons name="calendar-today" size={22} color={colors.brand} />
 											</Pressable>
 										) : undefined
 									}
@@ -230,7 +231,7 @@ const CustomFilterPanel = <TRow,>(props: Props<TRow>) => {
 							loading={false}
 							inverted
 							danger
-							startIcon={<MaterialIcons name="close" size={20} color="#b91c1c" />}
+							startIcon={<MaterialIcons name="close" size={20} color={colors.dangerStrong} />}
 							onClick={() => handleRemoveFilter(id)}
 						/>
 					</View>
@@ -242,7 +243,7 @@ const CustomFilterPanel = <TRow,>(props: Props<TRow>) => {
 				loading={false}
 				inverted
 				onClick={handleAddFilter}
-				startIcon={<MaterialIcons name="add" size={22} color="#0274d7" />}
+				startIcon={<MaterialIcons name="add" size={22} color={colors.brand} />}
 			/>
 			{filterModel.items.length > 0 && (
 				<>

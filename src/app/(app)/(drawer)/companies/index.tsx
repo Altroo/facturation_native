@@ -27,6 +27,7 @@ import { COMPANIES_ADD, COMPANIES_VIEW, COMPANIES_EDIT } from '@/utils/routes';
 import { MODULES_PAGE_SIZE } from '@/utils/rawData';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import SelectAllControl from '@/components/shared/selectAllControl/selectAllControl';
+import { colors } from '@/utils/themes';
 
 const CompaniesListPage = () => {
 	const { t } = useLanguage();
@@ -248,19 +249,19 @@ const CompaniesListPage = () => {
 		{
 			text: t.common.cancel,
 			active: false,
-			color: '#64748b',
+			color: colors.slate[500],
 			disabled: suspending,
 			onClick: () => setShowSuspendModal(false),
 		},
 		{
 			text: t.companies.suspendBtn,
 			active: true,
-			color: '#dc2626',
+			color: colors.danger,
 			disabled: suspending,
 			icon: suspending ? (
-				<ActivityIndicator color="#ffffff" />
+				<ActivityIndicator color={colors.white} />
 			) : (
-				<MaterialIcons name="delete-outline" size={20} color="#ffffff" />
+				<MaterialIcons name="delete-outline" size={20} color={colors.white} />
 			),
 			onClick: () => void suspendHandler(),
 		},
@@ -269,19 +270,19 @@ const CompaniesListPage = () => {
 		{
 			text: t.common.cancel,
 			active: false,
-			color: '#64748b',
+			color: colors.slate[500],
 			disabled: suspending,
 			onClick: () => setShowBulkSuspendModal(false),
 		},
 		{
 			text: t.companies.suspendBtn,
 			active: true,
-			color: '#dc2626',
+			color: colors.danger,
 			disabled: suspending,
 			icon: suspending ? (
-				<ActivityIndicator color="#ffffff" />
+				<ActivityIndicator color={colors.white} />
 			) : (
-				<MaterialIcons name="delete-outline" size={20} color="#ffffff" />
+				<MaterialIcons name="delete-outline" size={20} color={colors.white} />
 			),
 			onClick: () => void bulkSuspendHandler(),
 		},
@@ -358,7 +359,7 @@ const CompaniesListPage = () => {
 						<MaterialIcons
 							name={selectedIds.includes(company.id) ? 'check-box' : 'check-box-outline-blank'}
 							size={24}
-							color={selectedIds.includes(company.id) ? '#0274d7' : '#94a3b8'}
+							color={selectedIds.includes(company.id) ? colors.brand : colors.slate[400]}
 						/>
 						<Text className="font-sans text-ink dark:text-slate-100 flex-1 text-sm">
 							{t.shared.selectCompany + ': ' + (company.raison_sociale || String(company.id))}
@@ -380,26 +381,26 @@ const CompaniesListPage = () => {
 				</View>
 				<View className="gap-2 border-t border-slate-100 pt-3 dark:border-slate-700">
 					<View className="flex-row items-center gap-2">
-						<MaterialIcons name="mail-outline" size={17} color="#94a3b8" />
+						<MaterialIcons name="mail-outline" size={17} color={colors.slate[400]} />
 						<Text className="font-sans text-ink dark:text-slate-100 flex-1 text-sm">
 							{company.email || t.common.noData}
 						</Text>
 					</View>
 					<View className="flex-row items-center gap-2">
-						<MaterialIcons name="phone" size={17} color="#94a3b8" />
+						<MaterialIcons name="phone" size={17} color={colors.slate[400]} />
 						<Text className="font-sans text-ink dark:text-slate-100 flex-1 text-sm">
 							{company.telephone || t.common.noData}
 						</Text>
 					</View>
 					<View className="flex-row items-center gap-2">
-						<MaterialIcons name="person-outline" size={17} color="#94a3b8" />
+						<MaterialIcons name="person-outline" size={17} color={colors.slate[400]} />
 						<Text className="font-sans text-ink dark:text-slate-100 flex-1 text-sm">
 							{company.nom_responsable || t.common.noData}
 						</Text>
 					</View>
 					<View className="flex-row flex-wrap items-center gap-3">
 						<View className="flex-row items-center gap-2">
-							<MaterialIcons name="groups" size={17} color="#94a3b8" />
+							<MaterialIcons name="groups" size={17} color={colors.slate[400]} />
 							<Text className="font-sans text-xs text-slate-500 dark:text-slate-400">
 								{localNbrEmployeFilterOptions.find((option) => option.value === company.nbr_employe)?.label ||
 									company.nbr_employe ||
@@ -408,7 +409,7 @@ const CompaniesListPage = () => {
 							</Text>
 						</View>
 						<View className="flex-row items-center gap-2">
-							<MaterialIcons name="event" size={17} color="#94a3b8" />
+							<MaterialIcons name="event" size={17} color={colors.slate[400]} />
 							<Text className="font-sans text-xs text-slate-500 dark:text-slate-400">
 								<Text className="font-sans text-sm text-ink dark:text-slate-100">
 									{formatDate(company.date_created ?? null)}
@@ -427,7 +428,7 @@ const CompaniesListPage = () => {
 							}}
 							active={!suspending}
 							loading={false}
-							startIcon={<MaterialIcons name="visibility" size={20} color={'#0274d7'} />}
+							startIcon={<MaterialIcons name="visibility" size={20} color={colors.brand} />}
 						/>
 					</View>
 					<View className="flex-1">
@@ -439,7 +440,7 @@ const CompaniesListPage = () => {
 							}}
 							active={!suspending}
 							loading={false}
-							startIcon={<MaterialIcons name="edit" size={20} color={'#0274d7'} />}
+							startIcon={<MaterialIcons name="edit" size={20} color={colors.brand} />}
 						/>
 					</View>
 				</View>
@@ -452,7 +453,7 @@ const CompaniesListPage = () => {
 					}}
 					active={!(suspending || !company.id)}
 					loading={false}
-					startIcon={<MaterialIcons name="block" size={20} color={'#dc2626'} />}
+					startIcon={<MaterialIcons name="block" size={20} color={colors.danger} />}
 				/>
 			</View>
 		</View>
@@ -463,7 +464,7 @@ const CompaniesListPage = () => {
 			<View className="flex-1 gap-3 bg-slate-50 p-4 dark:bg-night">
 				<View className="flex-row items-center gap-4 py-1">
 					<View className="h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 dark:bg-panel">
-						<MaterialIcons name={'business'} size={25} color="#0274d7" />
+						<MaterialIcons name={'business'} size={25} color={colors.brand} />
 					</View>
 					<View className="flex-1 gap-1">
 						<Text accessibilityRole="header" className="text-ink dark:text-slate-100 font-poppins-semibold text-2xl">
@@ -478,7 +479,7 @@ const CompaniesListPage = () => {
 							onClick={() => router.push(COMPANIES_ADD)}
 							active={!suspending}
 							loading={false}
-							startIcon={<MaterialIcons name="add" size={20} color={'#fff'} />}
+							startIcon={<MaterialIcons name="add" size={20} color={colors.white} />}
 						/>
 					</View>
 				)}
@@ -506,7 +507,7 @@ const CompaniesListPage = () => {
 								}}
 								active={!(suspending || query.isFetching || !!query.error || isLoadingAllIds)}
 								loading={false}
-								startIcon={<MaterialIcons name="block" size={20} color={'#dc2626'} />}
+								startIcon={<MaterialIcons name="block" size={20} color={colors.danger} />}
 							/>
 							<PrimaryLoadingButton
 								buttonText={t.shared.clearSelection}
@@ -537,7 +538,7 @@ const CompaniesListPage = () => {
 							onClick={refresh}
 							active
 							loading={false}
-							startIcon={<MaterialIcons name="refresh" size={20} color={'#0274d7'} />}
+							startIcon={<MaterialIcons name="refresh" size={20} color={colors.brand} />}
 						/>
 					</View>
 				)}
@@ -588,8 +589,8 @@ const CompaniesListPage = () => {
 				<ActionModals
 					title={t.companies.suspendModalTitle}
 					body={t.companies.suspendModalBody}
-					titleIcon={<MaterialIcons name="warning-amber" size={30} color="#dc2626" />}
-					titleIconColor="#fef2f2"
+					titleIcon={<MaterialIcons name="warning-amber" size={30} color={colors.danger} />}
+					titleIconColor={colors.dangerBackground}
 					maxWidth="xs"
 					fullWidth
 					onClose={() => setShowSuspendModal(false)}
@@ -600,8 +601,8 @@ const CompaniesListPage = () => {
 				<ActionModals
 					title={t.companies.bulkSuspendModalTitle(selectedIds.length)}
 					body={t.companies.bulkSuspendModalBody(selectedIds.length)}
-					titleIcon={<MaterialIcons name="warning-amber" size={30} color="#dc2626" />}
-					titleIconColor="#fef2f2"
+					titleIcon={<MaterialIcons name="warning-amber" size={30} color={colors.danger} />}
+					titleIconColor={colors.dangerBackground}
 					maxWidth="xs"
 					fullWidth
 					onClose={() => setShowBulkSuspendModal(false)}

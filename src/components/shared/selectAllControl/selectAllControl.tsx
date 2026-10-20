@@ -1,6 +1,7 @@
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useLanguage } from '@/utils/hooks';
+import { colors } from '@/utils/themes';
 
 type Props = {
 	accessibilityLabel: string;
@@ -35,7 +36,7 @@ const SelectAllControl = (props: Props) => {
 		>
 			<View className="h-6 w-6 items-center justify-center">
 				{loading ? (
-					<ActivityIndicator size="small" color="#0274d7" />
+					<ActivityIndicator size="small" color={colors.brand} />
 				) : (
 					<View
 						className={
@@ -43,7 +44,9 @@ const SelectAllControl = (props: Props) => {
 							(selected ? 'border-brand bg-brand' : 'border-slate-300 dark:border-slate-500')
 						}
 					>
-						{selected && <MaterialIcons name={checked === 'mixed' ? 'remove' : 'check'} size={18} color="#fff" />}
+						{selected && (
+							<MaterialIcons name={checked === 'mixed' ? 'remove' : 'check'} size={18} color={colors.white} />
+						)}
 					</View>
 				)}
 			</View>

@@ -27,6 +27,7 @@ import CustomSquareImageUploading from '@/components/formikElements/customSquare
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import ManagedByTableSection, { type ManagedByType } from '@/components/shared/addManagedByTable/addManagedByTable';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { colors } from '@/utils/themes';
 
 type FormikContentProps = {
 	id?: number;
@@ -296,7 +297,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 				<>
 					<View className="flex-row items-center gap-4 py-1">
 						<View className="h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 dark:bg-panel">
-							<MaterialIcons name={'business'} size={25} color="#0274d7" />
+							<MaterialIcons name={'business'} size={25} color={colors.brand} />
 						</View>
 						<View className="flex-1 gap-1">
 							<Text accessibilityRole="header" className="text-ink dark:text-slate-100 font-poppins-semibold text-2xl">
@@ -315,7 +316,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 					<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
 						<View className="mb-1 flex-row items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
 							<View className="h-10 w-10 items-center justify-center rounded-xl bg-blue-50 dark:bg-slate-800">
-								<MaterialIcons name={'image'} size={21} color="#0274d7" />
+								<MaterialIcons name={'image'} size={21} color={colors.brand} />
 							</View>
 							<View className="flex-1 gap-1">
 								<Text
@@ -350,7 +351,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 					<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
 						<View className="mb-1 flex-row items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
 							<View className="h-10 w-10 items-center justify-center rounded-xl bg-blue-50 dark:bg-slate-800">
-								<MaterialIcons name={'business'} size={21} color="#0274d7" />
+								<MaterialIcons name={'business'} size={21} color={colors.brand} />
 							</View>
 							<View className="flex-1 gap-1">
 								<Text
@@ -376,7 +377,9 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 									<MaterialIcons
 										name="business"
 										size={20}
-										color={formik.touched.raison_sociale && formik.errors.raison_sociale ? '#dc2626' : '#94a3b8'}
+										color={
+											formik.touched.raison_sociale && formik.errors.raison_sociale ? colors.danger : colors.slate[400]
+										}
 									/>
 								}
 							/>
@@ -397,7 +400,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 									<MaterialIcons
 										name="mail-outline"
 										size={20}
-										color={formik.touched.email && formik.errors.email ? '#dc2626' : '#94a3b8'}
+										color={formik.touched.email && formik.errors.email ? colors.danger : colors.slate[400]}
 									/>
 								}
 							/>
@@ -411,7 +414,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 								helperText={formik.touched.nbr_employe ? formik.errors.nbr_employe : undefined}
 								disabled={isPending}
 								error={Boolean(formik.touched.nbr_employe ? formik.errors.nbr_employe : undefined)}
-								startIcon={<MaterialIcons name="groups" size={20} color={'#94a3b8'} />}
+								startIcon={<MaterialIcons name="groups" size={20} color={colors.slate[400]} />}
 							/>
 							<CustomTextInput
 								id="adresse"
@@ -428,7 +431,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 									<MaterialIcons
 										name="location-on"
 										size={20}
-										color={formik.touched.adresse && formik.errors.adresse ? '#dc2626' : '#94a3b8'}
+										color={formik.touched.adresse && formik.errors.adresse ? colors.danger : colors.slate[400]}
 									/>
 								}
 							/>
@@ -449,7 +452,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 									<MaterialIcons
 										name="language"
 										size={20}
-										color={formik.touched.site_web && formik.errors.site_web ? '#dc2626' : '#94a3b8'}
+										color={formik.touched.site_web && formik.errors.site_web ? colors.danger : colors.slate[400]}
 									/>
 								}
 							/>
@@ -458,7 +461,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 					<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
 						<View className="mb-1 flex-row items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
 							<View className="h-10 w-10 items-center justify-center rounded-xl bg-blue-50 dark:bg-slate-800">
-								<MaterialIcons name={'person-outline'} size={21} color="#0274d7" />
+								<MaterialIcons name={'person-outline'} size={21} color={colors.brand} />
 							</View>
 							<View className="flex-1 gap-1">
 								<Text
@@ -477,7 +480,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 								items={civiliteItemsList}
 								onChange={(value) => void formik.setFieldValue('civilite_responsable', value)}
 								disabled={isPending}
-								startIcon={<MaterialIcons name="person" size={20} color={'#94a3b8'} />}
+								startIcon={<MaterialIcons name="person" size={20} color={colors.slate[400]} />}
 							/>
 							<CustomTextInput
 								id="nom_responsable"
@@ -493,7 +496,11 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 									<MaterialIcons
 										name="person-outline"
 										size={20}
-										color={formik.touched.nom_responsable && formik.errors.nom_responsable ? '#dc2626' : '#94a3b8'}
+										color={
+											formik.touched.nom_responsable && formik.errors.nom_responsable
+												? colors.danger
+												: colors.slate[400]
+										}
 									/>
 								}
 							/>
@@ -512,7 +519,11 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 									<MaterialIcons
 										name="smartphone"
 										size={20}
-										color={formik.touched.gsm_responsable && formik.errors.gsm_responsable ? '#dc2626' : '#94a3b8'}
+										color={
+											formik.touched.gsm_responsable && formik.errors.gsm_responsable
+												? colors.danger
+												: colors.slate[400]
+										}
 									/>
 								}
 							/>
@@ -521,7 +532,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 					<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
 						<View className="mb-1 flex-row items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
 							<View className="h-10 w-10 items-center justify-center rounded-xl bg-blue-50 dark:bg-slate-800">
-								<MaterialIcons name={'contacts'} size={21} color="#0274d7" />
+								<MaterialIcons name={'contacts'} size={21} color={colors.brand} />
 							</View>
 							<View className="flex-1 gap-1">
 								<Text
@@ -548,7 +559,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 									<MaterialIcons
 										name="phone"
 										size={20}
-										color={formik.touched.telephone && formik.errors.telephone ? '#dc2626' : '#94a3b8'}
+										color={formik.touched.telephone && formik.errors.telephone ? colors.danger : colors.slate[400]}
 									/>
 								}
 							/>
@@ -567,7 +578,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 									<MaterialIcons
 										name="print"
 										size={20}
-										color={formik.touched.fax && formik.errors.fax ? '#dc2626' : '#94a3b8'}
+										color={formik.touched.fax && formik.errors.fax ? colors.danger : colors.slate[400]}
 									/>
 								}
 							/>
@@ -576,7 +587,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 					<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
 						<View className="mb-1 flex-row items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
 							<View className="h-10 w-10 items-center justify-center rounded-xl bg-blue-50 dark:bg-slate-800">
-								<MaterialIcons name={'account-balance'} size={21} color="#0274d7" />
+								<MaterialIcons name={'account-balance'} size={21} color={colors.brand} />
 							</View>
 							<View className="flex-1 gap-1">
 								<Text
@@ -602,7 +613,11 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 									<MaterialIcons
 										name="credit-card"
 										size={20}
-										color={formik.touched.numero_du_compte && formik.errors.numero_du_compte ? '#dc2626' : '#94a3b8'}
+										color={
+											formik.touched.numero_du_compte && formik.errors.numero_du_compte
+												? colors.danger
+												: colors.slate[400]
+										}
 									/>
 								}
 							/>
@@ -620,7 +635,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 									<MaterialIcons
 										name="fingerprint"
 										size={20}
-										color={formik.touched.ICE && formik.errors.ICE ? '#dc2626' : '#94a3b8'}
+										color={formik.touched.ICE && formik.errors.ICE ? colors.danger : colors.slate[400]}
 									/>
 								}
 							/>
@@ -639,7 +654,9 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 										name="description"
 										size={20}
 										color={
-											formik.touched.registre_de_commerce && formik.errors.registre_de_commerce ? '#dc2626' : '#94a3b8'
+											formik.touched.registre_de_commerce && formik.errors.registre_de_commerce
+												? colors.danger
+												: colors.slate[400]
 										}
 									/>
 								}
@@ -659,7 +676,9 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 										name="badge"
 										size={20}
 										color={
-											formik.touched.identifiant_fiscal && formik.errors.identifiant_fiscal ? '#dc2626' : '#94a3b8'
+											formik.touched.identifiant_fiscal && formik.errors.identifiant_fiscal
+												? colors.danger
+												: colors.slate[400]
 										}
 									/>
 								}
@@ -679,7 +698,9 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 										name="receipt-long"
 										size={20}
 										color={
-											formik.touched.tax_professionnelle && formik.errors.tax_professionnelle ? '#dc2626' : '#94a3b8'
+											formik.touched.tax_professionnelle && formik.errors.tax_professionnelle
+												? colors.danger
+												: colors.slate[400]
 										}
 									/>
 								}
@@ -698,7 +719,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 									<MaterialIcons
 										name="verified-user"
 										size={20}
-										color={formik.touched.CNSS && formik.errors.CNSS ? '#dc2626' : '#94a3b8'}
+										color={formik.touched.CNSS && formik.errors.CNSS ? colors.danger : colors.slate[400]}
 									/>
 								}
 							/>
@@ -707,7 +728,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 					<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
 						<View className="mb-1 flex-row items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
 							<View className="h-10 w-10 items-center justify-center rounded-xl bg-blue-50 dark:bg-slate-800">
-								<MaterialIcons name={'settings'} size={21} color="#0274d7" />
+								<MaterialIcons name={'settings'} size={21} color={colors.brand} />
 							</View>
 							<View className="flex-1 gap-1">
 								<Text
@@ -724,7 +745,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 								value={formik.values.uses_foreign_currency}
 								onValueChange={(value) => void formik.setFieldValue('uses_foreign_currency', value)}
 								disabled={isPending}
-								startIcon={<MaterialIcons name={'currency-exchange'} size={21} color="#64748b" />}
+								startIcon={<MaterialIcons name={'currency-exchange'} size={21} color={colors.slate[500]} />}
 								helperText={t.companies.foreignCurrencyHelper}
 							/>
 							<CustomSwitch
@@ -735,7 +756,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 									if (!value) void formik.setFieldValue('inventory_management_enabled', false);
 								}}
 								disabled={!!rawData?.stock_management_enabled || isPending}
-								startIcon={<MaterialIcons name={'inventory-2'} size={21} color="#64748b" />}
+								startIcon={<MaterialIcons name={'inventory-2'} size={21} color={colors.slate[500]} />}
 								helperText={t.companies.stockManagementHelper}
 							/>
 							<CustomSwitch
@@ -743,7 +764,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 								value={formik.values.inventory_management_enabled}
 								onValueChange={(value) => void formik.setFieldValue('inventory_management_enabled', value)}
 								disabled={!formik.values.stock_management_enabled || isPending}
-								startIcon={<MaterialIcons name={'fact-check'} size={21} color="#64748b" />}
+								startIcon={<MaterialIcons name={'fact-check'} size={21} color={colors.slate[500]} />}
 								helperText={t.companies.inventoryManagementHelper}
 							/>
 						</>
@@ -751,8 +772,8 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 
 					<ManagedByTableSection
 						title={t.companies.managersSection}
-						icon={<MaterialIcons name="manage-accounts" size={21} color="#0274d7" />}
-						emptyIcon={<MaterialIcons name="group" size={36} color="#94a3b8" />}
+						icon={<MaterialIcons name="manage-accounts" size={21} color={colors.brand} />}
+						emptyIcon={<MaterialIcons name="group" size={36} color={colors.slate[400]} />}
 						emptyMessage={t.companies.noManager}
 						headers={['Utilisateur', 'Rôle']}
 						isUserTable
@@ -782,13 +803,13 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 							selectItems: availableUsers,
 							selectValue: selectedUser,
 							onSelectChange: (_event, newValue) => setSelectedUser(newValue),
-							selectIcon: <MaterialIcons name="person-add" size={20} color="#94a3b8" />,
+							selectIcon: <MaterialIcons name="person-add" size={20} color={colors.slate[400]} />,
 							roleId: 'new_company_role',
 							roleLabel: t.shared.role,
 							roleOptions,
 							roleValue: selectedRole,
 							onRoleChange: setSelectedRole,
-							roleIcon: <MaterialIcons name="shield" size={20} color="#94a3b8" />,
+							roleIcon: <MaterialIcons name="shield" size={20} color={colors.slate[400]} />,
 							onAdd: handleAddCompany,
 							isAddDisabled: !selectedUser || !selectedRole,
 						}}
@@ -810,7 +831,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 							}
 						}}
 						active
-						startIcon={<MaterialIcons name={isEditMode ? 'save' : 'add'} size={20} color={'#fff'} />}
+						startIcon={<MaterialIcons name={isEditMode ? 'save' : 'add'} size={20} color={colors.white} />}
 					/>
 				</>
 			</KeyboardAwareScrollView>

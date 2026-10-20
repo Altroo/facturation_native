@@ -13,7 +13,7 @@ import {
 import { useColorMode } from '@/providers/themeProvider';
 import type { PaginationResponseType } from '@/types/_initTypes';
 import { useLanguage, useToast } from '@/utils/hooks';
-import { dataGridThemes } from '@/utils/themes';
+import { dataGridThemes, colors } from '@/utils/themes';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import BottomSheet from '@/components/nativeElements/modals/bottomSheet/bottomSheet';
 import CustomTextInput from '@/components/formikElements/customTextInput/customTextInput';
@@ -21,6 +21,7 @@ import CustomDropDownSelect from '@/components/formikElements/customDropDownSele
 import ApiAlert from '@/components/formikElements/apiLoading/apiAlert/apiAlert';
 import CustomFilterPanel, { filterHasValue } from '@/components/shared/filterPanel/customFilterPanel';
 import KeyboardAwareScrollView from '@/components/shared/keyboardAwareScrollView/keyboardAwareScrollView';
+import { INFINITE_SCROLL_THRESHOLD } from '@/utils/rawData';
 
 type GridFilterResultType = {
 	params: Record<string, string>;
@@ -213,7 +214,7 @@ const PaginatedDataGrid = <TRow,>(props: PaginatedDataGridProps<TRow>) => {
 		refreshing,
 		onRefresh,
 		onEndReached,
-		onEndReachedThreshold = 0.3,
+		onEndReachedThreshold = INFINITE_SCROLL_THRESHOLD,
 		renderRow,
 		filterModel,
 		onFilterModelChange,
@@ -306,7 +307,7 @@ const PaginatedDataGrid = <TRow,>(props: PaginatedDataGridProps<TRow>) => {
 		<View className="items-center gap-2 px-3 py-4" accessibilityLiveRegion="polite">
 			{isFetchingNextPage ? (
 				<>
-					<ActivityIndicator color="#0274d7" />
+					<ActivityIndicator color={colors.brand} />
 					<Text className="font-sans text-ink dark:text-slate-100 text-sm">{t.dataGrid.loadingMore}</Text>
 				</>
 			) : loadMoreError ? (
@@ -322,7 +323,7 @@ const PaginatedDataGrid = <TRow,>(props: PaginatedDataGridProps<TRow>) => {
 						}}
 						active={!disabled}
 						loading={false}
-						startIcon={<MaterialIcons name="refresh" size={20} color="#0274d7" />}
+						startIcon={<MaterialIcons name="refresh" size={20} color={colors.brand} />}
 					/>
 				</>
 			) : rows.length > 0 ? (
@@ -351,7 +352,7 @@ const PaginatedDataGrid = <TRow,>(props: PaginatedDataGridProps<TRow>) => {
 		ListFooterComponent: listFooter,
 		ListEmptyComponent: (
 			<View className="items-center gap-3 p-8">
-				{isLoading ? <ActivityIndicator color="#0274d7" /> : null}
+				{isLoading ? <ActivityIndicator color={colors.brand} /> : null}
 				<Text className="font-sans text-slate-500 dark:text-slate-300">
 					{isLoading ? t.common.loading : t.common.noResults}
 				</Text>
@@ -390,7 +391,7 @@ const PaginatedDataGrid = <TRow,>(props: PaginatedDataGridProps<TRow>) => {
 						<MaterialIcons
 							name="filter-list"
 							size={22}
-							color={activeFilterCount > 0 ? '#0274d7' : theme.toolbarTextColor}
+							color={activeFilterCount > 0 ? colors.brand : theme.toolbarTextColor}
 						/>
 					</Pressable>
 					{searchOpen ? (
@@ -441,7 +442,7 @@ const PaginatedDataGrid = <TRow,>(props: PaginatedDataGridProps<TRow>) => {
 							}}
 							className="min-h-11 min-w-11 items-center justify-center rounded-lg border border-slate-300 dark:border-slate-600"
 						>
-							<MaterialIcons name="search" size={22} color={searchTerm ? '#0274d7' : theme.toolbarTextColor} />
+							<MaterialIcons name="search" size={22} color={searchTerm ? colors.brand : theme.toolbarTextColor} />
 						</Pressable>
 					)}
 					{sorting && (
@@ -457,7 +458,7 @@ const PaginatedDataGrid = <TRow,>(props: PaginatedDataGridProps<TRow>) => {
 							}}
 							className="min-h-11 min-w-11 items-center justify-center rounded-lg border border-slate-300 dark:border-slate-600"
 						>
-							<MaterialIcons name="sort" size={22} color={sorting.ordering ? '#0274d7' : theme.toolbarTextColor} />
+							<MaterialIcons name="sort" size={22} color={sorting.ordering ? colors.brand : theme.toolbarTextColor} />
 						</Pressable>
 					)}
 				</View>
@@ -482,7 +483,7 @@ const PaginatedDataGrid = <TRow,>(props: PaginatedDataGridProps<TRow>) => {
 					title={t.dataGrid.toolbarSort}
 					titleIcon={
 						<View className="h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 dark:bg-slate-800">
-							<MaterialIcons name="sort" size={24} color="#0274d7" />
+							<MaterialIcons name="sort" size={24} color={colors.brand} />
 						</View>
 					}
 					onClose={() => setSortDraft(null)}
@@ -525,7 +526,7 @@ const PaginatedDataGrid = <TRow,>(props: PaginatedDataGridProps<TRow>) => {
 							active={!disabled}
 							loading={false}
 							cssClass="flex-1"
-							startIcon={<MaterialIcons name="check" size={20} color="#fff" />}
+							startIcon={<MaterialIcons name="check" size={20} color={colors.white} />}
 							onClick={() => {
 								if (disabled) return;
 								sorting.onSortModelChange(sortDraft);
@@ -542,7 +543,7 @@ const PaginatedDataGrid = <TRow,>(props: PaginatedDataGridProps<TRow>) => {
 					title={t.dataGrid.filtersTitle}
 					titleIcon={
 						<View className="h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 dark:bg-slate-800">
-							<MaterialIcons name="filter-list" size={24} color="#0274d7" />
+							<MaterialIcons name="filter-list" size={24} color={colors.brand} />
 						</View>
 					}
 					onClose={closeFilters}
@@ -569,7 +570,7 @@ const PaginatedDataGrid = <TRow,>(props: PaginatedDataGridProps<TRow>) => {
 						active={!disabled}
 						loading={false}
 						onClick={handleFilterChange}
-						startIcon={<MaterialIcons name="check" size={20} color="#fff" />}
+						startIcon={<MaterialIcons name="check" size={20} color={colors.white} />}
 					/>
 				</BottomSheet>
 			)}

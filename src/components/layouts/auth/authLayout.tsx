@@ -9,6 +9,7 @@ import { useColorMode } from '@/providers/themeProvider';
 import { AuthThemeToggle } from '@/components/shared/themeToggle/themeToggle';
 import LanguageSwitcher from '@/components/shared/languageSwitcher/languageSwitcher';
 import Logo from '../../../../assets/facturation-logo.png';
+import { colors } from '@/utils/themes';
 
 type Props = {
 	children: ReactNode;
@@ -35,7 +36,7 @@ const AuthLayout = (props: Props) => {
 							}}
 							className="h-11 w-11 items-center justify-center rounded-full active:bg-slate-200 dark:active:bg-slate-700"
 						>
-							<MaterialIcons name="arrow-back" size={24} color={mode === 'dark' ? '#f1f5f9' : '#0d070b'} />
+							<MaterialIcons name="arrow-back" size={24} color={mode === 'dark' ? colors.slate[100] : colors.ink} />
 						</Pressable>
 					)}
 					<View className="flex-1" />
@@ -43,7 +44,6 @@ const AuthLayout = (props: Props) => {
 					<LanguageSwitcher />
 				</View>
 				<KeyboardAwareScrollView
-					bottomOffset={32}
 					style={{ flex: 1 }}
 					keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
 					keyboardShouldPersistTaps="handled"
