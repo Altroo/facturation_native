@@ -1,4 +1,5 @@
-import type { NbrEmployeType, CiviliteType, ManagedByType, ManagedByWriteOnlyType } from '@/types/companyTypes';
+import type { NbrEmployeType, CiviliteType, ManagedByWriteOnlyType } from '@/types/companyTypes';
+import { type ManagedByType } from '@/components/shared/addManagedByTable/addManagedByTable';
 
 export class UserClass {
 	constructor(

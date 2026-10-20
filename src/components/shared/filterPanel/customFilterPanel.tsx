@@ -3,12 +3,17 @@ import { Platform, Pressable, Text, View } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { format } from 'date-fns';
-import { getFilterOperatorsForColumn, type FilterItem } from 'expo-flash-datagrid';
+import {
+	getFilterOperatorsForColumn,
+	type FilterItem,
+	type FilterOperatorsConfig,
+	type ColumnDef,
+	type FilterModel,
+} from 'expo-flash-datagrid';
 import CustomAutoCompleteSelect from '@/components/formikElements/customAutoCompleteSelect/customAutoCompleteSelect';
 import CustomTextInput from '@/components/formikElements/customTextInput/customTextInput';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import { useColorMode } from '@/providers/themeProvider';
-import type { CustomFilterPanelProps } from '@/types/uiTypes';
 import { valueLessFilterOperators } from '@/utils/rawData';
 import { useLanguage } from '@/utils/hooks';
 
@@ -24,18 +29,20 @@ export const filterHasValue = (item: FilterItem): boolean => {
 	return typeof item.value === 'boolean' || (typeof item.value === 'number' && Number.isFinite(item.value));
 };
 
+type Props<TRow> = FilterOperatorsConfig<TRow> & {
+	columns: Array<ColumnDef<TRow>>;
+	filterModel: FilterModel;
+	onChange: (model: FilterModel) => void;
+	disabled?: boolean;
+};
+
 // Same role and location as the web CustomFilterPanel; only native controls differ.
-const CustomFilterPanel = <TRow,>({
-	columns,
-	filterModel,
-	onChange,
-	disabled,
-	filterOperatorsByType,
-	filterOperatorsByField,
-}: CustomFilterPanelProps<TRow>) => {
+const CustomFilterPanel = <TRow,>(props: Props<TRow>) => {
+	const { columns, filterModel, onChange, disabled, filterOperatorsByType, filterOperatorsByField } = props;
 	const { t, language } = useLanguage();
 	const { mode } = useColorMode();
 	const [datePickerId, setDatePickerId] = useState<string | null>(null);
+	if (disabled && datePickerId !== null) setDatePickerId(null);
 	const filterCounterRef = useRef(0);
 	const config = { filterOperatorsByType, filterOperatorsByField };
 	const filterableColumns = columns.filter((column) => column.field !== 'actions' && column.filterable !== false);

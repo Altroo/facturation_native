@@ -1,31 +1,52 @@
-import { type FC } from 'react';
-import { Text, View } from 'react-native';
+import type { FC, ReactNode } from 'react';
+import { type GestureResponderEvent, type StyleProp, Text, View, type ViewStyle } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import CustomDropDownSelect from '@/components/formikElements/customDropDownSelect/customDropDownSelect';
 import CustomAutoCompleteSelect from '@/components/formikElements/customAutoCompleteSelect/customAutoCompleteSelect';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import { useLanguage } from '@/utils/hooks';
-import type { AddManagedBySectionProps } from '@/types/companyTypes';
+import { DropDownType } from '@/types/accountTypes';
 
-const AddManagedBySection: FC<AddManagedBySectionProps> = ({
-	title,
-	selectId,
-	selectLabel,
-	selectItems,
-	selectValue,
-	onSelectChange,
-	selectIcon,
-	roleId,
-	roleLabel,
-	roleOptions,
-	roleValue,
-	onRoleChange,
-	roleIcon,
-	onAdd,
-	isAddDisabled,
-	disabled,
-	sx,
-}) => {
+export interface AddManagedBySectionProps {
+	title: string;
+	selectId: string;
+	selectLabel: string;
+	selectItems: Array<DropDownType>;
+	selectValue: DropDownType | null;
+	onSelectChange: (event: GestureResponderEvent, value: DropDownType | null) => void;
+	selectIcon: ReactNode;
+	roleId: string;
+	roleLabel: string;
+	roleOptions: Array<DropDownType>;
+	roleValue: string;
+	onRoleChange: (value: string) => void;
+	roleIcon: ReactNode;
+	onAdd: () => void;
+	isAddDisabled: boolean;
+	disabled?: boolean;
+	sx?: StyleProp<ViewStyle>;
+}
+
+const AddManagedBySection: FC<AddManagedBySectionProps> = (props: AddManagedBySectionProps) => {
+	const {
+		title,
+		selectId,
+		selectLabel,
+		selectItems,
+		selectValue,
+		onSelectChange,
+		selectIcon,
+		roleId,
+		roleLabel,
+		roleOptions,
+		roleValue,
+		onRoleChange,
+		roleIcon,
+		onAdd,
+		isAddDisabled,
+		disabled,
+		sx,
+	} = props;
 	const { t } = useLanguage();
 	return (
 		<View

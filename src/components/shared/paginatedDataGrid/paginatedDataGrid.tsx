@@ -1,25 +1,36 @@
-import { useState } from 'react';
-import { Text, ActivityIndicator, FlatList, Platform, Pressable, View } from 'react-native';
+import { type Dispatch, type ReactElement, type SetStateAction, useEffect, useEffectEvent, useState } from 'react';
+import { Text, ActivityIndicator, FlatList, Keyboard, Platform, Pressable, ScrollView, View } from 'react-native';
+import Animated, { FadeInRight, FadeOutRight } from 'react-native-reanimated';
 import { FlashList } from '@shopify/flash-list';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import {
-	formatLocale,
 	getDefaultFilterOperatorsByType,
 	getFilterOperatorsForColumn,
 	type FilterModel,
 	type SortModel,
+	DataGridProps,
 } from 'expo-flash-datagrid';
 import { useColorMode } from '@/providers/themeProvider';
-import type { DateRangeFilterValue, GridFilterResult, PaginatedDataGridProps } from '@/types/uiTypes';
 import type { PaginationResponseType } from '@/types/_initTypes';
 import { useLanguage, useToast } from '@/utils/hooks';
 import { dataGridThemes } from '@/utils/themes';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
-import ActionModals from '@/components/nativeElements/modals/actionModal/actionModals';
+import BottomSheet from '@/components/nativeElements/modals/bottomSheet/bottomSheet';
 import CustomTextInput from '@/components/formikElements/customTextInput/customTextInput';
 import CustomDropDownSelect from '@/components/formikElements/customDropDownSelect/customDropDownSelect';
 import ApiAlert from '@/components/formikElements/apiLoading/apiAlert/apiAlert';
 import CustomFilterPanel, { filterHasValue } from '@/components/shared/filterPanel/customFilterPanel';
+import KeyboardAwareScrollView from '@/components/shared/keyboardAwareScrollView/keyboardAwareScrollView';
+
+type GridFilterResultType = {
+	params: Record<string, string>;
+	error?: 'andOnly' | 'duplicateFilter' | 'unsupportedFilter' | 'invalidDate';
+};
+
+export type DateRangeFilterValue = {
+	from?: string;
+	to?: string;
+};
 
 /** Type guard for DateRangeFilterValue */
 export const isDateRangeValue = (value: unknown): value is DateRangeFilterValue => {
@@ -101,7 +112,7 @@ export const mapOperatorToParam = (field: string, operator: string, value: unkno
 	return params;
 };
 
-export const extractCustomFilterParams = (model: FilterModel): GridFilterResult => {
+export const extractCustomFilterParams = (model: FilterModel): GridFilterResultType => {
 	const params: Record<string, string> = {};
 	if (model.logicOperator === 'or' && model.items.length > 1) return { params, error: 'andOnly' };
 	for (const item of model.items) {
@@ -157,44 +168,78 @@ export const getInfiniteRows = <TRow extends { id?: number }>(
 	pages: PaginationResponseType<TRow>[] | undefined,
 ): TRow[] => [...new Map((pages ?? []).flatMap((page) => page.results).map((row) => [row.id, row])).values()];
 
+type DataGridSorting = {
+	ordering: string;
+	sortModel: SortModel;
+	onSortModelChange: (model: SortModel) => void;
+};
+
+export type PaginatedDataGridProps<TRow> = Pick<
+	DataGridProps<TRow>,
+	| 'rows'
+	| 'columns'
+	| 'getRowId'
+	| 'rowCount'
+	| 'refreshing'
+	| 'onRefresh'
+	| 'onEndReached'
+	| 'onEndReachedThreshold'
+	| 'filterModel'
+	| 'onFilterModelChange'
+	| 'testID'
+> & {
+	isLoading?: boolean;
+	sorting?: DataGridSorting;
+	searchTerm: string;
+	setSearchTerm: Dispatch<SetStateAction<string>>;
+	selectedIds?: Array<number>;
+	renderRow: (row: TRow, index: number) => ReactElement | null;
+	disabled?: boolean;
+	isFetchingNextPage?: boolean;
+	hasNextPage?: boolean;
+	loadMoreError?: boolean;
+	onRetryLoadMore?: () => void;
+};
+
 // The npm package owns filter definitions; this app owns its card layout and controls.
-const PaginatedDataGrid = <TRow,>({
-	disabled,
-	rows,
-	columns,
-	getRowId,
-	rowCount,
-	isLoading,
-	refreshing,
-	onRefresh,
-	onEndReached,
-	onEndReachedThreshold = 0.3,
-	renderRow,
-	filterModel,
-	onFilterModelChange,
-	searchTerm = '',
-	setSearchTerm,
-	selectedIds = [],
-	onSelectionChange,
-	isFetchingNextPage,
-	hasNextPage,
-	loadMoreError,
-	onRetryLoadMore,
-	sorting,
-	testID,
-}: PaginatedDataGridProps<TRow>) => {
+const PaginatedDataGrid = <TRow,>(props: PaginatedDataGridProps<TRow>) => {
+	const {
+		disabled,
+		rows,
+		columns,
+		getRowId,
+		rowCount,
+		isLoading,
+		refreshing,
+		onRefresh,
+		onEndReached,
+		onEndReachedThreshold = 0.3,
+		renderRow,
+		filterModel,
+		onFilterModelChange,
+		searchTerm = '',
+		setSearchTerm,
+		selectedIds = [],
+		isFetchingNextPage,
+		hasNextPage,
+		loadMoreError,
+		onRetryLoadMore,
+		sorting,
+		testID,
+	} = props;
 	const { t } = useLanguage();
 	const { mode } = useColorMode();
 	const { onError } = useToast();
 	const [searchDraft, setSearchDraft] = useState<string | null>(null);
+	const [searchOpen, setSearchOpen] = useState(false);
 	const [customFilters, setCustomFilters] = useState<FilterModel | null>(null);
-	const [filterError, setFilterError] = useState<GridFilterResult['error'] | null>(null);
+	const [filterError, setFilterError] = useState<GridFilterResultType['error'] | null>(null);
 	const [sortDraft, setSortDraft] = useState<SortModel | null>(null);
 	const sortableColumns = columns.filter((column) => column.sortable !== false && column.field !== 'actions');
 	const theme = dataGridThemes[mode];
 	const operators = getServerFilterOperators<TRow>();
 	const activeFilterCount = filterModel?.items.filter(filterHasValue).length ?? 0;
-	const closeSearch = () => setSearchDraft(null);
+	const searchValue = searchDraft ?? searchTerm;
 	const closeFilters = () => {
 		setCustomFilters(null);
 		setFilterError(null);
@@ -202,10 +247,17 @@ const PaginatedDataGrid = <TRow,>({
 	const handleApplySearch = () => {
 		if (disabled || searchDraft === null) return;
 		if (searchDraft !== searchTerm) setSearchTerm?.(searchDraft);
-		closeSearch();
+		setSearchDraft(null);
 	};
+	const applySearch = useEffectEvent(handleApplySearch);
+	useEffect(() => {
+		if (searchDraft === null || disabled) return;
+		const timeout = setTimeout(() => applySearch(), 500);
+		return () => clearTimeout(timeout);
+	}, [searchDraft, disabled]);
 	const handleToggleFilterPanel = () => {
 		if (disabled) return;
+		Keyboard.dismiss();
 		setFilterError(null);
 		const firstColumn = columns.find((column) => column.field !== 'actions' && column.filterable !== false);
 		setCustomFilters({
@@ -246,6 +298,7 @@ const PaginatedDataGrid = <TRow,>({
 	};
 	const handleClearFilters = () => {
 		if (disabled) return;
+		setSearchDraft(null);
 		if (searchTerm) setSearchTerm?.('');
 		if (filterModel?.items.length) onFilterModelChange?.({ items: [], logicOperator: 'and' });
 	};
@@ -306,8 +359,12 @@ const PaginatedDataGrid = <TRow,>({
 		),
 		scrollEnabled: !disabled,
 		keyboardShouldPersistTaps: 'handled' as const,
+		automaticallyAdjustKeyboardInsets: true,
+		keyboardDismissMode: 'on-drag' as const,
+		alwaysBounceVertical: true,
 		style: { flex: 1 },
 	};
+	const listKey = JSON.stringify([searchTerm, filterModel, sorting?.ordering]);
 	return (
 		<View
 			testID={testID}
@@ -316,21 +373,11 @@ const PaginatedDataGrid = <TRow,>({
 			pointerEvents={disabled ? 'none' : 'auto'}
 		>
 			<View className="gap-2 px-3 py-2" style={{ backgroundColor: theme.toolbarBackground }}>
-				<View className="flex-row flex-wrap items-center justify-end gap-2">
-					<Text className="mr-auto font-sans text-sm" style={{ color: theme.toolbarTextColor }}>
-						{t.dataGrid.loadedCount(rows.length, rowCount ?? rows.length)}
-					</Text>
-					{(searchTerm !== '' || activeFilterCount > 0) && (
-						<Pressable
-							accessibilityRole="button"
-							disabled={disabled}
-							onPress={handleClearFilters}
-							className="min-h-11 justify-center px-2"
-						>
-							<Text className="font-sans text-sm" style={{ color: theme.toolbarTextColor }}>
-								{t.common.clearAllFilters}
-							</Text>
-						</Pressable>
+				<View className="flex-row items-center justify-end gap-2">
+					{!searchOpen && (
+						<Text className="mr-auto font-sans text-sm" style={{ color: theme.toolbarTextColor }}>
+							{t.dataGrid.loadedCount(rows.length, rowCount ?? rows.length)}
+						</Text>
 					)}
 					<Pressable
 						accessibilityRole="button"
@@ -346,18 +393,57 @@ const PaginatedDataGrid = <TRow,>({
 							color={activeFilterCount > 0 ? '#0274d7' : theme.toolbarTextColor}
 						/>
 					</Pressable>
-					<Pressable
-						accessibilityRole="button"
-						accessibilityLabel={t.common.search}
-						accessibilityState={{ disabled: !!disabled, selected: !!searchTerm }}
-						disabled={disabled}
-						onPress={() => {
-							if (!disabled) setSearchDraft(searchTerm);
-						}}
-						className="min-h-11 min-w-11 items-center justify-center rounded-lg border border-slate-300 dark:border-slate-600"
-					>
-						<MaterialIcons name="search" size={22} color={searchTerm ? '#0274d7' : theme.toolbarTextColor} />
-					</Pressable>
+					{searchOpen ? (
+						<Animated.View
+							entering={FadeInRight.duration(180)}
+							exiting={FadeOutRight.duration(120)}
+							style={{ flex: 1, minWidth: 0 }}
+						>
+							<CustomTextInput
+								accessibilityLabel={t.common.search}
+								placeholder={t.dataGrid.searchPlaceholder}
+								value={searchValue}
+								onChangeText={setSearchDraft}
+								autoFocus
+								autoCorrect={false}
+								autoCapitalize="none"
+								disabled={disabled}
+								returnKeyType="search"
+								onSubmitEditing={handleApplySearch}
+								endIcon={
+									<Pressable
+										accessibilityRole="button"
+										accessibilityLabel={searchValue ? t.dataGrid.searchClear : t.common.close}
+										disabled={disabled}
+										onPress={() => {
+											setSearchDraft(null);
+											if (searchTerm) setSearchTerm?.('');
+											if (!searchValue) {
+												setSearchOpen(false);
+												Keyboard.dismiss();
+											}
+										}}
+										className="min-h-11 min-w-11 items-center justify-center"
+									>
+										<MaterialIcons name="close" size={20} color={theme.toolbarTextColor} />
+									</Pressable>
+								}
+							/>
+						</Animated.View>
+					) : (
+						<Pressable
+							accessibilityRole="button"
+							accessibilityLabel={t.common.search}
+							accessibilityState={{ disabled: !!disabled, selected: !!searchTerm }}
+							disabled={disabled}
+							onPress={() => {
+								if (!disabled) setSearchOpen(true);
+							}}
+							className="min-h-11 min-w-11 items-center justify-center rounded-lg border border-slate-300 dark:border-slate-600"
+						>
+							<MaterialIcons name="search" size={22} color={searchTerm ? '#0274d7' : theme.toolbarTextColor} />
+						</Pressable>
+					)}
 					{sorting && (
 						<Pressable
 							accessibilityRole="button"
@@ -365,7 +451,9 @@ const PaginatedDataGrid = <TRow,>({
 							accessibilityState={{ disabled: !!disabled, selected: !!sorting.ordering }}
 							disabled={disabled}
 							onPress={() => {
-								if (!disabled) setSortDraft(sorting.sortModel.map((item) => ({ ...item })));
+								if (disabled) return;
+								Keyboard.dismiss();
+								setSortDraft(sorting.sortModel.map((item) => ({ ...item })));
 							}}
 							className="min-h-11 min-w-11 items-center justify-center rounded-lg border border-slate-300 dark:border-slate-600"
 						>
@@ -373,128 +461,120 @@ const PaginatedDataGrid = <TRow,>({
 						</Pressable>
 					)}
 				</View>
-				{selectedIds.length > 0 && (
-					<View className="flex-row items-center justify-between gap-2">
-						<Text className="font-sans text-xs" style={{ color: theme.toolbarTextColor }}>
-							{formatLocale(t.dataGrid.selectedRowsLabel, { count: selectedIds.length })}
+				{(searchTerm !== '' || activeFilterCount > 0) && (
+					<Pressable
+						accessibilityRole="button"
+						disabled={disabled}
+						onPress={handleClearFilters}
+						className="min-h-11 self-end justify-center px-2"
+					>
+						<Text className="font-sans text-sm" style={{ color: theme.toolbarTextColor }}>
+							{t.common.clearAllFilters}
 						</Text>
-						<Pressable
-							accessibilityRole="button"
-							disabled={disabled}
-							onPress={() => {
-								if (!disabled) onSelectionChange?.([]);
-							}}
-							className="min-h-11 justify-center px-2"
-						>
-							<Text className="font-sans text-sm" style={{ color: theme.toolbarTextColor }}>
-								{t.shared.clearSelection}
-							</Text>
-						</Pressable>
-					</View>
+					</Pressable>
 				)}
 			</View>
-			{Platform.OS === 'web' ? <FlatList {...listProps} /> : <FlashList {...listProps} />}
+			{Platform.OS === 'web' ? <FlatList key={listKey} {...listProps} /> : <FlashList key={listKey} {...listProps} />}
 			{sorting && sortDraft !== null && (
-				<ActionModals
+				<BottomSheet
+					visible
+					testID="sorting-sheet"
 					title={t.dataGrid.toolbarSort}
+					titleIcon={
+						<View className="h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 dark:bg-slate-800">
+							<MaterialIcons name="sort" size={24} color="#0274d7" />
+						</View>
+					}
 					onClose={() => setSortDraft(null)}
-					actions={[
-						{ text: t.common.cancel, active: false, onClick: () => setSortDraft(null) },
-						{
-							text: t.dataGrid.searchApply,
-							active: true,
-							disabled,
-							onClick: () => {
+				>
+					<ScrollView style={{ flexShrink: 1 }} contentContainerStyle={{ gap: 16 }} keyboardShouldPersistTaps="handled">
+						<CustomDropDownSelect
+							label={t.dataGrid.sortField}
+							value={sortableColumns.find((column) => column.field === sortDraft[0]?.field)?.headerName ?? ''}
+							items={sortableColumns.map((column) => column.headerName ?? column.field)}
+							onChange={(value) => {
+								const column = sortableColumns.find((item) => (item.headerName ?? item.field) === value);
+								if (column) setSortDraft([{ field: column.field, sort: sortDraft[0]?.sort ?? 'asc' }]);
+							}}
+							disabled={disabled}
+						/>
+						<CustomDropDownSelect
+							label={t.dataGrid.sortDirection}
+							value={sortDraft[0]?.sort === 'desc' ? t.dataGrid.sortDescending : t.dataGrid.sortAscending}
+							items={[t.dataGrid.sortAscending, t.dataGrid.sortDescending]}
+							onChange={(value) => {
+								if (sortDraft[0])
+									setSortDraft([
+										{ field: sortDraft[0].field, sort: value === t.dataGrid.sortDescending ? 'desc' : 'asc' },
+									]);
+							}}
+							disabled={disabled || !sortDraft.length}
+						/>
+					</ScrollView>
+					<View className="flex-row gap-3">
+						<PrimaryLoadingButton
+							buttonText={t.dataGrid.sortClear}
+							inverted
+							active={!disabled}
+							loading={false}
+							onClick={() => setSortDraft([])}
+							cssClass="flex-1"
+						/>
+						<PrimaryLoadingButton
+							buttonText={t.dataGrid.searchApply}
+							active={!disabled}
+							loading={false}
+							cssClass="flex-1"
+							startIcon={<MaterialIcons name="check" size={20} color="#fff" />}
+							onClick={() => {
 								if (disabled) return;
 								sorting.onSortModelChange(sortDraft);
 								setSortDraft(null);
-							},
-						},
-					]}
-				>
-					<CustomDropDownSelect
-						label={t.dataGrid.sortField}
-						value={sortableColumns.find((column) => column.field === sortDraft[0]?.field)?.headerName ?? ''}
-						items={sortableColumns.map((column) => column.headerName ?? column.field)}
-						onChange={(value) => {
-							const column = sortableColumns.find((item) => (item.headerName ?? item.field) === value);
-							if (column) setSortDraft([{ field: column.field, sort: sortDraft[0]?.sort ?? 'asc' }]);
-						}}
-						disabled={disabled}
-					/>
-					<CustomDropDownSelect
-						label={t.dataGrid.sortDirection}
-						value={sortDraft[0]?.sort === 'desc' ? t.dataGrid.sortDescending : t.dataGrid.sortAscending}
-						items={[t.dataGrid.sortAscending, t.dataGrid.sortDescending]}
-						onChange={(value) => {
-							if (sortDraft[0])
-								setSortDraft([
-									{ field: sortDraft[0].field, sort: value === t.dataGrid.sortDescending ? 'desc' : 'asc' },
-								]);
-						}}
-						disabled={disabled || !sortDraft.length}
-					/>
-					<PrimaryLoadingButton
-						buttonText={t.dataGrid.sortClear}
-						inverted
-						active={!disabled}
-						loading={false}
-						onClick={() => setSortDraft([])}
-					/>
-				</ActionModals>
-			)}
-			{searchDraft !== null && (
-				<ActionModals
-					title={t.common.search}
-					onClose={closeSearch}
-					actions={[
-						{ text: t.common.cancel, active: false, onClick: closeSearch },
-						{ text: t.dataGrid.searchApply, active: true, onClick: handleApplySearch, disabled },
-					]}
-				>
-					<CustomTextInput
-						label={t.common.search}
-						placeholder={t.dataGrid.searchPlaceholder}
-						value={searchDraft}
-						onChangeText={setSearchDraft}
-						autoCorrect={false}
-						autoCapitalize="none"
-						disabled={disabled}
-						returnKeyType="search"
-						onSubmitEditing={handleApplySearch}
-					/>
-					<PrimaryLoadingButton
-						buttonText={t.dataGrid.searchClear}
-						inverted
-						active={!disabled}
-						loading={false}
-						onClick={() => setSearchDraft('')}
-					/>
-				</ActionModals>
+							}}
+						/>
+					</View>
+				</BottomSheet>
 			)}
 			{customFilters && (
-				<ActionModals
+				<BottomSheet
+					visible
+					testID="filters-sheet"
 					title={t.dataGrid.filtersTitle}
+					titleIcon={
+						<View className="h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 dark:bg-slate-800">
+							<MaterialIcons name="filter-list" size={24} color="#0274d7" />
+						</View>
+					}
 					onClose={closeFilters}
-					actions={[
-						{ text: t.common.cancel, active: false, onClick: closeFilters },
-						{ text: t.dataGrid.searchApply, active: true, onClick: handleFilterChange, disabled },
-					]}
 				>
-					{!!filterError && <ApiAlert errorDetails={t.dataGrid[filterError]} />}
-					<CustomFilterPanel
-						columns={columns}
-						filterModel={customFilters}
-						onChange={(model) => {
-							setFilterError(null);
-							setCustomFilters(model);
-						}}
-						filterOperatorsByType={operators}
-						disabled={disabled}
+					<KeyboardAwareScrollView
+						style={{ flexShrink: 1 }}
+						contentContainerStyle={{ gap: 16 }}
+						keyboardShouldPersistTaps="handled"
+					>
+						{!!filterError && <ApiAlert errorDetails={t.dataGrid[filterError]} />}
+						<CustomFilterPanel
+							columns={columns}
+							filterModel={customFilters}
+							onChange={(model) => {
+								setFilterError(null);
+								setCustomFilters(model);
+							}}
+							filterOperatorsByType={operators}
+							disabled={disabled}
+						/>
+					</KeyboardAwareScrollView>
+					<PrimaryLoadingButton
+						buttonText={t.dataGrid.searchApply}
+						active={!disabled}
+						loading={false}
+						onClick={handleFilterChange}
+						startIcon={<MaterialIcons name="check" size={20} color="#fff" />}
 					/>
-				</ActionModals>
+				</BottomSheet>
 			)}
 		</View>
 	);
 };
+
 export default PaginatedDataGrid;

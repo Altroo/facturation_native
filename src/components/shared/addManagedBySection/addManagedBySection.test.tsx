@@ -1,8 +1,10 @@
 import { View } from 'react-native';
-import { fireEvent, render, screen } from '@testing-library/react-native';
-import AddManagedBySection from './addManagedBySection';
-import type { AddManagedBySectionProps } from '@/types/companyTypes';
+import { fireEvent, render as renderComponent, screen } from '@testing-library/react-native';
+import type { ReactElement } from 'react';
+import { AutocompleteDropdownContextProvider, toggleAutocomplete } from '@/__tests__/setupAutocomplete';
+import AddManagedBySection, { AddManagedBySectionProps } from './addManagedBySection';
 import { translations } from '@/translations';
+const render = (ui: ReactElement) => renderComponent(ui, { wrapper: AutocompleteDropdownContextProvider });
 
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
 const onSelectChange = jest.fn();
@@ -29,7 +31,7 @@ beforeEach(() => jest.clearAllMocks());
 it('returns the selected object and role to the form while leaving addition eligibility under form control', async () => {
 	const view = await render(<AddManagedBySection {...props} />);
 	const event = { nativeEvent: { target: 1 } };
-	await fireEvent.press(screen.getByRole('button', { name: 'Utilisateur' }));
+	await toggleAutocomplete('Utilisateur');
 	await fireEvent.press(screen.getByRole('radio', { name: 'Sara' }), event);
 	expect(onSelectChange).toHaveBeenCalledWith(
 		expect.objectContaining({ nativeEvent: expect.objectContaining(event.nativeEvent) }),
@@ -91,7 +93,7 @@ describe('AddManagedBySection', () => {
 		await render(<AddManagedBySection {...defaultProps} />);
 
 		expect(screen.getByText('Ajouter un gestionnaire')).toBeOnTheScreen();
-		expect(screen.getByLabelText('Utilisateur')).toBeOnTheScreen();
+		expect(screen.getByRole('combobox', { name: 'Utilisateur' })).toBeOnTheScreen();
 		expect(screen.getByLabelText('Rôle')).toBeOnTheScreen();
 		expect(screen.getByRole('button', { name: 'Ajouter' })).toBeEnabled();
 		expect(screen.getByTestId('select-icon')).toBeOnTheScreen();
@@ -116,7 +118,7 @@ describe('AddManagedBySection', () => {
 				selectValue={null}
 			/>,
 		);
-		await fireEvent.press(screen.getByRole('button', { name: 'Utilisateur' }));
+		await toggleAutocomplete('Utilisateur');
 		expect(screen.getByText('Aucun résultat')).toBeOnTheScreen();
 	});
 });

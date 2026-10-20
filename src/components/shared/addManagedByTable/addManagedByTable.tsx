@@ -1,31 +1,65 @@
-import { type FC } from 'react';
-import { Text, Switch, View } from 'react-native';
+import CustomSwitch from '@/components/formikElements/customSwitch/customSwitch';
+import { type FC, type ReactNode } from 'react';
+import { Text, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import CustomDropDownSelect from '@/components/formikElements/customDropDownSelect/customDropDownSelect';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
-import AddManagedBySection from '@/components/shared/addManagedBySection/addManagedBySection';
+import AddManagedBySection, {
+	AddManagedBySectionProps,
+} from '@/components/shared/addManagedBySection/addManagedBySection';
 import { useLanguage } from '@/utils/hooks';
-import type { ManagedByTableSectionProps } from '@/types/companyTypes';
+import type { UserCompaniesType } from '@/types/usersTypes';
+import type { DropDownType } from '@/types/accountTypes';
 
-const ManagedByTableSection: FC<ManagedByTableSectionProps> = ({
-	title,
-	icon,
-	emptyIcon,
-	emptyMessage,
-	headers,
-	data,
-	isUserTable,
-	currentUserId,
-	roleOptions,
-	onRoleChange,
-	onInvoiceValidationChange,
-	onDocumentStatusChangePermissionChange,
-	onDelete,
-	addSectionProps,
-	showInvoiceValidationPermission = false,
-	showDocumentStatusChangePermission = false,
-	disabled,
-}) => {
+export type ManagedByType = {
+	id: number;
+	first_name: string | null;
+	last_name: string | null;
+	role: string | null;
+	can_validate_factures?: boolean;
+	can_change_document_status?: boolean;
+};
+
+export type ManagedByTableSectionProps = {
+	title: string;
+	icon: ReactNode;
+	emptyIcon: ReactNode;
+	emptyMessage: string;
+	headers: Array<string>;
+	data: Array<ManagedByType | UserCompaniesType>;
+	isUserTable: boolean;
+	currentUserId?: number;
+	roleOptions: Array<DropDownType>;
+	onRoleChange: (index: number, newRole: string) => void;
+	onInvoiceValidationChange?: (index: number, checked: boolean) => void;
+	onDocumentStatusChangePermissionChange?: (index: number, checked: boolean) => void;
+	onDelete: (index: number) => void;
+	addSectionProps: AddManagedBySectionProps;
+	showInvoiceValidationPermission?: boolean;
+	showDocumentStatusChangePermission?: boolean;
+	disabled?: boolean;
+};
+
+const ManagedByTableSection: FC<ManagedByTableSectionProps> = (props: ManagedByTableSectionProps) => {
+	const {
+		title,
+		icon,
+		emptyIcon,
+		emptyMessage,
+		headers,
+		data,
+		isUserTable,
+		currentUserId,
+		roleOptions,
+		onRoleChange,
+		onInvoiceValidationChange,
+		onDocumentStatusChangePermissionChange,
+		onDelete,
+		addSectionProps,
+		showInvoiceValidationPermission = false,
+		showDocumentStatusChangePermission = false,
+		disabled,
+	} = props;
 	const { t } = useLanguage();
 	return (
 		<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
@@ -85,40 +119,22 @@ const ManagedByTableSection: FC<ManagedByTableSectionProps> = ({
 							startIcon={<MaterialIcons name="shield" size={20} color="#94a3b8" />}
 						/>
 						{showInvoiceValidationPermission && (
-							<View className={'flex-row items-center gap-3 py-2 ' + (disabled || protectedMember ? 'opacity-60' : '')}>
-								<View className="h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800">
-									<MaterialIcons name="verified" size={21} color="#64748b" />
-								</View>
-								<Text className="flex-1 font-poppins-medium text-sm text-ink dark:text-slate-100">
-									{t.managedByTable.invoiceValidation}
-								</Text>
-								<Switch
-									accessibilityLabel={t.managedByTable.invoiceValidation}
-									value={Boolean(item.can_validate_factures)}
-									onValueChange={(checked) => onInvoiceValidationChange?.(index, checked)}
-									disabled={disabled || protectedMember}
-									trackColor={{ false: '#cbd5e1', true: '#0274d7' }}
-									thumbColor="#fff"
-								/>
-							</View>
+							<CustomSwitch
+								label={t.managedByTable.invoiceValidation}
+								value={Boolean(item.can_validate_factures)}
+								onValueChange={(checked) => onInvoiceValidationChange?.(index, checked)}
+								disabled={disabled || protectedMember}
+								startIcon={<MaterialIcons name="verified" size={21} color="#64748b" />}
+							/>
 						)}
 						{showDocumentStatusChangePermission && (
-							<View className={'flex-row items-center gap-3 py-2 ' + (disabled || protectedMember ? 'opacity-60' : '')}>
-								<View className="h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800">
-									<MaterialIcons name="published-with-changes" size={21} color="#64748b" />
-								</View>
-								<Text className="flex-1 font-poppins-medium text-sm text-ink dark:text-slate-100">
-									{t.managedByTable.documentStatusChange}
-								</Text>
-								<Switch
-									accessibilityLabel={t.managedByTable.documentStatusChange}
-									value={Boolean(item.can_change_document_status)}
-									onValueChange={(checked) => onDocumentStatusChangePermissionChange?.(index, checked)}
-									disabled={disabled || protectedMember}
-									trackColor={{ false: '#cbd5e1', true: '#0274d7' }}
-									thumbColor="#fff"
-								/>
-							</View>
+							<CustomSwitch
+								label={t.managedByTable.documentStatusChange}
+								value={Boolean(item.can_change_document_status)}
+								onValueChange={(checked) => onDocumentStatusChangePermissionChange?.(index, checked)}
+								disabled={disabled || protectedMember}
+								startIcon={<MaterialIcons name="published-with-changes" size={21} color="#64748b" />}
+							/>
 						)}
 						<PrimaryLoadingButton
 							buttonText={t.common.delete}

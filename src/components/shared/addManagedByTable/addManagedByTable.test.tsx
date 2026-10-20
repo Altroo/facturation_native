@@ -1,9 +1,9 @@
 import type { UserCompaniesType } from '@/types/usersTypes';
-import type { AddManagedBySectionProps, ManagedByTableSectionProps, ManagedByType } from '@/types/companyTypes';
 import { View } from 'react-native';
 import { fireEvent, render, screen } from '@testing-library/react-native';
-import ManagedByTableSection from './addManagedByTable';
+import ManagedByTableSection, { ManagedByTableSectionProps, ManagedByType } from './addManagedByTable';
 import { translations } from '@/translations';
+import { AddManagedBySectionProps } from '@/components/shared/addManagedBySection/addManagedBySection';
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
 const t = translations.fr;
 const current: ManagedByType = {
@@ -84,8 +84,8 @@ it('reports the targeted row index through the original role, permission and del
 it('protects the current account while leaving other memberships editable', async () => {
 	await setup({ currentUserId: 1 });
 	expect(screen.getByText('Caissier')).toBeOnTheScreen();
-	expect(screen.getAllByRole('switch')[0]).toHaveProp('disabled', true);
-	expect(screen.getAllByRole('switch')[1]).toHaveProp('disabled', true);
+	expect(screen.getAllByRole('switch')[0]).toBeDisabled();
+	expect(screen.getAllByRole('switch')[1]).toBeDisabled();
 	expect(screen.getAllByRole('button', { name: t.common.delete })).toHaveLength(2);
 	expect(screen.getAllByRole('button', { name: t.common.delete })[0]).toBeDisabled();
 	await fireEvent.press(screen.getAllByRole('button', { name: t.common.delete })[1]);
@@ -93,7 +93,7 @@ it('protects the current account while leaving other memberships editable', asyn
 });
 it('disables editing and adding while the parent mutation runs', async () => {
 	await setup({ disabled: true });
-	for (const input of screen.getAllByRole('switch')) expect(input).toHaveProp('disabled', true);
+	for (const input of screen.getAllByRole('switch')) expect(input).toBeDisabled();
 	for (const button of screen.getAllByRole('button')) {
 		expect(button).toBeDisabled();
 		await fireEvent.press(button);

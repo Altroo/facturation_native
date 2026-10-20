@@ -1,5 +1,7 @@
+import type { ReactElement } from 'react';
+import { AutocompleteDropdownContextProvider, toggleAutocomplete } from '@/__tests__/setupAutocomplete';
 import { useState } from 'react';
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { fireEvent, render as renderComponent, screen } from '@testing-library/react-native';
 import { Platform } from 'react-native';
 import type { FilterItem, FilterModel } from 'expo-flash-datagrid';
 import CustomFilterPanel, { filterHasValue } from './customFilterPanel';
@@ -16,6 +18,7 @@ jest.mock('@/utils/hooks', () => ({
 	}),
 	useToast: () => ({ onError: jest.fn() }),
 }));
+const render = (ui: ReactElement) => renderComponent(ui, { wrapper: AutocompleteDropdownContextProvider });
 const t = translations.fr;
 const change = jest.fn();
 const columns = [
@@ -39,6 +42,18 @@ const Panel = ({ initial, disabled = false }: { initial: FilterModel; disabled?:
 	);
 };
 beforeEach(() => jest.clearAllMocks());
+
+it('closes a calendar when its filter becomes disabled and keeps it closed after re-enabling', async () => {
+	const initial = { items: [{ id: 'f', field: 'created', operator: 'onOrAfter', value: '' }] };
+	const view = await render(<Panel initial={initial} />);
+	await fireEvent.press(screen.getByLabelText(t.common.value + ' (Created)'));
+	expect(screen.getByTestId('filter-date-picker')).toBeOnTheScreen();
+	await view.rerender(<Panel initial={initial} disabled />);
+	expect(screen.queryByTestId('filter-date-picker')).toBeNull();
+	await view.rerender(<Panel initial={initial} />);
+	expect(screen.queryByTestId('filter-date-picker')).toBeNull();
+	expect(change).not.toHaveBeenCalled();
+});
 
 it('recognizes false, zero and valueless filters while excluding unfinished values', () => {
 	for (const value of [false, 0, 'value']) expect(filterHasValue({ field: 'a', operator: 'equals', value })).toBe(true);
@@ -65,20 +80,20 @@ it('adds unique filters, combines with AND, removes and clears them', async () =
 
 it('clears a text value when its field becomes a boolean and preserves false', async () => {
 	await render(<Panel initial={{ items: [{ id: 'f', field: 'name', operator: 'contains', value: 'Old text' }] }} />);
-	await fireEvent.press(screen.getByText('Name'));
+	await toggleAutocomplete(t.dataGrid.fieldLabel);
 	await fireEvent.press(screen.getByText('Active'));
 	expect(change.mock.calls.at(-1)[0].items[0]).toEqual({ id: 'f', field: 'active', operator: 'is', value: true });
-	await fireEvent.press(screen.getByText(t.common.yes));
+	await toggleAutocomplete(t.common.value);
 	await fireEvent.press(screen.getByText(t.common.no));
 	expect(change.mock.calls.at(-1)[0].items[0].value).toBe(false);
 });
 
 it('hides the value for empty operators and resets it when returning to text', async () => {
 	await render(<Panel initial={{ items: [{ id: 'f', field: 'name', operator: 'contains', value: 'Old' }] }} />);
-	await fireEvent.press(screen.getByText(t.filterPanel.contains));
+	await toggleAutocomplete(t.dataGrid.operatorLabel);
 	await fireEvent.press(screen.getByText(t.filterPanel.isEmpty));
 	expect(screen.queryByPlaceholderText(t.common.value)).toBeNull();
-	await fireEvent.press(screen.getByText(t.filterPanel.isEmpty));
+	await toggleAutocomplete(t.dataGrid.operatorLabel);
 	await fireEvent.press(screen.getByText(t.filterPanel.contains));
 	expect(screen.getByPlaceholderText(t.common.value).props.value).toBe('');
 });
@@ -252,7 +267,7 @@ describe('CustomFilterPanel component', () => {
 	});
 	test('changes filter operator when operator selector changes', async () => {
 		await render(<Panel initial={{ items: [{ id: '1', field: 'name', operator: 'contains', value: 'test' }] }} />);
-		await fireEvent.press(screen.getByText(t.filterPanel.contains));
+		await toggleAutocomplete(t.dataGrid.operatorLabel);
 		await fireEvent.press(screen.getByText(t.filterPanel.equals));
 		expect(change.mock.calls[0][0].items[0]).toMatchObject({ operator: 'equals', value: 'test' });
 	});
@@ -272,7 +287,7 @@ describe('CustomFilterPanel component', () => {
 				onChange={change}
 			/>,
 		);
-		await fireEvent.press(screen.getByText('Name'));
+		await toggleAutocomplete(t.dataGrid.fieldLabel);
 		expect(screen.queryByText('Actions')).toBeNull();
 		expect(screen.queryByText('Hidden')).toBeNull();
 		expect(screen.getByText('Created')).toBeOnTheScreen();

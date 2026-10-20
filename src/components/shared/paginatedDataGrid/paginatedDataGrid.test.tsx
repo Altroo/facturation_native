@@ -1,14 +1,17 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import { Platform, Text } from 'react-native';
 import { translations } from '@/translations';
-import type { CustomFilterValue, PaginatedDataGridProps } from '@/types/uiTypes';
 import PaginatedDataGrid, {
 	extractCustomFilterParams,
 	getInfiniteRows,
 	isDateRangeValue,
 	getServerFilterOperators,
 	mapOperatorToParam,
+	type PaginatedDataGridProps,
+	type DateRangeFilterValue,
 } from '@/components/shared/paginatedDataGrid/paginatedDataGrid';
+
+type CustomFilterValue = string | DateRangeFilterValue;
 
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
 jest.mock('@expo/vector-icons', () => ({ MaterialIcons: 'Icon' }));
@@ -67,7 +70,8 @@ it('exposes only sortable original columns and emits a server sort model without
 	expect(screen.container.queryAll((node) => typeof node.props.onEndReached === 'function')[0]!.props.data).toBe(rows);
 
 	await fireEvent.press(screen.getByRole('button', { name: t.dataGrid.toolbarSort }));
-	await fireEvent.press(screen.getByText(t.common.cancel));
+	expect(screen.getByTestId('sorting-sheet')).toBeOnTheScreen();
+	await fireEvent.press(screen.getByRole('button', { name: t.common.close }));
 	expect(onSortModelChange).toHaveBeenCalledTimes(1);
 });
 
@@ -94,28 +98,33 @@ it.each(['ios', 'android', 'web'] as const)(
 	},
 );
 
-it('keeps search drafts local until Apply and discards canceled drafts', async () => {
+it('expands search inline, debounces server queries, and clears without reopening a modal', async () => {
 	jest.useFakeTimers();
 	try {
 		const change = jest.fn();
 		await render(<PaginatedDataGrid {...props({ searchTerm: 'Previous', setSearchTerm: change })} />);
 		await fireEvent.press(screen.getByLabelText(t.common.search));
+		expect(screen.queryByTestId('filters-sheet')).toBeNull();
 		await fireEvent.changeText(screen.getByPlaceholderText(t.dataGrid.searchPlaceholder), 'Next');
-		await act(() => jest.advanceTimersByTime(1000));
+		await act(() => jest.advanceTimersByTime(300));
 		expect(change).not.toHaveBeenCalled();
-		await fireEvent.press(screen.getByText(t.dataGrid.searchApply));
+		await fireEvent.changeText(screen.getByPlaceholderText(t.dataGrid.searchPlaceholder), 'Next result');
+		await act(() => jest.advanceTimersByTime(499));
+		expect(change).not.toHaveBeenCalled();
+		await act(() => jest.advanceTimersByTime(1));
 		expect(change).toHaveBeenCalledTimes(1);
-		expect(change).toHaveBeenLastCalledWith('Next');
-		await screen.rerender(<PaginatedDataGrid {...props({ searchTerm: 'Next', setSearchTerm: change })} />);
-		await fireEvent.press(screen.getByLabelText(t.common.search));
-		await fireEvent.changeText(screen.getByPlaceholderText(t.dataGrid.searchPlaceholder), 'Discard');
-		await fireEvent.press(screen.getByText(t.common.cancel));
+		expect(change).toHaveBeenLastCalledWith('Next result');
+		await screen.rerender(<PaginatedDataGrid {...props({ searchTerm: 'Next result', setSearchTerm: change })} />);
+		expect(screen.getByPlaceholderText(t.dataGrid.searchPlaceholder)).toHaveProp('value', 'Next result');
+		await fireEvent.changeText(screen.getByPlaceholderText(t.dataGrid.searchPlaceholder), 'New draft');
+		await fireEvent.press(screen.getByRole('button', { name: t.dataGrid.searchClear }));
+		expect(change).toHaveBeenLastCalledWith('');
+		await screen.rerender(<PaginatedDataGrid {...props({ searchTerm: '', setSearchTerm: change })} />);
+		await fireEvent.press(screen.getByRole('button', { name: t.common.close }));
 		await act(() => jest.advanceTimersByTime(1000));
-		expect(change).toHaveBeenCalledTimes(1);
-		await fireEvent.press(screen.getByLabelText(t.common.search));
-		expect(screen.getByPlaceholderText(t.dataGrid.searchPlaceholder).props.value).toBe('Next');
-		await fireEvent.press(screen.getByText(t.dataGrid.searchApply));
-		expect(change).toHaveBeenCalledTimes(1);
+		expect(change).toHaveBeenCalledTimes(2);
+		expect(screen.queryByPlaceholderText(t.dataGrid.searchPlaceholder)).toBeNull();
+		expect(screen.getByRole('button', { name: t.common.search })).toBeOnTheScreen();
 	} finally {
 		jest.useRealTimers();
 	}
@@ -135,7 +144,7 @@ it('does not clear selection or restart the query when the same filters are appl
 	await fireEvent.press(screen.getByLabelText(t.dataGrid.toolbarFilters));
 	await fireEvent.press(screen.getByText(t.dataGrid.searchApply));
 	expect(change).not.toHaveBeenCalled();
-	expect(screen.getByText('1 sélectionné(s)')).toBeOnTheScreen();
+	expect(screen.queryByText(t.shared.clearSelection)).toBeNull();
 });
 
 it('shows invalid dates inside the modal, clears feedback on changes, and submits a corrected retry', async () => {
@@ -153,23 +162,23 @@ it('shows invalid dates inside the modal, clears feedback on changes, and submit
 	await fireEvent.press(screen.getByText(t.dataGrid.searchApply));
 	expect(change).not.toHaveBeenCalled();
 	expect(mockError).toHaveBeenCalledWith(t.dataGrid.invalidDate);
-	expect(within(screen.getByTestId('action-modal')).getByRole('alert')).toHaveTextContent(t.dataGrid.invalidDate);
+	expect(within(screen.getByTestId('filters-sheet')).getByRole('alert')).toHaveTextContent(t.dataGrid.invalidDate);
 	expect(screen.getByPlaceholderText('YYYY-MM-DD').props.value).toBe('2026-02-30');
 	await fireEvent.changeText(screen.getByPlaceholderText('YYYY-MM-DD'), '2026-02-28');
 	expect(screen.queryByRole('alert')).toBeNull();
 	await fireEvent.press(screen.getByText(t.dataGrid.searchApply));
 	expect(change).toHaveBeenCalledTimes(1);
 	expect(change.mock.calls[0][0].items[0].value).toBe('2026-02-28');
-	expect(screen.queryByTestId('action-modal')).toBeNull();
+	expect(screen.queryByTestId('filters-sheet')).toBeNull();
 	await fireEvent.press(screen.getByLabelText(t.dataGrid.toolbarFilters));
 	expect(screen.queryByRole('alert')).toBeNull();
 	await fireEvent.changeText(screen.getByPlaceholderText('YYYY-MM-DD'), '2026-02-30');
 	await fireEvent.press(screen.getByText(t.dataGrid.searchApply));
-	expect(within(screen.getByTestId('action-modal')).getByRole('alert')).toHaveTextContent(t.dataGrid.invalidDate);
+	expect(within(screen.getByTestId('filters-sheet')).getByRole('alert')).toHaveTextContent(t.dataGrid.invalidDate);
 	await fireEvent.press(screen.getByText(t.dataGrid.searchApply));
-	expect(within(screen.getByTestId('action-modal')).getAllByRole('alert')).toHaveLength(1);
+	expect(within(screen.getByTestId('filters-sheet')).getAllByRole('alert')).toHaveLength(1);
 	expect(change).toHaveBeenCalledTimes(1);
-	await fireEvent.press(screen.getByText(t.common.cancel));
+	await fireEvent.press(screen.getByRole('button', { name: t.common.close }));
 	await fireEvent.press(screen.getByLabelText(t.dataGrid.toolbarFilters));
 	expect(screen.getByPlaceholderText('YYYY-MM-DD').props.value).toBe('');
 	expect(screen.queryByRole('alert')).toBeNull();
@@ -209,10 +218,9 @@ it.each([{ disabled: true }, { isLoading: true }, { refreshing: true }, { isFetc
 	},
 );
 
-it('dispatches one next-page and refresh event, and clears selection through its existing callback', async () => {
+it('dispatches next-page and refresh events without duplicating the page selection controls', async () => {
 	const end = jest.fn();
 	const refresh = jest.fn();
-	const selection = jest.fn();
 	await render(
 		<PaginatedDataGrid
 			{...props({
@@ -220,16 +228,14 @@ it('dispatches one next-page and refresh event, and clears selection through its
 				onEndReached: end,
 				onRefresh: refresh,
 				selectedIds: [1],
-				onSelectionChange: selection,
 			})}
 		/>,
 	);
 	await fireEvent(screen.container.queryAll((node) => typeof node.props.onEndReached === 'function')[0]!, 'endReached');
 	await fireEvent(screen.container.queryAll((node) => typeof node.props.onEndReached === 'function')[0]!, 'refresh');
-	await fireEvent.press(screen.getByText(t.shared.clearSelection));
+	expect(screen.queryByText(t.shared.clearSelection)).toBeNull();
 	expect(end).toHaveBeenCalledTimes(1);
 	expect(refresh).toHaveBeenCalledTimes(1);
-	expect(selection).toHaveBeenCalledWith([]);
 });
 it('keeps one card per ID across shifting server page boundaries, without filtering server results', () => {
 	expect(
