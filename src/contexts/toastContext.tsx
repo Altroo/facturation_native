@@ -1,7 +1,11 @@
 import { createContext, useState, type FC, type ReactNode } from 'react';
 import { View } from 'react-native';
-import CustomToast from '@/components/portals/customToast/customToast';
-import type { CustomToastProps, ToastContextType } from '@/types/uiTypes';
+import CustomToast, { type CustomToastProps } from '@/components/portals/customToast/customToast';
+
+export type ToastContextType = {
+	onSuccess: (msg: string) => void;
+	onError: (msg: string) => void;
+};
 
 export const ToastContext = createContext<ToastContextType | undefined>(undefined);
 

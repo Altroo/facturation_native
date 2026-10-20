@@ -31,10 +31,12 @@ const ThemeToggle = () => {
 		</Pressable>
 	);
 };
+
 // Native auth layouts reserve the same compact row instead of a browser fixed overlay.
 export const AuthThemeToggle = () => {
 	const pathname = usePathname();
 	if (pathname !== '/login' && !pathname?.startsWith('/reset-password')) return null;
 	return <ThemeToggle />;
 };
+
 export default ThemeToggle;

@@ -1,21 +1,31 @@
-import { useContext, useEffect, type FC } from 'react';
+import { useContext, useEffect, type FC, type ReactNode, type Dispatch, type SetStateAction } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { LanguageContext } from '@/contexts/languageContext';
-import type { CustomToastProps as Props } from '@/types/uiTypes';
 
-const CustomToast: FC<Props> = (props) => {
+export type CustomToastProps = {
+	message: string;
+	type: 'success' | 'error' | 'info' | 'warning';
+	show: boolean;
+	setShow: Dispatch<SetStateAction<boolean>>;
+	children?: ReactNode;
+};
+
+const CustomToast: FC<CustomToastProps> = (props: CustomToastProps) => {
 	const { type, show, message, setShow } = props;
+	const { t } = useContext(LanguageContext);
 	const handleClose = () => {
 		props.setShow(false);
 	};
-	const { t } = useContext(LanguageContext);
+
 	useEffect(() => {
 		if (!show) return;
 		const timer = setTimeout(() => setShow(false), 6000);
 		return () => clearTimeout(timer);
 	}, [show, message, type, setShow]);
+
 	if (!props.show) return null;
+
 	const severity = {
 		success: {
 			icon: 'check-circle-outline',

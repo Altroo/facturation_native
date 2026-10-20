@@ -41,4 +41,5 @@ const Maintenance: FC = () => {
 		</Modal>
 	);
 };
+
 export default Maintenance;

@@ -1,7 +1,6 @@
 import { render, screen } from '@testing-library/react-native';
-import ApiAlert from './apiAlert';
+import ApiAlert, { type ApiAlertProps } from './apiAlert';
 import { translations } from '@/translations';
-import type { ApiAlertProps } from '@/types/uiTypes';
 jest.mock('@/utils/hooks', () => ({
 	useLanguage: () => ({ t: jest.requireActual<typeof import('@/translations')>('@/translations').translations.fr }),
 }));

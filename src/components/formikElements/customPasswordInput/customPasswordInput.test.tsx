@@ -48,6 +48,10 @@ it('uses disabled to prevent native editing', async () => {
 	expect(input).toHaveProp('editable', false);
 	await fireEvent.changeText(input, 'Other');
 	expect(onChangeText).not.toHaveBeenCalled();
+	const toggle = screen.getByRole('button', { name: translations.fr.common.togglePasswordVisibility });
+	expect(toggle).toBeDisabled();
+	await fireEvent.press(toggle);
+	expect(input).toHaveProp('secureTextEntry', true);
 });
 
 describe('CustomPasswordInput', () => {

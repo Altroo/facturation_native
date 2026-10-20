@@ -1,14 +1,22 @@
 import { Component, type ContextType, type ErrorInfo, type ReactNode } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { reloadAppAsync } from 'expo';
 import { LanguageContext } from '@/contexts/languageContext';
-import type { ErrorBoundaryProps, ErrorBoundaryState } from '@/types/uiTypes';
+import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 
-/**
- * Error Boundary component to catch JavaScript errors anywhere in the child
- * component tree and display a fallback UI instead of crashing the whole app.
- */
+type ErrorBoundaryProps = {
+	children: ReactNode;
+	fallback?: ReactNode;
+};
+
+type ErrorBoundaryState = {
+	hasError: boolean;
+	error: Error | null;
+	reloading?: boolean;
+	reloadFailed?: boolean;
+};
+
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 	static contextType = LanguageContext;
 
@@ -63,24 +71,17 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 						{t.errors.errorOccurredMessage}
 					</Text>
 				)}
-				<Pressable
-					accessibilityRole="button"
-					onPress={this.handleReset}
-					className="min-h-11 justify-center rounded-xl bg-brand p-3"
-				>
-					<Text className="text-center font-poppins-semibold text-white">{t.common.retry}</Text>
-				</Pressable>
-				<Pressable
-					accessibilityRole="button"
-					disabled={this.state.reloading}
-					accessibilityState={{ disabled: this.state.reloading }}
-					onPress={() => void this.handleReload()}
-					className="min-h-11 justify-center rounded-xl border border-slate-300 p-3"
-				>
-					<Text className="text-center text-ink dark:text-white">{t.common.refreshPage}</Text>
-				</Pressable>
+				<PrimaryLoadingButton buttonText={t.common.retry} onClick={this.handleReset} active loading={false} />
+				<PrimaryLoadingButton
+					buttonText={t.common.refreshPage}
+					onClick={() => void this.handleReload()}
+					inverted
+					active={!this.state.reloading}
+					loading={!!this.state.reloading}
+				/>
 			</View>
 		);
 	}
 }
+
 export default ErrorBoundary;

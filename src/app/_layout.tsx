@@ -13,6 +13,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import { Stack } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
+import { AutocompleteDropdownContextProvider } from 'react-native-autocomplete-dropdown';
 import SessionProvider from '@/providers/sessionProvider';
 import StoreProvider from '@/providers/storeProvider';
 import ThemeProvider, { useColorMode } from '@/providers/themeProvider';
@@ -118,26 +120,30 @@ const RootLayout = () => {
 	return (
 		<GestureHandlerRootView style={{ flex: 1 }}>
 			<SafeAreaProvider>
-				<SessionProvider>
-					<StoreProvider>
-						<InitContextProvider>
-							<InitEffects />
-							<ThemeProvider>
-								<LanguageContextProvider>
-									<View testID="app-root" style={{ flex: 1 }} onLayout={SplashScreen.hide}>
-										<ErrorBoundary>
-											<ToastContextProvider>
-												<SessionExpiredListener />
-												<RootNavigator />
-												<Maintenance />
-											</ToastContextProvider>
-										</ErrorBoundary>
-									</View>
-								</LanguageContextProvider>
-							</ThemeProvider>
-						</InitContextProvider>
-					</StoreProvider>
-				</SessionProvider>
+				<KeyboardProvider preload={false}>
+					<SessionProvider>
+						<StoreProvider>
+							<InitContextProvider>
+								<InitEffects />
+								<ThemeProvider>
+									<LanguageContextProvider>
+										<View testID="app-root" style={{ flex: 1 }} onLayout={SplashScreen.hide}>
+											<ErrorBoundary>
+												<ToastContextProvider>
+													<SessionExpiredListener />
+													<AutocompleteDropdownContextProvider>
+														<RootNavigator />
+													</AutocompleteDropdownContextProvider>
+													<Maintenance />
+												</ToastContextProvider>
+											</ErrorBoundary>
+										</View>
+									</LanguageContextProvider>
+								</ThemeProvider>
+							</InitContextProvider>
+						</StoreProvider>
+					</SessionProvider>
+				</KeyboardProvider>
 			</SafeAreaProvider>
 		</GestureHandlerRootView>
 	);

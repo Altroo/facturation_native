@@ -1,20 +1,42 @@
+import type { FC, ReactNode } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useColorMode } from '@/providers/themeProvider';
-import type { ActionModalsProps as Props } from '@/types/uiTypes';
-import { type FC } from 'react';
 
-const ActionModals: FC<Props> = ({
-	title,
-	actions,
-	actionsStyle,
-	body,
-	children,
-	titleIcon,
-	titleIconColor,
-	onClose,
-	maxWidth = 'sm',
-	fullWidth,
-}) => {
+type Action = {
+	active: boolean;
+	text: string;
+	onClick: () => void;
+	color?: string;
+	icon?: ReactNode;
+	disabled?: boolean;
+};
+
+type Props = {
+	title: string;
+	actions: Array<Action>;
+	actionsStyle?: Array<string>;
+	body?: string;
+	children?: ReactNode;
+	titleIcon?: ReactNode;
+	titleIconColor?: string;
+	onClose?: () => void;
+	maxWidth?: false | 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+	fullWidth?: boolean;
+};
+
+const ActionModals: FC<Props> = (props: Props) => {
+	const {
+		title,
+		actions,
+		actionsStyle,
+		body,
+		children,
+		titleIcon,
+		titleIconColor,
+		onClose,
+		maxWidth = 'sm',
+		fullWidth,
+	} = props;
 	const { mode } = useColorMode();
 	const handleClose = () => {
 		if (onClose) {
@@ -23,7 +45,7 @@ const ActionModals: FC<Props> = ({
 		}
 		// Fallback: find the first non-active action (typically the cancel button)
 		const cancelAction = actions.find((a) => !a.active);
-		if (cancelAction) {
+		if (cancelAction && !cancelAction.disabled) {
 			cancelAction.onClick();
 		}
 	};
@@ -40,6 +62,7 @@ const ActionModals: FC<Props> = ({
 				<View
 					testID="action-modal"
 					accessibilityViewIsModal
+					onAccessibilityEscape={handleClose}
 					className="max-h-[90%] gap-5 rounded-3xl bg-white p-6 dark:bg-panel"
 					style={{ width: fullWidth ? '100%' : '92%', maxWidth: widthLimit }}
 				>
@@ -77,8 +100,8 @@ const ActionModals: FC<Props> = ({
 										opacity: action.disabled ? 0.5 : 1,
 									}}
 								>
-									{action.icon}
-									<Text className="font-poppins-semibold text-base" style={{ color: textColor }}>
+									{action.icon && <View className="h-6 w-6 items-center justify-center">{action.icon}</View>}
+									<Text className="shrink text-center font-poppins-semibold text-base" style={{ color: textColor }}>
 										{action.text}
 									</Text>
 								</Pressable>

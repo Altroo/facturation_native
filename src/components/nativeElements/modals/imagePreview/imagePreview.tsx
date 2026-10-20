@@ -2,9 +2,16 @@ import { Text, Image, Modal, Pressable, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '@/utils/hooks';
-import type { ImagePreviewProps } from '@/types/uiTypes';
 
-const ImagePreview = ({ uri, label, visible, onClose }: ImagePreviewProps) => {
+type Props = {
+	uri: string;
+	label: string;
+	visible: boolean;
+	onClose: () => void;
+};
+
+const ImagePreview = (props: Props) => {
+	const { uri, label, visible, onClose } = props;
 	const { t } = useLanguage();
 	return (
 		<Modal visible={visible} animationType="fade" onRequestClose={onClose} presentationStyle="fullScreen">

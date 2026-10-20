@@ -151,6 +151,9 @@ export type TranslationDictionary = {
 		documentLoadErrorTitle: string;
 		documentErrorHelp: string;
 		addImage: string;
+		takePhoto: string;
+		chooseFromGallery: string;
+		cameraPermissionRequired: string;
 		clickToEditCrop: string;
 		croppedPreview: string;
 		pdfUnit: string;
@@ -296,6 +299,9 @@ export type TranslationDictionary = {
 		noPermission: string;
 		noPermissionText: string;
 		selectAllPage: (n: number) => string;
+		selectAll: string;
+		loadedItems: (n: number) => string;
+		matchingItems: (n: number) => string;
 		selectAllMatching: (n: number) => string;
 		allMatchingSelected: (n: number) => string;
 		clearSelection: string;
@@ -1224,7 +1230,7 @@ export type TranslationDictionary = {
 		notifyLowStock: string;
 		lowStockRepeatHours: string;
 		quoteExpiryDays: string;
-		quoteExpiryOptions: { value: number; label: string }[];
+		quoteExpiryOptions: Array<{ value: number; label: string }>;
 		save: string;
 	};
 	dashboard: {

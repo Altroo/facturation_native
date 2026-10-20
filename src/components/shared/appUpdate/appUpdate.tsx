@@ -5,7 +5,7 @@ import ActionModals from '@/components/nativeElements/modals/actionModal/actionM
 import { useAppSelector, useLanguage, useToast } from '@/utils/hooks';
 import { getAppVersions } from '@/store/selectors';
 import { isNewerAppVersion } from '@/utils/appVersion';
-import { checkAppUpdate, reloadApp } from '@/utils/updateApp';
+import { checkAppUpdate, reloadApp } from '@/utils/helpers';
 
 const AppUpdate = () => {
 	const { localVersion, serverVersion, maintenance } = useAppSelector(getAppVersions);
@@ -16,9 +16,11 @@ const AppUpdate = () => {
 	const inFlight = useRef(false);
 	const mounted = useRef(true);
 	const latestState = useRef({ serverVersion, maintenance });
+
 	useEffect(() => {
 		latestState.current = { serverVersion, maintenance };
 	}, [serverVersion, maintenance]);
+
 	useEffect(() => {
 		mounted.current = true;
 		return () => {

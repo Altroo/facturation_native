@@ -9,12 +9,15 @@ const SessionExpiredListener: FC = () => {
 	const onSessionExpired = useEffectEvent(() => {
 		toast?.onError(t.shared.sessionExpired);
 	});
+
 	useEffect(() => {
 		const handler = () => {
 			onSessionExpired();
 		};
 		return auth.subscribeExpired(handler);
 	}, []);
+
 	return null;
 };
+
 export default SessionExpiredListener;

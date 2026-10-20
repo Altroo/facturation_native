@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { Pressable, Text, View } from 'react-native';
 import CustomToast from './customToast';
 import { translations } from '@/translations';
 
@@ -25,8 +26,28 @@ it('hides after six seconds and never schedules a timer while closed', async () 
 	expect(view.queryByRole('alert')).toBeNull();
 	expect(jest.getTimerCount()).toBe(0);
 	await view.rerender(<CustomToast type="info" message="Notification" show setShow={setShow} />);
-	await act(() => jest.advanceTimersByTime(6000));
+	await act(() => jest.advanceTimersByTime(5999));
+	expect(setShow).not.toHaveBeenCalled();
+	await act(() => jest.advanceTimersByTime(1));
+	expect(setShow).toHaveBeenCalledTimes(1);
 	expect(setShow).toHaveBeenCalledWith(false);
+});
+
+it('keeps the toast open when pressing another control outside it', async () => {
+	const setShow = jest.fn();
+	const onPress = jest.fn();
+	await render(
+		<View>
+			<Pressable accessibilityRole="button" onPress={onPress}>
+				<Text>Background action</Text>
+			</Pressable>
+			<CustomToast type="info" message="Notification" show setShow={setShow} />
+		</View>,
+	);
+	await fireEvent.press(screen.getByRole('button', { name: 'Background action' }));
+	expect(onPress).toHaveBeenCalledTimes(1);
+	expect(setShow).not.toHaveBeenCalled();
+	expect(screen.getByRole('alert')).toHaveTextContent('Notification');
 });
 
 describe('CustomToast', () => {

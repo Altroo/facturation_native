@@ -10,27 +10,32 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import ImagePreview from '@/components/nativeElements/modals/imagePreview/imagePreview';
+import BottomSheet from '@/components/nativeElements/modals/bottomSheet/bottomSheet';
 import { useLanguage, useToast } from '@/utils/hooks';
-import type { CustomSquareImageUploadingProps as Props } from '@/types/uiTypes';
 
-const CustomSquareImageUploading: FC<Props> = ({
-	image,
-	croppedImage,
-	onChange,
-	onCrop,
-	cssClasse,
-	label,
-	error,
-	disabled,
-	avatar = false,
-}) => {
+export type CustomSquareImageUploadingProps = {
+	image: string | ArrayBuffer | null;
+	croppedImage?: string | ArrayBuffer | null;
+	onChange: (image: string | ArrayBuffer | null) => void;
+	onCrop: (data: string | null) => void;
+	cssClasse?: string;
+	label?: string;
+	error?: string;
+	disabled?: boolean;
+	avatar?: boolean;
+};
+
+const CustomSquareImageUploading: FC<CustomSquareImageUploadingProps> = (props: CustomSquareImageUploadingProps) => {
+	const { image, croppedImage, onChange, onCrop, cssClasse, label, error, disabled, avatar = false } = props;
 	const { t } = useLanguage();
 	const { onError } = useToast();
 	const { width, height } = useWindowDimensions();
 	const cropperRef = useRef<CropZoomRefType>(null);
 	const operation = useRef(0);
 	const inFlight = useRef(false);
+	const pendingSource = useRef<'camera' | 'library' | null>(null);
 	const [busy, setBusy] = useState(false);
+	const [sourceMenuOpen, setSourceMenuOpen] = useState(false);
 	const [previewOpen, setPreviewOpen] = useState(false);
 	const [isEditing, setIsEditing] = useState(false);
 	const [isNewUpload, setIsNewUpload] = useState(false);
@@ -41,24 +46,38 @@ const CustomSquareImageUploading: FC<Props> = ({
 	const ratio = avatar ? 1 : 36 / 25;
 	const cropWidth = Math.max(1, Math.min(360, width - 48, Math.max(1, height - 260) * ratio));
 	const cropSize = { width: cropWidth, height: cropWidth / ratio };
+
 	useEffect(
 		() => () => {
 			operation.current += 1;
+			pendingSource.current = null;
 		},
 		[],
 	);
 
-	const handleFileChange = async () => {
+	const handleFileChange = async (imageSource: 'camera' | 'library') => {
 		if (disabled || inFlight.current) return;
 		inFlight.current = true;
 		setBusy(true);
 		const current = ++operation.current;
 		try {
-			const result = await ImagePicker.launchImageLibraryAsync({
+			if (imageSource === 'camera') {
+				const permission = await ImagePicker.requestCameraPermissionsAsync();
+				if (current !== operation.current) return;
+				if (!permission.granted) {
+					onError(t.common.cameraPermissionRequired);
+					return;
+				}
+			}
+			const options: ImagePicker.ImagePickerOptions = {
 				mediaTypes: ['images'],
 				allowsEditing: false,
 				quality: 1,
-			});
+			};
+			const result =
+				imageSource === 'camera'
+					? await ImagePicker.launchCameraAsync(options)
+					: await ImagePicker.launchImageLibraryAsync(options);
 			if (current !== operation.current || result.canceled) return;
 			const asset = result.assets[0];
 			if (!asset?.uri) {
@@ -110,6 +129,26 @@ const CustomSquareImageUploading: FC<Props> = ({
 				setBusy(false);
 			}
 		}
+	};
+	const handleImageUploadClick = () => {
+		if (disabled || inFlight.current) return;
+		if (Platform.OS === 'web') {
+			void handleFileChange('library');
+			return;
+		}
+		setSourceMenuOpen(true);
+	};
+	const handleSourceSelect = (imageSource: 'camera' | 'library') => {
+		if (disabled || inFlight.current || pendingSource.current) return;
+		setSourceMenuOpen(false);
+		// iOS must finish dismissing this panel before presenting the system picker.
+		if (Platform.OS === 'ios') pendingSource.current = imageSource;
+		else void handleFileChange(imageSource);
+	};
+	const handleSourceMenuDismiss = () => {
+		const imageSource = pendingSource.current;
+		pendingSource.current = null;
+		if (imageSource) void handleFileChange(imageSource);
 	};
 	const handleEditClick = async () => {
 		if (disabled || inFlight.current) return;
@@ -205,7 +244,10 @@ const CustomSquareImageUploading: FC<Props> = ({
 	return (
 		<View className={['gap-4', cssClasse].filter(Boolean).join(' ')}>
 			{!!label && <Text className="text-ink dark:text-slate-100 font-poppins-medium text-sm">{label}</Text>}
-			<View className="items-center gap-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 dark:border-slate-600 dark:bg-slate-800">
+			<View
+				className="items-center gap-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5
+			dark:border-slate-600 dark:bg-slate-800"
+			>
 				<Pressable
 					accessibilityRole="button"
 					accessibilityLabel={t.common.display + ' ' + name}
@@ -265,7 +307,7 @@ const CustomSquareImageUploading: FC<Props> = ({
 					buttonText={preview ? t.common.editPhoto : t.common.addImage}
 					inverted
 					loading={busy}
-					onClick={() => void handleFileChange()}
+					onClick={handleImageUploadClick}
 					active={!disabled}
 					startIcon={<MaterialIcons name="add-photo-alternate" size={20} color="#0274d7" />}
 				/>
@@ -276,6 +318,43 @@ const CustomSquareImageUploading: FC<Props> = ({
 				</Text>
 			)}
 			{previewOpen && <ImagePreview uri={fullImage} label={name} visible onClose={() => setPreviewOpen(false)} />}
+			<BottomSheet
+				testID="image-source-modal"
+				visible={sourceMenuOpen}
+				title={name}
+				subtitle={label ? t.common.addImage : undefined}
+				onClose={() => setSourceMenuOpen(false)}
+				onDismiss={handleSourceMenuDismiss}
+			>
+				<View className="flex-row gap-3">
+					<Pressable
+						accessibilityRole="button"
+						accessibilityLabel={t.common.takePhoto}
+						disabled={disabled || busy}
+						onPress={() => handleSourceSelect('camera')}
+						className="min-h-32 min-w-0 flex-1 items-center justify-center gap-3 rounded-2xl border border-blue-100
+						bg-blue-50 p-4 dark:border-slate-700 dark:bg-slate-800 dark:active:bg-slate-700"
+					>
+						<MaterialIcons name="photo-camera" size={30} color="#0274d7" />
+						<Text className="text-center font-poppins-medium text-sm text-ink dark:text-slate-100">
+							{t.common.takePhoto}
+						</Text>
+					</Pressable>
+					<Pressable
+						accessibilityRole="button"
+						accessibilityLabel={t.common.chooseFromGallery}
+						disabled={disabled || busy}
+						onPress={() => handleSourceSelect('library')}
+						className="min-h-32 min-w-0 flex-1 items-center justify-center gap-3 rounded-2xl border border-blue-100
+						bg-blue-50 p-4 dark:border-slate-700 dark:bg-slate-800 dark:active:bg-slate-700"
+					>
+						<MaterialIcons name="photo-library" size={30} color="#0274d7" />
+						<Text className="text-center font-poppins-medium text-sm text-ink dark:text-slate-100">
+							{t.common.chooseFromGallery}
+						</Text>
+					</Pressable>
+				</View>
+			</BottomSheet>
 			{isEditing && source && (
 				<Modal visible animationType="slide" presentationStyle="fullScreen" onRequestClose={handleClose}>
 					<GestureHandlerRootView style={{ flex: 1 }}>

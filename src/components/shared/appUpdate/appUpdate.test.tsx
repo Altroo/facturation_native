@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-
 import { Platform } from 'react-native';
 import AppUpdate from './appUpdate';
 import { useAppSelector } from '@/utils/hooks';
-import { checkAppUpdate, reloadApp } from '@/utils/updateApp';
+import { checkAppUpdate, reloadApp } from '@/utils/helpers';
 import { fr } from '@/translations/fr';
 import { APP_VERSION } from '@/utils/appVersion';
 
@@ -15,7 +15,11 @@ jest.mock('@/utils/hooks', () => ({
 	useToast: () => ({ onError: mockOnError }),
 }));
 jest.mock('@/providers/themeProvider', () => ({ useColorMode: () => ({ mode: 'light' }) }));
-jest.mock('@/utils/updateApp', () => ({ checkAppUpdate: jest.fn(), reloadApp: jest.fn() }));
+jest.mock('@/utils/helpers', () => ({
+	...jest.requireActual<typeof import('@/utils/helpers')>('@/utils/helpers'),
+	checkAppUpdate: jest.fn(),
+	reloadApp: jest.fn(),
+}));
 const [major, minor, patch] = APP_VERSION.split('.').map(Number);
 const nextVersion = `${major}.${minor}.${patch + 1}`;
 const newerVersion = `${major}.${minor}.${patch + 2}`;

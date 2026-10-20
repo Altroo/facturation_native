@@ -61,6 +61,31 @@ it('uses the original non-active action fallback when dismissed without onClose'
 	expect(confirm).not.toHaveBeenCalled();
 });
 
+it('does not invoke a disabled cancel action through dismissal shortcuts', async () => {
+	const review = jest.fn();
+	const view = await render(
+		<ActionModals
+			title="Pending"
+			actions={[
+				...actions.map((action) => ({ ...action, disabled: true })),
+				{ text: 'Review', active: false, onClick: review },
+			]}
+		/>,
+	);
+	await fireEvent.press(screen.getByTestId('action-modal-backdrop', { includeHiddenElements: true }));
+	await fireEvent(
+		screen.container.queryAll((node) => typeof node.props.onRequestClose === 'function')[0]!,
+		'requestClose',
+	);
+	await fireEvent(screen.getByTestId('action-modal'), 'accessibilityEscape');
+	expect(cancel).not.toHaveBeenCalled();
+	expect(confirm).not.toHaveBeenCalled();
+	expect(review).not.toHaveBeenCalled();
+	await view.rerender(<ActionModals title="Pending" actions={actions} />);
+	await fireEvent(screen.getByTestId('action-modal'), 'accessibilityEscape');
+	expect(cancel).toHaveBeenCalledTimes(1);
+});
+
 it('disables action buttons while preserving the original onClose dismissal handler', async () => {
 	const onClose = jest.fn();
 	await render(

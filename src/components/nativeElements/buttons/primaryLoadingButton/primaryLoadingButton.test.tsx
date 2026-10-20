@@ -33,7 +33,7 @@ it.each([
 	await fireEvent.press(button);
 	expect(onClick).not.toHaveBeenCalled();
 });
-it('keeps the label while loading, then restores the icon and click handler', async () => {
+it('preserves the label and icon layout under a centered loader, then restores presses', async () => {
 	const onClick = jest.fn();
 	const view = await render(
 		<PrimaryLoadingButton
@@ -48,8 +48,10 @@ it('keeps the label while loading, then restores the icon and click handler', as
 		/>,
 	);
 	expect(screen.getByText('Supprimer')).toBeOnTheScreen();
-	expect(screen.queryByText('Delete icon')).toBeNull();
-	expect(screen.container.queryAll((node) => /ActivityIndicator/.test(node.type))[0] ?? null).not.toBeNull();
+	expect(screen.getByText('Delete icon')).toBeOnTheScreen();
+	expect(screen.container.queryAll((node) => /ActivityIndicator/.test(node.type))[0]).toHaveStyle({
+		position: 'absolute',
+	});
 	expect(screen.getByRole('button')).toHaveProp('className', expect.stringContaining('self-end'));
 	await view.rerender(
 		<PrimaryLoadingButton

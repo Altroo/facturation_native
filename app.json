@@ -36,7 +36,7 @@
 				"expo-image-picker",
 				{
 					"photosPermission": "Choisir une photo de profil, un logo ou un cachet.",
-					"cameraPermission": false,
+					"cameraPermission": "Prendre une photo de profil, un logo ou un cachet.",
 					"microphonePermission": false
 				}
 			],

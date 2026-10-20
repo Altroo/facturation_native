@@ -1,8 +1,14 @@
-import { type FC } from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { type FC, type ReactNode } from 'react';
+import { ActivityIndicator, type StyleProp, Text, View, type ViewStyle } from 'react-native';
 import { useColorMode } from '@/providers/themeProvider';
 import { useLanguage } from '@/utils/hooks';
-import type { ApiProgressProps as Props } from '@/types/uiTypes';
+
+type Props = {
+	cssStyle?: StyleProp<ViewStyle>;
+	children?: ReactNode;
+	backdropColor?: string;
+	circularColor?: string;
+};
 
 const ApiProgress: FC<Props> = (props: Props) => {
 	const { t } = useLanguage();

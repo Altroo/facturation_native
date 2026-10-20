@@ -21,4 +21,5 @@ const NoPermission = () => {
 		</ScrollView>
 	);
 };
+
 export default NoPermission;

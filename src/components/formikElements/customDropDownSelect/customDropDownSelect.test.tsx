@@ -89,6 +89,21 @@ it('renders the required marker without changing the accessible selection label'
 	expect(screen.getByRole('button', { name: 'Rôle' })).toBeOnTheScreen();
 });
 
+it('closes an open selector when disabled and keeps it closed when enabled again', async () => {
+	const view = await render(<CustomDropDownSelect label="Rôle" items={items} value="Homme" />);
+	await fireEvent.press(screen.getByRole('button', { name: 'Rôle' }));
+	expect(screen.getAllByRole('radio')).toHaveLength(items.length);
+	await view.rerender(<CustomDropDownSelect label="Rôle" items={items} value="Homme" disabled />);
+	expect(screen.getByRole('button', { name: 'Rôle' })).toBeDisabled();
+	expect(screen.queryByRole('radio')).toBeNull();
+	await view.rerender(<CustomDropDownSelect label="Rôle" items={items} value="Homme" />);
+	expect(screen.getByRole('button', { name: 'Rôle' })).toHaveProp('accessibilityState', {
+		disabled: false,
+		expanded: false,
+	});
+	expect(screen.queryByRole('radio')).toBeNull();
+});
+
 describe('CustomDropDownSelect', () => {
 	const mockItems = ['Option A', 'Option B', 'Option C'];
 	it('renders label and options', async () => {

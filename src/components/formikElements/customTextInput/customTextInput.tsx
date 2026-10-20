@@ -1,11 +1,40 @@
+import type { ReactNode, Ref } from 'react';
 import { useColorMode } from '@/providers/themeProvider';
-import { Text, TextInput, View } from 'react-native';
+import { ScrollView, Text, TextInput, View, type TextInputProps, type TextInputInstance } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import type { CustomTextInputProps as Props } from '@/types/uiTypes';
 
-const CustomTextInput = (props: Props) => {
+export type CustomTextInputProps = Omit<TextInputProps, 'editable'> & {
+	ref?: Ref<TextInputInstance>;
+	label?: string;
+	required?: boolean;
+	disabled?: boolean;
+	error?: boolean;
+	helperText?: string;
+	startIcon?: ReactNode;
+	endIcon?: ReactNode;
+	cssClass?: string;
+};
+
+const CustomTextInput = (props: CustomTextInputProps) => {
 	const { label, required, error, helperText, startIcon, endIcon, disabled, cssClass, style, ...restOfProps } = props;
 	const { mode: theme } = useColorMode();
+	const scrollableValue = disabled && !props.multiline;
+	const input = (
+		<TextInput
+			{...restOfProps}
+			editable={!disabled}
+			accessibilityLabel={props.accessibilityLabel ?? label}
+			accessibilityState={{ ...props.accessibilityState, disabled: !!disabled }}
+			placeholderTextColor={theme === 'dark' ? '#94a3b8' : '#64748b'}
+			lineBreakModeIOS={props.lineBreakModeIOS ?? (props.multiline ? 'wordWrapping' : 'clip')}
+			className={
+				'min-h-12 min-w-0 px-4 py-3 font-sans text-base text-ink dark:text-white ' +
+				(scrollableValue ? 'grow shrink-0 ' : 'flex-1 ') +
+				(props.multiline ? 'min-h-28' : '')
+			}
+			style={[props.multiline ? { textAlignVertical: 'top' } : undefined, style]}
+		/>
+	);
 	return (
 		<View className={'gap-2 ' + (cssClass ?? '')}>
 			{!!label && (
@@ -22,22 +51,23 @@ const CustomTextInput = (props: Props) => {
 				}
 			>
 				{startIcon && <View className="pl-3">{startIcon}</View>}
-				<TextInput
-					{...restOfProps}
-					editable={!disabled}
-					accessibilityLabel={props.accessibilityLabel ?? label}
-					accessibilityState={{ ...props.accessibilityState, disabled: !!disabled }}
-					placeholderTextColor={theme === 'dark' ? '#94a3b8' : '#64748b'}
-					className={
-						'min-h-12 flex-1 px-4 py-3 font-sans text-base text-ink dark:text-white ' +
-						(props.multiline ? 'min-h-28' : '')
-					}
-					style={[props.multiline ? { textAlignVertical: 'top' } : undefined, style]}
-				/>
+				{scrollableValue ? (
+					<ScrollView
+						horizontal
+						className="min-w-0 flex-1"
+						contentContainerStyle={{ flexGrow: 1 }}
+						showsHorizontalScrollIndicator={false}
+						keyboardShouldPersistTaps="handled"
+					>
+						{input}
+					</ScrollView>
+				) : (
+					input
+				)}
 				{endIcon}
-				{disabled && !endIcon && (
-					<View className="pr-3">
-						<MaterialIcons name="lock-outline" size={16} color="#94a3b8" />
+				{!endIcon && (
+					<View className="w-7 justify-center">
+						{disabled && <MaterialIcons name="lock-outline" size={16} color="#94a3b8" />}
 					</View>
 				)}
 			</View>
@@ -45,9 +75,8 @@ const CustomTextInput = (props: Props) => {
 				<Text
 					accessibilityRole={error ? 'alert' : undefined}
 					className={
-						error
-							? 'font-sans text-xs text-red-600 dark:text-red-300'
-							: 'font-sans text-xs leading-5 text-slate-500 dark:text-slate-400'
+						'font-sans text-xs leading-5 ' +
+						(error ? 'text-red-600 dark:text-red-300' : 'text-slate-500 dark:text-slate-400')
 					}
 				>
 					{helperText}

@@ -25,5 +25,3 @@ export const useInitAccessToken = (session?: AppSession): string | undefined => 
 	const { initStateToken } = useInitContext();
 	return initStateToken.access ?? getAccessTokenFromSession(session);
 };
-
-export default InitContext;

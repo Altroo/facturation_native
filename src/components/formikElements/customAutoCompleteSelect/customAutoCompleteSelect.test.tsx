@@ -1,9 +1,16 @@
 import { useState } from 'react';
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { fireEvent, render as renderComponent, screen } from '@testing-library/react-native';
+import type { ReactElement } from 'react';
+import {
+	AutocompleteDropdownContextProvider,
+	toggleAutocomplete,
+	flushAutocomplete,
+} from '@/__tests__/setupAutocomplete';
 import { Text, Pressable } from 'react-native';
 import CustomAutoCompleteSelect from './customAutoCompleteSelect';
 import { translations } from '@/translations';
 import type { DropDownType } from '@/types/accountTypes';
+const render = (ui: ReactElement) => renderComponent(ui, { wrapper: AutocompleteDropdownContextProvider });
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
 jest.mock('@/utils/hooks', () => ({
 	useLanguage: () => ({ t: jest.requireActual<typeof import('@/translations')>('@/translations').translations.fr }),
@@ -28,21 +35,26 @@ it('clears a dismissed dropdown search before reopening without selecting an opt
 			onChange={onChange}
 		/>,
 	);
-	await fireEvent.press(screen.getByRole('button', { name: 'Gestionnaire' }));
-	await fireEvent.changeText(screen.getByLabelText(translations.fr.common.search), 'Missing');
-	await fireEvent.press(screen.getByRole('button', { name: 'Gestionnaire' }));
+	await toggleAutocomplete('Gestionnaire');
+	await fireEvent.changeText(screen.getByRole('combobox', { name: 'Gestionnaire' }), 'Missing');
+	await toggleAutocomplete('Gestionnaire');
 	expect(screen.queryByRole('radio')).toBeNull();
 	expect(onChange).not.toHaveBeenCalled();
-	await fireEvent.press(screen.getByRole('button', { name: 'Gestionnaire' }));
-	expect(screen.getByLabelText(translations.fr.common.search)).toHaveProp('value', '');
+	await toggleAutocomplete('Gestionnaire');
+	expect(screen.getByRole('combobox', { name: 'Gestionnaire' })).toHaveProp('value', '');
 	expect(screen.getAllByRole('radio')).toHaveLength(longItems.length);
 });
-it('shows small choice lists inline without a search box or close button', async () => {
+it('searches directly in the field even when there are only a few choices', async () => {
 	await render(
 		<CustomAutoCompleteSelect label="Gestionnaire" items={items} value={null} noOptionsText="Aucun résultat" />,
 	);
-	await fireEvent.press(screen.getByRole('button', { name: 'Gestionnaire' }));
+	const input = screen.getByRole('combobox', { name: 'Gestionnaire' });
+	await fireEvent(input, 'focus');
+	await flushAutocomplete();
 	expect(screen.getAllByRole('radio')).toHaveLength(items.length);
+	await fireEvent.changeText(input, 'Ali');
+	expect(screen.getAllByRole('radio')).toHaveLength(1);
+	expect(screen.getByRole('radio', { name: 'Ali (' + translations.fr.common.archived + ')' })).toBeOnTheScreen();
 	expect(screen.queryByLabelText(translations.fr.common.search)).toBeNull();
 	expect(screen.queryByRole('button', { name: translations.fr.common.close })).toBeNull();
 });
@@ -64,27 +76,49 @@ it('returns the selected object and keeps duplicate displayed names separate by 
 		);
 	};
 	await render(<Example />);
-	await fireEvent.press(screen.getByRole('button', { name: 'Gestionnaire' }));
+	await toggleAutocomplete('Gestionnaire');
 	const duplicates = screen.getAllByRole('radio', { name: 'Sara User' });
 	expect(duplicates[0]).toBeChecked();
 	expect(duplicates[1]).not.toBeChecked();
 	await fireEvent.press(duplicates[1]);
 	expect(onChange).toHaveBeenCalledWith(items[1]);
 	expect(screen.queryByRole('radio')).toBeNull();
-	await fireEvent.press(screen.getByRole('button', { name: 'Gestionnaire' }));
+	await toggleAutocomplete('Gestionnaire');
 	expect(screen.getAllByRole('radio', { name: 'Sara User' })[1]).toBeChecked();
 });
 it('filters original code labels, keeps archived labels, and shows the caller empty message', async () => {
 	await render(
 		<CustomAutoCompleteSelect label="Gestionnaire" items={longItems} value={null} noOptionsText="Aucun résultat" />,
 	);
-	await fireEvent.press(screen.getByRole('button', { name: 'Gestionnaire' }));
-	await fireEvent.changeText(screen.getByLabelText(translations.fr.common.search), 'ALI');
+	await toggleAutocomplete('Gestionnaire');
+	await fireEvent.changeText(screen.getByRole('combobox', { name: 'Gestionnaire' }), 'ALI');
 	expect(screen.getAllByRole('radio')).toHaveLength(1);
 	expect(screen.getByRole('radio', { name: 'Ali (' + translations.fr.common.archived + ')' })).toBeOnTheScreen();
-	await fireEvent.changeText(screen.getByLabelText(translations.fr.common.search), 'Missing');
+	await fireEvent.changeText(screen.getByRole('combobox', { name: 'Gestionnaire' }), 'Missing');
 	expect(screen.queryByRole('radio')).toBeNull();
 	expect(screen.getByText('Aucun résultat')).toBeOnTheScreen();
+});
+it('restores the selected label on blur without submitting an unselected search', async () => {
+	const onChange = jest.fn();
+	const onBlur = jest.fn();
+	await render(
+		<CustomAutoCompleteSelect
+			label="Gestionnaire"
+			items={items}
+			value={items[0]}
+			noOptionsText="Aucun résultat"
+			onChange={onChange}
+			onBlur={onBlur}
+		/>,
+	);
+	const input = screen.getByRole('combobox', { name: 'Gestionnaire' });
+	await fireEvent.changeText(input, 'Ali');
+	await flushAutocomplete();
+	await fireEvent(input, 'blur', { nativeEvent: { target: 1 } });
+	expect(input).toHaveProp('value', items[0].code);
+	expect(screen.queryByRole('radio')).toBeNull();
+	expect(onChange).not.toHaveBeenCalled();
+	expect(onBlur).toHaveBeenCalledTimes(1);
 });
 it('keeps start/end accessories and prevents disabled selection', async () => {
 	const onChange = jest.fn();
@@ -127,10 +161,10 @@ it('clears the selected object to null without selecting a different option', as
 		);
 	};
 	await render(<Example />);
-	await fireEvent.press(screen.getByRole('button', { name: 'Gestionnaire' }));
+	await toggleAutocomplete('Gestionnaire');
 	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.reset }));
 	expect(onChange).toHaveBeenCalledWith(null);
-	expect(screen.getByText(translations.fr.common.selectValue)).toBeOnTheScreen();
+	expect(screen.getByRole('combobox', { name: 'Gestionnaire' })).toHaveProp('value', '');
 	expect(screen.queryByRole('radio')).toBeNull();
 });
 
@@ -140,6 +174,24 @@ it('renders the required marker without changing the accessible selection label'
 	);
 	expect(screen.getByText('Utilisateur *')).toBeOnTheScreen();
 	expect(screen.getByRole('button', { name: 'Utilisateur' })).toBeOnTheScreen();
+});
+
+it('closes a disabled autocomplete and does not reopen stale suggestions when enabled again', async () => {
+	const props = { label: 'Gestionnaire', items, value: items[0], noOptionsText: 'Aucun résultat' };
+	const view = await render(<CustomAutoCompleteSelect {...props} />);
+	await toggleAutocomplete('Gestionnaire');
+	expect(screen.getAllByRole('radio')).toHaveLength(items.length);
+	await view.rerender(<CustomAutoCompleteSelect {...props} disabled />);
+	await flushAutocomplete();
+	expect(screen.getByRole('combobox', { name: 'Gestionnaire' })).toBeDisabled();
+	expect(screen.queryByRole('radio')).toBeNull();
+	await view.rerender(<CustomAutoCompleteSelect {...props} />);
+	await flushAutocomplete();
+	expect(screen.getByRole('button', { name: 'Gestionnaire' })).toHaveProp('accessibilityState', {
+		disabled: false,
+		expanded: false,
+	});
+	expect(screen.queryByRole('radio')).toBeNull();
 });
 
 describe('CustomAutocompleteSelect', () => {
@@ -164,7 +216,7 @@ describe('CustomAutocompleteSelect', () => {
 				)}
 			/>,
 		);
-		await fireEvent.press(screen.getByRole('button', { name: 'User' }));
+		await toggleAutocomplete('User');
 		await fireEvent.press(screen.getByRole('radio', { name: 'Bob' }), event);
 		expect(onChange).toHaveBeenCalledWith(
 			expect.objectContaining({ nativeEvent: expect.objectContaining(event.nativeEvent) }),
@@ -184,8 +236,7 @@ describe('CustomAutocompleteSelect', () => {
 			/>,
 		);
 
-		expect(screen.getByLabelText('User')).toBeOnTheScreen();
-		expect(screen.getByText('Alice')).toBeOnTheScreen();
+		expect(screen.getByRole('combobox', { name: 'User' })).toHaveProp('value', 'Alice');
 	});
 
 	it('shows options when opened and calls onChange on selection', async () => {
@@ -202,8 +253,7 @@ describe('CustomAutocompleteSelect', () => {
 			/>,
 		);
 
-		const input = screen.getByRole('button', { name: 'User' });
-		await fireEvent.press(input); // open the dropdown
+		await toggleAutocomplete('User'); // open the dropdown
 
 		const option = screen.getByText('Bob');
 		await fireEvent.press(option);
@@ -270,8 +320,7 @@ describe('CustomAutocompleteSelect', () => {
 			/>,
 		);
 		// open the dropdown
-		const input = screen.getByRole('button', { name: 'User' });
-		await fireEvent.press(input);
+		await toggleAutocomplete('User');
 		// expect the noOptionsText to be shown
 		expect(screen.getByText('Aucun utilisateur trouvé')).toBeOnTheScreen();
 	});

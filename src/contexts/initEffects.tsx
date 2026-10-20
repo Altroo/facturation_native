@@ -36,12 +36,14 @@ export const InitEffects: FC = () => {
 		// Logout owns the guest transition until recovery storage and API caches are cleared.
 		if (status !== 'signingOut') dispatch(initToken());
 	});
+
 	useEffect(() => {
 		const handler = () => {
 			handleSessionExpired();
 		};
 		return auth.subscribeExpired(handler);
 	}, []);
+
 	useEffect(() => {
 		if (!appInitializedRef.current) {
 			dispatch(initAppAction());
@@ -51,6 +53,7 @@ export const InitEffects: FC = () => {
 			appInitializedRef.current = false;
 		};
 	}, [dispatch]);
+
 	// Same session -> action -> Saga -> Redux flow as the web. Native login
 	// returns tokens separately from the profile, so profile edits also resync.
 	useEffect(() => {
@@ -59,12 +62,14 @@ export const InitEffects: FC = () => {
 		}
 		if (status === 'authenticated' && !session) dispatch(initToken());
 	}, [status, session, profile, dispatch]);
+
 	useEffect(() => {
 		if (skip) return;
 		if (user) dispatch(accountSetProfilAction(user));
 		if (groupes) dispatch(accountSetGroupesAction(groupes));
 		if (companies) dispatch(companiesSetUserCompaniesAction(companies));
 	}, [dispatch, user, groupes, companies, skip]);
+
 	useEffect(() => {
 		const refreshMaintenance = () => dispatch(initMaintenanceAction());
 		const updateSocket = (active: boolean) => dispatch(active && !skip ? startWSAction() : stopWSAction());

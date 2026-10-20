@@ -12,12 +12,16 @@ export const LanguageContext = createContext<LanguageContextType>({
 	t: translations[DEFAULT_LANGUAGE],
 });
 
-export const LanguageContextProvider: FC<{ children: ReactNode; initialLanguage?: Language }> = ({
-	children,
-	initialLanguage,
-}) => {
+type Props = {
+	children: ReactNode;
+	initialLanguage?: Language;
+};
+
+export const LanguageContextProvider: FC<Props> = (props: Props) => {
+	const { children, initialLanguage } = props;
 	const [language, setLanguageState] = useState<Language>(initialLanguage ?? DEFAULT_LANGUAGE);
 	const [ready, setReady] = useState(initialLanguage !== undefined);
+
 	useEffect(() => {
 		let mounted = true;
 		const restore = async () => {

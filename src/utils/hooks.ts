@@ -4,8 +4,7 @@ import type { TypedUseSelectorHook } from 'react-redux';
 import { useDispatch, useSelector } from 'react-redux';
 import type { AppDispatch, RootState } from '@/store/store';
 import { getProfilState } from '@/store/selectors';
-import type { ToastContextType } from '@/types/uiTypes';
-import { ToastContext } from '@/contexts/toastContext';
+import { ToastContext, type ToastContextType } from '@/contexts/toastContext';
 import type { LanguageContextType } from '@/types/languageTypes';
 import { LanguageContext } from '@/contexts/languageContext';
 

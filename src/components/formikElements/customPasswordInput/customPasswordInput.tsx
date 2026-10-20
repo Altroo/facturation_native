@@ -2,9 +2,12 @@ import { useColorMode } from '@/providers/themeProvider';
 import { useState } from 'react';
 import { Pressable } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import CustomTextInput from '@/components/formikElements/customTextInput/customTextInput';
+import CustomTextInput, {
+	type CustomTextInputProps,
+} from '@/components/formikElements/customTextInput/customTextInput';
 import { useLanguage } from '@/utils/hooks';
-import type { CustomPasswordInputProps as Props } from '@/types/uiTypes';
+
+export type Props = Omit<CustomTextInputProps, 'secureTextEntry' | 'endIcon'>;
 
 const CustomPasswordInput = (props: Props) => {
 	const [showpassword, setshowpassword] = useState<boolean>(false);
@@ -23,6 +26,8 @@ const CustomPasswordInput = (props: Props) => {
 				<Pressable
 					accessibilityRole="button"
 					accessibilityLabel={t.common.togglePasswordVisibility}
+					accessibilityState={{ disabled: !!props.disabled }}
+					disabled={props.disabled}
 					onPress={handleClickShowPassword}
 					className="h-12 w-12 items-center justify-center"
 				>

@@ -1,7 +1,6 @@
-import type { ToastContextType } from '@/types/uiTypes';
 import { act, render } from '@testing-library/react-native';
 import SessionExpiredListener from './sessionExpiredListener';
-import { ToastContext } from '@/contexts/toastContext';
+import { ToastContext, type ToastContextType } from '@/contexts/toastContext';
 import { LanguageContext } from '@/contexts/languageContext';
 import { translations } from '@/translations';
 import { auth } from '@/auth';

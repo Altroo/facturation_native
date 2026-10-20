@@ -1,12 +1,30 @@
-import { useState, type FC } from 'react';
-import { Text, Pressable, ScrollView, View } from 'react-native';
+import { useState, type FC, type ReactNode } from 'react';
+import { Text, Pressable, ScrollView, View, PressableProps } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useLanguage } from '@/utils/hooks';
-import type { CustomDropDownSelectProps as Props } from '@/types/uiTypes';
+import type { DropDownType } from '@/types/accountTypes';
+
+export type Props = {
+	id?: string;
+	label: string;
+	required?: boolean;
+	items: Array<DropDownType> | Array<string>;
+	value: string | null;
+	// Native selection returns the value directly, without a DOM event.
+	onChange?: (value: string) => void;
+	onBlur?: PressableProps['onBlur'];
+	helperText?: string;
+	error?: boolean;
+	disabled?: boolean;
+	cssClass?: string;
+	startIcon?: ReactNode;
+	endIcon?: ReactNode;
+};
 
 const CustomDropDownSelect: FC<Props> = (props: Props) => {
 	const [open, setOpen] = useState(false);
 	const { t } = useLanguage();
+	if (props.disabled && open) setOpen(false);
 	return (
 		<View className={'gap-2 ' + (props.cssClass ?? '')}>
 			<Text className="text-ink dark:text-slate-100 font-poppins-medium text-sm">
@@ -46,7 +64,7 @@ const CustomDropDownSelect: FC<Props> = (props: Props) => {
 						)}
 						{props.items.map((item, index) => {
 							const isObject = typeof item === 'object' && item !== null && 'value' in item;
-							const value = isObject ? item.value : item;
+							const value = isObject ? item?.value : item;
 							return (
 								<Pressable
 									key={index}
@@ -68,7 +86,9 @@ const CustomDropDownSelect: FC<Props> = (props: Props) => {
 									>
 										{value || t.common.selectValue}
 									</Text>
-									{props.value === value && <MaterialIcons name="check-circle" size={20} color="#0274d7" />}
+									<View className="h-5 w-5 items-center justify-center">
+										{props.value === value && <MaterialIcons name="check-circle" size={20} color="#0274d7" />}
+									</View>
 								</Pressable>
 							);
 						})}
@@ -79,9 +99,8 @@ const CustomDropDownSelect: FC<Props> = (props: Props) => {
 				<Text
 					accessibilityRole={props.error ? 'alert' : undefined}
 					className={
-						props.error
-							? 'font-sans text-xs text-red-600 dark:text-red-300'
-							: 'font-sans text-xs text-slate-500 dark:text-slate-400'
+						'font-sans text-xs leading-5 ' +
+						(props.error ? 'text-red-600 dark:text-red-300' : 'text-slate-500 dark:text-slate-400')
 					}
 				>
 					{props.helperText}

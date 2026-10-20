@@ -1,6 +1,17 @@
-import type { FC } from 'react';
-import { ActivityIndicator, Pressable, Text } from 'react-native';
-import type { PrimaryLoadingButtonProps as Props } from '@/types/uiTypes';
+import type { FC, ReactNode } from 'react';
+import { ActivityIndicator, type GestureResponderEvent, Pressable, Text, View } from 'react-native';
+
+type Props = {
+	buttonText: string;
+	loading: boolean;
+	onClick?: (event: GestureResponderEvent) => void;
+	active?: boolean;
+	startIcon?: ReactNode;
+	cssClass?: string;
+	inverted?: boolean;
+	danger?: boolean;
+	testID?: string;
+};
 
 const PrimaryLoadingButton: FC<Props> = (props: Props) => {
 	const foreground = props.inverted ? (props.danger ? '#dc2626' : '#0274d7') : '#fff';
@@ -25,19 +36,29 @@ const PrimaryLoadingButton: FC<Props> = (props: Props) => {
 				(props.cssClass ?? '')
 			}
 		>
-			{props.loading ? <ActivityIndicator size="small" color={foreground} /> : props.startIcon}
-			<Text
-				className={
-					'shrink text-center font-poppins-medium text-sm ' +
-					(props.inverted
-						? props.danger
-							? 'text-red-600 dark:text-red-300'
-							: 'text-brand dark:text-blue-300'
-						: 'text-white')
-				}
-			>
-				{props.buttonText}
-			</Text>
+			<View className="shrink flex-row items-center justify-center gap-2" style={{ opacity: props.loading ? 0 : 1 }}>
+				{props.startIcon}
+				<Text
+					className={
+						'shrink text-center font-poppins-medium text-sm ' +
+						(props.inverted
+							? props.danger
+								? 'text-red-600 dark:text-red-300'
+								: 'text-brand dark:text-blue-300'
+							: 'text-white')
+					}
+				>
+					{props.buttonText}
+				</Text>
+			</View>
+			{props.loading && (
+				<ActivityIndicator
+					accessibilityRole="progressbar"
+					size="small"
+					color={foreground}
+					style={{ position: 'absolute' }}
+				/>
+			)}
 		</Pressable>
 	);
 };

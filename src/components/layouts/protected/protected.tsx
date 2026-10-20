@@ -1,8 +1,12 @@
+import type { ReactNode } from 'react';
 import NoPermission from '@/components/shared/noPermission/noPermission';
 import { useAppSelector, usePermission } from '@/utils/hooks';
 import { getProfilState } from '@/store/selectors';
 import ApiProgress from '@/components/formikElements/apiLoading/apiProgress/apiProgress';
-import type { ProtectedProps } from '@/types/uiTypes';
+
+type ProtectedProps = {
+	children: ReactNode;
+};
 
 export const Protected = (props: ProtectedProps) => {
 	const { is_staff } = usePermission();
