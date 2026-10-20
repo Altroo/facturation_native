@@ -3,7 +3,7 @@ import type { ESLint } from 'eslint';
 import { fixupPluginRules } from '@eslint/compat';
 import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
-import importPlugin from 'eslint-plugin-import';
+import { importX } from 'eslint-plugin-import-x';
 import expo from 'eslint-plugin-expo';
 import tseslint from 'typescript-eslint';
 import globals from 'globals';
@@ -15,7 +15,8 @@ export default defineConfig([
 		plugins: {
 			react: fixupPluginRules(react),
 			'react-hooks': { rules: reactHooks.rules },
-			import: fixupPluginRules(importPlugin),
+			// Preserve the web's rule names with the ESLint 10-compatible fork.
+			import: importX,
 			expo: fixupPluginRules(expo as unknown as ESLint.Plugin),
 		},
 		languageOptions: {

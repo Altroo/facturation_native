@@ -1,8 +1,24 @@
 import type { Config } from 'jest';
+import appConfig from './app.json';
 
 const config: Config = {
 	preset: 'jest-expo',
+	resolver: 'react-native-reanimated/jest/resolver',
 	roots: ['<rootDir>/src'],
+	// Compile app source as Metro does; keep Expo's preset transforms for dependencies and tests.
+	transform: {
+		'^(?!.*node_modules/).*src/(?!.*(?:__tests__/|\\.(?:test|spec)\\.)).*\\.[jt]sx?$': [
+			require.resolve('babel-jest', { paths: [require.resolve('jest-expo/package.json')] }),
+			{
+				caller: {
+					name: 'metro',
+					bundler: 'jest',
+					platform: 'ios',
+					supportsReactCompiler: appConfig.expo.experiments.reactCompiler,
+				},
+			},
+		],
+	},
 	transformIgnorePatterns: [
 		'/node_modules/(?!(react-native|@react-native|expo|@expo|@expo-google-fonts|@shopify/flash-list|react-navigation|@react-navigation|standard-navigation|immer|@reduxjs|redux|react-redux|@redux-saga))',
 		'/node_modules/react-native-reanimated/plugin/',
