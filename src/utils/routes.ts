@@ -22,9 +22,3 @@ export const USERS_EDIT = (id: number) => ({ pathname: '/users/form' as const, p
 export const DASHBOARD_EDIT_PROFILE = '/settings/edit-profile' as const;
 export const DASHBOARD_PASSWORD = '/settings/password' as const;
 export const DASHBOARD_NOTIFICATIONS = '/settings/notifications' as const;
-
-export const parseEntityId = (value: string | string[] | undefined): number | null => {
-	if (typeof value !== 'string' || !/^[1-9]\d*$/.test(value)) return null;
-	const id = Number(value);
-	return Number.isSafeInteger(id) ? id : null;
-};

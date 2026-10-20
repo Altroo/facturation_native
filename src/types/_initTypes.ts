@@ -3,13 +3,7 @@ import type { WSMaintenanceBootstrap } from '@/types/wsTypes';
 export type ApiErrorResponseType = {
 	status_code: number;
 	message: string;
-	details?: Record<string, string[] | string>;
-};
-
-export type SuccessResponseType<T = unknown> = {
-	status_code: number;
-	message: string;
-	data?: T;
+	details?: Record<string, Array<string> | string>;
 };
 
 export interface ResponseDataInterface<T> {
