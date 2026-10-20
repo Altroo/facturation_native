@@ -9,11 +9,10 @@ import { router } from 'expo-router';
 import { Text } from 'react-native';
 import { Provider } from 'react-redux';
 import { RootNavigator } from '@/app/_layout';
-import UsersFormPage from '@/app/(app)/users/form';
-import CompaniesFormPage from '@/app/(app)/companies/form';
-import SettingsLayout from '@/app/(app)/(drawer)/settings/_layout';
-import AuthenticatedLayout, { unstable_settings as appSettings } from '@/app/(app)/_layout';
-import DrawerLayout from '@/app/(app)/(drawer)/_layout';
+import UsersFormPage from '@/app/(app)/(drawer)/users/form';
+import CompaniesFormPage from '@/app/(app)/(drawer)/companies/form';
+import AuthenticatedLayout from '@/app/(app)/_layout';
+import DrawerStackLayout, { unstable_settings as drawerSettings } from '@/app/(app)/(drawer)/_layout';
 
 import {
 	useGetUserQuery,
@@ -29,7 +28,15 @@ import {
 	useAddCompanyMutation,
 	useEditCompanyMutation,
 } from '@/store/services/company';
-import { COMPANIES_ADD, COMPANIES_EDIT, USERS_ADD, USERS_EDIT } from '@/utils/routes';
+import {
+	CLIENTS_ADD,
+	CLIENTS_EDIT,
+	CLIENTS_VIEW,
+	COMPANIES_ADD,
+	COMPANIES_EDIT,
+	USERS_ADD,
+	USERS_EDIT,
+} from '@/utils/routes';
 import type { CompanyClass, UserClass } from '@/models/classes';
 import type { UserWithCompaniesResponseType } from '@/types/usersTypes';
 import { translations } from '@/translations';
@@ -42,7 +49,20 @@ jest.mock('react-native-gesture-handler', () => ({
 	GestureHandlerRootView: jest.requireActual<typeof import('react-native')>('react-native').View,
 }));
 jest.mock('react-native-drawer-layout', () => ({
-	Drawer: ({ children }: { children: ReactNode }) => children,
+	Drawer: ({
+		children,
+		open,
+		renderDrawerContent,
+	}: {
+		children: ReactNode;
+		open: boolean;
+		renderDrawerContent: () => ReactNode;
+	}) => (
+		<>
+			{children}
+			{open && renderDrawerContent()}
+		</>
+	),
 	useDrawerProgress: () => ({ value: 0 }),
 }));
 jest.mock('@/components/layouts/navigationBar/navigationBar', () => {
@@ -52,7 +72,6 @@ jest.mock('@/components/layouts/navigationBar/navigationBar', () => {
 	const { cloneElement } = jest.requireActual<typeof import('react')>('react');
 	return {
 		...actual,
-		NavigationDrawer: () => null,
 		Notifications: () => null,
 		useNavigationHeader: () => {
 			const options = actual.useNavigationHeader();
@@ -171,20 +190,19 @@ const setup = async (initialUrl: string, access: 'staff' | 'guest' | 'nonstaff' 
 			),
 			login: () => <Text>Guest login</Text>,
 			'reset-password/index': () => <Text>Recovery</Text>,
-			'(app)/_layout': { default: AuthenticatedLayout, unstable_settings: appSettings },
-			'(app)/(drawer)/_layout': DrawerLayout,
+			'(app)/_layout': AuthenticatedLayout,
+			'(app)/(drawer)/_layout': { default: DrawerStackLayout, unstable_settings: drawerSettings },
 			'(app)/(drawer)/index': () => <Text>Dashboard</Text>,
 			'(app)/(drawer)/clients/index': () => <Text>Clients list</Text>,
 			'(app)/(drawer)/clients/archived': () => <Text>Archived clients</Text>,
-			'(app)/clients/form': () => <Text>Client form</Text>,
-			'(app)/clients/[id]/index': () => <Text>Client details</Text>,
+			'(app)/(drawer)/clients/form': () => <Text>Client form</Text>,
+			'(app)/(drawer)/clients/[id]/index': () => <Text>Client details</Text>,
 			'(app)/(drawer)/users/index': () => <Text>Users list</Text>,
-			'(app)/users/[id]/index': () => <Text>User details</Text>,
-			'(app)/users/form': UsersFormPage,
+			'(app)/(drawer)/users/[id]/index': () => <Text>User details</Text>,
+			'(app)/(drawer)/users/form': UsersFormPage,
 			'(app)/(drawer)/companies/index': () => <Text>Companies list</Text>,
-			'(app)/companies/[id]/index': () => <Text>Company details</Text>,
-			'(app)/companies/form': CompaniesFormPage,
-			'(app)/(drawer)/settings/_layout': SettingsLayout,
+			'(app)/(drawer)/companies/[id]/index': () => <Text>Company details</Text>,
+			'(app)/(drawer)/companies/form': CompaniesFormPage,
 			'(app)/(drawer)/settings/edit-profile': () => <Text>Profile content</Text>,
 			'(app)/(drawer)/settings/password': () => <Text>Password content</Text>,
 			'(app)/(drawer)/settings/notifications': () => <Text>Notification preferences content</Text>,
@@ -218,12 +236,17 @@ beforeEach(() => {
 });
 
 describe('settings header navigation', () => {
-	it.each(['edit-profile', 'password', 'notifications'])('retains the drawer on a cold %s screen', async (page) => {
-		const result = await setup('/settings/' + page);
-		expect(result.getPathname()).toBe('/settings/' + page);
-		expect(router.canGoBack()).toBe(false);
-		expect(screen.getByRole('button', { name: t.common.toggleDrawer })).toBeOnTheScreen();
-	});
+	it.each(['edit-profile', 'password', 'notifications'])(
+		'returns to the dashboard from a cold %s screen',
+		async (page) => {
+			const result = await setup('/settings/' + page);
+			expect(result.getPathname()).toBe('/settings/' + page);
+			expect(router.canGoBack()).toBe(true);
+			await pressNavbarBack();
+			await waitFor(() => expect(result.getPathname()).toBe('/'));
+			expect(screen.getByRole('button', { name: t.common.toggleDrawer })).toBeOnTheScreen();
+		},
+	);
 
 	it.each(['password', 'notifications'])('retains native Back after navigating from profile to %s', async (page) => {
 		const result = await setup('/settings/edit-profile');
@@ -238,10 +261,81 @@ describe('settings header navigation', () => {
 		).toBe(true);
 		await pressNavbarBack();
 		await waitFor(() => expect(result.getPathname()).toBe('/settings/edit-profile'));
+		await pressNavbarBack();
+		await waitFor(() => expect(result.getPathname()).toBe('/'));
 		expect(screen.getByRole('button', { name: t.common.toggleDrawer })).toBeOnTheScreen();
 	});
 });
 afterEach(() => jest.restoreAllMocks());
+
+describe('shared drawer and stack', () => {
+	it.each([
+		['/', t.navigation.dashboard],
+		['/clients', t.clients.listTitle],
+		['/clients/archived', t.clients.archivedTitle],
+		['/users', t.users.listTitle],
+		['/companies', t.companies.listTitle],
+	])('keeps a single menu header on %s', async (url, title) => {
+		const result = await setup(url);
+		expect(result.getPathname()).toBe(url);
+		expect(screen.getAllByRole('header', { name: title })).toHaveLength(1);
+		expect(screen.getAllByRole('button', { name: t.common.toggleDrawer })).toHaveLength(1);
+		await fireEvent.press(screen.getByRole('button', { name: t.common.toggleDrawer }));
+		expect(await screen.findByRole('button', { name: t.navigation.logout })).toBeOnTheScreen();
+	});
+
+	it('opens Client archives through the drawer and returns from a form to those archives', async () => {
+		const result = await setup('/');
+		await fireEvent.press(screen.getByRole('button', { name: t.common.toggleDrawer }));
+		await fireEvent.press(screen.getByRole('button', { name: t.navigation.clients }));
+		await fireEvent.press(screen.getByRole('button', { name: t.navigation.clientsArchived }));
+		await waitFor(() => expect(result.getPathname()).toBe('/clients/archived'));
+		expect(screen.queryByRole('button', { name: t.navigation.logout })).toBeNull();
+		await act(async () => router.push(CLIENTS_ADD));
+		await screen.findByText('Client form');
+		expect(screen.getByRole('header', { name: t.clients.addTitle })).toBeOnTheScreen();
+		await pressNavbarBack();
+		await waitFor(() => expect(result.getPathname()).toBe('/clients/archived'));
+	});
+
+	it.each(['/', '/clients', '/companies/7', '/settings/edit-profile'])(
+		'returns to %s after opening a Client form',
+		async (url) => {
+			const result = await setup(url);
+			await act(async () => router.push(CLIENTS_ADD));
+			await screen.findByText('Client form');
+			await pressNavbarBack();
+			await waitFor(() => expect(result.getPathname()).toBe(url));
+		},
+	);
+
+	it('returns through Client edit, details, and list in their actual visit order', async () => {
+		const result = await setup('/clients');
+		await act(async () => router.push(CLIENTS_VIEW(7)));
+		await screen.findByText('Client details');
+		expect(screen.getByRole('header', { name: t.clients.detailsTitle })).toBeOnTheScreen();
+		await act(async () => router.push(CLIENTS_EDIT(7)));
+		await screen.findByText('Client form');
+		expect(result.getSearchParams()).toHaveProperty('id', '7');
+		expect(screen.getByRole('header', { name: t.clients.editTitle })).toBeOnTheScreen();
+		await pressNavbarBack();
+		await waitFor(() => expect(result.getPathname()).toBe('/clients/7'));
+		await pressNavbarBack();
+		await waitFor(() => expect(result.getPathname()).toBe('/clients'));
+	});
+
+	it('returns to the dashboard after revisiting Users through its Add menu entry', async () => {
+		const result = await setup('/users');
+		await act(async () => router.navigate('/'));
+		await screen.findByText('Dashboard');
+		await fireEvent.press(screen.getByRole('button', { name: t.common.toggleDrawer }));
+		await fireEvent.press(screen.getByRole('button', { name: t.navigation.users }));
+		await fireEvent.press(screen.getByRole('button', { name: t.navigation.newUser }));
+		await screen.findByLabelText(t.users.fieldNom);
+		await pressNavbarBack();
+		await waitFor(() => expect(result.getPathname()).toBe('/'));
+	});
+});
 
 describe.each(['users', 'companies'] as const)('%s form route', (entity) => {
 	const label = entity === 'users' ? t.users.fieldNom : t.companies.fieldRaisonSociale + ' *';
@@ -280,8 +374,13 @@ describe.each(['users', 'companies'] as const)('%s form route', (entity) => {
 
 	it('returns to the dashboard after opening create directly from its menu', async () => {
 		const result = await setup('/');
-		await act(async () => router.push(addRoute));
+		await fireEvent.press(screen.getByRole('button', { name: t.common.toggleDrawer }));
+		await fireEvent.press(screen.getByRole('button', { name: t.navigation[entity] }));
+		await fireEvent.press(
+			screen.getByRole('button', { name: entity === 'users' ? t.navigation.newUser : t.navigation.newCompany }),
+		);
 		await screen.findByLabelText(label);
+		expect(screen.queryByRole('button', { name: t.navigation.logout })).toBeNull();
 		await pressNavbarBack();
 		await waitFor(() => expect(result.getPathname()).toBe('/'));
 		expect(screen.getByText('Dashboard')).toBeOnTheScreen();

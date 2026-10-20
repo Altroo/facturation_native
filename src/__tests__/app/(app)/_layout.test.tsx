@@ -7,8 +7,8 @@ import { Provider } from 'react-redux';
 import { Text } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { renderRouter, screen, waitFor } from 'expo-router/testing-library';
-import AuthenticatedLayout, { unstable_settings as appSettings } from '@/app/(app)/_layout';
-import DrawerLayout from '@/app/(app)/(drawer)/_layout';
+import AuthenticatedLayout from '@/app/(app)/_layout';
+import DrawerStackLayout, { unstable_settings as drawerSettings } from '@/app/(app)/(drawer)/_layout';
 
 import type { UserClass } from '@/models/classes';
 import { translations } from '@/translations';
@@ -65,21 +65,22 @@ const setup = async (required: boolean, initialUrl: string) => {
 					<Stack />
 				</Provider>
 			),
-			'(app)/_layout': { default: AuthenticatedLayout, unstable_settings: appSettings },
-			'(app)/(drawer)/_layout': DrawerLayout,
-			'(app)/companies/form': () => <Text>Company form</Text>,
-			'(app)/users/form': () => <Text>User form</Text>,
-			'(app)/users/[id]/index': () => <Text>User details</Text>,
-			'(app)/companies/[id]/index': () => <Text>Company details</Text>,
-			'(app)/(drawer)/settings/_layout': () => <Stack />,
+			'(app)/_layout': AuthenticatedLayout,
+			'(app)/(drawer)/_layout': { default: DrawerStackLayout, unstable_settings: drawerSettings },
+			'(app)/(drawer)/companies/form': () => <Text>Company form</Text>,
+			'(app)/(drawer)/users/form': () => <Text>User form</Text>,
+			'(app)/(drawer)/users/[id]/index': () => <Text>User details</Text>,
+			'(app)/(drawer)/companies/[id]/index': () => <Text>Company details</Text>,
 			'(app)/(drawer)/companies/index': () => <Text>Companies</Text>,
 			'(app)/(drawer)/index': () => <Text>Dashboard</Text>,
 			'(app)/(drawer)/clients/index': () => <Text>Clients list</Text>,
 			'(app)/(drawer)/clients/archived': () => <Text>Archived clients</Text>,
-			'(app)/clients/form': () => <Text>Client form</Text>,
-			'(app)/clients/[id]/index': () => <Text>Client details</Text>,
+			'(app)/(drawer)/clients/form': () => <Text>Client form</Text>,
+			'(app)/(drawer)/clients/[id]/index': () => <Text>Client details</Text>,
 			'(app)/(drawer)/users/index': () => <Text>User list</Text>,
 			'(app)/(drawer)/settings/password': () => <Text>Change password</Text>,
+			'(app)/(drawer)/settings/edit-profile': () => <Text>Profile</Text>,
+			'(app)/(drawer)/settings/notifications': () => <Text>Notifications</Text>,
 		},
 		{ initialUrl },
 	);

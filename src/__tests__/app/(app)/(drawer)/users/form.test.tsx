@@ -6,7 +6,7 @@ import companiesReducer, { setUserCompanies } from '@/store/slices/companiesSlic
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Provider } from 'react-redux';
 import { router } from 'expo-router';
-import UsersFormPage from '@/app/(app)/users/form';
+import UsersFormPage from '@/app/(app)/(drawer)/users/form';
 import {
 	useGetUserQuery,
 	useAddUserMutation,

@@ -6,7 +6,7 @@ import companiesReducer, { setUserCompanies } from '@/store/slices/companiesSlic
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import { Provider } from 'react-redux';
 import { router, useLocalSearchParams } from 'expo-router';
-import UsersView from '@/app/(app)/users/[id]/index';
+import UsersView from '@/app/(app)/(drawer)/users/[id]/index';
 import { useGetUserQuery, useDeleteUserMutation } from '@/store/services/account';
 
 import { translations } from '@/translations';

@@ -1,9 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { Dimensions } from 'react-native';
 import type { ReactNode } from 'react';
-import DrawerLayout from '@/app/(app)/(drawer)/_layout';
-import AuthenticatedLayout from '@/app/(app)/_layout';
-import SettingsLayout from '@/app/(app)/(drawer)/settings/_layout';
+import DrawerStackLayout from '@/app/(app)/(drawer)/_layout';
 
 const mockNavigator = ({
 	screenOptions,
@@ -55,20 +53,17 @@ jest.mock('@/components/shared/appUpdate/appUpdate', () => () => null);
 const originalWindow = Dimensions.get('window');
 beforeEach(() => Dimensions.set({ window: { width: 320, height: 640, scale: 2, fontScale: 1 } }));
 afterAll(() => Dimensions.set({ window: originalWindow }));
-it.each([DrawerLayout, AuthenticatedLayout, SettingsLayout])(
-	'keeps the title and controls separate at narrow widths in %p',
-	async (Layout) => {
-		await render(<Layout />);
-		const title = screen.getByRole('header', { name: 'Modifier l’utilisateur' });
-		expect(title).toHaveProp('numberOfLines', 1);
-		expect(title).toHaveProp('ellipsizeMode', 'tail');
-		expect(title).toHaveStyle({ maxWidth: 60, flexShrink: 1, color: '#0f172a' });
-		const controls = screen.container
-			.queryAll((node) => node.type === 'View')
-			.find((view) => typeof view.props.onLayout === 'function')!;
-		await fireEvent.layout(controls, { width: 280 });
-		expect(title).toHaveStyle({ maxWidth: 0 });
-		await act(() => Dimensions.set({ window: { width: 768, height: 1024, scale: 2, fontScale: 2 } }));
-		expect(title).toHaveStyle({ maxWidth: 408 });
-	},
-);
+it('keeps the title and controls separate at narrow widths', async () => {
+	await render(<DrawerStackLayout />);
+	const title = screen.getByRole('header', { name: 'Modifier l’utilisateur' });
+	expect(title).toHaveProp('numberOfLines', 1);
+	expect(title).toHaveProp('ellipsizeMode', 'tail');
+	expect(title).toHaveStyle({ maxWidth: 60, flexShrink: 1, color: '#0f172a' });
+	const controls = screen.container
+		.queryAll((node) => node.type === 'View')
+		.find((view) => typeof view.props.onLayout === 'function')!;
+	await fireEvent.layout(controls, { width: 280 });
+	expect(title).toHaveStyle({ maxWidth: 0 });
+	await act(() => Dimensions.set({ window: { width: 768, height: 1024, scale: 2, fontScale: 2 } }));
+	expect(title).toHaveStyle({ maxWidth: 408 });
+});

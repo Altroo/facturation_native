@@ -1,60 +1,29 @@
-import { Redirect, Stack, usePathname } from 'expo-router';
+import { Redirect, usePathname, useSegments } from 'expo-router';
+import { Drawer } from 'expo-router/drawer';
 import { getProfilState } from '@/store/selectors';
 import { DASHBOARD_PASSWORD } from '@/utils/routes';
 import AppUpdate from '@/components/shared/appUpdate/appUpdate';
-import { useNavigationHeader } from '@/components/layouts/navigationBar/navigationBar';
-import { useAppSelector, useLanguage } from '@/utils/hooks';
-
-export const unstable_settings = { anchor: '(drawer)' };
+import { NavigationDrawer } from '@/components/layouts/navigationBar/navigationBar';
+import { useAppSelector } from '@/utils/hooks';
 
 const AuthenticatedLayout = () => {
-	const { t } = useLanguage();
-	const headerOptions = useNavigationHeader();
 	const profile = useAppSelector(getProfilState);
 	const pathname = usePathname();
+	const segments = useSegments();
 	if (profile?.default_password_set && pathname !== DASHBOARD_PASSWORD) return <Redirect href={DASHBOARD_PASSWORD} />;
 	return (
 		<>
 			<AppUpdate />
-			<Stack
+			<Drawer
+				drawerContent={(props) => <NavigationDrawer {...props} />}
 				screenOptions={{
-					...headerOptions,
-					headerBackVisible: true,
-					headerBackButtonDisplayMode: 'minimal',
+					headerShown: false,
+					drawerStyle: { width: 310 },
+					swipeEnabled: !segments.some((segment) => segment === 'form' || segment === '[id]'),
 				}}
 			>
-				<Stack.Screen name="(drawer)" options={{ headerShown: false }} />
-				<Stack.Screen
-					name="users/form"
-					options={({ route }) => ({
-						title:
-							route.params && 'id' in route.params && route.params.id !== undefined
-								? t.users.editTitle
-								: t.users.addTitle,
-					})}
-				/>
-				<Stack.Screen name="users/[id]/index" options={{ title: t.users.detailsTitle }} />
-				<Stack.Screen
-					name="companies/form"
-					options={({ route }) => ({
-						title:
-							route.params && 'id' in route.params && route.params.id !== undefined
-								? t.companies.editTitle
-								: t.companies.addTitle,
-					})}
-				/>
-				<Stack.Screen name="companies/[id]/index" options={{ title: t.companies.detailsTitle }} />
-				<Stack.Screen
-					name="clients/form"
-					options={({ route }) => ({
-						title:
-							route.params && 'id' in route.params && route.params.id !== undefined
-								? t.clients.editTitle
-								: t.clients.addTitle,
-					})}
-				/>
-				<Stack.Screen name="clients/[id]/index" options={{ title: t.clients.detailsTitle }} />
-			</Stack>
+				<Drawer.Screen name="(drawer)" />
+			</Drawer>
 		</>
 	);
 };

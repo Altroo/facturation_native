@@ -7,7 +7,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import createSagaMiddleware, { type Task } from 'redux-saga';
 import { Provider } from 'react-redux';
 import { router } from 'expo-router';
-import CompaniesView from '@/app/(app)/companies/[id]/index';
+import CompaniesView from '@/app/(app)/(drawer)/companies/[id]/index';
 import { useGetCompanyQuery, useSuspendCompanyMutation, companyApi } from '@/store/services/company';
 
 import { watchCompanies } from '@/store/sagas/companiesSaga';
