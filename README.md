@@ -119,7 +119,11 @@ The APK is written to `android/app/build/outputs/apk/release/app-release.apk`. `
 | `src/styles/`, `src/translations/`                 | Theme styles and French/English text                                     |
 | `src/__tests__/app/`                               | Route behavior tests, kept outside Expo Router's screen tree             |
 
+Tests sit beside the files they cover, including `babel.config.test.ts` and `metro.config.test.ts` beside the root configs. Screen and navigation tests are the Expo Router exception: they stay in `src/__tests__/app/` because files inside `src/app/` become routes. Inside `src/__tests__/app/`, folders mirror `src/app/`, including `(app)/(drawer)/companies`, `users`, `settings`, the parent-stack forms and `[id]` views, `reset-password`, and `api`. Test filenames match their screen where possible; `reset-password/flow.test.tsx` covers the complete recovery journey, and `form-navigation.test.tsx` covers navigation across modules. Shared autocomplete test helpers live beside `customAutoCompleteSelect`, and query test helpers live in `src/store/` beside `setupApiStore`.
+
 Route groups such as `(app)` and `(drawer)` organize navigators without adding URL segments. List screens live in the drawer; forms and detail screens use the parent stack so Back returns to the screen that opened them. An optional route ID distinguishes creation from editing.
+
+Authentication is enforced in `src/app/_layout.tsx`: `Stack.Protected` guards the entire `(app)` group, including its nested drawer lists. `src/app/(app)/_layout.tsx` configures stack screen titles and Back navigation, and redirects accounts that must change their default password. Its `Stack.Screen` entries configure navigation; the parent guard decides whether the group is accessible. Module permissions remain separate checks in the screens and Django API.
 
 Screens are ordinary client-side React Native components. They own state, Formik forms and query hooks directly. Django handles database operations and permissions. Next.js server-page wrappers and `use client` directives are unnecessary here; server-only API handlers remain separate from device storage.
 
