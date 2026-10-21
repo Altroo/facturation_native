@@ -359,6 +359,10 @@ it('targets an appended company for suspension and preserves the earlier members
 });
 it('offers search, filters and server sorting without pagination or column controls', async () => {
 	await setup();
+	const selectAll = within(screen.getByTestId('list-toolbar')).getByRole('checkbox');
+	expect(selectAll).toBeOnTheScreen();
+	const list = screen.container.queryAll((node) => typeof node.props.onEndReached === 'function')[0]!;
+	expect(within(list).queryByRole('checkbox', { name: selectAll.props.accessibilityLabel })).toBeNull();
 	expect(screen.getByLabelText(translations.fr.common.search)).toBeOnTheScreen();
 	expect(screen.getByLabelText(translations.fr.dataGrid.toolbarFilters)).toBeOnTheScreen();
 	expect(screen.getByLabelText(translations.fr.dataGrid.toolbarSort)).toBeOnTheScreen();
@@ -374,7 +378,7 @@ it('passes company ordering to the server and resets loaded pages and all-matchi
 	await reachEnd();
 	await screen.findByText('Company Eight');
 	await fireEvent.press(screen.getByRole('checkbox', { name: t.shared.selectAllMatching(2) }));
-	await screen.findByText(t.shared.allMatchingSelected(2));
+	await within(screen.getByTestId('list-toolbar')).findByRole('checkbox', { checked: true });
 	await fireEvent.press(screen.getByRole('button', { name: t.dataGrid.toolbarSort }));
 	await fireEvent.press(screen.getByRole('button', { name: t.dataGrid.sortField }));
 	await fireEvent.press(screen.getByRole('radio', { name: t.companies.colRaisonSociale }));
@@ -384,7 +388,7 @@ it('passes company ordering to the server and resets loaded pages and all-matchi
 		expect.anything(),
 	);
 	expect(screen.queryByText('Company Eight')).toBeNull();
-	expect(screen.queryByText(t.shared.allMatchingSelected(2))).toBeNull();
+	expect(within(screen.getByTestId('list-toolbar')).queryByRole('checkbox', { checked: true })).toBeNull();
 	expect(screen.queryByRole('button', { name: t.companies.bulkSuspendBtn(2) })).toBeNull();
 });
 it('applies and clears server filters and restarts the result set for the changed filter', async () => {
@@ -465,7 +469,7 @@ it('combines both date bounds in the web preview using the Django date contract'
 it('selects matching companies beyond loaded cards and suspends the explicit IDs only after confirmation', async () => {
 	const { dispatch } = await setup();
 	await fireEvent.press(screen.getByRole('checkbox', { name: translations.fr.shared.selectAllMatching(2) }));
-	await screen.findByText(translations.fr.shared.allMatchingSelected(2));
+	await within(screen.getByTestId('list-toolbar')).findByRole('checkbox', { checked: true });
 	expect(screen.queryByText('Company Eight')).toBeNull();
 	expect(fetchAllCompanyIds).toHaveBeenCalledWith({ with_pagination: true, page: 1, pageSize: 10, search: '' }, false);
 	await fireEvent.press(screen.getByRole('button', { name: translations.fr.companies.bulkSuspendBtn(2) }));
@@ -501,7 +505,7 @@ it('collects only matching IDs from every filtered page, never the unrelated unp
 	await fireEvent.changeText(screen.getByPlaceholderText(translations.fr.common.value), 'Démo');
 	await fireEvent.press(screen.getByText(translations.fr.dataGrid.searchApply));
 	await fireEvent.press(screen.getByRole('checkbox', { name: translations.fr.shared.selectAllMatching(1) }));
-	await screen.findByText(translations.fr.shared.allMatchingSelected(2));
+	await within(screen.getByTestId('list-toolbar')).findByRole('checkbox', { checked: true });
 	expect(fetchAllCompanyIds.mock.calls).toEqual(
 		[1, 3].map((page) => [
 			{ with_pagination: true, page, pageSize: 10, search: 'Company', raison_sociale__icontains: 'Démo' },
@@ -546,7 +550,7 @@ it.each(['search', 'filter'])('ignores all-matching results after a pending %s c
 	await act(async () => finish(companyPage([8])));
 	expect(fetchAllCompanyIds).toHaveBeenCalledTimes(2);
 	expect(mockError).not.toHaveBeenCalled();
-	expect(screen.queryByText(translations.fr.shared.allMatchingSelected(2))).toBeNull();
+	expect(within(screen.getByTestId('list-toolbar')).queryByRole('checkbox', { checked: true })).toBeNull();
 	expect(screen.queryByRole('button', { name: translations.fr.companies.bulkSuspendBtn(2) })).toBeNull();
 	expect(bulkSuspend).not.toHaveBeenCalled();
 });
@@ -555,7 +559,7 @@ it('clears selected IDs and closes the bulk modal after rejection, as on web', a
 	bulkSuspend.mockReturnValueOnce({ unwrap: () => Promise.reject(new Error('Denied')) });
 	await setup();
 	await fireEvent.press(screen.getByRole('checkbox', { name: translations.fr.shared.selectAllMatching(2) }));
-	await screen.findByText(translations.fr.shared.allMatchingSelected(2));
+	await within(screen.getByTestId('list-toolbar')).findByRole('checkbox', { checked: true });
 	await fireEvent.press(screen.getByRole('button', { name: translations.fr.companies.bulkSuspendBtn(2) }));
 	await fireEvent.press(
 		within(screen.getByTestId('action-modal')).getByRole('button', {
@@ -565,9 +569,9 @@ it('clears selected IDs and closes the bulk modal after rejection, as on web', a
 	await waitFor(() => expect(mockError).toHaveBeenCalledWith(translations.fr.companies.bulkSuspendError));
 	expect(screen.queryByTestId('action-modal')).toBeNull();
 	expect(companyApi.endpoints.getUserCompanies.initiate).not.toHaveBeenCalled();
-	expect(screen.queryByText(translations.fr.shared.allMatchingSelected(2))).toBeNull();
+	expect(within(screen.getByTestId('list-toolbar')).queryByRole('checkbox', { checked: true })).toBeNull();
 	await fireEvent.press(screen.getByRole('checkbox', { name: translations.fr.shared.selectAllMatching(2) }));
-	await screen.findByText(translations.fr.shared.allMatchingSelected(2));
+	await within(screen.getByTestId('list-toolbar')).findByRole('checkbox', { checked: true });
 	await fireEvent.press(screen.getByRole('button', { name: translations.fr.companies.bulkSuspendBtn(2) }));
 	await fireEvent.press(
 		within(screen.getByTestId('action-modal')).getByRole('button', {
@@ -582,7 +586,7 @@ it('reports the actual suspended count and does not optimistically remove skippe
 	bulkSuspend.mockReturnValue({ unwrap: () => Promise.resolve({ suspended: 1 }) });
 	const { dispatch } = await setup();
 	await fireEvent.press(screen.getByRole('checkbox', { name: translations.fr.shared.selectAllMatching(2) }));
-	await screen.findByText(translations.fr.shared.allMatchingSelected(2));
+	await within(screen.getByTestId('list-toolbar')).findByRole('checkbox', { checked: true });
 	await fireEvent.press(screen.getByRole('button', { name: translations.fr.companies.bulkSuspendBtn(2) }));
 	await fireEvent.press(
 		within(screen.getByTestId('action-modal')).getByRole('button', {
@@ -648,7 +652,7 @@ it('keeps manual selection and reports a failed all-matching request', async () 
 	await fireEvent.press(screen.getByRole('checkbox', { name: translations.fr.shared.selectAllMatching(2) }));
 	await waitFor(() => expect(mockError).toHaveBeenCalledWith(translations.fr.companies.fetchIdsError));
 	expect(screen.getByRole('button', { name: translations.fr.companies.bulkSuspendBtn(1) })).toBeOnTheScreen();
-	expect(screen.queryByText(translations.fr.shared.allMatchingSelected(2))).toBeNull();
+	expect(within(screen.getByTestId('list-toolbar')).queryByRole('checkbox', { checked: true })).toBeNull();
 });
 
 it('keeps selection unchanged when a later page fails and releases the operation for a full retry', async () => {
@@ -665,10 +669,10 @@ it('keeps selection unchanged when a later page fails and releases the operation
 	await waitFor(() => expect(mockError).toHaveBeenCalledWith(translations.fr.companies.fetchIdsError));
 	expect(screen.getByRole('checkbox', { name: translations.fr.shared.selectCompany + ': Company Four' })).toBeChecked();
 	expect(screen.getByRole('button', { name: translations.fr.companies.bulkSuspendBtn(1) })).toBeOnTheScreen();
-	expect(screen.queryByText(translations.fr.shared.allMatchingSelected(2))).toBeNull();
+	expect(within(screen.getByTestId('list-toolbar')).queryByRole('checkbox', { checked: true })).toBeNull();
 	expect(unsubscribeAllIds).toHaveBeenCalledTimes(2);
 	await fireEvent.press(screen.getByRole('checkbox', { name: translations.fr.shared.selectAllMatching(2) }));
-	await screen.findByText(translations.fr.shared.allMatchingSelected(2));
+	await within(screen.getByTestId('list-toolbar')).findByRole('checkbox', { checked: true });
 	expect(fetchAllCompanyIds).toHaveBeenCalledTimes(3);
 });
 
@@ -694,7 +698,7 @@ it('keeps the whole page collection busy and cancels it when refreshing', async 
 	expect(refetch).toHaveBeenCalledTimes(1);
 	expect(screen.getByRole('checkbox', { name: label })).toBeEnabled();
 	await act(async () => finish(companyPage([8])));
-	expect(screen.queryByText(translations.fr.shared.allMatchingSelected(2))).toBeNull();
+	expect(within(screen.getByTestId('list-toolbar')).queryByRole('checkbox', { checked: true })).toBeNull();
 	expect(screen.queryByRole('button', { name: translations.fr.companies.bulkSuspendBtn(2) })).toBeNull();
 	expect(mockError).not.toHaveBeenCalled();
 	expect(unsubscribeAllIds).toHaveBeenCalledTimes(2);
@@ -712,7 +716,7 @@ it.each(['?page=1', '?page=0', '?page=2.5', 'not-a-page', 'http://['])(
 		await waitFor(() => expect(mockError).toHaveBeenCalledWith(translations.fr.companies.fetchIdsError));
 		expect(fetchAllCompanyIds).toHaveBeenCalledTimes(1);
 		expect(screen.getByRole('button', { name: translations.fr.companies.bulkSuspendBtn(1) })).toBeOnTheScreen();
-		expect(screen.queryByText(translations.fr.shared.allMatchingSelected(1))).toBeNull();
+		expect(within(screen.getByTestId('list-toolbar')).queryByRole('checkbox', { checked: true })).toBeNull();
 		expect(screen.getByRole('checkbox', { name: translations.fr.shared.selectAllMatching(2) })).toBeEnabled();
 	},
 );
@@ -726,7 +730,7 @@ it('stops a repeated next page rather than looping or claiming all matching IDs 
 	await waitFor(() => expect(mockError).toHaveBeenCalledWith(translations.fr.companies.fetchIdsError));
 	expect(fetchAllCompanyIds).toHaveBeenCalledTimes(2);
 	expect(screen.queryByRole('button', { name: translations.fr.companies.bulkSuspendBtn(2) })).toBeNull();
-	expect(screen.queryByText(translations.fr.shared.allMatchingSelected(2))).toBeNull();
+	expect(within(screen.getByTestId('list-toolbar')).queryByRole('checkbox', { checked: true })).toBeNull();
 });
 
 it.each([[{ id: 99 }], { count: 1, results: [{ id: 99 }] }, { count: 1, next: null, results: [{ id: 0 }] }])(

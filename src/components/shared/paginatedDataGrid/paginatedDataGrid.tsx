@@ -1,7 +1,17 @@
-import { type Dispatch, type ReactElement, type SetStateAction, useEffect, useEffectEvent, useState } from 'react';
+import {
+	type ComponentProps,
+	type Dispatch,
+	type ReactElement,
+	type ReactNode,
+	type SetStateAction,
+	useEffect,
+	useEffectEvent,
+	useRef,
+	useState,
+} from 'react';
 import { Text, ActivityIndicator, FlatList, Keyboard, Platform, Pressable, ScrollView, View } from 'react-native';
 import Animated, { FadeInRight, FadeOutRight } from 'react-native-reanimated';
-import { FlashList } from '@shopify/flash-list';
+import { FlashList, type FlashListRef } from '@shopify/flash-list';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import {
 	getDefaultFilterOperatorsByType,
@@ -189,6 +199,14 @@ export type PaginatedDataGridProps<TRow> = Pick<
 	| 'onFilterModelChange'
 	| 'testID'
 > & {
+	title?: string;
+	titleIcon?: ComponentProps<typeof MaterialIcons>['name'];
+	header?: ReactNode;
+	contextLabel?: string;
+	createAction?: { label: string; onPress: () => void };
+	selectionControl?: ReactNode;
+	selectionActions?: ReactNode;
+	additionalFilters?: { count: number; key: string; onClear: () => void };
 	isLoading?: boolean;
 	sorting?: DataGridSorting;
 	searchTerm: string;
@@ -236,10 +254,22 @@ const PaginatedDataGrid = <TRow,>(props: PaginatedDataGridProps<TRow>) => {
 	const [customFilters, setCustomFilters] = useState<FilterModel | null>(null);
 	const [filterError, setFilterError] = useState<GridFilterResultType['error'] | null>(null);
 	const [sortDraft, setSortDraft] = useState<SortModel | null>(null);
+	const nativeListRef = useRef<FlashListRef<TRow>>(null);
+	const webListRef = useRef<FlatList<TRow>>(null);
 	const sortableColumns = columns.filter((column) => column.sortable !== false && column.field !== 'actions');
 	const theme = dataGridThemes[mode];
 	const operators = getServerFilterOperators<TRow>();
-	const activeFilterCount = filterModel?.items.filter(filterHasValue).length ?? 0;
+	const activeFilterCount =
+		(filterModel?.items.filter(filterHasValue).length ?? 0) + (props.additionalFilters?.count ?? 0);
+	const queryKey = JSON.stringify([searchTerm, filterModel, sorting?.ordering, props.additionalFilters?.key]);
+	const previousQueryKey = useRef(queryKey);
+	useEffect(() => {
+		if (previousQueryKey.current === queryKey) return;
+		previousQueryKey.current = queryKey;
+		// Reset the results position without remounting the company tabs or input.
+		nativeListRef.current?.scrollToOffset({ offset: 0, animated: false });
+		webListRef.current?.scrollToOffset({ offset: 0, animated: false });
+	}, [queryKey]);
 	const searchValue = searchDraft ?? searchTerm;
 	const closeFilters = () => {
 		setCustomFilters(null);
@@ -302,6 +332,7 @@ const PaginatedDataGrid = <TRow,>(props: PaginatedDataGridProps<TRow>) => {
 		setSearchDraft(null);
 		if (searchTerm) setSearchTerm?.('');
 		if (filterModel?.items.length) onFilterModelChange?.({ items: [], logicOperator: 'and' });
+		props.additionalFilters?.onClear();
 	};
 	const listFooter = (
 		<View className="items-center gap-2 px-3 py-4" accessibilityLiveRegion="polite">
@@ -335,7 +366,9 @@ const PaginatedDataGrid = <TRow,>(props: PaginatedDataGridProps<TRow>) => {
 	);
 	const listProps = {
 		data: rows,
-		renderItem: ({ item, index }: { item: TRow; index: number }) => renderRow(item, index),
+		renderItem: ({ item, index }: { item: TRow; index: number }) => (
+			<View pointerEvents={disabled ? 'none' : 'auto'}>{renderRow(item, index)}</View>
+		),
 		keyExtractor: getRowId ?? ((_: TRow, index: number) => String(index)),
 		extraData: selectedIds,
 		refreshing: !!refreshing,
@@ -349,6 +382,28 @@ const PaginatedDataGrid = <TRow,>(props: PaginatedDataGridProps<TRow>) => {
 				onEndReached?.();
 		},
 		onEndReachedThreshold,
+		// One vertical list owns the page. Controls above the cards scroll away
+		// with them, instead of permanently shrinking the available list height.
+		ListHeaderComponent: (
+			<View className="gap-3 pb-3 pt-4">
+				{!!props.title && (
+					<View className="flex-row items-center gap-4 py-1">
+						{!!props.titleIcon && (
+							<View className="h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 dark:bg-panel">
+								<MaterialIcons name={props.titleIcon} size={25} color={colors.brand} />
+							</View>
+						)}
+						<Text
+							accessibilityRole="header"
+							className="flex-1 font-poppins-semibold text-2xl text-ink dark:text-slate-100"
+						>
+							{props.title}
+						</Text>
+					</View>
+				)}
+				{props.header}
+			</View>
+		),
 		ListFooterComponent: listFooter,
 		ListEmptyComponent: (
 			<View className="items-center gap-3 p-8">
@@ -363,20 +418,24 @@ const PaginatedDataGrid = <TRow,>(props: PaginatedDataGridProps<TRow>) => {
 		automaticallyAdjustKeyboardInsets: true,
 		keyboardDismissMode: 'on-drag' as const,
 		alwaysBounceVertical: true,
+		contentContainerStyle: { paddingHorizontal: 16, paddingBottom: 16 },
 		style: { flex: 1 },
 	};
-	const listKey = JSON.stringify([searchTerm, filterModel, sorting?.ordering]);
 	return (
-		<View
-			testID={testID}
-			className="flex-1 overflow-hidden rounded-xl border"
-			style={{ borderColor: theme.borderColor, backgroundColor: theme.rowBackground }}
-			pointerEvents={disabled ? 'none' : 'auto'}
-		>
-			<View className="gap-2 px-3 py-2" style={{ backgroundColor: theme.toolbarBackground }}>
+		<View testID={testID} className="flex-1 bg-slate-50 dark:bg-night">
+			<View
+				testID="list-toolbar"
+				className="gap-2 border-b border-slate-200 bg-slate-50 px-4 py-2 dark:border-slate-700 dark:bg-night"
+			>
+				{!!props.contextLabel && (
+					<Text numberOfLines={1} className="font-poppins-medium text-sm text-ink dark:text-slate-100">
+						{props.contextLabel}
+					</Text>
+				)}
 				<View className="flex-row items-center justify-end gap-2">
+					{props.selectionControl}
 					{!searchOpen && (
-						<Text className="mr-auto font-sans text-sm" style={{ color: theme.toolbarTextColor }}>
+						<Text className="mr-auto flex-1 font-sans text-sm" style={{ color: theme.toolbarTextColor }}>
 							{t.dataGrid.loadedCount(rows.length, rowCount ?? rows.length)}
 						</Text>
 					)}
@@ -393,6 +452,11 @@ const PaginatedDataGrid = <TRow,>(props: PaginatedDataGridProps<TRow>) => {
 							size={22}
 							color={activeFilterCount > 0 ? colors.brand : theme.toolbarTextColor}
 						/>
+						{activeFilterCount > 0 && (
+							<View className="absolute -right-1 -top-1 min-w-5 items-center rounded-full bg-brand px-1">
+								<Text className="font-sans text-xs text-white">{activeFilterCount}</Text>
+							</View>
+						)}
 					</Pressable>
 					{searchOpen ? (
 						<Animated.View
@@ -445,7 +509,7 @@ const PaginatedDataGrid = <TRow,>(props: PaginatedDataGridProps<TRow>) => {
 							<MaterialIcons name="search" size={22} color={searchTerm ? colors.brand : theme.toolbarTextColor} />
 						</Pressable>
 					)}
-					{sorting && (
+					{sorting && !searchOpen && (
 						<Pressable
 							accessibilityRole="button"
 							accessibilityLabel={t.dataGrid.toolbarSort}
@@ -461,6 +525,18 @@ const PaginatedDataGrid = <TRow,>(props: PaginatedDataGridProps<TRow>) => {
 							<MaterialIcons name="sort" size={22} color={sorting.ordering ? colors.brand : theme.toolbarTextColor} />
 						</Pressable>
 					)}
+					{props.createAction && !searchOpen && (
+						<Pressable
+							accessibilityRole="button"
+							accessibilityLabel={props.createAction.label}
+							accessibilityState={{ disabled: !!disabled }}
+							disabled={disabled}
+							onPress={props.createAction.onPress}
+							className="min-h-11 min-w-11 items-center justify-center rounded-lg bg-brand"
+						>
+							<MaterialIcons name="add" size={24} color={colors.white} />
+						</Pressable>
+					)}
 				</View>
 				{(searchTerm !== '' || activeFilterCount > 0) && (
 					<Pressable
@@ -474,8 +550,13 @@ const PaginatedDataGrid = <TRow,>(props: PaginatedDataGridProps<TRow>) => {
 						</Text>
 					</Pressable>
 				)}
+				{selectedIds.length > 0 && props.selectionActions}
 			</View>
-			{Platform.OS === 'web' ? <FlatList key={listKey} {...listProps} /> : <FlashList key={listKey} {...listProps} />}
+			{Platform.OS === 'web' ? (
+				<FlatList ref={webListRef} {...listProps} />
+			) : (
+				<FlashList ref={nativeListRef} maintainVisibleContentPosition={{ disabled: true }} {...listProps} />
+			)}
 			{sorting && sortDraft !== null && (
 				<BottomSheet
 					visible

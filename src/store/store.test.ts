@@ -78,6 +78,8 @@ describe('Redux Saga Store', () => {
 		expect(state).toHaveProperty('groupApi');
 		expect(state).toHaveProperty('usersApi');
 		expect(state).toHaveProperty('companyApi');
+		expect(state).toHaveProperty('clientApi');
+		expect(state).toHaveProperty('citiesApi');
 	});
 
 	it('attaches sagaTask after running rootSaga', () => {

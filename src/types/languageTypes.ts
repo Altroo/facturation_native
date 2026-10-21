@@ -163,6 +163,8 @@ export type TranslationDictionary = {
 		toggleDrawer: string;
 		moreActions: string;
 		companiesTabs: string;
+		companiesScrollLeft: string;
+		companiesScrollRight: string;
 		refreshPage: string;
 	};
 	navigation: {
@@ -449,6 +451,8 @@ export type TranslationDictionary = {
 		statementFinalBalance: string;
 		statementPrint: string;
 		colCodeClient: string;
+		selectClient: (name: string) => string;
+		fetchIdsError: string;
 		colType: string;
 		colRaisonSociale: string;
 		colNom: string;

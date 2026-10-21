@@ -6,6 +6,8 @@ import companiesReducer from '@/store/slices/companiesSlice';
 import wsReducer from '@/store/slices/wsSlice';
 import { accountApi, profilApi, groupApi, usersApi } from '@/store/services/account';
 import { companyApi } from '@/store/services/company';
+import { clientApi } from '@/store/services/client';
+import { citiesApi } from '@/store/services/parameter';
 import { notificationApi } from '@/store/services/notification';
 import notificationReducer from '@/store/slices/notificationSlice';
 
@@ -20,6 +22,8 @@ const rootReducer = combineReducers({
 	[groupApi.reducerPath]: groupApi.reducer,
 	[usersApi.reducerPath]: usersApi.reducer,
 	[companyApi.reducerPath]: companyApi.reducer,
+	[clientApi.reducerPath]: clientApi.reducer,
+	[citiesApi.reducerPath]: citiesApi.reducer,
 	[notificationApi.reducerPath]: notificationApi.reducer,
 });
 
@@ -53,6 +57,8 @@ export const makeStore = (): SagaStore => {
 					profilApi.middleware,
 					groupApi.middleware,
 					companyApi.middleware,
+					clientApi.middleware,
+					citiesApi.middleware,
 					usersApi.middleware,
 					notificationApi.middleware,
 				),

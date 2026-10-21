@@ -383,31 +383,14 @@ const UsersListPage = () => {
 	const axiosError = normalizeApiError(query.error);
 	return (
 		<>
-			<View className="flex-1 gap-3 bg-slate-50 p-4 dark:bg-night">
-				<View className="flex-row items-center gap-4 py-1">
-					<View className="h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 dark:bg-panel">
-						<MaterialIcons name={'people-outline'} size={25} color={colors.brand} />
-					</View>
-					<View className="flex-1 gap-1">
-						<Text accessibilityRole="header" className="text-ink dark:text-slate-100 font-poppins-semibold text-2xl">
-							{t.users.listTitle}
-						</Text>
-					</View>
-				</View>
-				{editable && (
-					<View className="flex-row flex-wrap gap-2">
-						<PrimaryLoadingButton
-							buttonText={t.users.newUser}
-							onClick={() => router.push(USERS_ADD)}
-							active={!deleting}
-							loading={false}
-							startIcon={<MaterialIcons name="person-add" size={20} color={colors.white} />}
-						/>
-					</View>
-				)}
-				{editable && (
-					<View className="gap-2">
+			<PaginatedDataGrid<Partial<UserClass>>
+				title={t.users.listTitle}
+				titleIcon="people-outline"
+				createAction={editable ? { label: t.users.newUser, onPress: () => router.push(USERS_ADD) } : undefined}
+				selectionControl={
+					editable && (
 						<SelectAllControl
+							compact
 							accessibilityLabel={t.users.selectLoaded}
 							description={t.shared.loadedItems(loadedIds.length)}
 							checked={allLoadedSelected ? true : someLoadedSelected ? 'mixed' : false}
@@ -421,97 +404,101 @@ const UsersListPage = () => {
 								)
 							}
 						/>
-						{!!selectedUserIds.length && (
-							<View className="flex-row flex-wrap gap-2">
-								<PrimaryLoadingButton
-									buttonText={t.users.bulkDeleteBtn(selectedUserIds.length)}
-									danger
-									inverted
-									onClick={() => setShowBulkDeleteModal(true)}
-									active={!(deleting || query.isFetching || !!query.error)}
-									loading={false}
-									startIcon={<MaterialIcons name="delete-outline" size={20} color={colors.danger} />}
+					)
+				}
+				header={
+					<>
+						{!!query.error && !query.isFetchNextPageError && (
+							<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
+								<ApiAlert
+									errorDetails={
+										axiosError.status_code === 0
+											? t.errors.networkError
+											: axiosError.status_code === 403
+												? t.noPermission.description
+												: axiosError.status_code === 404
+													? t.notFound.message
+													: axiosError.message
+									}
 								/>
 								<PrimaryLoadingButton
-									buttonText={t.users.clearSelection}
+									buttonText={t.common.retry}
 									inverted
-									onClick={() => setSelectedUserIds([])}
-									active={!deleting}
+									onClick={refresh}
+									active
 									loading={false}
+									startIcon={<MaterialIcons name="refresh" size={20} color={colors.brand} />}
 								/>
 							</View>
 						)}
-					</View>
-				)}
-				{!!query.error && !query.isFetchNextPageError && (
-					<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
-						<ApiAlert
-							errorDetails={
-								axiosError.status_code === 0
-									? t.errors.networkError
-									: axiosError.status_code === 403
-										? t.noPermission.description
-										: axiosError.status_code === 404
-											? t.notFound.message
-											: axiosError.message
-							}
-						/>
-						<PrimaryLoadingButton
-							buttonText={t.common.retry}
-							inverted
-							onClick={refresh}
-							active
-							loading={false}
-							startIcon={<MaterialIcons name="refresh" size={20} color={colors.brand} />}
-						/>
-					</View>
-				)}
-				<PaginatedDataGrid<Partial<UserClass>>
-					testID="users-grid"
-					rows={rows}
-					columns={columns}
-					sorting={{
-						ordering,
-						sortModel,
-						onSortModelChange: (model) => {
-							if (JSON.stringify(model) === JSON.stringify(sortModel)) return;
-							setSortModel(model);
-							setSelectedUserIds([]);
-							setShowDeleteModal(false);
-							setShowBulkDeleteModal(false);
-						},
-					}}
-					getRowId={(row) => String(row.id)}
-					rowCount={count ?? 0}
-					isLoading={query.isFetching && !data}
-					disabled={deleting}
-					onRefresh={refresh}
-					refreshing={query.isFetching && !query.isFetchingNextPage && !!data}
-					onEndReached={loadMore}
-					isFetchingNextPage={query.isFetchingNextPage}
-					hasNextPage={query.hasNextPage}
-					loadMoreError={query.isFetchNextPageError}
-					onRetryLoadMore={() => {
-						if (!query.isFetching) void query.fetchNextPage();
-					}}
-					renderRow={renderRow}
-					filterModel={filterModel}
-					onFilterModelChange={(value) => {
-						setFilterModel(value);
+					</>
+				}
+				selectionActions={
+					editable && (
+						<View className="flex-row flex-wrap gap-2">
+							<PrimaryLoadingButton
+								buttonText={t.users.bulkDeleteBtn(selectedUserIds.length)}
+								danger
+								inverted
+								onClick={() => setShowBulkDeleteModal(true)}
+								active={!(deleting || query.isFetching || !!query.error)}
+								loading={false}
+								startIcon={<MaterialIcons name="delete-outline" size={20} color={colors.danger} />}
+							/>
+							<PrimaryLoadingButton
+								buttonText={t.users.clearSelection}
+								inverted
+								onClick={() => setSelectedUserIds([])}
+								active={!deleting}
+								loading={false}
+							/>
+						</View>
+					)
+				}
+				testID="users-grid"
+				rows={rows}
+				columns={columns}
+				sorting={{
+					ordering,
+					sortModel,
+					onSortModelChange: (model) => {
+						if (JSON.stringify(model) === JSON.stringify(sortModel)) return;
+						setSortModel(model);
 						setSelectedUserIds([]);
 						setShowDeleteModal(false);
 						setShowBulkDeleteModal(false);
-					}}
-					searchTerm={searchTerm}
-					setSearchTerm={(value) => {
-						setSearchTerm(value);
-						setSelectedUserIds([]);
-						setShowDeleteModal(false);
-						setShowBulkDeleteModal(false);
-					}}
-					selectedIds={selectedUserIds}
-				/>
-			</View>
+					},
+				}}
+				getRowId={(row) => String(row.id)}
+				rowCount={count ?? 0}
+				isLoading={query.isFetching && !data}
+				disabled={deleting}
+				onRefresh={refresh}
+				refreshing={query.isFetching && !query.isFetchingNextPage && !!data}
+				onEndReached={loadMore}
+				isFetchingNextPage={query.isFetchingNextPage}
+				hasNextPage={query.hasNextPage}
+				loadMoreError={query.isFetchNextPageError}
+				onRetryLoadMore={() => {
+					if (!query.isFetching) void query.fetchNextPage();
+				}}
+				renderRow={renderRow}
+				filterModel={filterModel}
+				onFilterModelChange={(value) => {
+					setFilterModel(value);
+					setSelectedUserIds([]);
+					setShowDeleteModal(false);
+					setShowBulkDeleteModal(false);
+				}}
+				searchTerm={searchTerm}
+				setSearchTerm={(value) => {
+					setSearchTerm(value);
+					setSelectedUserIds([]);
+					setShowDeleteModal(false);
+					setShowBulkDeleteModal(false);
+				}}
+				selectedIds={selectedUserIds}
+			/>
 			{showDeleteModal && editable && (
 				<ActionModals
 					title={t.users.deleteModalTitle}

@@ -104,7 +104,16 @@ it('clears password recovery and all separate API caches after logout even when 
 	expect(dispatch).toHaveBeenCalledWith(setLogoutWarning(normalizeApiError(error)));
 	expect(await passwordResetStorage.read()).toBeNull();
 	expect(passwordResetStorage.isComplete()).toBe(false);
-	for (const name of ['accountApi', 'profilApi', 'usersApi', 'groupApi', 'companyApi', 'notificationApi']) {
+	for (const name of [
+		'accountApi',
+		'profilApi',
+		'usersApi',
+		'groupApi',
+		'companyApi',
+		'clientApi',
+		'citiesApi',
+		'notificationApi',
+	]) {
 		expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({ type: name + '/resetApiState' }));
 	}
 });
@@ -118,7 +127,16 @@ it('reports recovery storage failure while completing logout and clearing API ca
 	expect(dispatch).toHaveBeenCalledWith(initToken());
 	expect(dispatch).toHaveBeenCalledWith(setLogoutWarning(normalizeApiError(error)));
 	expect(passwordResetStorage.isComplete()).toBe(false);
-	for (const name of ['accountApi', 'profilApi', 'usersApi', 'groupApi', 'companyApi', 'notificationApi']) {
+	for (const name of [
+		'accountApi',
+		'profilApi',
+		'usersApi',
+		'groupApi',
+		'companyApi',
+		'clientApi',
+		'citiesApi',
+		'notificationApi',
+	]) {
 		expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({ type: name + '/resetApiState' }));
 	}
 });
@@ -153,7 +171,16 @@ it.each(['resolved', 'rejected'] as const)(
 		const actions = dispatch.mock.calls.map(([action]) => action);
 		const guestIndex = actions.findIndex((action) => action.type === initToken.type);
 		expect(guestIndex).toBeGreaterThanOrEqual(0);
-		for (const name of ['accountApi', 'profilApi', 'usersApi', 'groupApi', 'companyApi', 'notificationApi']) {
+		for (const name of [
+			'accountApi',
+			'profilApi',
+			'usersApi',
+			'groupApi',
+			'companyApi',
+			'clientApi',
+			'citiesApi',
+			'notificationApi',
+		]) {
 			const resetIndex = actions.findIndex((action) => action.type === name + '/resetApiState');
 			expect(resetIndex).toBeGreaterThanOrEqual(0);
 			expect(resetIndex).toBeLessThan(guestIndex);

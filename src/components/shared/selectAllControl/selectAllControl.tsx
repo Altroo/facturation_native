@@ -11,6 +11,7 @@ type Props = {
 	onPress: () => void;
 	disabled?: boolean;
 	loading?: boolean;
+	compact?: boolean;
 };
 
 const SelectAllControl = (props: Props) => {
@@ -23,11 +24,14 @@ const SelectAllControl = (props: Props) => {
 			accessibilityRole="checkbox"
 			accessibilityLabel={accessibilityLabel}
 			accessibilityHint={description}
+			accessibilityValue={{ text: t.dataGrid.selectedRowsLabel.replace('{count}', String(selectedCount)) }}
 			accessibilityState={{ checked, disabled: inactive, busy: loading }}
 			disabled={inactive}
 			onPress={onPress}
 			className={
-				'min-h-16 flex-row items-center gap-3 rounded-xl border px-3 py-3 ' +
+				(props.compact
+					? 'h-11 w-11 shrink-0 items-center justify-center rounded-lg border '
+					: 'min-h-16 flex-row items-center gap-3 rounded-xl border px-3 py-3 ') +
 				(selected
 					? 'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-slate-800 '
 					: 'border-slate-200 bg-white dark:border-slate-700 dark:bg-panel ') +
@@ -50,20 +54,28 @@ const SelectAllControl = (props: Props) => {
 					</View>
 				)}
 			</View>
-			<View className="min-w-0 flex-1 gap-0.5">
-				<Text className="font-poppins-medium text-sm text-ink dark:text-slate-100">{t.shared.selectAll}</Text>
-				<Text className="font-sans text-xs text-slate-500 dark:text-slate-400">
-					{loading ? t.shared.loadingIds : description}
-				</Text>
-			</View>
+			{!props.compact && (
+				<View className="min-w-0 flex-1 gap-0.5">
+					<Text className="font-poppins-medium text-sm text-ink dark:text-slate-100">{t.shared.selectAll}</Text>
+					<Text className="font-sans text-xs text-slate-500 dark:text-slate-400">
+						{loading ? t.shared.loadingIds : description}
+					</Text>
+				</View>
+			)}
 			{selectedCount > 0 && (
-				<View className="min-h-7 min-w-7 items-center justify-center rounded-full bg-brand px-2">
+				<View
+					className={
+						props.compact
+							? 'absolute -right-1 -top-1 min-h-5 min-w-5 items-center justify-center rounded-full bg-brand px-1'
+							: 'min-h-7 min-w-7 items-center justify-center rounded-full bg-brand px-2'
+					}
+				>
 					<Text
 						accessibilityLiveRegion="polite"
 						accessibilityLabel={t.dataGrid.selectedRowsLabel.replace('{count}', String(selectedCount))}
 						className="font-poppins-medium text-xs text-white"
 					>
-						{selectedCount}
+						{props.compact && selectedCount > 99 ? '99+' : selectedCount}
 					</Text>
 				</View>
 			)}

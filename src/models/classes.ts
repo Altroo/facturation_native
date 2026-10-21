@@ -1,5 +1,6 @@
 import type { NbrEmployeType, CiviliteType, ManagedByWriteOnlyType } from '@/types/companyTypes';
 import { type ManagedByType } from '@/components/shared/addManagedByTable/addManagedByTable';
+import type { TypeClientType } from '@/types/clientTypes';
 
 export class UserClass {
 	constructor(
@@ -21,6 +22,44 @@ export class UserClass {
 
 export class GroupClass {
 	constructor(public group_titles: Array<string> | Array<null>) {}
+}
+
+export class ClientClass {
+	constructor(
+		public readonly id: number,
+		public code_client: string,
+		public client_type: TypeClientType | string,
+		public company: number,
+		public readonly company_name: string | null,
+		public adresse: string | null,
+		public ville: number | null,
+		public readonly ville_name: string | null,
+		public tel: string | null,
+		public email: string | null,
+		public delai_de_paiement: number | null,
+		public remarque: string | null,
+		public date_created: string | null,
+		public date_updated: string | null,
+		public archived: boolean,
+		public raison_sociale: string | null,
+		public numero_du_compte: string | null,
+		public ICE: string | null,
+		public registre_de_commerce: string | null,
+		public identifiant_fiscal: string | null,
+		public taxe_professionnelle: string | null,
+		public CNSS: string | null,
+		public fax: string | null,
+		public nom: string | null,
+		public prenom: string | null,
+	) {}
+}
+
+export class CitiesClass {
+	constructor(
+		public readonly id: number,
+		public nom: string,
+		public company: number,
+	) {}
 }
 
 export class CompanyClass {

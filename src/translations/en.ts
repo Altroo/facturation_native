@@ -157,6 +157,8 @@ export const en: TranslationDictionary = {
 		toggleDrawer: 'Toggle navigation drawer',
 		moreActions: 'More actions',
 		companiesTabs: 'Companies navigation tabs',
+		companiesScrollLeft: 'Show companies to the left',
+		companiesScrollRight: 'Show companies to the right',
 		refreshPage: 'Refresh page',
 	},
 	navigation: {
@@ -444,6 +446,8 @@ export const en: TranslationDictionary = {
 		statementFinalBalance: 'Final balance',
 		statementPrint: 'Print statement',
 		colCodeClient: 'Client Code',
+		selectClient: (name: string) => `Select ${name}`,
+		fetchIdsError: 'Unable to retrieve the clients matching these filters.',
 		colType: 'Type',
 		colRaisonSociale: 'Company Name',
 		colNom: 'Last Name',

@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
-import { Platform, Text } from 'react-native';
+import { useState } from 'react';
+import { FlatList, Platform, Pressable, Text } from 'react-native';
 import { translations } from '@/translations';
 import PaginatedDataGrid, {
 	extractCustomFilterParams,
@@ -83,6 +84,10 @@ it.each(['ios', 'android', 'web'] as const)(
 			await render(
 				<PaginatedDataGrid
 					{...props({
+						title: 'Clients',
+						header: <Text>Company tabs and cities</Text>,
+						contextLabel: 'Atlas',
+						createAction: { label: 'Add client', onPress: jest.fn() },
 						searchTerm: 'Does not match',
 						filterModel: { items: [{ field: 'name', operator: 'equals', value: 'Other' }] },
 					})}
@@ -90,6 +95,13 @@ it.each(['ios', 'android', 'web'] as const)(
 			);
 			expect(screen.getAllByText('Server result')).toHaveLength(1);
 			expect(screen.container.queryAll((node) => typeof node.props.onEndReached === 'function')).toHaveLength(1);
+			const list = screen.container.queryAll((node) => typeof node.props.onEndReached === 'function')[0]!;
+			expect(within(list).getByRole('header', { name: 'Clients' })).toBeOnTheScreen();
+			expect(within(list).getByText('Company tabs and cities')).toBeOnTheScreen();
+			expect(within(list).queryByText('Atlas')).toBeNull();
+			expect(within(list).queryByRole('button', { name: t.common.search })).toBeNull();
+			expect(within(screen.getByTestId('list-toolbar')).getByText('Atlas')).toBeOnTheScreen();
+			expect(within(screen.getByTestId('list-toolbar')).getByRole('button', { name: 'Add client' })).toBeOnTheScreen();
 			expect(screen.queryByLabelText('Colonnes')).toBeNull();
 			expect(screen.queryByText('Lignes par page')).toBeNull();
 		} finally {
@@ -97,6 +109,80 @@ it.each(['ios', 'android', 'web'] as const)(
 		}
 	},
 );
+
+it('resets the scroll on query changes without remounting the header, and preserves position when appending rows', async () => {
+	const scroll = jest.spyOn(FlatList.prototype, 'scrollToOffset').mockImplementation(() => {});
+	const Header = () => {
+		const [selected, setSelected] = useState(false);
+		return (
+			<Pressable onPress={() => setSelected(true)}>
+				<Text>{selected ? 'Header kept' : 'Choose company'}</Text>
+			</Pressable>
+		);
+	};
+	const base = props({ header: <Header /> });
+	try {
+		await render(<PaginatedDataGrid {...base} />);
+		await fireEvent.press(screen.getByText('Choose company'));
+		await screen.rerender(<PaginatedDataGrid {...base} searchTerm="Atlas" />);
+		expect(screen.getByText('Header kept')).toBeOnTheScreen();
+		expect(scroll).toHaveBeenLastCalledWith({ offset: 0, animated: false });
+		scroll.mockClear();
+		await screen.rerender(
+			<PaginatedDataGrid {...base} searchTerm="Atlas" rows={[...base.rows, { id: 2, name: 'Next page' }]} />,
+		);
+		expect(scroll).not.toHaveBeenCalled();
+		await screen.rerender(
+			<PaginatedDataGrid
+				{...base}
+				searchTerm="Atlas"
+				additionalFilters={{ count: 1, key: 'city:1', onClear: jest.fn() }}
+			/>,
+		);
+		expect(scroll).toHaveBeenCalledTimes(1);
+	} finally {
+		scroll.mockRestore();
+	}
+});
+
+it('shows the total filter count and clears page-specific filters along with the grid filters', async () => {
+	const clear = jest.fn();
+	const change = jest.fn();
+	await render(
+		<PaginatedDataGrid
+			{...props({
+				filterModel: { items: [{ field: 'name', operator: 'contains', value: 'Atlas' }] },
+				onFilterModelChange: change,
+				additionalFilters: { count: 1, key: 'city:1', onClear: clear },
+			})}
+		/>,
+	);
+	expect(within(screen.getByRole('button', { name: t.dataGrid.toolbarFilters })).getByText('2')).toBeOnTheScreen();
+	await fireEvent.press(screen.getByRole('button', { name: t.common.clearAllFilters }));
+	expect(change).toHaveBeenCalledWith({ items: [], logicOperator: 'and' });
+	expect(clear).toHaveBeenCalledTimes(1);
+});
+
+it('only shows bulk actions with a selection and leaves more typing space while searching', async () => {
+	const create = jest.fn();
+	const base = props({
+		createAction: { label: 'New client', onPress: create },
+		selectionActions: <Text>Archive selection</Text>,
+		sorting: { ordering: '', sortModel: [], onSortModelChange: jest.fn() },
+	});
+	await render(<PaginatedDataGrid {...base} />);
+	expect(screen.queryByText('Archive selection')).toBeNull();
+	await fireEvent.press(screen.getByRole('button', { name: 'New client' }));
+	expect(create).toHaveBeenCalledTimes(1);
+	await screen.rerender(<PaginatedDataGrid {...base} selectedIds={[1]} />);
+	expect(within(screen.getByTestId('list-toolbar')).getByText('Archive selection')).toBeOnTheScreen();
+	await fireEvent.press(screen.getByRole('button', { name: t.common.search }));
+	expect(screen.queryByRole('button', { name: 'New client' })).toBeNull();
+	expect(screen.queryByRole('button', { name: t.dataGrid.toolbarSort })).toBeNull();
+	await fireEvent.press(screen.getByRole('button', { name: t.common.close }));
+	expect(screen.getByRole('button', { name: 'New client' })).toBeOnTheScreen();
+	expect(screen.getByRole('button', { name: t.dataGrid.toolbarSort })).toBeOnTheScreen();
+});
 
 it('expands search inline, debounces server queries, and clears without reopening a modal', async () => {
 	jest.useFakeTimers();

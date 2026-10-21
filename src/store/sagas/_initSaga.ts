@@ -20,6 +20,8 @@ import { allowAnyInstance, isAuthenticatedInstance, normalizeApiError } from '@/
 import { getApi } from '@/utils/apiHelpers';
 import { accountApi, profilApi, usersApi, groupApi } from '@/store/services/account';
 import { companyApi } from '@/store/services/company';
+import { clientApi } from '@/store/services/client';
+import { citiesApi } from '@/store/services/parameter';
 import { notificationApi } from '@/store/services/notification';
 import { setWSMaintenance, setWSServerVersion } from '@/store/slices/wsSlice';
 import { getInitState, getProfilState } from '@/store/selectors';
@@ -183,6 +185,8 @@ export function* resetApiState(): SagaIterator {
 	yield put(usersApi.util.resetApiState());
 	yield put(groupApi.util.resetApiState());
 	yield put(companyApi.util.resetApiState());
+	yield put(clientApi.util.resetApiState());
+	yield put(citiesApi.util.resetApiState());
 	yield put(notificationApi.util.resetApiState());
 }
 export function* accountLogoutSaga(): SagaIterator {

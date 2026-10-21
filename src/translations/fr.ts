@@ -158,6 +158,8 @@ export const fr: TranslationDictionary = {
 		toggleDrawer: 'Basculer le tiroir de navigation',
 		moreActions: "Plus d'actions",
 		companiesTabs: 'Navigation par entreprise',
+		companiesScrollLeft: 'Afficher les entreprises à gauche',
+		companiesScrollRight: 'Afficher les entreprises à droite',
 		refreshPage: 'Actualiser la page',
 	},
 	navigation: {
@@ -446,6 +448,8 @@ export const fr: TranslationDictionary = {
 		statementFinalBalance: 'Solde final',
 		statementPrint: 'Imprimer le relevé',
 		colCodeClient: 'Code Client',
+		selectClient: (name: string) => `Sélectionner ${name}`,
+		fetchIdsError: 'Impossible de récupérer les clients correspondant aux filtres.',
 		colType: 'Type',
 		colRaisonSociale: 'Raison Sociale',
 		colNom: 'Nom',

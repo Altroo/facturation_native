@@ -1,5 +1,6 @@
 import type { FC, ReactNode } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import { useColorMode } from '@/providers/themeProvider';
 import { colors } from '@/utils/themes';
 
@@ -10,6 +11,7 @@ type Action = {
 	color?: string;
 	icon?: ReactNode;
 	disabled?: boolean;
+	loading?: boolean;
 };
 
 type Props = {
@@ -83,31 +85,19 @@ const ActionModals: FC<Props> = (props: Props) => {
 						{children}
 					</ScrollView>
 					<View className={['gap-3', ...(actionsStyle ?? [])].join(' ')}>
-						{actions.map((action, index) => {
-							const solid = action.color ?? (mode === 'dark' ? colors.slate[200] : colors.ink);
-							const textColor = action.active ? (action.color || mode !== 'dark' ? colors.white : colors.ink) : solid;
-							return (
-								<Pressable
-									key={index}
-									accessibilityRole="button"
-									accessibilityLabel={action.text}
-									accessibilityState={{ disabled: !!action.disabled }}
-									disabled={action.disabled}
-									onPress={action.onClick}
-									className="min-h-12 flex-row items-center justify-center gap-2 rounded-xl border px-5 py-3"
-									style={{
-										backgroundColor: action.active ? solid : mode === 'dark' ? colors.slate[800] : colors.white,
-										borderColor: solid,
-										opacity: action.disabled ? 0.5 : 1,
-									}}
-								>
-									{action.icon && <View className="h-6 w-6 items-center justify-center">{action.icon}</View>}
-									<Text className="shrink text-center font-poppins-semibold text-base" style={{ color: textColor }}>
-										{action.text}
-									</Text>
-								</Pressable>
-							);
-						})}
+						{actions.map((action, index) => (
+							<PrimaryLoadingButton
+								key={index}
+								buttonText={action.text}
+								onClick={action.onClick}
+								active={!action.disabled}
+								loading={!!action.loading}
+								inverted={!action.active}
+								danger={action.color === colors.danger || action.color === colors.dangerStrong}
+								color={action.color ?? (mode === 'dark' ? colors.slate[200] : colors.ink)}
+								startIcon={action.icon}
+							/>
+						))}
 					</View>
 				</View>
 			</View>

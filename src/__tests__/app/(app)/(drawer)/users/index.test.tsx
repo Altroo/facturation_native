@@ -332,6 +332,11 @@ it('restarts the loaded result set and clears selection when a server filter cha
 });
 it('keeps search, filters and server sorting without page or column controls', async () => {
 	await setup();
+	const list = screen.container.queryAll((node) => typeof node.props.onEndReached === 'function')[0]!;
+	expect(within(list).queryByRole('checkbox', { name: t.users.selectLoaded })).toBeNull();
+	expect(
+		within(screen.getByTestId('list-toolbar')).getByRole('checkbox', { name: t.users.selectLoaded }),
+	).toBeOnTheScreen();
 	expect(useGetUsersInfiniteListInfiniteQuery).toHaveBeenLastCalledWith(
 		{ pageSize: 10, search: '' },
 		{ skip: false, refetchOnMountOrArgChange: true },
@@ -343,6 +348,10 @@ it('keeps search, filters and server sorting without page or column controls', a
 	expect(screen.queryByRole('button', { name: 'Page suivante' })).toBeNull();
 	expect(screen.queryByRole('button', { name: 'Lignes par page' })).toBeNull();
 	expect(screen.queryByLabelText('Colonnes')).toBeNull();
+	await fireEvent.press(screen.getByRole('button', { name: t.common.search }));
+	expect(
+		within(screen.getByTestId('list-toolbar')).getByRole('checkbox', { name: t.users.selectLoaded }),
+	).toBeOnTheScreen();
 });
 
 it('passes descending sort to the server and resets loaded pages and selection without sorting cards locally', async () => {

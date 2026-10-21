@@ -461,30 +461,15 @@ const CompaniesListPage = () => {
 	const axiosError = normalizeApiError(query.error);
 	return (
 		<>
-			<View className="flex-1 gap-3 bg-slate-50 p-4 dark:bg-night">
-				<View className="flex-row items-center gap-4 py-1">
-					<View className="h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 dark:bg-panel">
-						<MaterialIcons name={'business'} size={25} color={colors.brand} />
-					</View>
-					<View className="flex-1 gap-1">
-						<Text accessibilityRole="header" className="text-ink dark:text-slate-100 font-poppins-semibold text-2xl">
-							{t.companies.listTitle}
-						</Text>
-					</View>
-				</View>
-				{is_staff && (
-					<View className="flex-row flex-wrap gap-2">
-						<PrimaryLoadingButton
-							buttonText={t.companies.newCompany}
-							onClick={() => router.push(COMPANIES_ADD)}
-							active={!suspending}
-							loading={false}
-							startIcon={<MaterialIcons name="add" size={20} color={colors.white} />}
-						/>
-					</View>
-				)}
-				<View className="gap-2">
+			<PaginatedDataGrid<Partial<CompanyClass>>
+				title={t.companies.listTitle}
+				titleIcon="business"
+				createAction={
+					is_staff ? { label: t.companies.newCompany, onPress: () => router.push(COMPANIES_ADD) } : undefined
+				}
+				selectionControl={
 					<SelectAllControl
+						compact
 						accessibilityLabel={t.shared.selectAllMatching(count)}
 						description={allSelected ? t.shared.allMatchingSelected(selectedIds.length) : t.shared.matchingItems(count)}
 						checked={allSelected ? true : selectedIds.length ? 'mixed' : false}
@@ -496,95 +481,95 @@ const CompaniesListPage = () => {
 							else void handleSelectAllMatching();
 						}}
 					/>
-					{selectedIds.length > 0 && (
-						<View className="flex-row flex-wrap gap-2">
-							<PrimaryLoadingButton
-								buttonText={t.companies.bulkSuspendBtn(selectedIds.length)}
-								danger
-								inverted
-								onClick={() => {
-									setShowBulkSuspendModal(true);
-								}}
-								active={!(suspending || query.isFetching || !!query.error || isLoadingAllIds)}
-								loading={false}
-								startIcon={<MaterialIcons name="block" size={20} color={colors.danger} />}
-							/>
-							<PrimaryLoadingButton
-								buttonText={t.shared.clearSelection}
-								inverted
-								onClick={handleClearAllMatching}
-								active={!suspending}
-								loading={false}
-							/>
-						</View>
-					)}
-				</View>
-				{!!query.error && !query.isFetchNextPageError && (
-					<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
-						<ApiAlert
-							errorDetails={
-								axiosError.status_code === 0
-									? t.errors.networkError
-									: axiosError.status_code === 403
-										? t.noPermission.description
-										: axiosError.status_code === 404
-											? t.notFound.message
-											: axiosError.message
-							}
+				}
+				header={
+					<>
+						{!!query.error && !query.isFetchNextPageError && (
+							<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
+								<ApiAlert
+									errorDetails={
+										axiosError.status_code === 0
+											? t.errors.networkError
+											: axiosError.status_code === 403
+												? t.noPermission.description
+												: axiosError.status_code === 404
+													? t.notFound.message
+													: axiosError.message
+									}
+								/>
+								<PrimaryLoadingButton
+									buttonText={t.common.retry}
+									inverted
+									onClick={refresh}
+									active
+									loading={false}
+									startIcon={<MaterialIcons name="refresh" size={20} color={colors.brand} />}
+								/>
+							</View>
+						)}
+					</>
+				}
+				selectionActions={
+					<View className="flex-row flex-wrap gap-2">
+						<PrimaryLoadingButton
+							buttonText={t.companies.bulkSuspendBtn(selectedIds.length)}
+							danger
+							inverted
+							onClick={() => setShowBulkSuspendModal(true)}
+							active={!(suspending || query.isFetching || !!query.error || isLoadingAllIds)}
+							loading={false}
+							startIcon={<MaterialIcons name="block" size={20} color={colors.danger} />}
 						/>
 						<PrimaryLoadingButton
-							buttonText={t.common.retry}
+							buttonText={t.shared.clearSelection}
 							inverted
-							onClick={refresh}
-							active
+							onClick={handleClearAllMatching}
+							active={!suspending}
 							loading={false}
-							startIcon={<MaterialIcons name="refresh" size={20} color={colors.brand} />}
 						/>
 					</View>
-				)}
-				<PaginatedDataGrid<Partial<CompanyClass>>
-					testID="companies-grid"
-					rows={rows}
-					columns={columns}
-					sorting={{
-						ordering,
-						sortModel,
-						onSortModelChange: (model) => {
-							if (JSON.stringify(model) === JSON.stringify(sortModel)) return;
-							handleClearAllMatching();
-							setShowSuspendModal(false);
-							setSortModel(model);
-						},
-					}}
-					getRowId={(row) => String(row.id)}
-					rowCount={count ?? 0}
-					isLoading={query.isFetching && !data}
-					disabled={suspending}
-					onRefresh={refresh}
-					refreshing={query.isFetching && !query.isFetchingNextPage && !!data}
-					onEndReached={loadMore}
-					isFetchingNextPage={query.isFetchingNextPage}
-					hasNextPage={query.hasNextPage}
-					loadMoreError={query.isFetchNextPageError}
-					onRetryLoadMore={() => {
-						if (!query.isFetching) void query.fetchNextPage();
-					}}
-					renderRow={renderRow}
-					filterModel={filterModel}
-					onFilterModelChange={(value) => {
+				}
+				testID="companies-grid"
+				rows={rows}
+				columns={columns}
+				sorting={{
+					ordering,
+					sortModel,
+					onSortModelChange: (model) => {
+						if (JSON.stringify(model) === JSON.stringify(sortModel)) return;
 						handleClearAllMatching();
 						setShowSuspendModal(false);
-						setFilterModel(value);
-					}}
-					searchTerm={searchTerm}
-					setSearchTerm={(value) => {
-						handleClearAllMatching();
-						setShowSuspendModal(false);
-						setSearchTerm(value);
-					}}
-					selectedIds={selectedIds}
-				/>
-			</View>
+						setSortModel(model);
+					},
+				}}
+				getRowId={(row) => String(row.id)}
+				rowCount={count ?? 0}
+				isLoading={query.isFetching && !data}
+				disabled={suspending}
+				onRefresh={refresh}
+				refreshing={query.isFetching && !query.isFetchingNextPage && !!data}
+				onEndReached={loadMore}
+				isFetchingNextPage={query.isFetchingNextPage}
+				hasNextPage={query.hasNextPage}
+				loadMoreError={query.isFetchNextPageError}
+				onRetryLoadMore={() => {
+					if (!query.isFetching) void query.fetchNextPage();
+				}}
+				renderRow={renderRow}
+				filterModel={filterModel}
+				onFilterModelChange={(value) => {
+					handleClearAllMatching();
+					setShowSuspendModal(false);
+					setFilterModel(value);
+				}}
+				searchTerm={searchTerm}
+				setSearchTerm={(value) => {
+					handleClearAllMatching();
+					setShowSuspendModal(false);
+					setSearchTerm(value);
+				}}
+				selectedIds={selectedIds}
+			/>
 			{showSuspendModal && (
 				<ActionModals
 					title={t.companies.suspendModalTitle}

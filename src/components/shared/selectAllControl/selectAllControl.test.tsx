@@ -30,22 +30,48 @@ it('lets a parent complete a partial selection and then clear it', async () => {
 	expect(screen.queryByLabelText('3 sélectionné(s)')).toBeNull();
 });
 
-it.each([{ disabled: true }, { loading: true }])('blocks selection while unavailable: %j', async (state) => {
+it.each([{ disabled: true }, { loading: true }, { compact: true, disabled: true }, { compact: true, loading: true }])(
+	'blocks selection while unavailable: %j',
+	async (state) => {
+		const onPress = jest.fn();
+		await render(
+			<SelectAllControl
+				accessibilityLabel="Sélectionner les entreprises"
+				description="2 résultats selon les filtres"
+				checked={false}
+				selectedCount={0}
+				onPress={onPress}
+				{...state}
+			/>,
+		);
+		const control = screen.getByRole('checkbox', { name: 'Sélectionner les entreprises' });
+		expect(control).toBeDisabled();
+		await fireEvent.press(control);
+		expect(onPress).not.toHaveBeenCalled();
+	},
+);
+
+it('keeps compact selection accessible, including partial state and the full count behind its badge', async () => {
 	const onPress = jest.fn();
 	await render(
 		<SelectAllControl
-			accessibilityLabel="Sélectionner les entreprises"
-			description="2 résultats selon les filtres"
-			checked={false}
-			selectedCount={0}
+			compact
+			accessibilityLabel="Select all results"
+			description="125 results matching the filters"
+			checked="mixed"
+			selectedCount={120}
 			onPress={onPress}
-			{...state}
 		/>,
 	);
-	const control = screen.getByRole('checkbox', { name: 'Sélectionner les entreprises' });
-	expect(control).toBeDisabled();
+	const control = screen.getByRole('checkbox', { name: 'Select all results' });
+	expect(control).toHaveProp('accessibilityState', { checked: 'mixed', disabled: false, busy: false });
+	expect(control).toHaveProp('accessibilityValue', { text: '120 sélectionné(s)' });
+	expect(control).toHaveProp('accessibilityHint', '125 results matching the filters');
+	expect(screen.getByText('99+')).toBeOnTheScreen();
+	expect(screen.queryByText('Tout sélectionner')).toBeNull();
+	expect(screen.queryByText('125 results matching the filters')).toBeNull();
 	await fireEvent.press(control);
-	expect(onPress).not.toHaveBeenCalled();
+	expect(onPress).toHaveBeenCalledTimes(1);
 });
 
 it('keeps its heading and selection announcement in the active language', async () => {
