@@ -1,22 +1,21 @@
-import { Platform } from 'react-native';
 import { reloadAppAsync } from 'expo';
-import { getAppVersion } from '@/utils/apiHelpers';
-import { runWithCleanup, runWithErrorHandler } from '@/utils/helpers';
+import { APP_VERSION, NECTAR_RAISON_SOCIALE } from '@/utils/rawData';
 import { COMPANIES_EDIT, COMPANIES_VIEW, USERS_EDIT, USERS_VIEW } from '@/utils/routes';
-import { parseEntityId } from '@/utils/helpers';
 
 jest.mock('expo', () => ({
 	...jest.requireActual<typeof import('expo')>('expo'),
 	reloadAppAsync: jest.fn(),
 }));
-jest.mock('@/utils/apiHelpers', () => ({
-	...jest.requireActual<typeof import('@/utils/apiHelpers')>('@/utils/apiHelpers'),
-	getAppVersion: jest.fn(),
-}));
 
 import { AxiosError, AxiosHeaders, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
 import {
-	checkAppUpdate,
+	runWithCleanup,
+	runWithErrorHandler,
+	parseEntityId,
+	isAppVersion,
+	isNewerAppVersion,
+	normalizeCompanyName,
+	isNectarRaisonSociale,
 	reloadApp,
 	allowAnyInstance,
 	isAuthenticatedInstance,
@@ -609,55 +608,10 @@ describe('Label helpers', () => {
 	});
 });
 
-describe('App updates', () => {
-	const originalDev = __DEV__;
-	const originalPlatform = Platform.OS;
-	beforeEach(() => {
-		jest.clearAllMocks();
-		jest.mocked(getAppVersion).mockReset();
-		Object.defineProperty(globalThis, '__DEV__', { configurable: true, value: true });
-	});
-	afterEach(() => {
-		Object.defineProperty(globalThis, '__DEV__', { configurable: true, value: originalDev });
-		Object.defineProperty(Platform, 'OS', { configurable: true, value: originalPlatform });
-	});
-
-	it('checks the local native server version before allowing a reload', async () => {
-		jest.mocked(getAppVersion).mockResolvedValue({ status: 200, data: { version: '1.10.0' } });
-		await expect(checkAppUpdate('1.9.0')).resolves.toBe(true);
-		expect(getAppVersion).toHaveBeenCalledWith();
-		expect(reloadAppAsync).not.toHaveBeenCalled();
-	});
-	it.each([{ version: '1.0.0' }, { version: 'invalid' }, {}, null])(
-		'returns a failed check for an unavailable release: %s',
-		async (data) => {
-			jest.mocked(getAppVersion).mockResolvedValue({ status: 200, data });
-			await expect(checkAppUpdate('2.0.0')).resolves.toBe(false);
-		},
-	);
-	it('handles offline, HTTP and invalid JSON failures without throwing', async () => {
-		jest.mocked(getAppVersion).mockRejectedValueOnce(new Error('Offline'));
-		await expect(checkAppUpdate('2.0.0')).resolves.toBe(false);
-		jest.mocked(getAppVersion).mockResolvedValueOnce({ status: 503, data: null });
-		await expect(checkAppUpdate('2.0.0')).resolves.toBe(false);
-		jest.mocked(getAppVersion).mockRejectedValueOnce(new SyntaxError('bad JSON'));
-		await expect(checkAppUpdate('2.0.0')).resolves.toBe(false);
-	});
-	it('handles an Axios timeout without reloading', async () => {
-		jest.mocked(getAppVersion).mockRejectedValueOnce(new Error('timeout of 10000ms exceeded'));
-		await expect(checkAppUpdate('2.0.0')).resolves.toBe(false);
-	});
-	it('does not request invalid targets or pretend a packaged native app can update through Metro', async () => {
-		await expect(checkAppUpdate('invalid')).resolves.toBe(false);
-		Object.defineProperty(globalThis, '__DEV__', { configurable: true, value: false });
-		Object.defineProperty(Platform, 'OS', { configurable: true, value: 'ios' });
-		await expect(checkAppUpdate('2.0.0')).resolves.toBe(false);
-		expect(getAppVersion).not.toHaveBeenCalled();
-	});
-	it('delegates an explicit reload to Expo', async () => {
-		await reloadApp();
-		expect(reloadAppAsync).toHaveBeenCalledTimes(1);
-	});
+it('delegates an explicit reload to Expo', async () => {
+	jest.mocked(reloadAppAsync).mockClear();
+	await reloadApp();
+	expect(reloadAppAsync).toHaveBeenCalledTimes(1);
 });
 
 describe('async handler cleanup', () => {
@@ -736,4 +690,31 @@ describe('entity id parameters', () => {
 		},
 	);
 	it('accepts a valid entity id', () => expect(parseEntityId('17')).toBe(17));
+});
+
+it.each(['0.0.0', '1.2.3', '2026.10.6'])('accepts %s', (value) => expect(isAppVersion(value)).toBe(true));
+it.each([null, undefined, 1, '', '1', '1.0', '01.0.0', '1.0.0-beta', '1.0.0\n', '1000000.0.0'])(
+	'rejects %s',
+	(value) => {
+		expect(isAppVersion(value)).toBe(false);
+		expect(isNewerAppVersion(value, APP_VERSION)).toBe(false);
+	},
+);
+it.each([
+	['1.10.0', '1.9.9', true],
+	['1.2.1', '1.2.0', true],
+	['2.0.0', '1.99.9', true],
+	['1.2.0', '1.2.0', false],
+	['1.2.0', '1.10.0', false],
+	['1.0.0', 'invalid', false],
+])('compares %s with %s numerically', (candidate, current, expected) => {
+	expect(isNewerAppVersion(candidate, current)).toBe(expected);
+});
+
+it('normalizes company names before matching Nectar', () => {
+	expect(normalizeCompanyName('  Immobiliere Nectar ')).toBe(NECTAR_RAISON_SOCIALE);
+	expect(normalizeCompanyName(null)).toBe('');
+	expect(normalizeCompanyName(undefined)).toBe('');
+	expect(isNectarRaisonSociale(' immobiliere nectar ')).toBe(true);
+	expect(isNectarRaisonSociale('Another company')).toBe(false);
 });

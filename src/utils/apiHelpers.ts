@@ -1,6 +1,7 @@
 import axios, { type AxiosInstance, type AxiosRequestConfig } from 'axios';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
+import { isAppVersion, isNewerAppVersion } from '@/utils/helpers';
 
 // GET the local frontend version, independently of the Django API instance.
 export const getAppVersion = async () => {
@@ -29,6 +30,26 @@ export const postApi = async <T = unknown>(url: string | undefined, instance: Ax
 		status: response.status,
 		data: response.data,
 	};
+};
+
+export const checkAppUpdate = async (targetVersion: string): Promise<boolean> => {
+	// A packaged mobile app cannot download new code by reloading. This flow
+	// checks the local Metro bundle during development, plus the browser preview.
+	if (!__DEV__ && Platform.OS !== 'web') return false;
+	try {
+		if (!isAppVersion(targetVersion)) return false;
+		const { status, data } = await getAppVersion();
+		if (status !== 200) return false;
+		return (
+			!!data &&
+			typeof data === 'object' &&
+			'version' in data &&
+			isAppVersion(data.version) &&
+			!isNewerAppVersion(targetVersion, data.version)
+		);
+	} catch {
+		return false;
+	}
 };
 
 /*** Base Axios JSON Api call [GET] */

@@ -1,4 +1,6 @@
-import { genderItemsList, nbrEmployeItemsList, civiliteItemsList } from './rawData';
+import { APP_VERSION, genderItemsList, nbrEmployeItemsList, civiliteItemsList } from './rawData';
+import { version } from '../../package.json';
+import { expo } from '../../app.json';
 
 describe('items lists', () => {
 	describe('genderItemsList', () => {
@@ -62,4 +64,9 @@ describe('items lists', () => {
 			expect(civiliteItemsList[0]).toEqual({ code: '', value: '' });
 		});
 	});
+});
+
+it('uses the bundled package version in JavaScript and Expo config', () => {
+	expect(APP_VERSION).toBe(version);
+	expect(expo.version).toBe(version);
 });

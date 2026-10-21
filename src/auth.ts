@@ -2,7 +2,6 @@ import { type AxiosInstance, CanceledError, create, isAxiosError } from 'axios';
 import { createAuthRefresh } from 'axios-auth-refresh';
 import { Platform } from 'react-native';
 import { loginSchema, tokenSchema } from '@/utils/formValidationSchemas';
-import { postApi } from '@/utils/apiHelpers';
 import { sessionStorage } from '@/Storage/sessionStorage';
 import type { Credentials, SessionRequest, SessionResult, Tokens, TokenStorage } from '@/types/accountTypes';
 
@@ -81,7 +80,7 @@ export const createAuth = (transport: AxiosInstance, storage: TokenStorage) => {
 					await expire();
 					return { success: false, error: new InvalidSessionError('Session expired') };
 				}
-				const { data } = await postApi(process.env.EXPO_PUBLIC_ACCOUNT_REFRESH_TOKEN, transport, {
+				const { data } = await transport.post(process.env.EXPO_PUBLIC_ACCOUNT_REFRESH_TOKEN, {
 					refresh: session.refresh,
 				});
 				const canceled = check(epoch);
@@ -113,7 +112,7 @@ export const createAuth = (transport: AxiosInstance, storage: TokenStorage) => {
 		if (!cleared.success) return cleared;
 		const epoch = generation;
 		try {
-			const { data } = await postApi(process.env.EXPO_PUBLIC_ACCOUNT_LOGIN, transport, parsedCredentials.data);
+			const { data } = await transport.post(process.env.EXPO_PUBLIC_ACCOUNT_LOGIN, parsedCredentials.data);
 			const canceled = check(epoch);
 			if (canceled) return { success: false, error: canceled };
 			const parsed = tokenSchema.safeParse(data);

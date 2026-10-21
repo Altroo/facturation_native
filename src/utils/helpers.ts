@@ -1,7 +1,5 @@
 import { reloadAppAsync } from 'expo';
-import { Platform } from 'react-native';
-import { isAppVersion, isNewerAppVersion } from '@/utils/appVersion';
-import { getAppVersion } from '@/utils/apiHelpers';
+import { NECTAR_RAISON_SOCIALE } from '@/utils/rawData';
 import axios, { type AxiosInstance, type AxiosResponse } from 'axios';
 import type { APIContentTypeInterface, ApiErrorResponseType } from '@/types/_initTypes';
 import { auth, publicInstance, InvalidSessionError } from '@/auth';
@@ -374,26 +372,6 @@ export const getDjangoNextPageParam = (next: string | null, currentPage: number)
 	}
 };
 
-export const checkAppUpdate = async (targetVersion: string): Promise<boolean> => {
-	if (!isAppVersion(targetVersion)) return false;
-	// A packaged mobile app cannot download new code by reloading. This flow
-	// checks the local Metro bundle during development, plus the browser preview.
-	if (!__DEV__ && Platform.OS !== 'web') return false;
-	try {
-		const { status, data } = await getAppVersion();
-		if (status !== 200) return false;
-		return (
-			!!data &&
-			typeof data === 'object' &&
-			'version' in data &&
-			isAppVersion(data.version) &&
-			!isNewerAppVersion(targetVersion, data.version)
-		);
-	} catch {
-		return false;
-	}
-};
-
 export const reloadApp = () => reloadAppAsync();
 
 export const parseEntityId = (value: string | string[] | undefined): number | null => {
@@ -420,3 +398,21 @@ export const runWithErrorHandler = async (
 		onError(error);
 	}
 };
+
+export const isAppVersion = (value: unknown): value is string =>
+	typeof value === 'string' && /^(0|[1-9]\d{0,5})\.(0|[1-9]\d{0,5})\.(0|[1-9]\d{0,5})$/.exec(value)?.[0] === value;
+
+export const isNewerAppVersion = (candidate: unknown, current: unknown): boolean => {
+	if (!isAppVersion(candidate) || !isAppVersion(current)) return false;
+	const next = candidate.split('.').map(Number);
+	const local = current.split('.').map(Number);
+	for (let i = 0; i < next.length; i++) {
+		if (next[i] !== local[i]) return next[i] > local[i];
+	}
+	return false;
+};
+
+export const normalizeCompanyName = (value?: string | null): string => (value ?? '').trim().toUpperCase();
+
+export const isNectarRaisonSociale = (value?: string | null): boolean =>
+	normalizeCompanyName(value) === NECTAR_RAISON_SOCIALE;

@@ -4,8 +4,8 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import ActionModals from '@/components/nativeElements/modals/actionModal/actionModals';
 import { useAppSelector, useLanguage, useToast } from '@/utils/hooks';
 import { getAppVersions } from '@/store/selectors';
-import { isNewerAppVersion } from '@/utils/appVersion';
-import { checkAppUpdate, reloadApp } from '@/utils/helpers';
+import { isNewerAppVersion, reloadApp } from '@/utils/helpers';
+import { checkAppUpdate } from '@/utils/apiHelpers';
 import { colors } from '@/utils/themes';
 
 const AppUpdate = () => {

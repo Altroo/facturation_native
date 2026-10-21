@@ -1,6 +1,6 @@
 /** @jest-environment node */
 import { GET } from '@/app/api/app-version+api';
-import { APP_VERSION } from '@/utils/appVersion';
+import { APP_VERSION } from '@/utils/rawData';
 
 it('serves the native project version without caching through the Expo API route', async () => {
 	const response = GET();

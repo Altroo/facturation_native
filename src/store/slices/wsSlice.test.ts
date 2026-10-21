@@ -1,4 +1,4 @@
-import { APP_VERSION } from '@/utils/appVersion';
+import { APP_VERSION } from '@/utils/rawData';
 import reducer, { setWSMaintenance, setWSServerVersion } from './wsSlice';
 
 describe('wsSlice reducer', () => {

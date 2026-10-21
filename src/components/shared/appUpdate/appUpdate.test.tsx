@@ -2,9 +2,10 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-
 import { Platform } from 'react-native';
 import AppUpdate from './appUpdate';
 import { useAppSelector } from '@/utils/hooks';
-import { checkAppUpdate, reloadApp } from '@/utils/helpers';
+import { reloadApp } from '@/utils/helpers';
+import { checkAppUpdate } from '@/utils/apiHelpers';
 import { fr } from '@/translations/fr';
-import { APP_VERSION } from '@/utils/appVersion';
+import { APP_VERSION } from '@/utils/rawData';
 
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
 
@@ -17,8 +18,11 @@ jest.mock('@/utils/hooks', () => ({
 jest.mock('@/providers/themeProvider', () => ({ useColorMode: () => ({ mode: 'light' }) }));
 jest.mock('@/utils/helpers', () => ({
 	...jest.requireActual<typeof import('@/utils/helpers')>('@/utils/helpers'),
-	checkAppUpdate: jest.fn(),
 	reloadApp: jest.fn(),
+}));
+jest.mock('@/utils/apiHelpers', () => ({
+	...jest.requireActual<typeof import('@/utils/apiHelpers')>('@/utils/apiHelpers'),
+	checkAppUpdate: jest.fn(),
 }));
 const [major, minor, patch] = APP_VERSION.split('.').map(Number);
 const nextVersion = `${major}.${minor}.${patch + 1}`;

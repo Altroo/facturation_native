@@ -1,3 +1,4 @@
+import { version } from '../../package.json';
 import type { AccountGenderCodeValueType, DropDownType, PasswordResetCodeField } from '@/types/accountTypes';
 
 export const genderItemsList: Array<AccountGenderCodeValueType> = [
@@ -40,3 +41,7 @@ export const INFINITE_SCROLL_THRESHOLD = 0.3;
 export const EMAIL_MAX_LENGTH = 254;
 
 export const valueLessFilterOperators = new Set(['isEmpty', 'isNotEmpty']);
+
+export const NECTAR_RAISON_SOCIALE = 'IMMOBILIERE NECTAR';
+// Bundled with the running code, never copied from the server announcement.
+export const APP_VERSION = version;

@@ -7,7 +7,7 @@ import axios, {
 } from 'axios';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
-import { getApi, getAppVersion, postApi } from '@/utils/apiHelpers';
+import { checkAppUpdate, getApi, getAppVersion, postApi } from '@/utils/apiHelpers';
 
 jest.mock('expo-constants', () => ({
 	__esModule: true,
@@ -80,6 +80,52 @@ describe('getAppVersion', () => {
 	it('rejects malformed JSON instead of accepting a stale or invalid version response', async () => {
 		adapter.mockImplementation(async (config) => response(config, 'bad-json'));
 		await expect(getAppVersion()).rejects.toMatchObject({ code: 'ERR_BAD_RESPONSE' });
+	});
+
+	it.each(['1.9.0', '1.10.0'])(
+		'permits a reload only when the local server can supply the announced version %s',
+		async (target) => {
+			adapter.mockImplementation(async (config) => response(config, '{"version":"1.10.0"}'));
+			await expect(checkAppUpdate(target)).resolves.toBe(true);
+			expect(adapter).toHaveBeenCalledTimes(1);
+		},
+	);
+
+	it.each([{ version: '1.0.0' }, { version: 'invalid' }, {}, null])(
+		'refuses a reload when the requested version is unavailable: %s',
+		async (data) => {
+			adapter.mockImplementation(async (config) => response(config, data));
+			await expect(checkAppUpdate('2.0.0')).resolves.toBe(false);
+		},
+	);
+
+	it('handles offline, HTTP and malformed JSON failures without throwing', async () => {
+		adapter.mockRejectedValueOnce(new AxiosError('Offline', 'ERR_NETWORK'));
+		await expect(checkAppUpdate('2.0.0')).resolves.toBe(false);
+		adapter.mockImplementationOnce(async (config) => response(config, null, 503));
+		await expect(checkAppUpdate('2.0.0')).resolves.toBe(false);
+		adapter.mockImplementationOnce(async (config) => response(config, 'bad-json'));
+		await expect(checkAppUpdate('2.0.0')).resolves.toBe(false);
+	});
+
+	it('handles an Axios timeout without permitting a reload', async () => {
+		adapter.mockRejectedValueOnce(new AxiosError('timeout of 10000ms exceeded', 'ECONNABORTED'));
+		await expect(checkAppUpdate('2.0.0')).resolves.toBe(false);
+	});
+
+	it('does not request invalid targets or offer Metro updates to packaged native apps', async () => {
+		await expect(checkAppUpdate('invalid')).resolves.toBe(false);
+		Object.defineProperty(globalThis, '__DEV__', { configurable: true, value: false });
+		await expect(checkAppUpdate('2.0.0')).resolves.toBe(false);
+		expect(adapter).not.toHaveBeenCalled();
+	});
+
+	it('checks the current browser origin in production web previews', async () => {
+		jest.replaceProperty(Platform, 'OS', 'web');
+		Object.defineProperty(globalThis, '__DEV__', { configurable: true, value: false });
+		adapter.mockImplementation(async (config) => response(config, { version: '2.0.0' }));
+		await expect(checkAppUpdate('2.0.0')).resolves.toBe(true);
+		expect(axios.create).toHaveBeenCalledWith({ baseURL: undefined });
 	});
 });
 

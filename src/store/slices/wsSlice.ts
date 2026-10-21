@@ -1,5 +1,6 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import { APP_VERSION, isAppVersion } from '@/utils/appVersion';
+import { APP_VERSION } from '@/utils/rawData';
+import { isAppVersion } from '@/utils/helpers';
 
 interface WSState {
 	maintenance: boolean;
