@@ -132,6 +132,27 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 				<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
 					<View className="mb-1 flex-row items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
 						<View className="h-10 w-10 items-center justify-center rounded-xl bg-blue-50 dark:bg-slate-800">
+							<MaterialIcons name="image" size={21} color={colors.brand} />
+						</View>
+						<View className="flex-1 gap-1">
+							<Text accessibilityRole="header" className="text-ink dark:text-slate-100 font-poppins-semibold text-base">
+								{t.companies.stampSection}
+							</Text>
+						</View>
+					</View>
+					<>
+						<EntityImage
+							image={companyData.cachet_cropped || companyData.cachet}
+							previewImage={companyData.cachet}
+							label={t.companies.stampLabel}
+							icon="image"
+							large
+						/>
+					</>
+				</View>
+				<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
+					<View className="mb-1 flex-row items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
+						<View className="h-10 w-10 items-center justify-center rounded-xl bg-blue-50 dark:bg-slate-800">
 							<MaterialIcons name="business" size={21} color={colors.brand} />
 						</View>
 						<View className="flex-1 gap-1">
@@ -434,27 +455,6 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 							}
 							label={t.companies.fieldFax}
 							value={companyData.fax}
-						/>
-					</>
-				</View>
-				<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
-					<View className="mb-1 flex-row items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
-						<View className="h-10 w-10 items-center justify-center rounded-xl bg-blue-50 dark:bg-slate-800">
-							<MaterialIcons name="image" size={21} color={colors.brand} />
-						</View>
-						<View className="flex-1 gap-1">
-							<Text accessibilityRole="header" className="text-ink dark:text-slate-100 font-poppins-semibold text-base">
-								{t.companies.stampSection}
-							</Text>
-						</View>
-					</View>
-					<>
-						<EntityImage
-							image={companyData.cachet_cropped || companyData.cachet}
-							previewImage={companyData.cachet}
-							label={t.companies.stampLabel}
-							icon="image"
-							large
 						/>
 					</>
 				</View>
