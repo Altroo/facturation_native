@@ -2,7 +2,7 @@ import type { FC, ReactNode } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import { useColorMode } from '@/providers/themeProvider';
-import { colors } from '@/utils/themes';
+import { colors, surfaceStyles } from '@/utils/themes';
 
 type Action = {
 	active: boolean;
@@ -25,6 +25,7 @@ type Props = {
 	onClose?: () => void;
 	maxWidth?: false | 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 	fullWidth?: boolean;
+	compact?: boolean;
 };
 
 const ActionModals: FC<Props> = (props: Props) => {
@@ -66,25 +67,45 @@ const ActionModals: FC<Props> = (props: Props) => {
 					testID="action-modal"
 					accessibilityViewIsModal
 					onAccessibilityEscape={handleClose}
-					className="max-h-[90%] gap-5 rounded-3xl bg-white p-6 dark:bg-panel"
-					style={{ width: fullWidth ? '100%' : '92%', maxWidth: widthLimit }}
+					className={
+						props.compact ? 'max-h-[90%] gap-3 p-4' : 'max-h-[90%] gap-5 rounded-3xl bg-white p-6 dark:bg-panel'
+					}
+					style={{
+						...(props.compact ? surfaceStyles[mode] : undefined),
+						width: fullWidth ? '100%' : '92%',
+						maxWidth: widthLimit,
+					}}
 				>
-					{!!titleIcon && (
-						<View
-							className="h-14 w-14 items-center justify-center rounded-2xl"
-							style={{ backgroundColor: titleIconColor ?? 'transparent' }}
-						>
+					{props.compact ? (
+						<View className="flex-row items-center gap-3">
 							{titleIcon}
+							<Text
+								accessibilityRole="header"
+								className="flex-1 font-poppins-semibold text-base text-ink dark:text-slate-100"
+							>
+								{title}
+							</Text>
 						</View>
+					) : (
+						<>
+							{!!titleIcon && (
+								<View
+									className="h-14 w-14 items-center justify-center rounded-2xl"
+									style={{ backgroundColor: titleIconColor ?? 'transparent' }}
+								>
+									{titleIcon}
+								</View>
+							)}
+							<Text accessibilityRole="header" className="font-poppins-semibold text-xl text-ink dark:text-slate-100">
+								{title}
+							</Text>
+						</>
 					)}
-					<Text accessibilityRole="header" className="font-poppins-semibold text-xl text-ink dark:text-slate-100">
-						{title}
-					</Text>
-					<ScrollView style={{ flexShrink: 1 }} contentContainerStyle={{ gap: 12 }}>
+					<ScrollView style={{ flexShrink: 1 }} contentContainerStyle={{ gap: props.compact ? 8 : 12 }}>
 						{!!body && <Text className="font-sans text-sm leading-6 text-slate-500 dark:text-slate-300">{body}</Text>}
 						{children}
 					</ScrollView>
-					<View className={['gap-3', ...(actionsStyle ?? [])].join(' ')}>
+					<View className={['gap-3', ...(actionsStyle ?? (props.compact ? ['flex-row'] : []))].join(' ')}>
 						{actions.map((action, index) => (
 							<PrimaryLoadingButton
 								key={index}
@@ -96,6 +117,7 @@ const ActionModals: FC<Props> = (props: Props) => {
 								danger={action.color === colors.danger || action.color === colors.dangerStrong}
 								color={action.color ?? (mode === 'dark' ? colors.slate[200] : colors.ink)}
 								startIcon={action.icon}
+								cssClass={props.compact ? 'flex-1' : undefined}
 							/>
 						))}
 					</View>

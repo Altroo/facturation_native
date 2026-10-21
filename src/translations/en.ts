@@ -1138,10 +1138,10 @@ export const en: TranslationDictionary = {
 		bulkSuspendSuccess: (n: number) => `${n} company(ies) suspended successfully.`,
 		bulkSuspendError: 'Error suspending companies.',
 		suspendModalTitle: 'Suspend this company?',
-		suspendModalBody:
-			'Are you sure you want to suspend this company? Associated users will no longer be able to log in.',
+		suspendModalBody: 'Associated users will no longer be able to log in.',
 		bulkSuspendModalTitle: (n: number) => `Suspend ${n} company(ies)?`,
-		bulkSuspendModalBody: (n: number) => `Are you sure you want to suspend these ${n} company(ies)?`,
+		bulkSuspendModalBody: (n: number) =>
+			`Users associated with these ${n} company(ies) will no longer be able to log in.`,
 		suspendBtn: 'Suspend',
 		bulkSuspendBtn: (n: number) => `Suspend (${n})`,
 		foreignCurrencyLabel: 'Use foreign currency',

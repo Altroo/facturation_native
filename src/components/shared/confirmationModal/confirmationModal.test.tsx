@@ -14,6 +14,7 @@ it.each(['delete', 'suspend', 'archive'] as const)(
 			<ConfirmationModal
 				title="Confirm change"
 				body="Proceed?"
+				recordName="Atlas Services"
 				confirmText="Proceed"
 				action={action}
 				onConfirm={onConfirm}
@@ -23,6 +24,7 @@ it.each(['delete', 'suspend', 'archive'] as const)(
 			</ConfirmationModal>,
 		);
 		expect(screen.getByText('Selected record')).toBeOnTheScreen();
+		expect(screen.getByText('Atlas Services')).toBeOnTheScreen();
 		expect(onConfirm).not.toHaveBeenCalled();
 		await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.cancel }));
 		expect(onClose).toHaveBeenCalledTimes(1);

@@ -1,12 +1,15 @@
 import type { ReactNode } from 'react';
+import { Text } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import ActionModals from '@/components/nativeElements/modals/actionModal/actionModals';
 import { useLanguage } from '@/utils/hooks';
 import { colors } from '@/utils/themes';
+import { useColorMode } from '@/providers/themeProvider';
 
 type Props = {
 	title: string;
 	body: string;
+	recordName?: string;
 	confirmText: string;
 	onConfirm: () => void;
 	onClose: () => void;
@@ -17,22 +20,18 @@ type Props = {
 
 const ConfirmationModal = (props: Props) => {
 	const { t } = useLanguage();
+	const { mode } = useColorMode();
+	const cancelColor = mode === 'dark' ? colors.slate[300] : colors.slate[500];
 	const archive = props.action === 'archive';
+	const actionColor = archive ? colors.warning : mode === 'dark' ? colors.dangerDarkForeground : colors.danger;
 	const handleClose = () => {
 		if (!props.loading) props.onClose();
 	};
 	return (
 		<ActionModals
+			compact
 			title={props.title}
-			body={props.body}
-			titleIcon={
-				<MaterialIcons
-					name={archive ? 'archive' : 'warning-amber'}
-					size={30}
-					color={archive ? colors.brand : colors.danger}
-				/>
-			}
-			titleIconColor={archive ? undefined : colors.dangerBackground}
+			titleIcon={<MaterialIcons name={archive ? 'archive' : 'warning-amber'} size={24} color={actionColor} />}
 			maxWidth="xs"
 			fullWidth
 			onClose={handleClose}
@@ -41,27 +40,23 @@ const ConfirmationModal = (props: Props) => {
 					text: t.common.cancel,
 					active: false,
 					onClick: handleClose,
-					icon: <MaterialIcons name="close" size={20} color={colors.slate[500]} />,
-					color: colors.slate[500],
+					color: cancelColor,
 					disabled: props.loading,
 				},
 				{
 					text: props.confirmText,
 					active: true,
 					onClick: props.onConfirm,
-					icon: (
-						<MaterialIcons
-							name={archive ? 'archive' : props.action === 'suspend' ? 'block' : 'delete-outline'}
-							size={20}
-							color={colors.white}
-						/>
-					),
-					color: archive ? colors.brand : colors.danger,
+					color: archive ? colors.warning : colors.danger,
 					loading: props.loading,
 					disabled: props.loading,
 				},
 			]}
 		>
+			{!!props.recordName && (
+				<Text className="font-poppins-semibold text-sm leading-6 text-ink dark:text-slate-100">{props.recordName}</Text>
+			)}
+			<Text className="font-sans text-sm leading-6 text-slate-500 dark:text-slate-300">{props.body}</Text>
 			{props.children}
 		</ActionModals>
 	);

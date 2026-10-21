@@ -386,14 +386,13 @@ const UsersViewPageContent = (props: UsersViewProps) => {
 				<ConfirmationModal
 					title={t.users.deleteModalTitle}
 					body={t.users.deleteModalBody}
+					recordName={name}
 					confirmText={t.common.delete}
 					action="delete"
 					loading={mutation.isLoading}
 					onClose={() => setShowDeleteModal(false)}
 					onConfirm={() => void handleDelete()}
-				>
-					{!!name && <Text className="font-poppins-medium text-base text-ink dark:text-slate-100">{name}</Text>}
-				</ConfirmationModal>
+				/>
 			)}
 		</>
 	);

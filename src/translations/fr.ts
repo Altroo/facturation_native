@@ -1146,10 +1146,10 @@ export const fr: TranslationDictionary = {
 		bulkSuspendSuccess: (n: number) => `${n} entreprise(s) suspendue(s) avec succès.`,
 		bulkSuspendError: 'Erreur lors de la suspension des entreprises.',
 		suspendModalTitle: 'Suspendre cette entreprise ?',
-		suspendModalBody:
-			'Êtes-vous sûr de vouloir suspendre cette entreprise ? Les utilisateurs associés ne pourront plus se connecter.',
+		suspendModalBody: 'Les utilisateurs associés ne pourront plus se connecter.',
 		bulkSuspendModalTitle: (n: number) => `Suspendre ${n} entreprise(s) ?`,
-		bulkSuspendModalBody: (n: number) => `Êtes-vous sûr de vouloir suspendre ces ${n} entreprise(s) ?`,
+		bulkSuspendModalBody: (n: number) =>
+			`Les utilisateurs associés à ces ${n} entreprise(s) ne pourront plus se connecter.`,
 		suspendBtn: 'Suspendre',
 		bulkSuspendBtn: (n: number) => `Suspendre (${n})`,
 		foreignCurrencyLabel: 'Utiliser une devise étrangère',

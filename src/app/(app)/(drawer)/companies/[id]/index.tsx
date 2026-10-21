@@ -607,18 +607,13 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 				<ConfirmationModal
 					title={t.companies.suspendModalTitle}
 					body={t.companies.suspendModalBody}
+					recordName={companyData.raison_sociale}
 					confirmText={t.companies.suspendBtn}
 					action="suspend"
 					loading={mutation.isLoading}
 					onClose={() => setShowSuspendModal(false)}
 					onConfirm={() => void handleSuspend()}
-				>
-					{!!companyData.raison_sociale && (
-						<Text className="font-poppins-medium text-base text-ink dark:text-slate-100">
-							{companyData.raison_sociale}
-						</Text>
-					)}
-				</ConfirmationModal>
+				/>
 			)}
 		</>
 	);

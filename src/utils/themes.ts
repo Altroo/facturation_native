@@ -35,6 +35,11 @@ export const colors = {
 	},
 } as const;
 
+export const surfaceStyles = {
+	light: { borderWidth: 1, borderRadius: 16, borderColor: colors.slate[200], backgroundColor: colors.white },
+	dark: { borderWidth: 1, borderRadius: 16, borderColor: colors.slate[600], backgroundColor: colors.panel },
+} as const;
+
 // Use the same names when loading fonts and setting native fontFamily props.
 export const fonts = {
 	regular: 'Poppins',
