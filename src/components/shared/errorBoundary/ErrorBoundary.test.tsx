@@ -8,7 +8,8 @@ import { translations } from '@/translations';
 
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
 
-jest.mock('expo', () => ({ reloadAppAsync: jest.fn() }));
+jest.mock('expo', () => ({ ...jest.requireActual('expo'), reloadAppAsync: jest.fn() }));
+
 let broken = true;
 const Child = () => {
 	if (broken) throw new Error('Example failure');

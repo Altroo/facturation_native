@@ -7,16 +7,19 @@ import ThemeProvider, { useColorMode } from './themeProvider';
 import { LanguageContextProvider } from '@/contexts/languageContext';
 import { useLanguage } from '@/utils/hooks';
 import { resolveColorMode } from '@/utils/colorMode';
+import { useTheme } from 'expo-router';
 
 const Example = () => {
 	const [value, setValue] = useState('');
 	const { language, setLanguage } = useLanguage();
 	const { mode, toggleTheme } = useColorMode();
+	const navigationTheme = useTheme();
 	return (
 		<>
 			<Text>
 				{language}/{mode}
 			</Text>
+			<Text>Navigation theme: {navigationTheme.dark ? 'dark' : 'light'}</Text>
 			<Button title="Language" onPress={() => setLanguage(language === 'fr' ? 'en' : 'fr')} />
 			<Button title="Theme" onPress={toggleTheme} />
 			<TextInput accessibilityLabel="Unfinished work" value={value} onChangeText={setValue} />
@@ -41,6 +44,7 @@ it('restores both original independent preference keys before exposing the appli
 		.mockImplementation(async (key) => ({ 'app-language': 'en', 'app-theme': 'dark' })[key] ?? null);
 	await setup();
 	await screen.findByText('en/dark');
+	expect(screen.getByText('Navigation theme: dark')).toBeOnTheScreen();
 	expect(Uniwind.setTheme).toHaveBeenLastCalledWith('dark');
 	expect(AsyncStorage.setItem).toHaveBeenCalledWith('app-theme', 'dark');
 	expect(AsyncStorage.setItem).not.toHaveBeenCalledWith('app-language', expect.anything());
@@ -102,12 +106,15 @@ it('switches themes and remembers the preference without losing unfinished input
 	await setup();
 	await screen.findByText('fr/light');
 	await fireEvent.changeText(screen.getByLabelText('Unfinished work'), 'Unsaved invoice');
+	expect(screen.getByText('Navigation theme: light')).toBeOnTheScreen();
 	await fireEvent.press(screen.getByText('Theme'));
 	await screen.findByText('fr/dark');
+	expect(screen.getByText('Navigation theme: dark')).toBeOnTheScreen();
 	expect(screen.getByLabelText('Unfinished work')).toHaveDisplayValue('Unsaved invoice');
 	expect(AsyncStorage.setItem).toHaveBeenCalledWith('app-theme', 'dark');
 	await fireEvent.press(screen.getByText('Theme'));
 	await screen.findByText('fr/light');
+	expect(screen.getByText('Navigation theme: light')).toBeOnTheScreen();
 	expect(screen.getByLabelText('Unfinished work')).toHaveDisplayValue('Unsaved invoice');
 	expect(AsyncStorage.setItem).toHaveBeenCalledWith('app-theme', 'light');
 });

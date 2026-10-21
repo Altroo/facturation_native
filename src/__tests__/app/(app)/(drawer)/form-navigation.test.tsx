@@ -75,7 +75,15 @@ jest.mock('@/components/layouts/navigationBar/navigationBar', () => {
 		Notifications: () => null,
 		useNavigationHeader: () => {
 			const options = actual.useNavigationHeader();
-			return { ...options, headerRight: () => cloneElement(options.headerRight(), {}, null) };
+			return {
+				...options,
+				headerRight: () => cloneElement(options.headerRight(), {}, null),
+				unstable_headerRightItems: () =>
+					options.unstable_headerRightItems().map((item) => ({
+						...item,
+						element: cloneElement(item.element, {}, null),
+					})),
+			};
 		},
 	};
 });

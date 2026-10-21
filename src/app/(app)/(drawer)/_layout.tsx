@@ -12,11 +12,16 @@ const DrawerStackLayout = () => {
 	const { t } = useLanguage();
 	const headerOptions = useNavigationHeader();
 	const { mode } = useColorMode();
+	const headerLeft = ({ tintColor }: { tintColor?: ColorValue }) => (
+		<DrawerToggleButton tintColor={tintColor} accessibilityLabel={t.common.toggleDrawer} />
+	);
+	const drawerHeaderItems = ({ tintColor }: { tintColor?: ColorValue }) => [
+		{ type: 'custom' as const, element: headerLeft({ tintColor }), hidesSharedBackground: true },
+	];
 	const drawerHeaderOptions = {
 		headerBackVisible: false,
-		headerLeft: ({ tintColor }: { tintColor?: ColorValue }) => (
-			<DrawerToggleButton tintColor={tintColor} accessibilityLabel={t.common.toggleDrawer} />
-		),
+		headerLeft,
+		unstable_headerLeftItems: drawerHeaderItems,
 	};
 	return (
 		<Stack
@@ -25,8 +30,8 @@ const DrawerStackLayout = () => {
 				contentStyle: { backgroundColor: mode === 'dark' ? colors.night : colors.screenBackground },
 				headerBackVisible: true,
 				headerBackButtonDisplayMode: 'minimal',
-				headerLeft: ({ tintColor, canGoBack }) =>
-					canGoBack ? null : <DrawerToggleButton tintColor={tintColor} accessibilityLabel={t.common.toggleDrawer} />,
+				headerLeft: ({ tintColor, canGoBack }) => (canGoBack ? null : headerLeft({ tintColor })),
+				unstable_headerLeftItems: ({ tintColor, canGoBack }) => (canGoBack ? [] : drawerHeaderItems({ tintColor })),
 			}}
 		>
 			<Stack.Screen name="index" options={{ ...drawerHeaderOptions, title: t.navigation.dashboard }} />

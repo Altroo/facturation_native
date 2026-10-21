@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { StatusBar } from 'expo-status-bar';
+import { DarkTheme, DefaultTheme, ThemeProvider as NavigationThemeProvider } from 'expo-router';
 import { Uniwind } from 'uniwind';
 import { resolveColorMode, type ColorMode } from '@/utils/colorMode';
 
@@ -44,8 +45,10 @@ const ThemeProvider = ({ children, initialTheme }: { children: ReactNode; initia
 		<ColorModeContext
 			value={{ mode, toggleTheme: () => setMode((current) => (current === 'dark' ? 'light' : 'dark')) }}
 		>
-			<StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
-			{children}
+			<NavigationThemeProvider value={mode === 'dark' ? DarkTheme : DefaultTheme}>
+				<StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
+				{children}
+			</NavigationThemeProvider>
 		</ColorModeContext>
 	);
 };

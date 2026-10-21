@@ -72,6 +72,16 @@ export const useNavigationHeader = () => {
 	const [controlsWidth, setControlsWidth] = useState(180);
 	const { width } = useWindowDimensions();
 	const insets = useSafeAreaInsets();
+	const headerRight = () => (
+		<View
+			className="flex-row items-center gap-1"
+			onLayout={({ nativeEvent }) => setControlsWidth(Math.ceil(nativeEvent.layout.width))}
+		>
+			<Notifications />
+			<ThemeToggle />
+			<LanguageSwitcher />
+		</View>
+	);
 	return {
 		headerStyle: { backgroundColor: mode === 'dark' ? colors.panel : colors.white },
 		headerTintColor: mode === 'dark' ? colors.white : colors.ink,
@@ -94,16 +104,9 @@ export const useNavigationHeader = () => {
 				{children}
 			</Text>
 		),
-		headerRight: () => (
-			<View
-				className="flex-row items-center gap-1"
-				onLayout={({ nativeEvent }) => setControlsWidth(Math.ceil(nativeEvent.layout.width))}
-			>
-				<Notifications />
-				<ThemeToggle />
-				<LanguageSwitcher />
-			</View>
-		),
+		headerRight,
+		// iOS adds a shared glass capsule to custom header controls unless hidden.
+		unstable_headerRightItems: () => [{ type: 'custom' as const, element: headerRight(), hidesSharedBackground: true }],
 	};
 };
 
