@@ -85,6 +85,7 @@ export type TranslationDictionary = {
 		textTooLong: string;
 	};
 	common: {
+		undo: string;
 		yes: string;
 		no: string;
 		save: string;

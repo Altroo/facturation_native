@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import CustomToast, { type CustomToastProps } from '@/components/portals/customToast/customToast';
 
 export type ToastContextType = {
-	onSuccess: (msg: string) => void;
+	onSuccess: (msg: string, action?: CustomToastProps['action']) => void;
 	onError: (msg: string) => void;
 };
 
@@ -13,24 +13,22 @@ export const ToastContextProvider: FC<{ children: ReactNode }> = ({ children }) 
 	const [show, setShow] = useState<boolean>(false);
 	const [type, setType] = useState<CustomToastProps['type']>('success');
 	const [message, setMessage] = useState<string>('');
+	const [action, setAction] = useState<CustomToastProps['action']>();
 
-	const onSuccess = (msg: string) => {
-		setType('success');
+	const showToast = (msg: string, type: CustomToastProps['type'], action?: CustomToastProps['action']) => {
+		setType(type);
 		setMessage(msg);
+		setAction(action);
 		setShow(true);
 	};
-
-	const onError = (msg: string) => {
-		setType('error');
-		setMessage(msg);
-		setShow(true);
-	};
+	const onSuccess: ToastContextType['onSuccess'] = (msg, action) => showToast(msg, 'success', action);
+	const onError = (msg: string) => showToast(msg, 'error');
 
 	return (
 		<ToastContext.Provider value={{ onSuccess, onError }}>
 			<View className="flex-1">
 				{children}
-				<CustomToast type={type} message={message} setShow={setShow} show={show} />
+				<CustomToast type={type} message={message} setShow={setShow} show={show} action={action} />
 			</View>
 		</ToastContext.Provider>
 	);

@@ -80,6 +80,7 @@ export const fr: TranslationDictionary = {
 		textTooLong: 'L’assistant accepte au maximum 5 000 caractères à la fois.',
 	},
 	common: {
+		undo: 'Annuler',
 		yes: 'Oui',
 		no: 'Non',
 		save: 'Enregistrer',

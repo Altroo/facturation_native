@@ -1,4 +1,4 @@
-import { useContext, useEffect, type FC, type ReactNode, type Dispatch, type SetStateAction } from 'react';
+import { useContext, useEffect, useRef, type FC, type ReactNode, type Dispatch, type SetStateAction } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { LanguageContext } from '@/contexts/languageContext';
@@ -10,20 +10,30 @@ export type CustomToastProps = {
 	show: boolean;
 	setShow: Dispatch<SetStateAction<boolean>>;
 	children?: ReactNode;
+	action?: { label: string; onPress: () => void };
 };
 
 const CustomToast: FC<CustomToastProps> = (props: CustomToastProps) => {
-	const { type, show, message, setShow } = props;
+	const { type, show, message, setShow, action } = props;
 	const { t } = useContext(LanguageContext);
+	const actionHandled = useRef(false);
 	const handleClose = () => {
 		props.setShow(false);
 	};
 
 	useEffect(() => {
+		actionHandled.current = false;
 		if (!show) return;
-		const timer = setTimeout(() => setShow(false), 6000);
+		// Leave more time to reach an undo action than a passive notification.
+		const timer = setTimeout(() => setShow(false), action ? 10000 : 6000);
 		return () => clearTimeout(timer);
-	}, [show, message, type, setShow]);
+	}, [show, message, type, setShow, action]);
+	const handleAction = () => {
+		if (!action || actionHandled.current) return;
+		actionHandled.current = true;
+		setShow(false);
+		action.onPress();
+	};
 
 	if (!props.show) return null;
 
@@ -79,6 +89,16 @@ const CustomToast: FC<CustomToastProps> = (props: CustomToastProps) => {
 				>
 					{props.message}
 				</Text>
+				{!!action && (
+					<Pressable
+						accessibilityRole="button"
+						accessibilityLabel={action.label}
+						onPress={handleAction}
+						className="min-h-11 shrink-0 items-center justify-center px-2 active:opacity-60"
+					>
+						<Text className={'font-poppins-semibold text-sm ' + appearance.text}>{action.label}</Text>
+					</Pressable>
+				)}
 				<Pressable
 					accessibilityRole="button"
 					accessibilityLabel={t.common.close}

@@ -16,6 +16,17 @@ const Example = () => {
 		</View>
 	);
 };
+const undo = jest.fn();
+const ArchiveExample = () => {
+	const toast = useContext(ToastContext)!;
+	return (
+		<>
+			<Button title="Archive" onPress={() => toast.onSuccess('Archived', { label: 'Undo', onPress: undo })} />
+			<Button title="Error" onPress={() => toast.onError('Failed')} />
+			<Button title="Saved" onPress={() => toast.onSuccess('Saved')} />
+		</>
+	);
+};
 beforeEach(() => jest.useFakeTimers());
 afterEach(() => jest.useRealTimers());
 it('announces a user-added success popup and dismisses it explicitly', async () => {
@@ -58,4 +69,30 @@ it('shows the same success again after the previous toast closes', async () => {
 	await fireEvent.press(screen.getByText('Success'));
 	expect(screen.getByText(translations.fr.users.addSuccess)).toBeOnTheScreen();
 	expect(screen.getByTestId('toast-icon')).toHaveProp('name', 'check-circle-outline');
+});
+
+it.each(['Error', 'Saved'])('removes the previous undo action when replaced by %s', async (replacement) => {
+	await render(
+		<ToastContextProvider>
+			<ArchiveExample />
+		</ToastContextProvider>,
+	);
+	await fireEvent.press(screen.getByRole('button', { name: 'Archive' }));
+	expect(screen.getByRole('button', { name: 'Undo' })).toBeOnTheScreen();
+	expect(screen.getByTestId('toast-icon')).toHaveProp('name', 'check-circle-outline');
+	await fireEvent.press(screen.getByRole('button', { name: replacement }));
+	expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull();
+	expect(undo).not.toHaveBeenCalled();
+});
+
+it('executes the current undo callback and dismisses its toast', async () => {
+	await render(
+		<ToastContextProvider>
+			<ArchiveExample />
+		</ToastContextProvider>,
+	);
+	await fireEvent.press(screen.getByRole('button', { name: 'Archive' }));
+	await fireEvent.press(screen.getByRole('button', { name: 'Undo' }));
+	expect(undo).toHaveBeenCalledTimes(1);
+	expect(screen.queryByRole('alert')).toBeNull();
 });

@@ -50,6 +50,32 @@ it('keeps the toast open when pressing another control outside it', async () => 
 	expect(screen.getByRole('alert')).toHaveTextContent('Notification');
 });
 
+it('offers an undo action once without running it on dismissal', async () => {
+	const setShow = jest.fn();
+	const onPress = jest.fn();
+	await render(
+		<CustomToast type="success" message="Archived" show setShow={setShow} action={{ label: 'Undo', onPress }} />,
+	);
+	const undo = screen.getByRole('button', { name: 'Undo' });
+	await fireEvent.press(undo);
+	await fireEvent.press(undo);
+	expect(onPress).toHaveBeenCalledTimes(1);
+	expect(setShow).toHaveBeenCalledWith(false);
+});
+
+it('leaves ten seconds to undo and never automatically runs the action', async () => {
+	const setShow = jest.fn();
+	const onPress = jest.fn();
+	await render(
+		<CustomToast type="success" message="Archived" show setShow={setShow} action={{ label: 'Undo', onPress }} />,
+	);
+	await act(() => jest.advanceTimersByTime(9999));
+	expect(setShow).not.toHaveBeenCalled();
+	await act(() => jest.advanceTimersByTime(1));
+	expect(setShow).toHaveBeenCalledWith(false);
+	expect(onPress).not.toHaveBeenCalled();
+});
+
 describe('CustomToast', () => {
 	const setShowMock = jest.fn();
 
