@@ -2,8 +2,8 @@ import { type ComponentRef, type FC, type ReactNode, useEffect, useEffectEvent, 
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import ApiAlert from '@/components/formikElements/apiLoading/apiAlert/apiAlert';
-import ApiProgress from '@/components/formikElements/apiLoading/apiProgress/apiProgress';
+import ApiAlert from '@/components/nativeElements/apiLoading/apiAlert/apiAlert';
+import ApiProgress from '@/components/nativeElements/apiLoading/apiProgress/apiProgress';
 import { useInitAccessToken } from '@/contexts/InitContext';
 import { useColorMode } from '@/providers/themeProvider';
 import { useGetUserCompaniesQuery } from '@/store/services/company';

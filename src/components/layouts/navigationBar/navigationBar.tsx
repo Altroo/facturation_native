@@ -1,5 +1,5 @@
 import { FlashList } from '@shopify/flash-list';
-import ApiAlert from '@/components/formikElements/apiLoading/apiAlert/apiAlert';
+import ApiAlert from '@/components/nativeElements/apiLoading/apiAlert/apiAlert';
 import { format, isValid, parseISO } from 'date-fns';
 import {
 	useGetUnreadNotificationCountQuery,

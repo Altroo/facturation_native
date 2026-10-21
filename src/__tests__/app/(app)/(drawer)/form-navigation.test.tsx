@@ -90,7 +90,7 @@ jest.mock('@/components/layouts/navigationBar/navigationBar', () => {
 jest.mock('@/components/shared/themeToggle/themeToggle', () => () => null);
 jest.mock('@/components/shared/languageSwitcher/languageSwitcher', () => () => null);
 jest.mock('@/components/shared/appUpdate/appUpdate', () => () => null);
-jest.mock('@/components/formikElements/customSquareImageUploading/customSquareImageUploading', () => () => null);
+jest.mock('@/components/nativeElements/customSquareImageUploading/customSquareImageUploading', () => () => null);
 jest.mock('@/utils/hooks', () => ({
 	...jest.requireActual<typeof import('@/utils/hooks')>('@/utils/hooks'),
 	useLanguage: () => ({

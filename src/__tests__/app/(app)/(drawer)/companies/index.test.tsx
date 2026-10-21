@@ -1,4 +1,4 @@
-import { toggleAutocomplete } from '@/components/formikElements/customAutoCompleteSelect/setupAutocomplete';
+import { toggleAutocomplete } from '@/components/nativeElements/customAutoCompleteSelect/setupAutocomplete';
 import { configureStore } from '@reduxjs/toolkit';
 import _initReducer, { setAuthenticated } from '@/store/slices/_initSlice';
 import accountReducer, { setProfil } from '@/store/slices/accountSlice';

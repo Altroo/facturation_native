@@ -1,5 +1,5 @@
 import AuthLayout from '@/components/layouts/auth/authLayout';
-import ApiAlert from '@/components/formikElements/apiLoading/apiAlert/apiAlert';
+import ApiAlert from '@/components/nativeElements/apiLoading/apiAlert/apiAlert';
 import { useEffect } from 'react';
 import { setFormikAutoErrors } from '@/utils/helpers';
 import { getInitState } from '@/store/selectors';
@@ -13,8 +13,8 @@ import { useLanguage, useAppDispatch, useAppSelector } from '@/utils/hooks';
 import { accountLoginAction } from '@/store/actions/accountActions';
 import { loginSchema } from '@/utils/formValidationSchemas';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
-import CustomTextInput from '@/components/formikElements/customTextInput/customTextInput';
-import CustomPasswordInput from '@/components/formikElements/customPasswordInput/customPasswordInput';
+import CustomTextInput from '@/components/nativeElements/customTextInput/customTextInput';
+import CustomPasswordInput from '@/components/nativeElements/customPasswordInput/customPasswordInput';
 import { colors } from '@/utils/themes';
 import { EMAIL_MAX_LENGTH } from '@/utils/rawData';
 

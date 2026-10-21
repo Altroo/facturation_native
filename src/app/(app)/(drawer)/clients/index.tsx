@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useRef, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router } from 'expo-router';
 import type { ColumnDef, FilterModel, SortModel } from 'expo-flash-datagrid';
@@ -14,11 +14,13 @@ import ChipSelectFilter from '@/components/shared/chipSelectFilter/chipSelectFil
 import InfoRow from '@/components/shared/infoRow/infoRow';
 import NoPermission from '@/components/shared/noPermission/noPermission';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
-import ActionModals from '@/components/nativeElements/modals/actionModal/actionModals';
-import ApiAlert from '@/components/formikElements/apiLoading/apiAlert/apiAlert';
+import ConfirmationModal from '@/components/shared/confirmationModal/confirmationModal';
+import QueryError from '@/components/shared/queryError/queryError';
+import ListCard from '@/components/shared/listCard/listCard';
+import ListCardActions from '@/components/shared/listCardActions/listCardActions';
 import { useInitAccessToken } from '@/contexts/InitContext';
 import { useLanguage, useToast } from '@/utils/hooks';
-import { extractApiErrorMessage, formatDate, normalizeApiError, runWithCleanup } from '@/utils/helpers';
+import { extractApiErrorMessage, formatDate, runWithCleanup } from '@/utils/helpers';
 import { colors } from '@/utils/themes';
 import { MODULES_PAGE_SIZE } from '@/utils/rawData';
 import { CLIENTS_ADD, CLIENTS_EDIT, CLIENTS_VIEW } from '@/utils/routes';
@@ -266,29 +268,60 @@ const ClientsListContent = (props: Props) => {
 				} as Record<string, string>
 			)[client.client_type] ?? client.client_type;
 		return (
-			<View
+			<ListCard
 				testID={`client-card-${client.id}`}
-				className="mb-3 gap-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-panel"
-			>
-				{canEdit && (
-					<Pressable
-						accessibilityRole="checkbox"
-						accessibilityLabel={t.clients.selectClient(name)}
-						accessibilityState={{ checked: selectedIds.includes(client.id), disabled }}
+				selection={
+					canEdit
+						? {
+								label: t.clients.selectClient(name),
+								checked: selectedIds.includes(client.id),
+								disabled,
+								onChange: () => handleSelectionChange(client.id),
+							}
+						: undefined
+				}
+				actions={
+					<ListCardActions
 						disabled={disabled}
-						onPress={() => handleSelectionChange(client.id)}
-						className="min-h-11 flex-row items-center gap-3"
+						onView={() => {
+							const route = CLIENTS_VIEW(client.id);
+							router.push({ ...route, params: { ...route.params, company_id: String(props.company_id) } });
+						}}
+						onEdit={
+							canEdit
+								? () => {
+										const route = CLIENTS_EDIT(client.id);
+										router.push({ ...route, params: { ...route.params, company_id: String(props.company_id) } });
+									}
+								: undefined
+						}
 					>
-						<MaterialIcons
-							name={selectedIds.includes(client.id) ? 'check-box' : 'check-box-outline-blank'}
-							size={24}
-							color={selectedIds.includes(client.id) ? colors.brand : colors.slate[400]}
-						/>
-						<Text className="flex-1 font-sans text-sm text-ink dark:text-slate-100">
-							{t.clients.selectClient(name)}
-						</Text>
-					</Pressable>
-				)}
+						{canEdit && (
+							<View className="flex-row gap-2">
+								<PrimaryLoadingButton
+									cssClass="flex-1"
+									buttonText={t.common.archive}
+									active={!disabled && !query.isFetching}
+									loading={false}
+									inverted
+									startIcon={<MaterialIcons name="archive" size={20} color={colors.brand} />}
+									onClick={() => setConfirmation({ action: 'archive', ids: [client.id], bulk: false })}
+								/>
+								<PrimaryLoadingButton
+									cssClass="flex-1"
+									buttonText={t.common.delete}
+									active={!disabled && !query.isFetching}
+									loading={false}
+									inverted
+									danger
+									startIcon={<MaterialIcons name="delete-outline" size={20} color={colors.danger} />}
+									onClick={() => setConfirmation({ action: 'delete', ids: [client.id], bulk: false })}
+								/>
+							</View>
+						)}
+					</ListCardActions>
+				}
+			>
 				<View className="flex-row items-center gap-3">
 					<View className="h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 dark:bg-slate-800">
 						<MaterialIcons
@@ -344,58 +377,7 @@ const ClientsListContent = (props: Props) => {
 						value={formatDate(client.date_created)}
 					/>
 				</View>
-				<View className="flex-row gap-2">
-					<PrimaryLoadingButton
-						cssClass="flex-1"
-						buttonText={t.common.view}
-						active={!disabled}
-						loading={false}
-						inverted
-						startIcon={<MaterialIcons name="visibility" size={20} color={colors.brand} />}
-						onClick={() => {
-							const route = CLIENTS_VIEW(client.id);
-							router.push({ ...route, params: { ...route.params, company_id: String(props.company_id) } });
-						}}
-					/>
-					{canEdit && (
-						<PrimaryLoadingButton
-							cssClass="flex-1"
-							buttonText={t.common.edit}
-							active={!disabled}
-							loading={false}
-							inverted
-							startIcon={<MaterialIcons name="edit" size={20} color={colors.brand} />}
-							onClick={() => {
-								const route = CLIENTS_EDIT(client.id);
-								router.push({ ...route, params: { ...route.params, company_id: String(props.company_id) } });
-							}}
-						/>
-					)}
-				</View>
-				{canEdit && (
-					<View className="flex-row gap-2">
-						<PrimaryLoadingButton
-							cssClass="flex-1"
-							buttonText={t.common.archive}
-							active={!disabled && !query.isFetching}
-							loading={false}
-							inverted
-							startIcon={<MaterialIcons name="archive" size={20} color={colors.brand} />}
-							onClick={() => setConfirmation({ action: 'archive', ids: [client.id], bulk: false })}
-						/>
-						<PrimaryLoadingButton
-							cssClass="flex-1"
-							buttonText={t.common.delete}
-							active={!disabled && !query.isFetching}
-							loading={false}
-							inverted
-							danger
-							startIcon={<MaterialIcons name="delete-outline" size={20} color={colors.danger} />}
-							onClick={() => setConfirmation({ action: 'delete', ids: [client.id], bulk: false })}
-						/>
-					</View>
-				)}
-			</View>
+			</ListCard>
 		);
 	};
 
@@ -439,28 +421,24 @@ const ClientsListContent = (props: Props) => {
 							}}
 						/>
 						{!!citiesQuery.error && (
-							<View className="gap-2">
-								<ApiAlert variant="banner" errorDetails={normalizeApiError(citiesQuery.error).details} />
-								<PrimaryLoadingButton
-									buttonText={t.common.retry}
-									active={!citiesQuery.isFetching}
-									loading={citiesQuery.isFetching}
-									inverted
-									onClick={() => void citiesQuery.refetch()}
-								/>
-							</View>
+							<QueryError
+								error={citiesQuery.error}
+								onRetry={() => void citiesQuery.refetch()}
+								loading={citiesQuery.isFetching}
+								disabled={disabled}
+								variant="banner"
+								showDetails
+							/>
 						)}
 						{!!query.error && !query.isFetchNextPageError && (
-							<View className="gap-2">
-								<ApiAlert variant="banner" errorDetails={normalizeApiError(query.error).details} />
-								<PrimaryLoadingButton
-									buttonText={t.common.retry}
-									active={!disabled && !query.isFetching}
-									loading={query.isFetching}
-									inverted
-									onClick={refresh}
-								/>
-							</View>
+							<QueryError
+								error={query.error}
+								onRetry={refresh}
+								loading={query.isFetching}
+								disabled={disabled}
+								variant="banner"
+								showDetails
+							/>
 						)}
 					</>
 				}
@@ -541,7 +519,7 @@ const ClientsListContent = (props: Props) => {
 				}}
 			/>
 			{!!confirmation && (
-				<ActionModals
+				<ConfirmationModal
 					title={
 						confirmation.action === 'delete'
 							? confirmation.bulk
@@ -560,19 +538,11 @@ const ClientsListContent = (props: Props) => {
 								? t.clients.bulkArchiveModalBody(confirmation.ids.length)
 								: t.clients.archiveModalBody
 					}
-					onClose={() => {
-						if (!busy) setConfirmation(null);
-					}}
-					actions={[
-						{ text: t.common.cancel, active: false, disabled: busy, onClick: () => setConfirmation(null) },
-						{
-							text: confirmation.action === 'delete' ? t.common.delete : t.common.archive,
-							active: true,
-							disabled: busy,
-							color: confirmation.action === 'delete' ? colors.danger : colors.brand,
-							onClick: () => void confirmAction(),
-						},
-					]}
+					action={confirmation.action}
+					confirmText={confirmation.action === 'delete' ? t.common.delete : t.common.archive}
+					loading={busy}
+					onClose={() => setConfirmation(null)}
+					onConfirm={() => void confirmAction()}
 				/>
 			)}
 		</>

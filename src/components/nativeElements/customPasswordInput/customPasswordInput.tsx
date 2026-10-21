@@ -4,7 +4,7 @@ import { Pressable } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import CustomTextInput, {
 	type CustomTextInputProps,
-} from '@/components/formikElements/customTextInput/customTextInput';
+} from '@/components/nativeElements/customTextInput/customTextInput';
 import { useLanguage } from '@/utils/hooks';
 import { colors } from '@/utils/themes';
 

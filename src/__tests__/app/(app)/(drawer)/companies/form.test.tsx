@@ -17,7 +17,7 @@ import {
 import { useGetUsersListQuery, useGetGroupsQuery } from '@/store/services/account';
 
 import { translations } from '@/translations';
-import { AutocompleteDropdownContextProvider } from '@/components/formikElements/customAutoCompleteSelect/setupAutocomplete';
+import { AutocompleteDropdownContextProvider } from '@/components/nativeElements/customAutoCompleteSelect/setupAutocomplete';
 jest.mock('@/contexts/InitContext', () => ({ useInitAccessToken: () => 'test-access' }));
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
 let mockParams: { id?: string | string[] } = {};
@@ -50,7 +50,7 @@ jest.mock('@/store/services/account', () => ({
 	}),
 	useGetGroupsQuery: jest.fn(),
 }));
-jest.mock('@/components/formikElements/customSquareImageUploading/customSquareImageUploading', () => () => null);
+jest.mock('@/components/nativeElements/customSquareImageUploading/customSquareImageUploading', () => () => null);
 const mockCompanyQuery = createQueryMock<ReturnType<typeof useGetCompanyQuery>>({} as never);
 const mockUsersQuery = createQueryMock<ReturnType<typeof useGetUsersListQuery>>({} as never);
 const creator = {

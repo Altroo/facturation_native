@@ -108,9 +108,9 @@ The APK is written to `android/app/build/outputs/apk/release/app-release.apk`. `
 | `src/app/(app)/(drawer)/`                                 | Dashboard and module folders sharing one navigation stack                |
 | `src/app/(app)/(drawer)/clients/`, `companies/`, `users/` | Each module’s list, form, detail screen, and archive when applicable     |
 | `src/app/api/app-version+api.ts`                          | Local version endpoint, equivalent to the web API route                  |
-| `src/components/formikElements/`                          | Shared form inputs, selects and image upload controls                    |
-| `src/components/nativeElements/`                          | Native buttons, dialogs, sheets and image preview                        |
-| `src/components/shared/`, `layouts/`, `portals/`          | Lists, keyboard-aware scrolling, navigation, auth layout and toasts      |
+| `src/components/nativeElements/`                          | Individual controls: inputs, selects, buttons, checkboxes and dialogs    |
+| `src/components/shared/`                                  | Reusable compositions and logic: list cards, actions, confirmations and retry blocks |
+| `src/components/layouts/`, `portals/`                      | Navigation, auth layout and toasts                                      |
 | `src/contexts/`, `src/providers/`                         | Initialization, sessions, theme, language and feedback                   |
 | `src/store/`                                              | Actions, services, sagas, slices and selectors                           |
 | `src/models/`, `src/types/`                               | Domain models and shared data contracts                                  |

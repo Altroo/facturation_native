@@ -19,7 +19,7 @@ import { translations } from '@/translations';
 import {
 	AutocompleteDropdownContextProvider,
 	toggleAutocomplete,
-} from '@/components/formikElements/customAutoCompleteSelect/setupAutocomplete';
+} from '@/components/nativeElements/customAutoCompleteSelect/setupAutocomplete';
 import type { UserWithCompaniesResponseType } from '@/types/usersTypes';
 jest.mock('@/contexts/InitContext', () => ({ useInitAccessToken: () => 'test-access' }));
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
@@ -38,7 +38,7 @@ jest.mock('@/store/services/company', () => ({
 		return mockCompaniesQuery.useResult();
 	}),
 }));
-jest.mock('@/components/formikElements/customSquareImageUploading/customSquareImageUploading', () => () => null);
+jest.mock('@/components/nativeElements/customSquareImageUploading/customSquareImageUploading', () => () => null);
 const mockSuccess = jest.fn();
 const mockError = jest.fn();
 jest.mock('@/utils/hooks', () => ({

@@ -4,7 +4,7 @@ import type { ReactElement } from 'react';
 import {
 	AutocompleteDropdownContextProvider,
 	toggleAutocomplete,
-} from '@/components/formikElements/customAutoCompleteSelect/setupAutocomplete';
+} from '@/components/nativeElements/customAutoCompleteSelect/setupAutocomplete';
 import AddManagedBySection, { AddManagedBySectionProps } from './addManagedBySection';
 import { translations } from '@/translations';
 const render = (ui: ReactElement) => renderComponent(ui, { wrapper: AutocompleteDropdownContextProvider });

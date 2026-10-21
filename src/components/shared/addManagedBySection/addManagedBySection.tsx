@@ -1,8 +1,8 @@
 import type { FC, ReactNode } from 'react';
 import { type GestureResponderEvent, type StyleProp, Text, View, type ViewStyle } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import CustomDropDownSelect from '@/components/formikElements/customDropDownSelect/customDropDownSelect';
-import CustomAutoCompleteSelect from '@/components/formikElements/customAutoCompleteSelect/customAutoCompleteSelect';
+import CustomDropDownSelect from '@/components/nativeElements/customDropDownSelect/customDropDownSelect';
+import CustomAutoCompleteSelect from '@/components/nativeElements/customAutoCompleteSelect/customAutoCompleteSelect';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import { useLanguage } from '@/utils/hooks';
 import { DropDownType } from '@/types/accountTypes';

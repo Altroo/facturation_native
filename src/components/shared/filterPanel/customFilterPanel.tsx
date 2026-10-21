@@ -10,8 +10,8 @@ import {
 	type ColumnDef,
 	type FilterModel,
 } from 'expo-flash-datagrid';
-import CustomAutoCompleteSelect from '@/components/formikElements/customAutoCompleteSelect/customAutoCompleteSelect';
-import CustomTextInput from '@/components/formikElements/customTextInput/customTextInput';
+import CustomAutoCompleteSelect from '@/components/nativeElements/customAutoCompleteSelect/customAutoCompleteSelect';
+import CustomTextInput from '@/components/nativeElements/customTextInput/customTextInput';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import { useColorMode } from '@/providers/themeProvider';
 import { valueLessFilterOperators } from '@/utils/rawData';

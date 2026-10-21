@@ -5,7 +5,7 @@ import {
 	AutocompleteDropdownContextProvider,
 	toggleAutocomplete,
 	flushAutocomplete,
-} from '@/components/formikElements/customAutoCompleteSelect/setupAutocomplete';
+} from '@/components/nativeElements/customAutoCompleteSelect/setupAutocomplete';
 import { Text, Pressable } from 'react-native';
 import CustomAutoCompleteSelect from './customAutoCompleteSelect';
 import { translations } from '@/translations';

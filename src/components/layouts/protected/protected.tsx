@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import NoPermission from '@/components/shared/noPermission/noPermission';
 import { useAppSelector, usePermission } from '@/utils/hooks';
 import { getProfilState } from '@/store/selectors';
-import ApiProgress from '@/components/formikElements/apiLoading/apiProgress/apiProgress';
+import ApiProgress from '@/components/nativeElements/apiLoading/apiProgress/apiProgress';
 
 type ProtectedProps = {
 	children: ReactNode;

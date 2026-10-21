@@ -1,19 +1,20 @@
 import InfoRow from '@/components/shared/infoRow/infoRow';
 import EntityImage from '@/components/shared/entityImage/entityImage';
 import NoPermission from '@/components/shared/noPermission/noPermission';
-import ApiAlert from '@/components/formikElements/apiLoading/apiAlert/apiAlert';
-import ApiProgress from '@/components/formikElements/apiLoading/apiProgress/apiProgress';
+import QueryError from '@/components/shared/queryError/queryError';
+import ApiAlert from '@/components/nativeElements/apiLoading/apiAlert/apiAlert';
+import ApiProgress from '@/components/nativeElements/apiLoading/apiProgress/apiProgress';
 import { useRef, useState } from 'react';
-import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useGetUserQuery, useDeleteUserMutation } from '@/store/services/account';
 import { getProfilState } from '@/store/selectors';
 import { useAppSelector, useLanguage, usePermission, useToast } from '@/utils/hooks';
 import { USERS_EDIT, USERS_LIST } from '@/utils/routes';
-import { extractApiErrorMessage, normalizeApiError, formatDate, parseEntityId, runWithCleanup } from '@/utils/helpers';
+import { extractApiErrorMessage, formatDate, parseEntityId, runWithCleanup } from '@/utils/helpers';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
-import ActionModals from '@/components/nativeElements/modals/actionModal/actionModals';
+import ConfirmationModal from '@/components/shared/confirmationModal/confirmationModal';
 import { colors } from '@/utils/themes';
 
 type UsersViewProps = {
@@ -61,29 +62,7 @@ const UsersViewPageContent = (props: UsersViewProps) => {
 			},
 		);
 	};
-	const deleteModalActions = [
-		{
-			text: t.common.cancel,
-			active: false,
-			color: colors.slate[500],
-			disabled: mutation.isLoading,
-			onClick: () => setShowDeleteModal(false),
-		},
-		{
-			text: t.common.delete,
-			active: true,
-			color: colors.danger,
-			disabled: mutation.isLoading,
-			icon: mutation.isLoading ? (
-				<ActivityIndicator color={colors.white} />
-			) : (
-				<MaterialIcons name="delete-outline" size={20} color={colors.white} />
-			),
-			onClick: () => void handleDelete(),
-		},
-	];
 	if (!allowed) return <NoPermission />;
-	const axiosError = normalizeApiError(query.error);
 	if (query.error)
 		return (
 			<ScrollView
@@ -96,20 +75,12 @@ const UsersViewPageContent = (props: UsersViewProps) => {
 					flexGrow: 1,
 				}}
 			>
-				<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
-					<ApiAlert
-						errorDetails={
-							axiosError.status_code === 0
-								? t.errors.networkError
-								: axiosError.status_code === 403
-									? t.noPermission.description
-									: axiosError.status_code === 404
-										? t.notFound.message
-										: axiosError.message
-						}
-					/>
-					<PrimaryLoadingButton buttonText={t.common.retry} onClick={query.refetch} inverted active loading={false} />
-				</View>
+				<QueryError
+					error={query.error}
+					onRetry={() => void query.refetch()}
+					loading={query.isFetching}
+					disabled={mutation.isLoading}
+				/>
 			</ScrollView>
 		);
 	const userData = query.currentData;
@@ -412,18 +383,17 @@ const UsersViewPageContent = (props: UsersViewProps) => {
 				)}
 			</ScrollView>
 			{showDeleteModal && (
-				<ActionModals
+				<ConfirmationModal
 					title={t.users.deleteModalTitle}
 					body={t.users.deleteModalBody}
-					titleIcon={<MaterialIcons name="warning-amber" size={30} color={colors.danger} />}
-					titleIconColor={colors.dangerBackground}
-					maxWidth="xs"
-					fullWidth
+					confirmText={t.common.delete}
+					action="delete"
+					loading={mutation.isLoading}
 					onClose={() => setShowDeleteModal(false)}
-					actions={deleteModalActions}
+					onConfirm={() => void handleDelete()}
 				>
 					{!!name && <Text className="font-poppins-medium text-base text-ink dark:text-slate-100">{name}</Text>}
-				</ActionModals>
+				</ConfirmationModal>
 			)}
 		</>
 	);

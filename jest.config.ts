@@ -41,7 +41,7 @@ const config: Config = {
 		'!src/types/**',
 		'!src/**/index.{js,ts}',
 		'!src/**/*.test.{js,jsx,ts,tsx}',
-		'!src/components/formikElements/customAutoCompleteSelect/setupAutocomplete.tsx',
+		'!src/components/nativeElements/customAutoCompleteSelect/setupAutocomplete.tsx',
 		'!src/store/setupQuery.tsx',
 		'!src/uniwind-types.d.ts',
 	],

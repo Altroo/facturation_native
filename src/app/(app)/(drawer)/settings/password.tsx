@@ -1,4 +1,4 @@
-import ApiAlert from '@/components/formikElements/apiLoading/apiAlert/apiAlert';
+import ApiAlert from '@/components/nativeElements/apiLoading/apiAlert/apiAlert';
 import { useState } from 'react';
 import { Text, View, Platform } from 'react-native';
 import KeyboardAwareScrollView from '@/components/shared/keyboardAwareScrollView/keyboardAwareScrollView';
@@ -11,7 +11,7 @@ import { getProfilState } from '@/store/selectors';
 import { useAppDispatch, useAppSelector, useLanguage, useToast } from '@/utils/hooks';
 import { changePasswordSchema } from '@/utils/formValidationSchemas';
 import { runWithCleanup, setFormikAutoErrors } from '@/utils/helpers';
-import CustomPasswordInput from '@/components/formikElements/customPasswordInput/customPasswordInput';
+import CustomPasswordInput from '@/components/nativeElements/customPasswordInput/customPasswordInput';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import { colors } from '@/utils/themes';
 

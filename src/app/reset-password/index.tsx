@@ -1,11 +1,11 @@
-import ApiAlert from '@/components/formikElements/apiLoading/apiAlert/apiAlert';
+import ApiAlert from '@/components/nativeElements/apiLoading/apiAlert/apiAlert';
 import { useCallback, useState } from 'react';
 import { Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useFormik } from 'formik';
 import { toFormikValidationSchema } from 'zod-formik-adapter';
 import AuthLayout from '@/components/layouts/auth/authLayout';
-import CustomTextInput from '@/components/formikElements/customTextInput/customTextInput';
+import CustomTextInput from '@/components/nativeElements/customTextInput/customTextInput';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import { useSendPasswordResetCodeMutation } from '@/store/services/account';
 import { emailSchema } from '@/utils/formValidationSchemas';

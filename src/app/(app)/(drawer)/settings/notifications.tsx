@@ -1,8 +1,8 @@
-import CustomSwitch from '@/components/formikElements/customSwitch/customSwitch';
+import CustomSwitch from '@/components/nativeElements/customSwitch/customSwitch';
 import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
-import ApiProgress from '@/components/formikElements/apiLoading/apiProgress/apiProgress';
-import ApiAlert from '@/components/formikElements/apiLoading/apiAlert/apiAlert';
+import ApiProgress from '@/components/nativeElements/apiLoading/apiProgress/apiProgress';
+import ApiAlert from '@/components/nativeElements/apiLoading/apiAlert/apiAlert';
 import { useFormik } from 'formik';
 import {
 	useGetNotificationPreferencesQuery,
@@ -11,7 +11,7 @@ import {
 import { useLanguage, useToast } from '@/utils/hooks';
 import { normalizeApiError, runWithCleanup, setFormikAutoErrors } from '@/utils/helpers';
 import type { NotificationPreferenceFormValues } from '@/types/notificationTypes';
-import CustomDropDownSelect from '@/components/formikElements/customDropDownSelect/customDropDownSelect';
+import CustomDropDownSelect from '@/components/nativeElements/customDropDownSelect/customDropDownSelect';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 
 const NotificationsPage = () => {

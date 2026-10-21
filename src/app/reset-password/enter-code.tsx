@@ -1,5 +1,5 @@
-import ApiAlert from '@/components/formikElements/apiLoading/apiAlert/apiAlert';
-import ApiProgress from '@/components/formikElements/apiLoading/apiProgress/apiProgress';
+import ApiAlert from '@/components/nativeElements/apiLoading/apiAlert/apiAlert';
+import ApiProgress from '@/components/nativeElements/apiLoading/apiProgress/apiProgress';
 import { useRef, useState } from 'react';
 import { ScrollView, Text, TextInput, View, type TextInputInstance } from 'react-native';
 import { useFocusEffect, useRouter, Redirect } from 'expo-router';

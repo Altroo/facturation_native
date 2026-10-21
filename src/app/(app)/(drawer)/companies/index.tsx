@@ -1,8 +1,11 @@
 import EntityImage from '@/components/shared/entityImage/entityImage';
 import NoPermission from '@/components/shared/noPermission/noPermission';
-import ApiAlert from '@/components/formikElements/apiLoading/apiAlert/apiAlert';
+import QueryError from '@/components/shared/queryError/queryError';
+import ListCard from '@/components/shared/listCard/listCard';
+import ListCardActions from '@/components/shared/listCardActions/listCardActions';
+import InfoRow from '@/components/shared/infoRow/infoRow';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Text, View, Pressable } from 'react-native';
+import { Text, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router } from 'expo-router';
 import type { ColumnDef, FilterModel, SortModel } from 'expo-flash-datagrid';
@@ -19,10 +22,10 @@ import {
 } from '@/store/services/company';
 import { companiesSetUserCompaniesAction } from '@/store/actions/companiesActions';
 import type { CompanyClass } from '@/models/classes';
-import ActionModals from '@/components/nativeElements/modals/actionModal/actionModals';
+import ConfirmationModal from '@/components/shared/confirmationModal/confirmationModal';
 import { getUserCompaniesState } from '@/store/selectors';
 import { useAppDispatch, useAppSelector, useLanguage, usePermission, useToast } from '@/utils/hooks';
-import { getDjangoNextPageParam, normalizeApiError, formatDate, runWithCleanup } from '@/utils/helpers';
+import { getDjangoNextPageParam, formatDate, runWithCleanup } from '@/utils/helpers';
 import { COMPANIES_ADD, COMPANIES_VIEW, COMPANIES_EDIT } from '@/utils/routes';
 import { MODULES_PAGE_SIZE } from '@/utils/rawData';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
@@ -245,48 +248,6 @@ const CompaniesListPage = () => {
 			},
 		);
 	};
-	const deleteModalActions = [
-		{
-			text: t.common.cancel,
-			active: false,
-			color: colors.slate[500],
-			disabled: suspending,
-			onClick: () => setShowSuspendModal(false),
-		},
-		{
-			text: t.companies.suspendBtn,
-			active: true,
-			color: colors.danger,
-			disabled: suspending,
-			icon: suspending ? (
-				<ActivityIndicator color={colors.white} />
-			) : (
-				<MaterialIcons name="delete-outline" size={20} color={colors.white} />
-			),
-			onClick: () => void suspendHandler(),
-		},
-	];
-	const bulkSuspendModalActions = [
-		{
-			text: t.common.cancel,
-			active: false,
-			color: colors.slate[500],
-			disabled: suspending,
-			onClick: () => setShowBulkSuspendModal(false),
-		},
-		{
-			text: t.companies.suspendBtn,
-			active: true,
-			color: colors.danger,
-			disabled: suspending,
-			icon: suspending ? (
-				<ActivityIndicator color={colors.white} />
-			) : (
-				<MaterialIcons name="delete-outline" size={20} color={colors.white} />
-			),
-			onClick: () => void bulkSuspendHandler(),
-		},
-	];
 	const showDeleteModalCall = (id: number) => {
 		setSelectedId(id);
 		setShowSuspendModal(true);
@@ -336,129 +297,100 @@ const CompaniesListPage = () => {
 	];
 
 	const renderRow = (company: Partial<CompanyClass>) => (
-		<View className="py-2">
-			<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
-				{!!company.id && (
-					<Pressable
-						accessibilityRole="checkbox"
-						accessibilityLabel={t.shared.selectCompany + ': ' + (company.raison_sociale || String(company.id))}
-						accessibilityState={{
+		<ListCard
+			selection={
+				company.id
+					? {
+							label: t.shared.selectCompany + ': ' + (company.raison_sociale || String(company.id)),
 							checked: selectedIds.includes(company.id),
 							disabled: suspending,
-						}}
-						disabled={suspending}
-						onPress={() => {
-							const id = company.id;
-							if (id)
+							onChange: () => {
+								const id = company.id;
+								if (!id) return;
 								handleSelectionChange(
 									selectedIds.includes(id) ? selectedIds.filter((value) => value !== id) : [...selectedIds, id],
 								);
-						}}
-						className={'min-h-11 flex-row items-center gap-3 py-2 ' + (suspending ? 'opacity-50' : '')}
-					>
-						<MaterialIcons
-							name={selectedIds.includes(company.id) ? 'check-box' : 'check-box-outline-blank'}
-							size={24}
-							color={selectedIds.includes(company.id) ? colors.brand : colors.slate[400]}
-						/>
-						<Text className="font-sans text-ink dark:text-slate-100 flex-1 text-sm">
-							{t.shared.selectCompany + ': ' + (company.raison_sociale || String(company.id))}
-						</Text>
-					</Pressable>
-				)}
-				<View className="flex-row items-center gap-3">
-					<EntityImage
-						image={company.logo_cropped || company.logo}
-						previewImage={company.logo}
-						label={company.raison_sociale || t.companies.companyNameFallback}
-					/>
-					<View className="flex-1 gap-1">
-						<Text className="text-ink dark:text-slate-100 font-poppins-semibold text-lg">{company.raison_sociale}</Text>
-						<Text className="font-sans text-xs text-slate-500 dark:text-slate-400">
-							{t.companies.colICE}: {company.ICE || '-'}
-						</Text>
-					</View>
-				</View>
-				<View className="gap-2 border-t border-slate-100 pt-3 dark:border-slate-700">
-					<View className="flex-row items-center gap-2">
-						<MaterialIcons name="mail-outline" size={17} color={colors.slate[400]} />
-						<Text className="font-sans text-ink dark:text-slate-100 flex-1 text-sm">
-							{company.email || t.common.noData}
-						</Text>
-					</View>
-					<View className="flex-row items-center gap-2">
-						<MaterialIcons name="phone" size={17} color={colors.slate[400]} />
-						<Text className="font-sans text-ink dark:text-slate-100 flex-1 text-sm">
-							{company.telephone || t.common.noData}
-						</Text>
-					</View>
-					<View className="flex-row items-center gap-2">
-						<MaterialIcons name="person-outline" size={17} color={colors.slate[400]} />
-						<Text className="font-sans text-ink dark:text-slate-100 flex-1 text-sm">
-							{company.nom_responsable || t.common.noData}
-						</Text>
-					</View>
-					<View className="flex-row flex-wrap items-center gap-3">
-						<View className="flex-row items-center gap-2">
-							<MaterialIcons name="groups" size={17} color={colors.slate[400]} />
-							<Text className="font-sans text-xs text-slate-500 dark:text-slate-400">
-								{localNbrEmployeFilterOptions.find((option) => option.value === company.nbr_employe)?.label ||
-									company.nbr_employe ||
-									'-'}{' '}
-								{t.companies.colEmployes}
-							</Text>
-						</View>
-						<View className="flex-row items-center gap-2">
-							<MaterialIcons name="event" size={17} color={colors.slate[400]} />
-							<Text className="font-sans text-xs text-slate-500 dark:text-slate-400">
-								<Text className="font-sans text-sm text-ink dark:text-slate-100">
-									{formatDate(company.date_created ?? null)}
-								</Text>
-							</Text>
-						</View>
-					</View>
-				</View>
-				<View className="mt-1 flex-row gap-3">
-					<View className="flex-1">
-						<PrimaryLoadingButton
-							buttonText={t.common.view}
-							inverted
-							onClick={() => {
-								if (company.id) router.push(COMPANIES_VIEW(company.id));
-							}}
-							active={!suspending}
-							loading={false}
-							startIcon={<MaterialIcons name="visibility" size={20} color={colors.brand} />}
-						/>
-					</View>
-					<View className="flex-1">
-						<PrimaryLoadingButton
-							buttonText={t.common.edit}
-							inverted
-							onClick={() => {
-								if (company.id) router.push(COMPANIES_EDIT(company.id));
-							}}
-							active={!suspending}
-							loading={false}
-							startIcon={<MaterialIcons name="edit" size={20} color={colors.brand} />}
-						/>
-					</View>
-				</View>
-				<PrimaryLoadingButton
-					buttonText={t.companies.suspendBtn}
-					danger
-					inverted
-					onClick={() => {
-						if (company.id) showDeleteModalCall(company.id);
+							},
+						}
+					: undefined
+			}
+			actions={
+				<ListCardActions
+					disabled={suspending}
+					onView={() => {
+						if (company.id) router.push(COMPANIES_VIEW(company.id));
 					}}
-					active={!(suspending || !company.id)}
-					loading={false}
-					startIcon={<MaterialIcons name="block" size={20} color={colors.danger} />}
+					onEdit={() => {
+						if (company.id) router.push(COMPANIES_EDIT(company.id));
+					}}
+				>
+					<PrimaryLoadingButton
+						buttonText={t.companies.suspendBtn}
+						danger
+						inverted
+						onClick={() => {
+							if (company.id) showDeleteModalCall(company.id);
+						}}
+						active={!(suspending || !company.id)}
+						loading={false}
+						startIcon={<MaterialIcons name="block" size={20} color={colors.danger} />}
+					/>
+				</ListCardActions>
+			}
+		>
+			<View className="flex-row items-center gap-3">
+				<EntityImage
+					image={company.logo_cropped || company.logo}
+					previewImage={company.logo}
+					label={company.raison_sociale || t.companies.companyNameFallback}
+				/>
+				<View className="flex-1 gap-1">
+					<Text className="text-ink dark:text-slate-100 font-poppins-semibold text-lg">{company.raison_sociale}</Text>
+					<Text className="font-sans text-xs text-slate-500 dark:text-slate-400">
+						{t.companies.colICE}: {company.ICE || '-'}
+					</Text>
+				</View>
+			</View>
+			<View className="gap-2 border-t border-slate-100 pt-3 dark:border-slate-700">
+				<InfoRow
+					compact
+					icon={<MaterialIcons name="mail-outline" size={17} color={colors.slate[400]} />}
+					label={''}
+					value={company.email || t.common.noData}
+				/>
+				<InfoRow
+					compact
+					icon={<MaterialIcons name="phone" size={17} color={colors.slate[400]} />}
+					label={''}
+					value={company.telephone || t.common.noData}
+				/>
+				<InfoRow
+					compact
+					icon={<MaterialIcons name="person-outline" size={17} color={colors.slate[400]} />}
+					label={''}
+					value={company.nom_responsable || t.common.noData}
+				/>
+				<InfoRow
+					compact
+					icon={<MaterialIcons name="groups" size={17} color={colors.slate[400]} />}
+					label=""
+					value={
+						(localNbrEmployeFilterOptions.find((option) => option.value === company.nbr_employe)?.label ||
+							company.nbr_employe ||
+							'-') +
+						' ' +
+						t.companies.colEmployes
+					}
+				/>
+				<InfoRow
+					compact
+					icon={<MaterialIcons name="event" size={17} color={colors.slate[400]} />}
+					label={''}
+					value={formatDate(company.date_created ?? null)}
 				/>
 			</View>
-		</View>
+		</ListCard>
 	);
-	const axiosError = normalizeApiError(query.error);
 	return (
 		<>
 			<PaginatedDataGrid<Partial<CompanyClass>>
@@ -485,27 +417,7 @@ const CompaniesListPage = () => {
 				header={
 					<>
 						{!!query.error && !query.isFetchNextPageError && (
-							<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
-								<ApiAlert
-									errorDetails={
-										axiosError.status_code === 0
-											? t.errors.networkError
-											: axiosError.status_code === 403
-												? t.noPermission.description
-												: axiosError.status_code === 404
-													? t.notFound.message
-													: axiosError.message
-									}
-								/>
-								<PrimaryLoadingButton
-									buttonText={t.common.retry}
-									inverted
-									onClick={refresh}
-									active
-									loading={false}
-									startIcon={<MaterialIcons name="refresh" size={20} color={colors.brand} />}
-								/>
-							</View>
+							<QueryError error={query.error} onRetry={refresh} loading={query.isFetching} disabled={suspending} />
 						)}
 					</>
 				}
@@ -571,28 +483,26 @@ const CompaniesListPage = () => {
 				selectedIds={selectedIds}
 			/>
 			{showSuspendModal && (
-				<ActionModals
+				<ConfirmationModal
 					title={t.companies.suspendModalTitle}
 					body={t.companies.suspendModalBody}
-					titleIcon={<MaterialIcons name="warning-amber" size={30} color={colors.danger} />}
-					titleIconColor={colors.dangerBackground}
-					maxWidth="xs"
-					fullWidth
+					confirmText={t.companies.suspendBtn}
+					action="suspend"
+					loading={suspending}
 					onClose={() => setShowSuspendModal(false)}
-					actions={deleteModalActions}
-				></ActionModals>
+					onConfirm={() => void suspendHandler()}
+				/>
 			)}
 			{showBulkSuspendModal && (
-				<ActionModals
+				<ConfirmationModal
 					title={t.companies.bulkSuspendModalTitle(selectedIds.length)}
 					body={t.companies.bulkSuspendModalBody(selectedIds.length)}
-					titleIcon={<MaterialIcons name="warning-amber" size={30} color={colors.danger} />}
-					titleIconColor={colors.dangerBackground}
-					maxWidth="xs"
-					fullWidth
+					confirmText={t.companies.suspendBtn}
+					action="suspend"
+					loading={suspending}
 					onClose={() => setShowBulkSuspendModal(false)}
-					actions={bulkSuspendModalActions}
-				></ActionModals>
+					onConfirm={() => void bulkSuspendHandler()}
+				/>
 			)}
 		</>
 	);

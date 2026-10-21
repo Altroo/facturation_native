@@ -6,12 +6,24 @@ type Props = {
 	icon: ReactNode;
 	label: string;
 	value: ReactNode;
+	compact?: boolean;
 };
 
 const InfoRow = (props: Props) => {
 	const { icon, label, value } = props;
 	const { t } = useLanguage();
 	const empty = value === null || value === undefined || value === '';
+	if (props.compact && !isValidElement(value)) {
+		return (
+			<View className="flex-row items-start gap-2">
+				{icon}
+				<Text className="flex-1 font-sans text-xs text-slate-500 dark:text-slate-400">
+					{label ? `${label}: ` : ''}
+					{empty ? t.common.noData : value}
+				</Text>
+			</View>
+		);
+	}
 	return (
 		<View className="flex-row items-start gap-3 py-2">
 			{icon}

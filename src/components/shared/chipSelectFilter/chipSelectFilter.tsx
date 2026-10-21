@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { FlatList, Pressable, Text, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import BottomSheet from '@/components/nativeElements/modals/bottomSheet/bottomSheet';
-import CustomTextInput from '@/components/formikElements/customTextInput/customTextInput';
+import CustomTextInput from '@/components/nativeElements/customTextInput/customTextInput';
 import { useLanguage } from '@/utils/hooks';
 import { colors } from '@/utils/themes';
 

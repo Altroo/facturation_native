@@ -4,8 +4,8 @@ import type { KeyboardAwareScrollViewRef } from 'react-native-keyboard-controlle
 import {
 	AutocompleteDropdownContextProvider,
 	flushAutocomplete,
-} from '@/components/formikElements/customAutoCompleteSelect/setupAutocomplete';
-import CustomAutoCompleteSelect from '@/components/formikElements/customAutoCompleteSelect/customAutoCompleteSelect';
+} from '@/components/nativeElements/customAutoCompleteSelect/setupAutocomplete';
+import CustomAutoCompleteSelect from '@/components/nativeElements/customAutoCompleteSelect/customAutoCompleteSelect';
 import KeyboardAwareScrollView from './keyboardAwareScrollView';
 
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');

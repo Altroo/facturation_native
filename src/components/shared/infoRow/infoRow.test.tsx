@@ -17,3 +17,10 @@ it('preserves custom elements supplied by a detail page', async () => {
 	expect(screen.getByRole('header', { name: 'Active' })).toBeOnTheScreen();
 	expect(screen.getByText('Icon')).toBeOnTheScreen();
 });
+
+it('keeps zero and missing values readable in compact rows without an empty label prefix', async () => {
+	const { rerender } = await render(<InfoRow compact icon={null} label="Count" value={0} />);
+	expect(screen.getByText('Count: 0')).toBeOnTheScreen();
+	await rerender(<InfoRow compact icon={null} label="" value={null} />);
+	expect(screen.getByText(translations.fr.common.noData)).toBeOnTheScreen();
+});

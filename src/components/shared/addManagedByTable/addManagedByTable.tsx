@@ -1,8 +1,8 @@
-import CustomSwitch from '@/components/formikElements/customSwitch/customSwitch';
+import CustomSwitch from '@/components/nativeElements/customSwitch/customSwitch';
 import { type FC, type ReactNode } from 'react';
 import { Text, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import CustomDropDownSelect from '@/components/formikElements/customDropDownSelect/customDropDownSelect';
+import CustomDropDownSelect from '@/components/nativeElements/customDropDownSelect/customDropDownSelect';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import AddManagedBySection, {
 	AddManagedBySectionProps,

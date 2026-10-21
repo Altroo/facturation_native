@@ -1,20 +1,21 @@
 import InfoRow from '@/components/shared/infoRow/infoRow';
 import EntityImage from '@/components/shared/entityImage/entityImage';
 import NoPermission from '@/components/shared/noPermission/noPermission';
-import ApiAlert from '@/components/formikElements/apiLoading/apiAlert/apiAlert';
-import ApiProgress from '@/components/formikElements/apiLoading/apiProgress/apiProgress';
+import QueryError from '@/components/shared/queryError/queryError';
+import ApiAlert from '@/components/nativeElements/apiLoading/apiAlert/apiAlert';
+import ApiProgress from '@/components/nativeElements/apiLoading/apiProgress/apiProgress';
 import { useRef, useState } from 'react';
-import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useGetCompanyQuery, useSuspendCompanyMutation } from '@/store/services/company';
 import { companiesSetUserCompaniesAction } from '@/store/actions/companiesActions';
 import { useAppDispatch, useAppSelector, useLanguage, usePermission, useToast } from '@/utils/hooks';
 import { getUserCompaniesState } from '@/store/selectors';
-import { normalizeApiError, formatDate, parseEntityId, runWithCleanup } from '@/utils/helpers';
+import { formatDate, parseEntityId, runWithCleanup } from '@/utils/helpers';
 import { COMPANIES_EDIT, COMPANIES_LIST } from '@/utils/routes';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
-import ActionModals from '@/components/nativeElements/modals/actionModal/actionModals';
+import ConfirmationModal from '@/components/shared/confirmationModal/confirmationModal';
 import { colors } from '@/utils/themes';
 
 type CompaniesViewProps = {
@@ -62,29 +63,7 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 			},
 		);
 	};
-	const suspendModalActions = [
-		{
-			text: t.common.cancel,
-			active: false,
-			color: colors.slate[500],
-			disabled: mutation.isLoading,
-			onClick: () => setShowSuspendModal(false),
-		},
-		{
-			text: t.companies.suspendBtn,
-			active: true,
-			color: colors.danger,
-			disabled: mutation.isLoading,
-			icon: mutation.isLoading ? (
-				<ActivityIndicator color={colors.white} />
-			) : (
-				<MaterialIcons name="delete-outline" size={20} color={colors.white} />
-			),
-			onClick: () => void handleSuspend(),
-		},
-	];
 	if (!is_staff) return <NoPermission />;
-	const axiosError = normalizeApiError(query.error);
 	if (query.error)
 		return (
 			<ScrollView
@@ -97,20 +76,12 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 					flexGrow: 1,
 				}}
 			>
-				<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
-					<ApiAlert
-						errorDetails={
-							axiosError.status_code === 0
-								? t.errors.networkError
-								: axiosError.status_code === 403
-									? t.noPermission.description
-									: axiosError.status_code === 404
-										? t.notFound.message
-										: axiosError.message
-						}
-					/>
-					<PrimaryLoadingButton buttonText={t.common.retry} onClick={query.refetch} inverted active loading={false} />
-				</View>
+				<QueryError
+					error={query.error}
+					onRetry={() => void query.refetch()}
+					loading={query.isFetching}
+					disabled={mutation.isLoading}
+				/>
 			</ScrollView>
 		);
 	const companyData = query.currentData;
@@ -633,22 +604,21 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 				/>
 			</ScrollView>
 			{showSuspendModal && (
-				<ActionModals
+				<ConfirmationModal
 					title={t.companies.suspendModalTitle}
 					body={t.companies.suspendModalBody}
-					titleIcon={<MaterialIcons name="warning-amber" size={30} color={colors.danger} />}
-					titleIconColor={colors.dangerBackground}
-					maxWidth="xs"
-					fullWidth
+					confirmText={t.companies.suspendBtn}
+					action="suspend"
+					loading={mutation.isLoading}
 					onClose={() => setShowSuspendModal(false)}
-					actions={suspendModalActions}
+					onConfirm={() => void handleSuspend()}
 				>
 					{!!companyData.raison_sociale && (
 						<Text className="font-poppins-medium text-base text-ink dark:text-slate-100">
 							{companyData.raison_sociale}
 						</Text>
 					)}
-				</ActionModals>
+				</ConfirmationModal>
 			)}
 		</>
 	);
