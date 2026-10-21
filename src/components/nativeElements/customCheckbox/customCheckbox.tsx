@@ -7,6 +7,7 @@ type Props = {
 	checked: boolean;
 	onChange: (checked: boolean) => void;
 	disabled?: boolean;
+	compact?: boolean;
 };
 
 const CustomCheckbox = (props: Props) => (
@@ -16,14 +17,17 @@ const CustomCheckbox = (props: Props) => (
 		accessibilityState={{ checked: props.checked, disabled: !!props.disabled }}
 		disabled={props.disabled}
 		onPress={() => props.onChange(!props.checked)}
-		className={'min-h-11 flex-row items-center gap-3 py-2 ' + (props.disabled ? 'opacity-50' : '')}
+		className={
+			(props.compact ? 'h-11 w-11 items-center justify-center ' : 'min-h-11 flex-row items-center gap-3 py-2 ') +
+			(props.disabled ? 'opacity-50' : '')
+		}
 	>
 		<MaterialIcons
 			name={props.checked ? 'check-box' : 'check-box-outline-blank'}
 			size={24}
 			color={props.checked ? colors.brand : colors.slate[400]}
 		/>
-		<Text className="flex-1 font-sans text-sm text-ink dark:text-slate-100">{props.label}</Text>
+		{!props.compact && <Text className="flex-1 font-sans text-sm text-ink dark:text-slate-100">{props.label}</Text>}
 	</Pressable>
 );
 

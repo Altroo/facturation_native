@@ -20,6 +20,11 @@ import { formatDate } from '@/utils/helpers';
 import type { UsersQueryParams } from '@/types/usersTypes';
 
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
+jest.mock(
+	'react-native-safe-area-context',
+	() => jest.requireActual('react-native-safe-area-context/jest/mock').default,
+);
+
 jest.mock('@expo/vector-icons', () => ({ MaterialIcons: 'Icon' }));
 jest.mock('@shopify/flash-list', () => ({ FlashList: jest.requireActual('react-native').FlatList }));
 jest.mock('expo-router', () => ({ router: { push: jest.fn() } }));
@@ -131,7 +136,19 @@ const setup = async (role = 'Caissier', staff = true) => {
 };
 const confirm = async (label: string) =>
 	await fireEvent.press(within(screen.getByTestId('action-modal')).getByRole('button', { name: label }));
+
+const pressCardAction = async (label: string, index = 0) => {
+	await fireEvent.press(screen.getAllByRole('button', { name: t.common.moreActions })[index]);
+	const modal = screen.getByTestId('custom-menu');
+	await fireEvent.press(screen.getByRole('menuitem', { name: label }));
+	await act(() => modal.props.onDismiss());
+};
 beforeEach(() => {
+	const nativeMethods = jest.requireActual<{ default: { measureInWindow: jest.Mock } }>(
+		'@react-native/jest-preset/jest/MockNativeMethods',
+	).default;
+	nativeMethods.measureInWindow.mockImplementation((callback) => callback(200, 200, 44, 44));
+
 	resetLoadedPages = false;
 	jest.clearAllMocks();
 	fetchNextPage.mockReset().mockResolvedValue(undefined);
@@ -144,21 +161,22 @@ beforeEach(() => {
 it('opens row routes and excludes the current account from row actions and selection', async () => {
 	await setup();
 	expect(screen.queryByRole('checkbox', { name: t.users.selectUser('Current Admin') })).toBeNull();
-	expect(screen.getAllByRole('button', { name: t.common.delete })).toHaveLength(2);
-	await fireEvent.press(screen.getAllByRole('button', { name: t.common.view })[0]);
+	expect(screen.getAllByRole('button', { name: t.common.moreActions })).toHaveLength(2);
+	await fireEvent.press(screen.getAllByRole('button', { name: new RegExp('^' + t.common.view + ' ') })[0]);
 	expect(router.push).toHaveBeenLastCalledWith({ pathname: '/users/[id]', params: { id: '7' } });
-	await fireEvent.press(screen.getAllByRole('button', { name: t.common.edit })[0]);
+	await pressCardAction(t.common.edit);
 	expect(router.push).toHaveBeenLastCalledWith({ pathname: '/users/form', params: { id: '7' } });
 });
 it('requires confirmation, allows cancellation, and deletes only the chosen user', async () => {
 	await setup();
-	await fireEvent.press(screen.getAllByRole('button', { name: t.common.delete })[0]);
+	await pressCardAction(t.common.delete);
 	expect(remove).not.toHaveBeenCalled();
-	expect(within(screen.getByTestId('action-modal')).getByText(t.users.deleteModalBody)).toBeOnTheScreen();
+	expect(within(screen.getByTestId('action-modal')).getByText(t.common.irreversible)).toBeOnTheScreen();
+	expect(within(screen.getByTestId('action-modal')).getByText('Amine Test')).toBeOnTheScreen();
 	await confirm(t.common.cancel);
 	expect(remove).not.toHaveBeenCalled();
 	expect(screen.queryByTestId('action-modal')).toBeNull();
-	await fireEvent.press(screen.getAllByRole('button', { name: t.common.delete })[1]);
+	await pressCardAction(t.common.delete, 1);
 	await confirm(t.common.delete);
 	await waitFor(() => expect(mockSuccess).toHaveBeenCalledWith(t.users.deleteSuccess));
 	expect(remove).toHaveBeenCalledWith({ id: 8 });
@@ -168,11 +186,16 @@ it('requires confirmation, allows cancellation, and deletes only the chosen user
 it('supports mixed selection, selects all loaded users, and unselects all', async () => {
 	await setup();
 	await fireEvent.press(screen.getByRole('checkbox', { name: t.users.selectUser('Amine Test') }));
-	expect(screen.getByRole('checkbox', { name: t.users.selectLoaded }).props.accessibilityState.checked).toBe('mixed');
+	expect(screen.getByRole('checkbox', { name: t.shared.clearSelection }).props.accessibilityState.checked).toBe(
+		'mixed',
+	);
+	expect(screen.queryByRole('button', { name: t.users.clearSelection })).toBeNull();
+	await fireEvent.press(screen.getByRole('checkbox', { name: t.shared.clearSelection }));
+	expect(screen.getByRole('checkbox', { name: t.users.selectUser('Amine Test') })).not.toBeChecked();
 	await fireEvent.press(screen.getByRole('checkbox', { name: t.users.selectLoaded }));
-	expect(screen.getByRole('checkbox', { name: t.users.selectLoaded })).toBeChecked();
+	expect(screen.getByRole('checkbox', { name: t.shared.clearSelection })).toBeChecked();
 	expect(screen.getByRole('checkbox', { name: t.users.selectUser('Sara Test') })).toBeChecked();
-	await fireEvent.press(screen.getByRole('checkbox', { name: t.users.selectLoaded }));
+	await fireEvent.press(screen.getByRole('checkbox', { name: t.shared.clearSelection }));
 	expect(screen.queryByRole('button', { name: t.users.bulkDeleteBtn(2) })).toBeNull();
 });
 it('appends cards, preserves earlier selection and deletes exactly the loaded selected IDs', async () => {
@@ -183,12 +206,15 @@ it('appends cards, preserves earlier selection and deletes exactly the loaded se
 	expect(screen.getByText('Amine Test')).toBeOnTheScreen();
 	expect(screen.getByText('Sara Test')).toBeOnTheScreen();
 	expect(screen.getByRole('checkbox', { name: t.users.selectUser('Amine Test') })).toBeChecked();
-	expect(screen.getByRole('checkbox', { name: t.users.selectLoaded }).props.accessibilityState.checked).toBe('mixed');
+	expect(screen.getByRole('checkbox', { name: t.shared.clearSelection }).props.accessibilityState.checked).toBe(
+		'mixed',
+	);
 	expect(screen.getByRole('checkbox', { name: t.users.selectUser('Last User') })).not.toBeChecked();
-	await fireEvent.press(screen.getByRole('checkbox', { name: t.users.selectLoaded }));
+	await fireEvent.press(screen.getByRole('checkbox', { name: t.users.selectUser('Last User') }));
 	await fireEvent.press(screen.getByRole('button', { name: t.users.bulkDeleteBtn(3) }));
 	expect(bulkRemove).not.toHaveBeenCalled();
-	expect(screen.getByText(t.users.bulkDeleteModalBody(3))).toBeOnTheScreen();
+	expect(screen.getByRole('header', { name: t.users.bulkDeleteModalTitle(3) })).toBeOnTheScreen();
+	expect(screen.getByText(t.common.irreversible)).toBeOnTheScreen();
 	await confirm(t.users.bulkDeleteBtn(3));
 	await waitFor(() => expect(mockSuccess).toHaveBeenCalledWith(t.users.bulkDeleteSuccess(3)));
 	expect(bulkRemove).toHaveBeenCalledWith({ ids: [7, 8, 9] });
@@ -289,7 +315,7 @@ it('does not submit a second deletion while the first request is unresolved', as
 			}),
 	});
 	await setup();
-	await fireEvent.press(screen.getAllByRole('button', { name: t.common.delete })[0]);
+	await pressCardAction(t.common.delete);
 	await user.press(within(screen.getByTestId('action-modal')).getByRole('button', { name: t.common.delete }));
 	await confirm(t.common.delete);
 	expect(remove).toHaveBeenCalledTimes(1);
@@ -299,9 +325,11 @@ it('does not submit a second deletion while the first request is unresolved', as
 it('keeps original staff actions available regardless of company role', async () => {
 	await setup('Lecture');
 	expect(screen.getAllByRole('checkbox')).toHaveLength(3);
-	expect(screen.getAllByRole('button', { name: t.common.delete })).toHaveLength(2);
-	expect(screen.getAllByRole('button', { name: t.common.edit })).toHaveLength(2);
-	expect(screen.getAllByRole('button', { name: t.common.view })).toHaveLength(2);
+	expect(screen.getAllByRole('button', { name: t.common.moreActions })).toHaveLength(2);
+	expect(screen.getAllByRole('button', { name: new RegExp('^' + t.common.view + ' ') })).toHaveLength(2);
+	await fireEvent.press(screen.getAllByRole('button', { name: t.common.moreActions })[0]);
+	expect(screen.getByRole('menuitem', { name: t.common.edit })).toBeOnTheScreen();
+	expect(screen.getByRole('menuitem', { name: t.common.delete })).toBeOnTheScreen();
 });
 it('does not request staff user data for a nonstaff account', async () => {
 	await setup('Caissier', false);
@@ -400,7 +428,7 @@ it('uses stable gender values and preserves false boolean filters', async () => 
 	await toggleAutocomplete(t.dataGrid.fieldLabel, -1);
 	await fireEvent.press(screen.getAllByText(t.users.colSexe).at(-1)!);
 	await toggleAutocomplete(t.common.value, -1);
-	await fireEvent.press(screen.getByText(t.users.filterSexeFemme));
+	await fireEvent.press(screen.getByRole('radio', { name: t.users.filterSexeFemme }));
 	await fireEvent.press(screen.getByText(t.dataGrid.searchApply));
 	expect(useGetUsersInfiniteListInfiniteQuery).toHaveBeenLastCalledWith(
 		expect.objectContaining({ gender: 'F' }),
@@ -441,14 +469,21 @@ it('drops selected IDs and confirmation when a cache replacement unloads their c
 it('displays the original user fields and opens the full avatar from its cropped thumbnail', async () => {
 	await setup();
 	expect(screen.getByText('amine@example.invalid')).toBeOnTheScreen();
-	expect(screen.getByText(`${t.users.colSexe}: Homme`)).toBeOnTheScreen();
-	expect(screen.getByText(`${t.users.colSexe}: Femme`)).toBeOnTheScreen();
-	expect(screen.getByText(t.users.adminChip)).toBeOnTheScreen();
-	expect(screen.getByText(t.users.activeChip)).toBeOnTheScreen();
-	expect(screen.getByText(t.users.inactiveChip)).toBeOnTheScreen();
-	expect(screen.getByText(`${t.users.colDateInscription}: ${formatDate('2025-03-10T12:30:00Z')}`)).toBeOnTheScreen();
-	expect(screen.getByText(`${t.users.colDerniereConnexion}: ${formatDate('2025-04-11T13:45:00Z')}`)).toBeOnTheScreen();
-	expect(screen.getByText(`${t.users.colDerniereConnexion}: -`)).toBeOnTheScreen();
+	expect(screen.getByText('Homme')).toBeOnTheScreen();
+	expect(screen.getByText('Femme')).toBeOnTheScreen();
+	expect(
+		within(screen.getByTestId('user-card-7')).getByLabelText(`${t.users.colAdmin}: ${t.common.yes}`),
+	).toBeOnTheScreen();
+	expect(
+		within(screen.getByTestId('user-card-7')).getByText(`${t.users.colActive}: ${t.common.yes}`),
+	).toBeOnTheScreen();
+	expect(
+		within(screen.getByTestId('user-card-8')).getByLabelText(`${t.users.colAdmin}: ${t.common.no}`),
+	).toBeOnTheScreen();
+	expect(within(screen.getByTestId('user-card-8')).getByText(`${t.users.colActive}: ${t.common.no}`)).toBeOnTheScreen();
+	expect(screen.getByText(formatDate('2025-03-10T12:30:00Z'))).toBeOnTheScreen();
+	expect(screen.getByText(formatDate('2025-04-11T13:45:00Z'))).toBeOnTheScreen();
+	expect(screen.getAllByText('-').length).toBeGreaterThan(0);
 	expect(screen.container.queryAll((node) => node.type === 'Image')[0]!.props.source).toEqual({
 		uri: 'https://example.invalid/amine-cropped.jpg',
 	});

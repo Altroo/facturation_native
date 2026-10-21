@@ -9,7 +9,7 @@ import { useColorMode } from '@/providers/themeProvider';
 import { useGetUserCompaniesQuery } from '@/store/services/company';
 import { normalizeApiError } from '@/utils/helpers';
 import { useLanguage } from '@/utils/hooks';
-import { colors } from '@/utils/themes';
+import { colors, surfaceStyles } from '@/utils/themes';
 
 const SCROLL_BUTTON_WIDTH = 44;
 const STORAGE_KEY = 'selectedCompanyIndex';
@@ -138,7 +138,8 @@ const CompanyDocumentsWrapperList: FC<Props> = (props: Props) => {
 		<View
 			testID="company-tabs"
 			onLayout={(event) => setContainerWidth(event.nativeEvent.layout.width)}
-			className="flex-row overflow-hidden rounded-t-lg border-b border-slate-200 bg-white dark:border-slate-700 dark:bg-panel"
+			className="flex-row overflow-hidden"
+			style={surfaceStyles[mode]}
 		>
 			{renderScrollButton(-1)}
 			<ScrollView

@@ -4,7 +4,8 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import BottomSheet from '@/components/nativeElements/modals/bottomSheet/bottomSheet';
 import CustomTextInput from '@/components/nativeElements/customTextInput/customTextInput';
 import { useLanguage } from '@/utils/hooks';
-import { colors } from '@/utils/themes';
+import { colors, surfaceStyles } from '@/utils/themes';
+import { useColorMode } from '@/providers/themeProvider';
 
 type Props = {
 	label: string;
@@ -17,6 +18,7 @@ type Props = {
 
 const ChipSelectFilter = (props: Props) => {
 	const { t } = useLanguage();
+	const { mode } = useColorMode();
 	const [open, setOpen] = useState(false);
 	const [inputValue, setInputValue] = useState('');
 	const selectedOptions = props.options.filter((option) => props.selectedIds.includes(option.id));
@@ -37,7 +39,8 @@ const ChipSelectFilter = (props: Props) => {
 					setInputValue('');
 					setOpen(true);
 				}}
-				className="min-h-12 flex-row items-center gap-3 rounded-xl border border-slate-300 bg-white px-3 py-2 dark:border-slate-600 dark:bg-panel"
+				className="min-h-12 flex-row items-center gap-3 px-3 py-2"
+				style={surfaceStyles[mode]}
 			>
 				<MaterialIcons name="location-on" size={20} color={colors.brand} />
 				<Text className="flex-1 font-sans text-sm text-ink dark:text-slate-100">

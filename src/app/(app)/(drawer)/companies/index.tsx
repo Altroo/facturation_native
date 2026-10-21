@@ -4,6 +4,7 @@ import QueryError from '@/components/shared/queryError/queryError';
 import ListCard from '@/components/shared/listCard/listCard';
 import ListCardActions from '@/components/shared/listCardActions/listCardActions';
 import InfoRow from '@/components/shared/infoRow/infoRow';
+import CustomBadge from '@/components/nativeElements/customBadge/customBadge';
 import { useEffect, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -314,78 +315,71 @@ const CompaniesListPage = () => {
 						}
 					: undefined
 			}
+			testID={`company-card-${company.id}`}
+			disabled={suspending}
+			accessibilityLabel={`${t.common.view} ${company.raison_sociale || t.companies.companyNameFallback}`}
+			onPress={() => {
+				if (company.id) router.push(COMPANIES_VIEW(company.id));
+			}}
 			actions={
 				<ListCardActions
-					disabled={suspending}
-					onView={() => {
-						if (company.id) router.push(COMPANIES_VIEW(company.id));
-					}}
-					onEdit={() => {
-						if (company.id) router.push(COMPANIES_EDIT(company.id));
-					}}
-				>
-					<PrimaryLoadingButton
-						buttonText={t.companies.suspendBtn}
-						danger
-						inverted
-						onClick={() => {
-							if (company.id) showDeleteModalCall(company.id);
-						}}
-						active={!(suspending || !company.id)}
-						loading={false}
-						startIcon={<MaterialIcons name="block" size={20} color={colors.danger} />}
+					disabled={suspending || !company.id}
+					onEdit={company.id ? () => router.push(COMPANIES_EDIT(company.id!)) : undefined}
+					onSuspend={company.id ? () => showDeleteModalCall(company.id!) : undefined}
+				/>
+			}
+			header={
+				<View className="flex-row items-center gap-3">
+					<EntityImage
+						image={company.logo_cropped || company.logo}
+						previewImage={company.logo}
+						label={company.raison_sociale || t.companies.companyNameFallback}
 					/>
-				</ListCardActions>
+					<View className="flex-1 gap-1">
+						<Text className="text-ink dark:text-slate-100 font-poppins-semibold text-lg">{company.raison_sociale}</Text>
+					</View>
+				</View>
 			}
 		>
-			<View className="flex-row items-center gap-3">
-				<EntityImage
-					image={company.logo_cropped || company.logo}
-					previewImage={company.logo}
-					label={company.raison_sociale || t.companies.companyNameFallback}
+			<CustomBadge
+				icon={<MaterialIcons name="groups" size={16} color={colors.brand} />}
+				label={`${localNbrEmployeFilterOptions.find((option) => option.value === company.nbr_employe)?.label || company.nbr_employe || '-'} ${t.companies.colEmployes}`}
+			/>
+			<View className="gap-3 border-t border-slate-200 pt-3 dark:border-slate-600">
+				<InfoRow
+					dense
+					icon={<MaterialIcons name="badge" size={18} color={colors.slate[400]} />}
+					label={t.companies.colICE}
+					value={company.ICE}
 				/>
-				<View className="flex-1 gap-1">
-					<Text className="text-ink dark:text-slate-100 font-poppins-semibold text-lg">{company.raison_sociale}</Text>
-					<Text className="font-sans text-xs text-slate-500 dark:text-slate-400">
-						{t.companies.colICE}: {company.ICE || '-'}
-					</Text>
+				<View className="flex-row gap-3">
+					<View className="flex-1">
+						<InfoRow
+							dense
+							icon={<MaterialIcons name="person-outline" size={18} color={colors.slate[400]} />}
+							label={t.companies.colResponsable}
+							value={company.nom_responsable}
+						/>
+					</View>
+					<View className="flex-1">
+						<InfoRow
+							dense
+							icon={<MaterialIcons name="phone" size={18} color={colors.slate[400]} />}
+							label={t.companies.colTelephone}
+							value={company.telephone}
+						/>
+					</View>
 				</View>
-			</View>
-			<View className="gap-2 border-t border-slate-100 pt-3 dark:border-slate-700">
 				<InfoRow
-					compact
-					icon={<MaterialIcons name="mail-outline" size={17} color={colors.slate[400]} />}
-					label={''}
-					value={company.email || t.common.noData}
+					dense
+					icon={<MaterialIcons name="mail-outline" size={18} color={colors.slate[400]} />}
+					label={t.companies.colEmail}
+					value={company.email}
 				/>
 				<InfoRow
-					compact
-					icon={<MaterialIcons name="phone" size={17} color={colors.slate[400]} />}
-					label={''}
-					value={company.telephone || t.common.noData}
-				/>
-				<InfoRow
-					compact
-					icon={<MaterialIcons name="person-outline" size={17} color={colors.slate[400]} />}
-					label={''}
-					value={company.nom_responsable || t.common.noData}
-				/>
-				<InfoRow
-					compact
-					icon={<MaterialIcons name="groups" size={17} color={colors.slate[400]} />}
-					label=""
-					value={
-						(localNbrEmployeFilterOptions.find((option) => option.value === company.nbr_employe)?.label ||
-							company.nbr_employe ||
-							'-') +
-						' ' +
-						t.companies.colEmployes
-					}
-				/>
-				<InfoRow
-					compact
-					icon={<MaterialIcons name="event" size={17} color={colors.slate[400]} />}
-					label={''}
+					dense
+					icon={<MaterialIcons name="event" size={18} color={colors.slate[400]} />}
+					label={t.common.dateCreation}
 					value={formatDate(company.date_created ?? null)}
 				/>
 			</View>
@@ -394,32 +388,29 @@ const CompaniesListPage = () => {
 	return (
 		<>
 			<PaginatedDataGrid<Partial<CompanyClass>>
-				title={t.companies.listTitle}
-				titleIcon="business"
 				createAction={
 					is_staff ? { label: t.companies.newCompany, onPress: () => router.push(COMPANIES_ADD) } : undefined
 				}
 				selectionControl={
 					<SelectAllControl
 						compact
-						accessibilityLabel={t.shared.selectAllMatching(count)}
+						accessibilityLabel={selectedIds.length ? t.shared.clearSelection : t.shared.selectAllMatching(count)}
 						description={allSelected ? t.shared.allMatchingSelected(selectedIds.length) : t.shared.matchingItems(count)}
 						checked={allSelected ? true : selectedIds.length ? 'mixed' : false}
 						selectedCount={selectedIds.length}
 						loading={isLoadingAllIds}
 						disabled={suspending || query.isFetching || !!query.error || count === 0}
 						onPress={() => {
-							if (allSelected) handleClearAllMatching();
+							if (selectedIds.length) handleClearAllMatching();
 							else void handleSelectAllMatching();
 						}}
 					/>
 				}
 				header={
-					<>
-						{!!query.error && !query.isFetchNextPageError && (
-							<QueryError error={query.error} onRetry={refresh} loading={query.isFetching} disabled={suspending} />
-						)}
-					</>
+					!!query.error &&
+					!query.isFetchNextPageError && (
+						<QueryError error={query.error} onRetry={refresh} loading={query.isFetching} disabled={suspending} />
+					)
 				}
 				selectionActions={
 					<View className="flex-row flex-wrap gap-2">
@@ -431,13 +422,6 @@ const CompaniesListPage = () => {
 							active={!(suspending || query.isFetching || !!query.error || isLoadingAllIds)}
 							loading={false}
 							startIcon={<MaterialIcons name="block" size={20} color={colors.danger} />}
-						/>
-						<PrimaryLoadingButton
-							buttonText={t.shared.clearSelection}
-							inverted
-							onClick={handleClearAllMatching}
-							active={!suspending}
-							loading={false}
 						/>
 					</View>
 				}
@@ -486,6 +470,7 @@ const CompaniesListPage = () => {
 				<ConfirmationModal
 					title={t.companies.suspendModalTitle}
 					body={t.companies.suspendModalBody}
+					recordName={rows.find((company) => company.id === selectedId)?.raison_sociale}
 					confirmText={t.companies.suspendBtn}
 					action="suspend"
 					loading={suspending}

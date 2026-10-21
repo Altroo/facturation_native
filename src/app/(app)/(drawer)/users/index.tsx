@@ -4,6 +4,7 @@ import QueryError from '@/components/shared/queryError/queryError';
 import ListCard from '@/components/shared/listCard/listCard';
 import ListCardActions from '@/components/shared/listCardActions/listCardActions';
 import InfoRow from '@/components/shared/infoRow/infoRow';
+import CustomBooleanBadge from '@/components/nativeElements/customBooleanBadge/customBooleanBadge';
 import { useRef, useState } from 'react';
 import { Text, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -88,6 +89,7 @@ const UsersListPage = () => {
 		void query.refetch();
 	};
 	const editable = !!profile.id && profile.is_staff;
+	const selectedUser = rows.find((user) => user.id === selectedUserId);
 	const allLoadedSelected = loadedIds.length > 0 && loadedIds.every((id) => selectedUserIds.includes(id));
 	const someLoadedSelected = loadedIds.some((id) => selectedUserIds.includes(id));
 	const deleteHandler = async () => {
@@ -211,96 +213,61 @@ const UsersListPage = () => {
 						}
 					: undefined
 			}
+			testID={`user-card-${user.id}`}
+			disabled={deleting}
+			accessibilityLabel={`${t.common.view} ${[user.first_name, user.last_name].filter(Boolean).join(' ') || user.email || t.users.userFallback(user.id ?? 0)}`}
+			onPress={() => {
+				if (user.id) router.push(USERS_VIEW(user.id));
+			}}
 			actions={
 				<ListCardActions
 					disabled={deleting}
-					onView={() => {
-						if (user.id) router.push(USERS_VIEW(user.id));
-					}}
-					onEdit={
-						editable
-							? () => {
-									if (user.id) router.push(USERS_EDIT(user.id));
-								}
-							: undefined
-					}
-				>
-					{editable && !!user.id && (
-						<PrimaryLoadingButton
-							buttonText={t.common.delete}
-							danger
-							inverted
-							onClick={() => {
-								if (user.id) showDeleteModalCall(user.id);
-							}}
-							active={!deleting}
-							loading={false}
-							startIcon={<MaterialIcons name="delete-outline" size={20} color={colors.danger} />}
-						/>
-					)}
-				</ListCardActions>
+					onEdit={editable && user.id ? () => router.push(USERS_EDIT(user.id!)) : undefined}
+					onDelete={editable && user.id ? () => showDeleteModalCall(user.id!) : undefined}
+				/>
+			}
+			header={
+				<View className="flex-row items-center gap-3">
+					<EntityImage
+						image={user.avatar_cropped || user.avatar}
+						previewImage={user.avatar}
+						label={[user.first_name, user.last_name].filter(Boolean).join(' ') || t.users.fieldAvatar}
+						avatar
+						icon="person-outline"
+					/>
+					<View className="flex-1 gap-1">
+						<Text className="text-ink dark:text-slate-100 font-poppins-semibold text-lg">
+							{user.first_name} {user.last_name}
+						</Text>
+					</View>
+				</View>
 			}
 		>
-			<View className="flex-row items-center gap-3">
-				<EntityImage
-					image={user.avatar_cropped || user.avatar}
-					previewImage={user.avatar}
-					label={[user.first_name, user.last_name].filter(Boolean).join(' ') || t.users.fieldAvatar}
-					avatar
-					icon="person-outline"
-				/>
-				<View className="flex-1 gap-1">
-					<Text className="text-ink dark:text-slate-100 font-poppins-semibold text-lg">
-						{user.first_name} {user.last_name}
-					</Text>
-					<Text className="font-sans text-sm text-slate-500 dark:text-slate-400">{user.email}</Text>
-				</View>
-			</View>
 			<View className="flex-row flex-wrap gap-2">
-				{user.is_staff && (
-					<View
-						className={'flex-row items-center gap-1.5 self-start rounded-full px-3 py-1.5 bg-blue-50 dark:bg-slate-800'}
-					>
-						<MaterialIcons name={'admin-panel-settings'} size={14} color={colors.brand} />
-						<Text className={'font-poppins-medium text-xs text-brand dark:text-blue-300'}>{t.users.adminChip}</Text>
-					</View>
-				)}
-				<View
-					className={
-						'flex-row items-center gap-1.5 self-start rounded-full px-3 py-1.5 ' +
-						(user.is_active ? 'bg-emerald-50 dark:bg-emerald-950' : 'bg-slate-100 dark:bg-slate-800')
-					}
-				>
-					<MaterialIcons
-						name={user.is_active ? 'check-circle-outline' : 'remove-circle-outline'}
-						size={14}
-						color={user.is_active ? colors.success : colors.slate[500]}
-					/>
-					<Text
-						className={
-							'font-poppins-medium text-xs ' +
-							(user.is_active ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-500 dark:text-slate-400')
-						}
-					>
-						{user.is_active ? t.users.activeChip : t.users.inactiveChip}
-					</Text>
-				</View>
+				<CustomBooleanBadge label={t.users.colAdmin} value={user.is_staff} showValue={false} />
+				<CustomBooleanBadge label={t.users.colActive} value={user.is_active} />
 			</View>
-			<View className="gap-2 border-t border-slate-100 pt-3 dark:border-slate-700">
+			<View className="gap-3 border-t border-slate-200 pt-3 dark:border-slate-600">
 				<InfoRow
-					compact
+					dense
+					icon={<MaterialIcons name="mail-outline" size={18} color={colors.slate[400]} />}
+					label={t.users.colEmail}
+					value={user.email}
+				/>
+				<InfoRow
+					dense
 					icon={<MaterialIcons name="groups" size={17} color={colors.slate[400]} />}
 					label={t.users.colSexe}
 					value={user.gender || '-'}
 				/>
 				<InfoRow
-					compact
+					dense
 					icon={<MaterialIcons name="event" size={17} color={colors.slate[400]} />}
 					label={t.users.colDateInscription}
 					value={formatDate(user.date_joined ?? null)}
 				/>
 				<InfoRow
-					compact
+					dense
 					icon={<MaterialIcons name="login" size={17} color={colors.slate[400]} />}
 					label={t.users.colDerniereConnexion}
 					value={formatDate(user.last_login ?? null)}
@@ -311,21 +278,19 @@ const UsersListPage = () => {
 	return (
 		<>
 			<PaginatedDataGrid<Partial<UserClass>>
-				title={t.users.listTitle}
-				titleIcon="people-outline"
 				createAction={editable ? { label: t.users.newUser, onPress: () => router.push(USERS_ADD) } : undefined}
 				selectionControl={
 					editable && (
 						<SelectAllControl
 							compact
-							accessibilityLabel={t.users.selectLoaded}
+							accessibilityLabel={someLoadedSelected ? t.shared.clearSelection : t.users.selectLoaded}
 							description={t.shared.loadedItems(loadedIds.length)}
 							checked={allLoadedSelected ? true : someLoadedSelected ? 'mixed' : false}
 							selectedCount={selectedUserIds.length}
 							disabled={deleting || query.isFetching || !!query.error || !loadedIds.length}
 							onPress={() =>
 								setSelectedUserIds((previous) =>
-									allLoadedSelected
+									someLoadedSelected
 										? previous.filter((id) => !loadedIds.includes(id))
 										: [...new Set([...previous, ...loadedIds])],
 								)
@@ -334,11 +299,10 @@ const UsersListPage = () => {
 					)
 				}
 				header={
-					<>
-						{!!query.error && !query.isFetchNextPageError && (
-							<QueryError error={query.error} onRetry={refresh} loading={query.isFetching} disabled={deleting} />
-						)}
-					</>
+					!!query.error &&
+					!query.isFetchNextPageError && (
+						<QueryError error={query.error} onRetry={refresh} loading={query.isFetching} disabled={deleting} />
+					)
 				}
 				selectionActions={
 					editable && (
@@ -351,13 +315,6 @@ const UsersListPage = () => {
 								active={!(deleting || query.isFetching || !!query.error)}
 								loading={false}
 								startIcon={<MaterialIcons name="delete-outline" size={20} color={colors.danger} />}
-							/>
-							<PrimaryLoadingButton
-								buttonText={t.users.clearSelection}
-								inverted
-								onClick={() => setSelectedUserIds([])}
-								active={!deleting}
-								loading={false}
 							/>
 						</View>
 					)
@@ -409,7 +366,12 @@ const UsersListPage = () => {
 			{showDeleteModal && editable && (
 				<ConfirmationModal
 					title={t.users.deleteModalTitle}
-					body={t.users.deleteModalBody}
+					body={t.common.irreversible}
+					recordName={
+						selectedUser
+							? [selectedUser.first_name, selectedUser.last_name].filter(Boolean).join(' ') || selectedUser.email
+							: undefined
+					}
 					confirmText={t.common.delete}
 					action="delete"
 					loading={deleting}
@@ -420,7 +382,7 @@ const UsersListPage = () => {
 			{showBulkDeleteModal && editable && (
 				<ConfirmationModal
 					title={t.users.bulkDeleteModalTitle(selectedUserIds.length)}
-					body={t.users.bulkDeleteModalBody(selectedUserIds.length)}
+					body={t.common.irreversible}
 					confirmText={t.users.bulkDeleteBtn(selectedUserIds.length)}
 					action="delete"
 					loading={deleting}

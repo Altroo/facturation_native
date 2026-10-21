@@ -29,7 +29,10 @@ const EntityImage = (props: Props) => {
 				accessibilityRole={visibleImage ? 'button' : undefined}
 				accessibilityLabel={label}
 				disabled={!visibleImage}
-				onPress={() => setOpen(true)}
+				onPress={(event) => {
+					event?.stopPropagation();
+					setOpen(true);
+				}}
 				className={
 					'items-center justify-center overflow-hidden border border-slate-200 bg-blue-50 dark:border-slate-700 dark:bg-slate-800 ' +
 					(avatar ? 'rounded-full' : 'rounded-2xl')

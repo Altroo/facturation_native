@@ -1,7 +1,8 @@
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useLanguage } from '@/utils/hooks';
-import { colors } from '@/utils/themes';
+import { colors, surfaceStyles } from '@/utils/themes';
+import { useColorMode } from '@/providers/themeProvider';
 
 type Props = {
 	accessibilityLabel: string;
@@ -17,6 +18,7 @@ type Props = {
 const SelectAllControl = (props: Props) => {
 	const { accessibilityLabel, description, checked, selectedCount, onPress, disabled = false, loading = false } = props;
 	const { t } = useLanguage();
+	const { mode } = useColorMode();
 	const selected = checked === true || checked === 'mixed';
 	const inactive = disabled || loading;
 	return (
@@ -28,13 +30,16 @@ const SelectAllControl = (props: Props) => {
 			accessibilityState={{ checked, disabled: inactive, busy: loading }}
 			disabled={inactive}
 			onPress={onPress}
+			style={props.compact ? undefined : surfaceStyles[mode]}
 			className={
 				(props.compact
-					? 'h-11 w-11 shrink-0 items-center justify-center rounded-lg border '
+					? 'h-11 w-11 shrink-0 items-center justify-center '
 					: 'min-h-16 flex-row items-center gap-3 rounded-xl border px-3 py-3 ') +
-				(selected
+				(!props.compact && selected
 					? 'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-slate-800 '
-					: 'border-slate-200 bg-white dark:border-slate-700 dark:bg-panel ') +
+					: !props.compact
+						? 'border-slate-200 bg-white dark:border-slate-700 dark:bg-panel '
+						: '') +
 				(inactive ? 'opacity-50' : 'active:opacity-75')
 			}
 		>

@@ -86,7 +86,6 @@ it.each(['ios', 'android', 'web'] as const)(
 					{...props({
 						title: 'Clients',
 						header: <Text>Company tabs and cities</Text>,
-						contextLabel: 'Atlas',
 						createAction: { label: 'Add client', onPress: jest.fn() },
 						searchTerm: 'Does not match',
 						filterModel: { items: [{ field: 'name', operator: 'equals', value: 'Other' }] },
@@ -100,7 +99,6 @@ it.each(['ios', 'android', 'web'] as const)(
 			expect(within(list).getByText('Company tabs and cities')).toBeOnTheScreen();
 			expect(within(list).queryByText('Atlas')).toBeNull();
 			expect(within(list).queryByRole('button', { name: t.common.search })).toBeNull();
-			expect(within(screen.getByTestId('list-toolbar')).getByText('Atlas')).toBeOnTheScreen();
 			expect(within(screen.getByTestId('list-toolbar')).getByRole('button', { name: 'Add client' })).toBeOnTheScreen();
 			expect(screen.queryByLabelText('Colonnes')).toBeNull();
 			expect(screen.queryByText('Lignes par page')).toBeNull();

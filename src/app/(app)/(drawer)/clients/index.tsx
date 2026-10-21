@@ -12,6 +12,7 @@ import PaginatedDataGrid, {
 import SelectAllControl from '@/components/shared/selectAllControl/selectAllControl';
 import ChipSelectFilter from '@/components/shared/chipSelectFilter/chipSelectFilter';
 import InfoRow from '@/components/shared/infoRow/infoRow';
+import CustomBadge from '@/components/nativeElements/customBadge/customBadge';
 import NoPermission from '@/components/shared/noPermission/noPermission';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import ConfirmationModal from '@/components/shared/confirmationModal/confirmationModal';
@@ -93,7 +94,7 @@ const ClientsListContent = (props: Props) => {
 	const count = data?.pages[0]?.count ?? 0;
 	const allSelected = isAllMatchingSelected || (count > 0 && selectedIds.length === count);
 
-	// Leaving a company must cancel its pending "select all". Otherwise a slower
+	// Leaving a company must cancel its pending "select all". Otherwise, a slower
 	// response could put the previous company's IDs into the next bulk action.
 	useEffect(
 		() => () => {
@@ -155,15 +156,21 @@ const ClientsListContent = (props: Props) => {
 		}
 	};
 
-	const confirmAction = async () => {
-		if (
-			!confirmation ||
-			!canEdit ||
-			mutationInProgress.current ||
-			(!canBulkDelete && confirmation.bulk && confirmation.action === 'delete')
-		)
-			return;
-		const { ids, action, bulk } = confirmation;
+	const restoreArchivedClients = async (ids: number[], bulk: boolean) => {
+		try {
+			if (bulk) {
+				const result = await bulkArchiveClients({ ids, archived: false }).unwrap();
+				onSuccess(t.clients.bulkUnarchiveSuccess(result.updated));
+			} else {
+				await patchArchive({ id: ids[0], data: { archived: false } }).unwrap();
+				onSuccess(t.clients.unarchiveSuccess);
+			}
+		} catch (error) {
+			onError(extractApiErrorMessage(error, bulk ? t.clients.bulkUnarchiveError : t.clients.unarchiveError));
+		}
+	};
+	const executeAction = async (action: 'delete' | 'archive', ids: number[], bulk: boolean) => {
+		if (!canEdit || mutationInProgress.current || (!canBulkDelete && bulk && action === 'delete')) return;
 		if (!ids.length) return;
 		// A ref also blocks two taps arriving before React renders the busy state.
 		mutationInProgress.current = true;
@@ -182,10 +189,18 @@ const ClientsListContent = (props: Props) => {
 						}
 					} else if (bulk) {
 						const result = await bulkArchiveClients({ ids, archived: true }).unwrap();
-						onSuccess(t.clients.bulkArchiveSuccess(result.updated));
+						onSuccess(t.clients.bulkArchiveSuccess(result.updated), {
+							label: t.common.undo,
+							onPress: () => void restoreArchivedClients(ids, true),
+						});
 					} else {
 						await patchArchive({ id: ids[0], data: { archived: true } }).unwrap();
-						onSuccess(t.clients.archiveSuccess);
+						// Keep these IDs in the toast callback, even if the user changes
+						// company before undoing. The current selection may be different.
+						onSuccess(t.clients.archiveSuccess, {
+							label: t.common.undo,
+							onPress: () => void restoreArchivedClients(ids, false),
+						});
 					}
 					setSelectedIds((previous) => previous.filter((id) => !ids.includes(id)));
 					setIsAllMatchingSelected(false);
@@ -253,6 +268,8 @@ const ClientsListContent = (props: Props) => {
 			</View>
 		);
 	const disabled = busy || isLoadingAllIds;
+	const selectedClient =
+		confirmation && !confirmation.bulk ? rows.find((client) => client.id === confirmation.ids[0]) : undefined;
 	const renderRow = (client: ClientClass) => {
 		const name = client.raison_sociale || [client.nom, client.prenom].filter(Boolean).join(' ') || client.code_client;
 		const typeLabel =
@@ -279,13 +296,15 @@ const ClientsListContent = (props: Props) => {
 							}
 						: undefined
 				}
+				disabled={disabled}
+				accessibilityLabel={`${t.common.view} ${name}`}
+				onPress={() => {
+					const route = CLIENTS_VIEW(client.id);
+					router.push({ ...route, params: { ...route.params, company_id: String(props.company_id) } });
+				}}
 				actions={
 					<ListCardActions
-						disabled={disabled}
-						onView={() => {
-							const route = CLIENTS_VIEW(client.id);
-							router.push({ ...route, params: { ...route.params, company_id: String(props.company_id) } });
-						}}
+						disabled={disabled || query.isFetching}
 						onEdit={
 							canEdit
 								? () => {
@@ -294,56 +313,29 @@ const ClientsListContent = (props: Props) => {
 									}
 								: undefined
 						}
-					>
-						{canEdit && (
-							<View className="flex-row gap-2">
-								<PrimaryLoadingButton
-									cssClass="flex-1"
-									buttonText={t.common.archive}
-									active={!disabled && !query.isFetching}
-									loading={false}
-									inverted
-									startIcon={<MaterialIcons name="archive" size={20} color={colors.brand} />}
-									onClick={() => setConfirmation({ action: 'archive', ids: [client.id], bulk: false })}
-								/>
-								<PrimaryLoadingButton
-									cssClass="flex-1"
-									buttonText={t.common.delete}
-									active={!disabled && !query.isFetching}
-									loading={false}
-									inverted
-									danger
-									startIcon={<MaterialIcons name="delete-outline" size={20} color={colors.danger} />}
-									onClick={() => setConfirmation({ action: 'delete', ids: [client.id], bulk: false })}
-								/>
-							</View>
-						)}
-					</ListCardActions>
+						onArchive={canEdit ? () => void executeAction('archive', [client.id], false) : undefined}
+						onDelete={canEdit ? () => setConfirmation({ action: 'delete', ids: [client.id], bulk: false }) : undefined}
+					/>
+				}
+				header={
+					<View className="flex-row items-center gap-3">
+						<View className="min-w-0 flex-1 gap-1">
+							<Text className="font-poppins-semibold text-lg text-ink dark:text-slate-100">{name}</Text>
+						</View>
+					</View>
 				}
 			>
-				<View className="flex-row items-center gap-3">
-					<View className="h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 dark:bg-slate-800">
-						<MaterialIcons
-							name={
-								client.client_type === 'PP' || client.client_type === 'Personne physique'
-									? 'person-outline'
-									: 'business'
-							}
-							size={26}
-							color={colors.brand}
-						/>
-					</View>
-					<View className="min-w-0 flex-1 gap-1">
-						<Text className="font-poppins-semibold text-lg text-ink dark:text-slate-100">{name}</Text>
-						<Text className="font-sans text-sm text-slate-500 dark:text-slate-400">{client.code_client}</Text>
-					</View>
-				</View>
-				<View className="self-start rounded-full bg-blue-50 px-3 py-1.5 dark:bg-slate-800">
-					<Text className="font-poppins-medium text-xs text-brand dark:text-blue-300">{typeLabel}</Text>
-				</View>
-				<View className="border-t border-slate-100 pt-1 dark:border-slate-700">
+				<CustomBadge label={typeLabel} />
+				<View className="gap-3 border-t border-slate-200 pt-3 dark:border-slate-600">
+					<InfoRow
+						dense
+						icon={<MaterialIcons name="badge" size={18} color={colors.slate[400]} />}
+						label={t.clients.colCodeClient}
+						value={client.code_client}
+					/>
 					{!!client.raison_sociale && (
 						<InfoRow
+							dense
 							icon={<MaterialIcons name="business" size={18} color={colors.slate[400]} />}
 							label={t.clients.colRaisonSociale}
 							value={client.raison_sociale}
@@ -352,6 +344,7 @@ const ClientsListContent = (props: Props) => {
 					<View className="flex-row gap-3">
 						<View className="flex-1">
 							<InfoRow
+								dense
 								icon={<MaterialIcons name="person-outline" size={18} color={colors.slate[400]} />}
 								label={t.clients.colNom}
 								value={client.nom}
@@ -359,6 +352,7 @@ const ClientsListContent = (props: Props) => {
 						</View>
 						<View className="flex-1">
 							<InfoRow
+								dense
 								icon={<MaterialIcons name="person-outline" size={18} color={colors.slate[400]} />}
 								label={t.clients.colPrenom}
 								value={client.prenom}
@@ -366,11 +360,13 @@ const ClientsListContent = (props: Props) => {
 						</View>
 					</View>
 					<InfoRow
+						dense
 						icon={<MaterialIcons name="location-on" size={18} color={colors.slate[400]} />}
 						label={t.clients.colVille}
 						value={client.ville_name}
 					/>
 					<InfoRow
+						dense
 						icon={<MaterialIcons name="event" size={18} color={colors.slate[400]} />}
 						label={t.clients.colDateCreation}
 						value={formatDate(client.date_created)}
@@ -384,9 +380,6 @@ const ClientsListContent = (props: Props) => {
 		<>
 			<PaginatedDataGrid<ClientClass>
 				testID="clients-grid"
-				title={t.clients.listTitle}
-				titleIcon="people"
-				contextLabel={props.company_raison_sociale}
 				createAction={
 					canEdit
 						? {
@@ -446,13 +439,13 @@ const ClientsListContent = (props: Props) => {
 					count > 0 && (
 						<SelectAllControl
 							compact
-							accessibilityLabel={allSelected ? t.shared.clearSelection : t.shared.selectAllMatching(count)}
+							accessibilityLabel={selectedIds.length ? t.shared.clearSelection : t.shared.selectAllMatching(count)}
 							description={t.shared.matchingItems(count)}
 							checked={allSelected ? true : selectedIds.length ? 'mixed' : false}
 							selectedCount={selectedIds.length}
 							disabled={busy || query.isFetching}
 							loading={isLoadingAllIds}
-							onPress={allSelected ? handleClearAllMatching : () => void handleSelectAllMatching()}
+							onPress={selectedIds.length ? handleClearAllMatching : () => void handleSelectAllMatching()}
 						/>
 					)
 				}
@@ -465,6 +458,7 @@ const ClientsListContent = (props: Props) => {
 								active={!disabled && !query.isFetching}
 								loading={busy}
 								inverted
+								color={colors.warning}
 								onClick={() => setConfirmation({ action: 'archive', ids: [...selectedIds], bulk: true })}
 							/>
 							{canBulkDelete && (
@@ -530,18 +524,23 @@ const ClientsListContent = (props: Props) => {
 					}
 					body={
 						confirmation.action === 'delete'
-							? confirmation.bulk
-								? t.clients.bulkDeleteModalBody(confirmation.ids.length)
-								: t.clients.deleteModalBody
+							? t.common.irreversible
 							: confirmation.bulk
 								? t.clients.bulkArchiveModalBody(confirmation.ids.length)
 								: t.clients.archiveModalBody
 					}
 					action={confirmation.action}
+					recordName={
+						selectedClient
+							? selectedClient.raison_sociale ||
+								[selectedClient.nom, selectedClient.prenom].filter(Boolean).join(' ') ||
+								selectedClient.code_client
+							: undefined
+					}
 					confirmText={confirmation.action === 'delete' ? t.common.delete : t.common.archive}
 					loading={busy}
 					onClose={() => setConfirmation(null)}
-					onConfirm={() => void confirmAction()}
+					onConfirm={() => void executeAction(confirmation.action, confirmation.ids, confirmation.bulk)}
 				/>
 			)}
 		</>

@@ -35,9 +35,17 @@ export const colors = {
 	},
 } as const;
 
+// Lists share one surface outline and corner radius in both color modes.
+export const listSpacing = 16;
+
 export const surfaceStyles = {
 	light: { borderWidth: 1, borderRadius: 16, borderColor: colors.slate[200], backgroundColor: colors.white },
 	dark: { borderWidth: 1, borderRadius: 16, borderColor: colors.slate[600], backgroundColor: colors.panel },
+} as const;
+
+export const cardShadows = {
+	light: { boxShadow: '0px 3px 12px rgba(13, 7, 11, 0.09)' },
+	dark: { boxShadow: '0px 3px 12px rgba(0, 0, 0, 0.28)' },
 } as const;
 
 // Use the same names when loading fonts and setting native fontFamily props.

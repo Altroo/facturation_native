@@ -23,7 +23,7 @@ import {
 import { useColorMode } from '@/providers/themeProvider';
 import type { PaginationResponseType } from '@/types/_initTypes';
 import { useLanguage, useToast } from '@/utils/hooks';
-import { dataGridThemes, colors } from '@/utils/themes';
+import { dataGridThemes, colors, surfaceStyles, listSpacing } from '@/utils/themes';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import BottomSheet from '@/components/nativeElements/modals/bottomSheet/bottomSheet';
 import CustomTextInput from '@/components/nativeElements/customTextInput/customTextInput';
@@ -202,7 +202,6 @@ export type PaginatedDataGridProps<TRow> = Pick<
 	title?: string;
 	titleIcon?: ComponentProps<typeof MaterialIcons>['name'];
 	header?: ReactNode;
-	contextLabel?: string;
 	createAction?: { label: string; onPress: () => void };
 	selectionControl?: ReactNode;
 	selectionActions?: ReactNode;
@@ -385,9 +384,15 @@ const PaginatedDataGrid = <TRow,>(props: PaginatedDataGridProps<TRow>) => {
 		// One vertical list owns the page. Controls above the cards scroll away
 		// with them, instead of permanently shrinking the available list height.
 		ListHeaderComponent: (
-			<View className="gap-3 pb-3 pt-4">
+			<View
+				style={{
+					gap: listSpacing,
+					paddingTop: props.title || props.header ? listSpacing : 0,
+					paddingBottom: listSpacing / 2,
+				}}
+			>
 				{!!props.title && (
-					<View className="flex-row items-center gap-4 py-1">
+					<View className="flex-row items-center gap-4">
 						{!!props.titleIcon && (
 							<View className="h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 dark:bg-panel">
 								<MaterialIcons name={props.titleIcon} size={25} color={colors.brand} />
@@ -418,7 +423,7 @@ const PaginatedDataGrid = <TRow,>(props: PaginatedDataGridProps<TRow>) => {
 		automaticallyAdjustKeyboardInsets: true,
 		keyboardDismissMode: 'on-drag' as const,
 		alwaysBounceVertical: true,
-		contentContainerStyle: { paddingHorizontal: 16, paddingBottom: 16 },
+		contentContainerStyle: { paddingHorizontal: listSpacing, paddingBottom: listSpacing },
 		style: { flex: 1 },
 	};
 	return (
@@ -427,11 +432,6 @@ const PaginatedDataGrid = <TRow,>(props: PaginatedDataGridProps<TRow>) => {
 				testID="list-toolbar"
 				className="gap-2 border-b border-slate-200 bg-slate-50 px-4 py-2 dark:border-slate-700 dark:bg-night"
 			>
-				{!!props.contextLabel && (
-					<Text numberOfLines={1} className="font-poppins-medium text-sm text-ink dark:text-slate-100">
-						{props.contextLabel}
-					</Text>
-				)}
 				<View className="flex-row items-center justify-end gap-2">
 					{props.selectionControl}
 					{!searchOpen && (
@@ -445,7 +445,8 @@ const PaginatedDataGrid = <TRow,>(props: PaginatedDataGridProps<TRow>) => {
 						accessibilityState={{ disabled: !!disabled, selected: activeFilterCount > 0 }}
 						disabled={disabled}
 						onPress={handleToggleFilterPanel}
-						className="min-h-11 min-w-11 items-center justify-center rounded-lg border border-slate-300 dark:border-slate-600"
+						className="min-h-11 min-w-11 items-center justify-center"
+						style={surfaceStyles[mode]}
 					>
 						<MaterialIcons
 							name="filter-list"
@@ -504,7 +505,8 @@ const PaginatedDataGrid = <TRow,>(props: PaginatedDataGridProps<TRow>) => {
 							onPress={() => {
 								if (!disabled) setSearchOpen(true);
 							}}
-							className="min-h-11 min-w-11 items-center justify-center rounded-lg border border-slate-300 dark:border-slate-600"
+							className="min-h-11 min-w-11 items-center justify-center"
+							style={surfaceStyles[mode]}
 						>
 							<MaterialIcons name="search" size={22} color={searchTerm ? colors.brand : theme.toolbarTextColor} />
 						</Pressable>
@@ -520,7 +522,8 @@ const PaginatedDataGrid = <TRow,>(props: PaginatedDataGridProps<TRow>) => {
 								Keyboard.dismiss();
 								setSortDraft(sorting.sortModel.map((item) => ({ ...item })));
 							}}
-							className="min-h-11 min-w-11 items-center justify-center rounded-lg border border-slate-300 dark:border-slate-600"
+							className="min-h-11 min-w-11 items-center justify-center"
+							style={surfaceStyles[mode]}
 						>
 							<MaterialIcons name="sort" size={22} color={sorting.ordering ? colors.brand : theme.toolbarTextColor} />
 						</Pressable>
@@ -532,7 +535,8 @@ const PaginatedDataGrid = <TRow,>(props: PaginatedDataGridProps<TRow>) => {
 							accessibilityState={{ disabled: !!disabled }}
 							disabled={disabled}
 							onPress={props.createAction.onPress}
-							className="min-h-11 min-w-11 items-center justify-center rounded-lg bg-brand"
+							className="min-h-11 min-w-11 items-center justify-center bg-brand"
+							style={{ borderRadius: surfaceStyles[mode].borderRadius }}
 						>
 							<MaterialIcons name="add" size={24} color={colors.white} />
 						</Pressable>

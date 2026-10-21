@@ -15,6 +15,11 @@ import { useGetCitiesListQuery } from '@/store/services/parameter';
 import type { ClientClass } from '@/models/classes';
 
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
+jest.mock(
+	'react-native-safe-area-context',
+	() => jest.requireActual('react-native-safe-area-context/jest/mock').default,
+);
+
 jest.mock('@expo/vector-icons', () => ({ MaterialIcons: 'Icon' }));
 jest.mock('@shopify/flash-list', () => ({ FlashList: jest.requireActual('react-native').FlatList }));
 jest.mock('expo-router', () => ({ router: { push: jest.fn() } }));
@@ -116,7 +121,19 @@ const fetchAll = jest.fn();
 const abort = jest.fn();
 const unsubscribe = jest.fn();
 const t = translations.fr;
+
+const pressCardAction = async (label: string, index = 0) => {
+	await fireEvent.press(screen.getAllByRole('button', { name: t.common.moreActions })[index]);
+	const modal = screen.getByTestId('custom-menu');
+	await fireEvent.press(screen.getByRole('menuitem', { name: label }));
+	await act(() => modal.props.onDismiss());
+};
 beforeEach(() => {
+	const nativeMethods = jest.requireActual<{ default: { measureInWindow: jest.Mock } }>(
+		'@react-native/jest-preset/jest/MockNativeMethods',
+	).default;
+	nativeMethods.measureInWindow.mockImplementation((callback) => callback(200, 200, 44, 44));
+
 	jest.clearAllMocks();
 	mockRole = 'Caissier';
 	queryMock = createQueryMock(initialQuery);
@@ -159,10 +176,10 @@ const getLastArgs = () => jest.mocked(useGetClientsInfiniteListInfiniteQuery).mo
 it('shows native cards and passes company and client IDs to the existing routes', async () => {
 	await render(<ClientsListPage />);
 	const list = screen.container.queryAll((node) => typeof node.props.onEndReached === 'function')[0]!;
-	expect(within(list).getByRole('header', { name: t.clients.listTitle })).toBeOnTheScreen();
+	expect(within(list).queryByRole('header', { name: t.clients.listTitle })).toBeNull();
 	expect(within(list).getByText('Switch company')).toBeOnTheScreen();
 	expect(within(list).getByRole('button', { name: t.clients.filterVille })).toBeOnTheScreen();
-	expect(within(screen.getByTestId('list-toolbar')).getByText('Atlas')).toBeOnTheScreen();
+	expect(within(screen.getByTestId('list-toolbar')).queryByText('Atlas')).toBeNull();
 	expect(
 		within(screen.getByTestId('list-toolbar')).getByRole('checkbox', { name: t.shared.selectAllMatching(3) }),
 	).toBeOnTheScreen();
@@ -171,9 +188,11 @@ it('shows native cards and passes company and client IDs to the existing routes'
 	expect(screen.getAllByText(t.clients.typePersonnePhysique)).toHaveLength(2);
 	await fireEvent.press(screen.getByRole('button', { name: t.clients.newClient }));
 	expect(router.push).toHaveBeenLastCalledWith({ pathname: '/clients/form', params: { company_id: '5' } });
-	await fireEvent.press(within(screen.getByTestId('client-card-7')).getByRole('button', { name: t.common.view }));
+	await fireEvent.press(
+		within(screen.getByTestId('client-card-7')).getByRole('button', { name: new RegExp('^' + t.common.view + ' ') }),
+	);
 	expect(router.push).toHaveBeenLastCalledWith({ pathname: '/clients/[id]', params: { id: '7', company_id: '5' } });
-	await fireEvent.press(within(screen.getByTestId('client-card-7')).getByRole('button', { name: t.common.edit }));
+	await pressCardAction(t.common.edit);
 	expect(router.push).toHaveBeenLastCalledWith({ pathname: '/clients/form', params: { id: '7', company_id: '5' } });
 });
 
@@ -202,7 +221,7 @@ it.each(['Lecture', 'Comptable'])('keeps %s read-only, as on the web', async (ro
 	expect(screen.queryByRole('button', { name: t.clients.newClient })).toBeNull();
 	expect(screen.queryByRole('button', { name: t.common.delete })).toBeNull();
 	expect(screen.queryByRole('checkbox')).toBeNull();
-	expect(screen.getAllByRole('button', { name: t.common.view })).toHaveLength(2);
+	expect(screen.getAllByRole('button', { name: new RegExp('^' + t.common.view + ' ') })).toHaveLength(2);
 });
 
 it('allows Commercial to archive in bulk but not delete in bulk', async () => {
@@ -217,21 +236,82 @@ it('requires confirmation before deleting and keeps selection when the server re
 	deleteRecord.mockReturnValue({ unwrap: () => Promise.reject({ data: { message: 'Client used by an invoice' } }) });
 	await render(<ClientsListPage />);
 	await fireEvent.press(screen.getByRole('checkbox', { name: t.clients.selectClient('Nom 7 Ali') }));
-	await fireEvent.press(within(screen.getByTestId('client-card-7')).getByRole('button', { name: t.common.delete }));
+	await pressCardAction(t.common.delete);
 	expect(deleteRecord).not.toHaveBeenCalled();
+	expect(within(screen.getByTestId('action-modal')).getByText('Nom 7 Ali')).toBeOnTheScreen();
 	await confirm(t.common.delete);
 	expect(deleteRecord).toHaveBeenCalledWith({ id: 7 });
 	expect(mockError).toHaveBeenCalledWith('Client used by an invoice');
 	expect(screen.getByRole('checkbox', { name: t.clients.selectClient('Nom 7 Ali'), checked: true })).toBeTruthy();
 });
 
-it('archives a single client only after confirmation', async () => {
+it('archives immediately and offers undo using the same client ID', async () => {
 	await render(<ClientsListPage />);
-	await fireEvent.press(within(screen.getByTestId('client-card-7')).getByRole('button', { name: t.common.archive }));
-	expect(patchArchive).not.toHaveBeenCalled();
-	await confirm(t.common.archive);
+	await pressCardAction(t.common.archive);
+	expect(screen.queryByTestId('action-modal')).toBeNull();
 	expect(patchArchive).toHaveBeenCalledWith({ id: 7, data: { archived: true } });
-	expect(mockSuccess).toHaveBeenCalledWith(t.clients.archiveSuccess);
+	expect(mockSuccess).toHaveBeenCalledWith(t.clients.archiveSuccess, {
+		label: t.common.undo,
+		onPress: expect.any(Function),
+	});
+	const undo = mockSuccess.mock.calls.at(-1)![1].onPress;
+	await act(() => undo());
+	expect(patchArchive).toHaveBeenLastCalledWith({ id: 7, data: { archived: false } });
+	expect(mockSuccess).toHaveBeenLastCalledWith(t.clients.unarchiveSuccess);
+});
+
+it('reports archive failures without offering an undo for an unsuccessful request', async () => {
+	patchArchive.mockReturnValue({ unwrap: () => Promise.reject({ data: { message: 'Archive unavailable' } }) });
+	await render(<ClientsListPage />);
+	await pressCardAction(t.common.archive);
+	expect(mockError).toHaveBeenCalledWith('Archive unavailable');
+	expect(mockSuccess).not.toHaveBeenCalled();
+	expect(screen.queryByTestId('action-modal')).toBeNull();
+});
+
+it('reports an undo failure through the error toast', async () => {
+	await render(<ClientsListPage />);
+	await pressCardAction(t.common.archive);
+	const undo = mockSuccess.mock.calls.at(-1)![1].onPress;
+	patchArchive.mockReturnValue({ unwrap: () => Promise.reject({ data: { message: 'Restore unavailable' } }) });
+	await act(() => undo());
+	expect(mockError).toHaveBeenCalledWith('Restore unavailable');
+});
+
+it('can undo after changing company without using the new company selection', async () => {
+	await render(<ClientsListPage />);
+	await pressCardAction(t.common.archive);
+	const undo = mockSuccess.mock.calls.at(-1)![1].onPress;
+	await fireEvent.press(screen.getByText('Switch company'));
+	await act(() => undo());
+	expect(patchArchive).toHaveBeenLastCalledWith({ id: 7, data: { archived: false } });
+});
+
+it('confirms the bulk archive count and undoes exactly that selection', async () => {
+	await render(<ClientsListPage />);
+	await fireEvent.press(screen.getByRole('checkbox', { name: t.shared.selectAllMatching(3) }));
+	await fireEvent.press(screen.getByRole('button', { name: t.clients.bulkArchiveBtn(3) }));
+	expect(bulkArchive).not.toHaveBeenCalled();
+	expect(screen.getByRole('header', { name: t.clients.bulkArchiveModalTitle(3) })).toBeOnTheScreen();
+	await confirm(t.common.archive);
+	expect(bulkArchive).toHaveBeenCalledWith({ ids: [7, 8, 9], archived: true });
+	expect(mockSuccess).toHaveBeenCalledWith(
+		t.clients.bulkArchiveSuccess(3),
+		expect.objectContaining({ label: t.common.undo }),
+	);
+	const undo = mockSuccess.mock.calls.at(-1)![1].onPress;
+	await act(() => undo());
+	expect(bulkArchive).toHaveBeenLastCalledWith({ ids: [7, 8, 9], archived: false });
+	expect(mockSuccess).toHaveBeenLastCalledWith(t.clients.bulkUnarchiveSuccess(3));
+});
+
+it('clears a partial selection with the toolbar checkbox without an extra clear button', async () => {
+	await render(<ClientsListPage />);
+	await fireEvent.press(screen.getByRole('checkbox', { name: t.clients.selectClient('Nom 7 Ali') }));
+	expect(screen.queryByRole('button', { name: t.shared.clearSelection })).toBeNull();
+	await fireEvent.press(screen.getByRole('checkbox', { name: t.shared.clearSelection }));
+	expect(screen.getByRole('checkbox', { name: t.clients.selectClient('Nom 7 Ali') })).not.toBeChecked();
+	expect(fetchAll).not.toHaveBeenCalled();
 });
 
 it('selects unloaded matching IDs and handles the backend 204 bulk delete response', async () => {

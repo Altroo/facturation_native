@@ -18,9 +18,10 @@ it('preserves custom elements supplied by a detail page', async () => {
 	expect(screen.getByText('Icon')).toBeOnTheScreen();
 });
 
-it('keeps zero and missing values readable in compact rows without an empty label prefix', async () => {
-	const { rerender } = await render(<InfoRow compact icon={null} label="Count" value={0} />);
-	expect(screen.getByText('Count: 0')).toBeOnTheScreen();
-	await rerender(<InfoRow compact icon={null} label="" value={null} />);
+it('keeps the label separate from the value and handles missing values without an empty label prefix', async () => {
+	const { rerender } = await render(<InfoRow dense icon={null} label="Count" value={0} />);
+	expect(screen.getByText('Count')).toBeOnTheScreen();
+	expect(screen.getByText('0')).toBeOnTheScreen();
+	await rerender(<InfoRow dense icon={null} label="" value={null} />);
 	expect(screen.getByText(translations.fr.common.noData)).toBeOnTheScreen();
 });

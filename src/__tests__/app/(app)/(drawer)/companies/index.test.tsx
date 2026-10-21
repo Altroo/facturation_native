@@ -23,6 +23,11 @@ import { translations } from '@/translations';
 import { companiesSetUserCompaniesAction } from '@/store/actions/companiesActions';
 import { formatDate } from '@/utils/helpers';
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
+jest.mock(
+	'react-native-safe-area-context',
+	() => jest.requireActual('react-native-safe-area-context/jest/mock').default,
+);
+
 jest.mock('@expo/vector-icons', () => ({ MaterialIcons: 'Icon' }));
 jest.mock('@shopify/flash-list', () => ({ FlashList: jest.requireActual('react-native').FlatList }));
 jest.mock('expo-router', () => ({ router: { dismissTo: jest.fn(), push: jest.fn() } }));
@@ -137,7 +142,19 @@ const setup = async (role = 'Caissier') => {
 
 	return { store, dispatch, ...rendered };
 };
+
+const pressCardAction = async (label: string, index = 0) => {
+	await fireEvent.press(screen.getAllByRole('button', { name: translations[mockLanguage].common.moreActions })[index]);
+	const modal = screen.getByTestId('custom-menu');
+	await fireEvent.press(screen.getByRole('menuitem', { name: label }));
+	await act(() => modal.props.onDismiss());
+};
 beforeEach(() => {
+	const nativeMethods = jest.requireActual<{ default: { measureInWindow: jest.Mock } }>(
+		'@react-native/jest-preset/jest/MockNativeMethods',
+	).default;
+	nativeMethods.measureInWindow.mockImplementation((callback) => callback(200, 200, 44, 44));
+
 	mockLanguage = 'fr';
 	jest.clearAllMocks();
 	fetchNextPage.mockReset().mockResolvedValue(undefined);
@@ -185,7 +202,7 @@ it('renders every original company column in its card and translates employee co
 		'Company Manager',
 		'company@example.invalid',
 		'+212600000001',
-		`${t.companies.colICE}: 123456789012345`,
+		'123456789012345',
 		`${t.rawData.employeeRanges['1to5']} ${t.companies.colEmployes}`,
 		formatDate('2026-01-10'),
 	]) {
@@ -203,9 +220,9 @@ it('renders every original company column in its card and translates employee co
 });
 it('passes company IDs to view/edit routes and opens the existing create route', async () => {
 	await setup();
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.view }));
+	await fireEvent.press(screen.getByRole('button', { name: new RegExp('^' + translations.fr.common.view + ' ') }));
 	expect(router.push).toHaveBeenLastCalledWith({ pathname: '/companies/[id]', params: { id: '4' } });
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.edit }));
+	await pressCardAction(translations.fr.common.edit);
 	expect(router.push).toHaveBeenLastCalledWith({ pathname: '/companies/form', params: { id: '4' } });
 	await fireEvent.press(screen.getByRole('button', { name: translations.fr.companies.newCompany }));
 	expect(router.push).toHaveBeenLastCalledWith('/companies/form');
@@ -277,13 +294,14 @@ it('supports both pull-to-refresh and the explicit refresh action', async () => 
 it('allows staff company creation regardless of membership role', async () => {
 	await setup('Lecture');
 	expect(screen.getByRole('button', { name: translations.fr.companies.newCompany })).toBeOnTheScreen();
-	expect(screen.getByRole('button', { name: translations.fr.common.view })).toBeOnTheScreen();
-	expect(screen.getByRole('button', { name: translations.fr.common.edit })).toBeOnTheScreen();
+	expect(screen.getByRole('button', { name: new RegExp('^' + translations.fr.common.view + ' ') })).toBeOnTheScreen();
+	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.moreActions }));
+	expect(screen.getByRole('menuitem', { name: translations.fr.common.edit })).toBeOnTheScreen();
 });
 
 it('requires company suspension confirmation and allows cancellation', async () => {
 	await setup();
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.companies.suspendBtn }));
+	await pressCardAction(translations.fr.companies.suspendBtn);
 	expect(suspend).not.toHaveBeenCalled();
 	expect(
 		within(screen.getByTestId('action-modal')).getByText(translations.fr.companies.suspendModalBody),
@@ -296,7 +314,7 @@ it('requires company suspension confirmation and allows cancellation', async () 
 });
 it('suspends the chosen company and removes its accessible membership before refreshing', async () => {
 	const { dispatch } = await setup();
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.companies.suspendBtn }));
+	await pressCardAction(translations.fr.companies.suspendBtn);
 	await fireEvent.press(
 		within(screen.getByTestId('action-modal')).getByRole('button', {
 			name: translations.fr.companies.suspendBtn,
@@ -311,7 +329,7 @@ it('suspends the chosen company and removes its accessible membership before ref
 it('closes the modal on suspension failure and does not remove memberships', async () => {
 	suspend.mockReturnValue({ unwrap: () => Promise.reject(new Error('Unavailable')) });
 	const { dispatch } = await setup();
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.companies.suspendBtn }));
+	await pressCardAction(translations.fr.companies.suspendBtn);
 	await fireEvent.press(
 		within(screen.getByTestId('action-modal')).getByRole('button', {
 			name: translations.fr.companies.suspendBtn,
@@ -325,7 +343,7 @@ it('closes the modal on suspension failure and does not remove memberships', asy
 });
 it('finishes suspension without starting a separate membership request', async () => {
 	const { dispatch } = await setup();
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.companies.suspendBtn }));
+	await pressCardAction(translations.fr.companies.suspendBtn);
 	await fireEvent.press(
 		within(screen.getByTestId('action-modal')).getByRole('button', {
 			name: translations.fr.companies.suspendBtn,
@@ -339,7 +357,7 @@ it('targets an appended company for suspension and preserves the earlier members
 	const { dispatch } = await setup();
 	await reachEnd();
 	expect(await screen.findByText('Company Eight')).toBeOnTheScreen();
-	await fireEvent.press(screen.getAllByRole('button', { name: translations.fr.companies.suspendBtn })[1]);
+	await pressCardAction(translations.fr.companies.suspendBtn, 1);
 	expect(
 		within(screen.getByTestId('action-modal')).getByText(translations.fr.companies.suspendModalBody),
 	).toBeOnTheScreen();
@@ -613,11 +631,12 @@ it('supports individual card selection and clears selection when refreshing', as
 
 it('uses the shared selection checkbox to select and clear all matching companies', async () => {
 	await setup();
-	const control = () => screen.getByRole('checkbox', { name: translations.fr.shared.selectAllMatching(2) });
+	const control = () => within(screen.getByTestId('list-toolbar')).getByRole('checkbox');
 	expect(control()).not.toBeChecked();
 	await fireEvent.press(control());
 	await waitFor(() => expect(control()).toBeChecked());
 	expect(screen.getByRole('button', { name: translations.fr.companies.bulkSuspendBtn(2) })).toBeOnTheScreen();
+	expect(screen.queryByRole('button', { name: translations.fr.shared.clearSelection })).toBeNull();
 	await fireEvent.press(control());
 	expect(control()).not.toBeChecked();
 	expect(screen.queryByRole('button', { name: translations.fr.companies.bulkSuspendBtn(2) })).toBeNull();
@@ -631,7 +650,7 @@ it('recognizes all manually selected companies without fetching the same IDs aga
 	for (const name of ['Company Four', 'Company Eight']) {
 		await fireEvent.press(screen.getByRole('checkbox', { name: translations.fr.shared.selectCompany + ': ' + name }));
 	}
-	const control = screen.getByRole('checkbox', { name: translations.fr.shared.selectAllMatching(2) });
+	const control = screen.getByRole('checkbox', { name: translations.fr.shared.clearSelection });
 	expect(control).toBeChecked();
 	await fireEvent.press(control);
 	expect(screen.getByRole('checkbox', { name: translations.fr.shared.selectAllMatching(2) })).not.toBeChecked();
@@ -639,36 +658,31 @@ it('recognizes all manually selected companies without fetching the same IDs aga
 	expect(fetchAllCompanyIds).not.toHaveBeenCalled();
 });
 
-it('keeps manual selection and reports a failed all-matching request', async () => {
-	fetchAllCompanyIds.mockReturnValue({
-		unwrap: () => Promise.reject(new Error('Unavailable')),
-		abort: abortAllIds,
-		unsubscribe: unsubscribeAllIds,
-	});
+it('clears partial selection directly without fetching all matching companies', async () => {
 	await setup();
 	await fireEvent.press(
 		screen.getByRole('checkbox', { name: translations.fr.shared.selectCompany + ': Company Four' }),
 	);
-	await fireEvent.press(screen.getByRole('checkbox', { name: translations.fr.shared.selectAllMatching(2) }));
-	await waitFor(() => expect(mockError).toHaveBeenCalledWith(translations.fr.companies.fetchIdsError));
-	expect(screen.getByRole('button', { name: translations.fr.companies.bulkSuspendBtn(1) })).toBeOnTheScreen();
+	await fireEvent.press(screen.getByRole('checkbox', { name: translations.fr.shared.clearSelection }));
+	expect(fetchAllCompanyIds).not.toHaveBeenCalled();
+	expect(screen.queryByRole('button', { name: translations.fr.companies.bulkSuspendBtn(1) })).toBeNull();
+	expect(screen.queryByRole('button', { name: translations.fr.shared.clearSelection })).toBeNull();
 	expect(within(screen.getByTestId('list-toolbar')).queryByRole('checkbox', { checked: true })).toBeNull();
 });
 
-it('keeps selection unchanged when a later page fails and releases the operation for a full retry', async () => {
+it('does not select partial results when a later page fails and allows a full retry', async () => {
 	fetchAllCompanyIds.mockReturnValueOnce(selectionResponse(companyPage([8], '?page=2'))).mockReturnValueOnce({
 		unwrap: () => Promise.reject(new Error('Second page unavailable')),
 		abort: abortAllIds,
 		unsubscribe: unsubscribeAllIds,
 	});
 	await setup();
-	await fireEvent.press(
-		screen.getByRole('checkbox', { name: translations.fr.shared.selectCompany + ': Company Four' }),
-	);
 	await fireEvent.press(screen.getByRole('checkbox', { name: translations.fr.shared.selectAllMatching(2) }));
 	await waitFor(() => expect(mockError).toHaveBeenCalledWith(translations.fr.companies.fetchIdsError));
-	expect(screen.getByRole('checkbox', { name: translations.fr.shared.selectCompany + ': Company Four' })).toBeChecked();
-	expect(screen.getByRole('button', { name: translations.fr.companies.bulkSuspendBtn(1) })).toBeOnTheScreen();
+	expect(
+		screen.getByRole('checkbox', { name: translations.fr.shared.selectCompany + ': Company Four' }),
+	).not.toBeChecked();
+	expect(screen.queryByRole('button', { name: translations.fr.companies.bulkSuspendBtn(1) })).toBeNull();
 	expect(within(screen.getByTestId('list-toolbar')).queryByRole('checkbox', { checked: true })).toBeNull();
 	expect(unsubscribeAllIds).toHaveBeenCalledTimes(2);
 	await fireEvent.press(screen.getByRole('checkbox', { name: translations.fr.shared.selectAllMatching(2) }));
@@ -709,13 +723,10 @@ it.each(['?page=1', '?page=0', '?page=2.5', 'not-a-page', 'http://['])(
 	async (next) => {
 		fetchAllCompanyIds.mockReturnValue(selectionResponse(companyPage([8], next)));
 		await setup();
-		await fireEvent.press(
-			screen.getByRole('checkbox', { name: translations.fr.shared.selectCompany + ': Company Four' }),
-		);
 		await fireEvent.press(screen.getByRole('checkbox', { name: translations.fr.shared.selectAllMatching(2) }));
 		await waitFor(() => expect(mockError).toHaveBeenCalledWith(translations.fr.companies.fetchIdsError));
 		expect(fetchAllCompanyIds).toHaveBeenCalledTimes(1);
-		expect(screen.getByRole('button', { name: translations.fr.companies.bulkSuspendBtn(1) })).toBeOnTheScreen();
+		expect(screen.queryByRole('button', { name: translations.fr.companies.bulkSuspendBtn(1) })).toBeNull();
 		expect(within(screen.getByTestId('list-toolbar')).queryByRole('checkbox', { checked: true })).toBeNull();
 		expect(screen.getByRole('checkbox', { name: translations.fr.shared.selectAllMatching(2) })).toBeEnabled();
 	},
