@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ComponentProps } from 'react';
 import { FlatList, Pressable, Text, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import BottomSheet from '@/components/nativeElements/modals/bottomSheet/bottomSheet';
@@ -9,6 +9,7 @@ import { useColorMode } from '@/providers/themeProvider';
 
 type Props = {
 	label: string;
+	icon?: ComponentProps<typeof MaterialIcons>['name'];
 	options: Array<{ id: number; nom: string }>;
 	selectedIds: number[];
 	onChange: (ids: number[]) => void;
@@ -22,8 +23,7 @@ const ChipSelectFilter = (props: Props) => {
 	const [open, setOpen] = useState(false);
 	const [inputValue, setInputValue] = useState('');
 	const selectedOptions = props.options.filter((option) => props.selectedIds.includes(option.id));
-	// This search only narrows the city's choices. Filtering clients remains a
-	// server request: the parent sends the chosen IDs as Django's ville_ids.
+	// This search narrows selector choices only. The list sends selected IDs to Django.
 	const options = props.options.filter((option) =>
 		option.nom.toLocaleLowerCase().includes(inputValue.trim().toLocaleLowerCase()),
 	);
@@ -42,7 +42,7 @@ const ChipSelectFilter = (props: Props) => {
 				className="min-h-12 flex-row items-center gap-3 px-3 py-2"
 				style={surfaceStyles[mode]}
 			>
-				<MaterialIcons name="location-on" size={20} color={colors.brand} />
+				<MaterialIcons name={props.icon ?? 'location-on'} size={20} color={colors.brand} />
 				<Text className="flex-1 font-sans text-sm text-ink dark:text-slate-100">
 					{selectedOptions.length ? selectedOptions.map((option) => option.nom).join(', ') : props.placeholder}
 				</Text>
