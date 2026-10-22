@@ -19,6 +19,7 @@ jest.mock('@expo/vector-icons', () => ({ MaterialIcons: 'Icon' }));
 jest.mock('@shopify/flash-list', () => ({ FlashList: jest.requireActual('react-native').FlatList }));
 const mockError = jest.fn();
 jest.mock('@/utils/hooks', () => ({
+	useAppSelector: () => 0,
 	useLanguage: () => ({
 		language: 'fr',
 		t: jest.requireActual<typeof import('@/translations')>('@/translations').translations.fr,
@@ -38,6 +39,18 @@ const props = (overrides: Partial<PaginatedDataGridProps<Row>> = {}): PaginatedD
 });
 
 beforeEach(() => jest.clearAllMocks());
+
+it('hides the counter for an empty list and restores it when results arrive', async () => {
+	await render(<PaginatedDataGrid {...props({ rows: [], rowCount: 0 })} />);
+	expect(screen.queryByText(t.dataGrid.loadedCount(0, 0))).toBeNull();
+	expect(screen.getByText(t.common.noResults)).toBeOnTheScreen();
+	expect(screen.getByRole('button', { name: t.common.search })).toBeOnTheScreen();
+	expect(screen.getByRole('button', { name: t.dataGrid.toolbarFilters })).toBeOnTheScreen();
+	await screen.rerender(<PaginatedDataGrid {...props({ rowCount: 10 })} />);
+	expect(within(screen.getByTestId('list-toolbar')).getByText(t.dataGrid.loadedCount(1, 10))).toBeOnTheScreen();
+	await screen.rerender(<PaginatedDataGrid {...props({ rows: [], rowCount: 0 })} />);
+	expect(screen.queryByText(t.dataGrid.loadedCount(0, 0))).toBeNull();
+});
 
 it('exposes only sortable original columns and emits a server sort model without reordering rows', async () => {
 	const onSortModelChange = jest.fn();
@@ -99,7 +112,9 @@ it.each(['ios', 'android', 'web'] as const)(
 			expect(within(list).getByText('Company tabs and cities')).toBeOnTheScreen();
 			expect(within(list).queryByText('Atlas')).toBeNull();
 			expect(within(list).queryByRole('button', { name: t.common.search })).toBeNull();
-			expect(within(screen.getByTestId('list-toolbar')).getByRole('button', { name: 'Add client' })).toBeOnTheScreen();
+			expect(
+				within(screen.getByTestId('bottom-navigation')).getByRole('button', { name: 'Add client' }),
+			).toBeOnTheScreen();
 			expect(screen.queryByLabelText('Colonnes')).toBeNull();
 			expect(screen.queryByText('Lignes par page')).toBeNull();
 		} finally {
@@ -233,39 +248,44 @@ it('does not clear selection or restart the query when the same filters are appl
 
 it('shows invalid dates inside the modal, clears feedback on changes, and submits a corrected retry', async () => {
 	const change = jest.fn();
-	await render(
-		<PaginatedDataGrid
-			{...props({
-				columns: [{ field: 'date_created', headerName: 'Created', type: 'date' }],
-				onFilterModelChange: change,
-			})}
-		/>,
-	);
-	await fireEvent.press(screen.getByLabelText(t.dataGrid.toolbarFilters));
-	await fireEvent.changeText(screen.getByPlaceholderText('YYYY-MM-DD'), '2026-02-30');
-	await fireEvent.press(screen.getByText(t.dataGrid.searchApply));
-	expect(change).not.toHaveBeenCalled();
-	expect(mockError).toHaveBeenCalledWith(t.dataGrid.invalidDate);
-	expect(within(screen.getByTestId('filters-sheet')).getByRole('alert')).toHaveTextContent(t.dataGrid.invalidDate);
-	expect(screen.getByPlaceholderText('YYYY-MM-DD').props.value).toBe('2026-02-30');
-	await fireEvent.changeText(screen.getByPlaceholderText('YYYY-MM-DD'), '2026-02-28');
-	expect(screen.queryByRole('alert')).toBeNull();
-	await fireEvent.press(screen.getByText(t.dataGrid.searchApply));
-	expect(change).toHaveBeenCalledTimes(1);
-	expect(change.mock.calls[0][0].items[0].value).toBe('2026-02-28');
-	expect(screen.queryByTestId('filters-sheet')).toBeNull();
-	await fireEvent.press(screen.getByLabelText(t.dataGrid.toolbarFilters));
-	expect(screen.queryByRole('alert')).toBeNull();
-	await fireEvent.changeText(screen.getByPlaceholderText('YYYY-MM-DD'), '2026-02-30');
-	await fireEvent.press(screen.getByText(t.dataGrid.searchApply));
-	expect(within(screen.getByTestId('filters-sheet')).getByRole('alert')).toHaveTextContent(t.dataGrid.invalidDate);
-	await fireEvent.press(screen.getByText(t.dataGrid.searchApply));
-	expect(within(screen.getByTestId('filters-sheet')).getAllByRole('alert')).toHaveLength(1);
-	expect(change).toHaveBeenCalledTimes(1);
-	await fireEvent.press(screen.getByRole('button', { name: t.common.close }));
-	await fireEvent.press(screen.getByLabelText(t.dataGrid.toolbarFilters));
-	expect(screen.getByPlaceholderText('YYYY-MM-DD').props.value).toBe('');
-	expect(screen.queryByRole('alert')).toBeNull();
+	const platform = jest.replaceProperty(Platform, 'OS', 'web');
+	try {
+		await render(
+			<PaginatedDataGrid
+				{...props({
+					columns: [{ field: 'date_created', headerName: 'Created', type: 'date' }],
+					onFilterModelChange: change,
+				})}
+			/>,
+		);
+		await fireEvent.press(screen.getByLabelText(t.dataGrid.toolbarFilters));
+		await fireEvent.changeText(screen.getByLabelText(t.dateRange.from), '2026-02-30');
+		await fireEvent.press(screen.getByText(t.dataGrid.searchApply));
+		expect(change).not.toHaveBeenCalled();
+		expect(mockError).toHaveBeenCalledWith(t.dataGrid.invalidDate);
+		expect(within(screen.getByTestId('filters-sheet')).getByRole('alert')).toHaveTextContent(t.dataGrid.invalidDate);
+		expect(screen.getByLabelText(t.dateRange.from).props.value).toBe('2026-02-30');
+		await fireEvent.changeText(screen.getByLabelText(t.dateRange.from), '2026-02-28');
+		expect(screen.queryByRole('alert')).toBeNull();
+		await fireEvent.press(screen.getByText(t.dataGrid.searchApply));
+		expect(change).toHaveBeenCalledTimes(1);
+		expect(change.mock.calls[0][0].items[0].value).toEqual(expect.objectContaining({ from: '2026-02-28' }));
+		expect(screen.queryByTestId('filters-sheet')).toBeNull();
+		await fireEvent.press(screen.getByLabelText(t.dataGrid.toolbarFilters));
+		expect(screen.queryByRole('alert')).toBeNull();
+		await fireEvent.changeText(screen.getByLabelText(t.dateRange.from), '2026-02-30');
+		await fireEvent.press(screen.getByText(t.dataGrid.searchApply));
+		expect(within(screen.getByTestId('filters-sheet')).getByRole('alert')).toHaveTextContent(t.dataGrid.invalidDate);
+		await fireEvent.press(screen.getByText(t.dataGrid.searchApply));
+		expect(within(screen.getByTestId('filters-sheet')).getAllByRole('alert')).toHaveLength(1);
+		expect(change).toHaveBeenCalledTimes(1);
+		await fireEvent.press(screen.getByRole('button', { name: t.common.close }));
+		await fireEvent.press(screen.getByLabelText(t.dataGrid.toolbarFilters));
+		expect(screen.getByLabelText(t.dateRange.from).props.value).toBe('');
+		expect(screen.queryByRole('alert')).toBeNull();
+	} finally {
+		platform.restore();
+	}
 });
 
 it('keeps loaded cards and places the retry action inside the list footer', async () => {
@@ -356,6 +376,44 @@ it.each(['2026-02-30', '31/12/2026', 'tomorrow'])('rejects invalid ISO date %s b
 	);
 });
 
+it.each(['date_created', 'date_joined', 'last_login'])('maps a complete %s range to the two Django bounds', (field) => {
+	expect(
+		extractCustomFilterParams({
+			items: [{ field, operator: 'between', value: { from: '2026-01-01', to: '2026-10-21' } }],
+		}),
+	).toEqual({ params: { [`${field}_after`]: '2026-01-01', [`${field}_before`]: '2026-10-21' } });
+});
+
+it('supports open and empty ranges and rejects invalid or inverted date bounds', () => {
+	expect(
+		extractCustomFilterParams({ items: [{ field: 'date_created', operator: 'between', value: { to: '2026-10-21' } }] }),
+	).toEqual({ params: { date_created_before: '2026-10-21' } });
+	expect(extractCustomFilterParams({ items: [{ field: 'date_created', operator: 'between', value: {} }] })).toEqual({
+		params: {},
+	});
+	for (const value of [{ from: '2026-02-30' }, { from: '2026-10-21', to: '2026-01-01' }]) {
+		expect(extractCustomFilterParams({ items: [{ field: 'date_created', operator: 'between', value }] })).toEqual({
+			params: {},
+			error: 'invalidDate',
+		});
+	}
+});
+
+it('keeps both bounds together when combining a date range with another OR filter', () => {
+	const range = { date_created_after: '2026-01-01', date_created_before: '2026-10-21' };
+	expect(
+		extractCustomFilterParams({
+			logicOperator: 'or',
+			items: [
+				{ field: 'date_created', operator: 'between', value: { from: '2026-01-01', to: '2026-10-21' } },
+				{ field: 'email', operator: 'endsWith', value: '@example.test' },
+			],
+		}),
+	).toEqual({
+		params: { filter_logic: 'or', filter_groups: JSON.stringify([range, { email__iendswith: '@example.test' }]) },
+	});
+});
+
 it('preserves the web text, boolean, empty and date query parameter contracts', () => {
 	expect(
 		extractCustomFilterParams({
@@ -381,12 +439,17 @@ it('preserves the web text, boolean, empty and date query parameter contracts', 
 	expect(mapOperatorToParam('raison_sociale', 'startsWith', 'Demo')).toEqual({ raison_sociale__istartswith: 'Demo' });
 	expect(mapOperatorToParam('nbr_employe', 'equals', '1 à 5')).toEqual({ nbr_employe: '1 à 5' });
 });
-it('does not silently turn OR into AND or overwrite contradictory filters', () => {
+it('sends OR groups to Django without overwriting repeated fields and rejects contradictory AND filters', () => {
 	const items = [
 		{ field: 'email', operator: 'contains', value: 'a' },
 		{ field: 'email', operator: 'contains', value: 'b' },
 	];
-	expect(extractCustomFilterParams({ items, logicOperator: 'or' }).error).toBe('andOnly');
+	expect(extractCustomFilterParams({ items, logicOperator: 'or' })).toEqual({
+		params: {
+			filter_logic: 'or',
+			filter_groups: JSON.stringify([{ email__icontains: 'a' }, { email__icontains: 'b' }]),
+		},
+	});
 	expect(extractCustomFilterParams({ items }).error).toBe('duplicateFilter');
 	expect(extractCustomFilterParams({ items: [items[0], items[0]] })).toEqual({ params: { email__icontains: 'a' } });
 });
@@ -409,7 +472,8 @@ it('offers only operators implemented by the existing Django APIs', () => {
 		'isNotEmpty',
 	]);
 	expect(operators.boolean.map(({ value }) => value)).toEqual(['is']);
-	expect(operators.date.map(({ value }) => value).sort()).toEqual(['onOrAfter', 'onOrBefore']);
+	expect(operators.date.map(({ value }) => value)).toEqual(['between']);
+	expect(operators.datetime.map(({ value }) => value)).toEqual(['between']);
 });
 
 describe('mapOperatorToParam', () => {
@@ -535,8 +599,8 @@ describe('isDateRangeValue', () => {
 		expect(isDateRangeValue(null as unknown as CustomFilterValue)).toBe(false);
 	});
 
-	it('returns false for object without from', () => {
-		expect(isDateRangeValue({ to: '2025-12-31' } as unknown as CustomFilterValue)).toBe(false);
+	it('recognizes an upper bound without a lower bound', () => {
+		expect(isDateRangeValue({ to: '2025-12-31' })).toBe(true);
 	});
 });
 

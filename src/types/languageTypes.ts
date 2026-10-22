@@ -31,7 +31,6 @@ export type TranslationDictionary = {
 		fieldLabel: string;
 		operatorLabel: string;
 		removeFilter: string;
-		andOnly: string;
 		duplicateFilter: string;
 		unsupportedFilter: string;
 		operatorLabels: {

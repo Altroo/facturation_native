@@ -1,8 +1,6 @@
-import { useRef, useState } from 'react';
-import { Platform, Pressable, Text, View } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { useRef } from 'react';
+import { Text, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { format } from 'date-fns';
 import {
 	getFilterOperatorsForColumn,
 	type FilterItem,
@@ -10,10 +8,11 @@ import {
 	type ColumnDef,
 	type FilterModel,
 } from 'expo-flash-datagrid';
-import CustomAutoCompleteSelect from '@/components/nativeElements/customAutoCompleteSelect/customAutoCompleteSelect';
+import CustomDropDownSelect from '@/components/nativeElements/customDropDownSelect/customDropDownSelect';
+import CustomDateInput from '@/components/nativeElements/customDateInput/customDateInput';
+import DateRangeFilterInput from '@/components/shared/dateRangeFilter/dateRangeFilterOperator';
 import CustomTextInput from '@/components/nativeElements/customTextInput/customTextInput';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
-import { useColorMode } from '@/providers/themeProvider';
 import { valueLessFilterOperators } from '@/utils/rawData';
 import { useLanguage } from '@/utils/hooks';
 import { colors } from '@/utils/themes';
@@ -40,10 +39,7 @@ type Props<TRow> = FilterOperatorsConfig<TRow> & {
 // Same role and location as the web CustomFilterPanel; only native controls differ.
 const CustomFilterPanel = <TRow,>(props: Props<TRow>) => {
 	const { columns, filterModel, onChange, disabled, filterOperatorsByType, filterOperatorsByField } = props;
-	const { t, language } = useLanguage();
-	const { mode } = useColorMode();
-	const [datePickerId, setDatePickerId] = useState<string | null>(null);
-	if (disabled && datePickerId !== null) setDatePickerId(null);
+	const { t } = useLanguage();
 	const filterCounterRef = useRef(0);
 	const config = { filterOperatorsByType, filterOperatorsByField };
 	const filterableColumns = columns.filter((column) => column.field !== 'actions' && column.filterable !== false);
@@ -64,7 +60,7 @@ const CustomFilterPanel = <TRow,>(props: Props<TRow>) => {
 			id = `filter-${++filterCounterRef.current}`;
 		} while (filterModel.items.some((item) => item.id === id));
 		onChange({
-			logicOperator: 'and',
+			logicOperator: filterModel.logicOperator ?? 'and',
 			items: [
 				...filterModel.items,
 				{
@@ -79,7 +75,6 @@ const CustomFilterPanel = <TRow,>(props: Props<TRow>) => {
 	const handleColumnChange = (id: string, field: string) => {
 		const column = columns.find((item) => item.field === field);
 		if (!column) return;
-		setDatePickerId(null);
 		handleItemChange(id, {
 			field,
 			operator: column.filterForceOperator ?? getFilterOperatorsForColumn(column, config)[0]?.value ?? 'contains',
@@ -88,6 +83,7 @@ const CustomFilterPanel = <TRow,>(props: Props<TRow>) => {
 	};
 	const handleRemoveFilter = (id: string) => {
 		if (disabled) return;
+		if (filterModel.items.length === 1 && !filterHasValue(filterModel.items[0])) return;
 		onChange({ ...filterModel, items: filterModel.items.filter((item, index) => (item.id ?? String(index)) !== id) });
 	};
 	const handleClearAll = () => {
@@ -133,101 +129,82 @@ const CustomFilterPanel = <TRow,>(props: Props<TRow>) => {
 				const selectedOption = valueOptions.findIndex((option) => option.value === item.value);
 				const requiresValue = operators.find((operator) => operator.value === item.operator)?.requiresValue !== false;
 				const isDate = column.type === 'date' || column.type === 'datetime';
-				const parsedDate = new Date(String(item.value) + 'T12:00:00');
+				const range = typeof item.value === 'object' && item.value !== null ? item.value : {};
 				return (
 					<View key={id} className="gap-3 rounded-xl border border-slate-200 p-3 dark:border-slate-600">
-						{index > 0 && <Text className="font-sans text-ink dark:text-slate-100">{t.filterPanel.and}</Text>}
-						<CustomAutoCompleteSelect
+						{index === 1 ? (
+							<CustomDropDownSelect
+								label={t.filterPanel.logicOperator}
+								items={['and', 'or']}
+								value={filterModel.logicOperator ?? 'and'}
+								getOptionLabel={(value) => (value === 'or' ? t.filterPanel.or : t.filterPanel.and)}
+								disabled={disabled}
+								onChange={(value) => {
+									if (!disabled) onChange({ ...filterModel, logicOperator: value === 'or' ? 'or' : 'and' });
+								}}
+							/>
+						) : index > 1 ? (
+							<Text className="font-sans text-ink dark:text-slate-100">
+								{filterModel.logicOperator === 'or' ? t.filterPanel.or : t.filterPanel.and}
+							</Text>
+						) : null}
+						<CustomDropDownSelect
 							label={t.dataGrid.fieldLabel}
-							items={filterableColumns.map((col) => ({ code: col.headerName, value: col.field }))}
-							value={{ code: column.headerName, value: column.field }}
-							noOptionsText={t.common.noOptions}
+							items={filterableColumns.map((col) => col.field)}
+							value={column.field}
+							getOptionLabel={(field) => filterableColumns.find((col) => col.field === field)?.headerName ?? field}
 							disabled={disabled}
-							onChange={(_event, option) => {
-								if (option) handleColumnChange(id, option.value);
-							}}
+							onChange={(field) => handleColumnChange(id, field)}
 						/>
 						{!column.filterHideOperator && (
-							<CustomAutoCompleteSelect
+							<CustomDropDownSelect
 								label={t.dataGrid.operatorLabel}
-								items={operatorOptions}
-								value={operatorOptions.find((option) => option.value === item.operator) ?? null}
-								noOptionsText={t.common.noOptions}
-								disabled={disabled}
-								onChange={(_event, option) => {
-									if (option) handleOperatorChange(id, option.value);
-								}}
+								items={operatorOptions.map((option) => option.value)}
+								value={item.operator}
+								getOptionLabel={(operator) =>
+									operatorOptions.find((option) => option.value === operator)?.code ?? operator
+								}
+								disabled={disabled || operatorOptions.length === 1}
+								onChange={(operator) => handleOperatorChange(id, operator)}
 							/>
 						)}
 						{requiresValue &&
-							(valueOptions.length > 0 ? (
-								<CustomAutoCompleteSelect
-									label={t.common.value}
-									items={valueOptions.map((option, i) => ({ code: option.label, value: String(i) }))}
-									value={
-										selectedOption < 0
-											? { code: t.common.value, value: '' }
-											: { code: valueOptions[selectedOption].label, value: String(selectedOption) }
-									}
-									noOptionsText={t.common.noOptions}
+							(isDate && item.operator === 'between' ? (
+								<DateRangeFilterInput
+									value={range}
+									onChange={(value) => handleItemChange(id, { value })}
 									disabled={disabled}
-									onChange={(_event, option) =>
-										handleItemChange(id, { value: option ? valueOptions[Number(option.value)]?.value : '' })
-									}
+								/>
+							) : isDate ? (
+								<CustomDateInput
+									label={t.common.value}
+									value={typeof item.value === 'string' ? item.value : ''}
+									onChange={(value) => handleItemChange(id, { value })}
+									disabled={disabled}
+								/>
+							) : valueOptions.length > 0 ? (
+								<CustomDropDownSelect
+									label={t.common.value}
+									items={valueOptions.map((_option, i) => String(i))}
+									value={selectedOption < 0 ? null : String(selectedOption)}
+									getOptionLabel={(index) => valueOptions[Number(index)]?.label ?? index}
+									disabled={disabled}
+									onChange={(index) => handleItemChange(id, { value: valueOptions[Number(index)]?.value ?? '' })}
 								/>
 							) : (
 								<CustomTextInput
 									label={t.common.value}
-									placeholder={isDate ? 'YYYY-MM-DD' : t.common.value}
+									placeholder={t.common.value}
 									value={String(item.value ?? '')}
 									disabled={disabled}
 									autoCorrect={false}
 									autoCapitalize="none"
 									onChangeText={(value) => handleItemChange(id, { value })}
-									endIcon={
-										isDate && Platform.OS !== 'web' ? (
-											<Pressable
-												accessibilityRole="button"
-												accessibilityLabel={t.common.value + ' (' + column.headerName + ')'}
-												disabled={disabled}
-												onPress={() => setDatePickerId(datePickerId === id ? null : id)}
-												className="min-h-12 min-w-12 items-center justify-center"
-											>
-												<MaterialIcons name="calendar-today" size={22} color={colors.brand} />
-											</Pressable>
-										) : undefined
-									}
 								/>
 							))}
-						{!disabled && isDate && datePickerId === id && Platform.OS !== 'web' && (
-							<View>
-								<DateTimePicker
-									testID="filter-date-picker"
-									value={Number.isFinite(parsedDate.getTime()) ? parsedDate : new Date()}
-									mode="date"
-									display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-									themeVariant={mode}
-									locale={language}
-									onValueChange={(_event, date) => {
-										if (Platform.OS !== 'ios') setDatePickerId(null);
-										handleItemChange(id, { value: format(date, 'yyyy-MM-dd') });
-									}}
-									onDismiss={() => setDatePickerId(null)}
-								/>
-								{Platform.OS === 'ios' && (
-									<PrimaryLoadingButton
-										buttonText={t.dataGrid.done}
-										active
-										loading={false}
-										inverted
-										onClick={() => setDatePickerId(null)}
-									/>
-								)}
-							</View>
-						)}
 						<PrimaryLoadingButton
 							buttonText={t.dataGrid.removeFilter}
-							active={!disabled}
+							active={!disabled && (filterModel.items.length > 1 || filterHasValue(item))}
 							loading={false}
 							inverted
 							danger
@@ -241,7 +218,6 @@ const CustomFilterPanel = <TRow,>(props: Props<TRow>) => {
 				buttonText={t.common.addFilter}
 				active={!disabled && filterableColumns.length > 0 && filterModel.items.every(filterHasValue)}
 				loading={false}
-				inverted
 				onClick={handleAddFilter}
 				startIcon={<MaterialIcons name="add" size={22} color={colors.brand} />}
 			/>

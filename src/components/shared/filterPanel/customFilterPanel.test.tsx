@@ -1,11 +1,7 @@
-import type { ReactElement } from 'react';
-import {
-	AutocompleteDropdownContextProvider,
-	toggleAutocomplete,
-} from '@/components/nativeElements/customAutoCompleteSelect/setupAutocomplete';
 import { useState } from 'react';
-import { fireEvent, render as renderComponent, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen } from '@testing-library/react-native';
 import { Platform } from 'react-native';
+import { format } from 'date-fns';
 import type { FilterItem, FilterModel } from 'expo-flash-datagrid';
 import CustomFilterPanel, { filterHasValue } from './customFilterPanel';
 import { getServerFilterOperators } from '@/components/shared/paginatedDataGrid/paginatedDataGrid';
@@ -21,7 +17,10 @@ jest.mock('@/utils/hooks', () => ({
 	}),
 	useToast: () => ({ onError: jest.fn() }),
 }));
-const render = (ui: ReactElement) => renderComponent(ui, { wrapper: AutocompleteDropdownContextProvider });
+jest.mock(
+	'react-native-safe-area-context',
+	() => jest.requireActual('react-native-safe-area-context/jest/mock').default,
+);
 const t = translations.fr;
 const change = jest.fn();
 const columns = [
@@ -46,15 +45,58 @@ const Panel = ({ initial, disabled = false }: { initial: FilterModel; disabled?:
 };
 beforeEach(() => jest.clearAllMocks());
 
+it('keeps column and operator choices noneditable and disables the single date operator', async () => {
+	await render(<Panel initial={{ items: [{ id: 'f', field: 'created', operator: 'between', value: '' }] }} />);
+	expect(screen.queryByRole('combobox')).toBeNull();
+	expect(screen.getByRole('button', { name: t.dataGrid.operatorLabel })).toBeDisabled();
+	expect(screen.getByText(t.filterPanel.between)).toBeOnTheScreen();
+	await fireEvent.press(screen.getByRole('button', { name: t.dataGrid.fieldLabel }));
+	expect(screen.getByRole('radio', { name: 'Created' })).toBeChecked();
+	expect(screen.queryByRole('textbox')).toBeNull();
+});
+
+it('disables removing the first empty row until it has a value', async () => {
+	await render(<Panel initial={{ items: [{ id: 'f', field: 'name', operator: 'contains', value: '' }] }} />);
+	const remove = screen.getByRole('button', { name: t.dataGrid.removeFilter });
+	expect(remove).toBeDisabled();
+	await fireEvent.press(remove);
+	expect(change).not.toHaveBeenCalled();
+	await fireEvent.changeText(screen.getByPlaceholderText(t.common.value), 'A value');
+	expect(screen.getByRole('button', { name: t.dataGrid.removeFilter })).toBeEnabled();
+	await fireEvent.press(screen.getByRole('button', { name: t.dataGrid.removeFilter }));
+	expect(change.mock.calls.at(-1)[0].items).toEqual([]);
+});
+
+it('shows AND/OR on the second row and preserves OR when adding another row', async () => {
+	await render(
+		<Panel
+			initial={{
+				items: [
+					{ id: '1', field: 'name', operator: 'contains', value: 'First' },
+					{ id: '2', field: 'active', operator: 'is', value: false },
+				],
+			}}
+		/>,
+	);
+	await fireEvent.press(screen.getByRole('button', { name: t.filterPanel.logicOperator }));
+	await fireEvent.press(screen.getByRole('radio', { name: t.filterPanel.or }));
+	expect(change.mock.calls.at(-1)[0].logicOperator).toBe('or');
+	await fireEvent.press(screen.getByRole('button', { name: t.common.addFilter }));
+	expect(change.mock.calls.at(-1)[0].logicOperator).toBe('or');
+	expect(screen.getAllByText(t.filterPanel.or)).toHaveLength(2);
+	await fireEvent.press(screen.getAllByRole('button', { name: t.dataGrid.removeFilter }).at(-1)!);
+	expect(change.mock.calls.at(-1)[0].items).toHaveLength(2);
+});
+
 it('closes a calendar when its filter becomes disabled and keeps it closed after re-enabling', async () => {
-	const initial = { items: [{ id: 'f', field: 'created', operator: 'onOrAfter', value: '' }] };
+	const initial = { items: [{ id: 'f', field: 'created', operator: 'between', value: '' }] };
 	const view = await render(<Panel initial={initial} />);
-	await fireEvent.press(screen.getByLabelText(t.common.value + ' (Created)'));
-	expect(screen.getByTestId('filter-date-picker')).toBeOnTheScreen();
+	await fireEvent.press(screen.getByRole('button', { name: t.dateRange.from }));
+	expect(screen.getByTestId('date-picker-' + t.dateRange.from)).toBeOnTheScreen();
 	await view.rerender(<Panel initial={initial} disabled />);
-	expect(screen.queryByTestId('filter-date-picker')).toBeNull();
+	expect(screen.queryByTestId('date-picker-' + t.dateRange.from)).toBeNull();
 	await view.rerender(<Panel initial={initial} />);
-	expect(screen.queryByTestId('filter-date-picker')).toBeNull();
+	expect(screen.queryByTestId('date-picker-' + t.dateRange.from)).toBeNull();
 	expect(change).not.toHaveBeenCalled();
 });
 
@@ -83,20 +125,20 @@ it('adds unique filters, combines with AND, removes and clears them', async () =
 
 it('clears a text value when its field becomes a boolean and preserves false', async () => {
 	await render(<Panel initial={{ items: [{ id: 'f', field: 'name', operator: 'contains', value: 'Old text' }] }} />);
-	await toggleAutocomplete(t.dataGrid.fieldLabel);
+	await fireEvent.press(screen.getByRole('button', { name: t.dataGrid.fieldLabel }));
 	await fireEvent.press(screen.getByText('Active'));
 	expect(change.mock.calls.at(-1)[0].items[0]).toEqual({ id: 'f', field: 'active', operator: 'is', value: true });
-	await toggleAutocomplete(t.common.value);
+	await fireEvent.press(screen.getByRole('button', { name: t.common.value }));
 	await fireEvent.press(screen.getByText(t.common.no));
 	expect(change.mock.calls.at(-1)[0].items[0].value).toBe(false);
 });
 
 it('hides the value for empty operators and resets it when returning to text', async () => {
 	await render(<Panel initial={{ items: [{ id: 'f', field: 'name', operator: 'contains', value: 'Old' }] }} />);
-	await toggleAutocomplete(t.dataGrid.operatorLabel);
+	await fireEvent.press(screen.getByRole('button', { name: t.dataGrid.operatorLabel }));
 	await fireEvent.press(screen.getByText(t.filterPanel.isEmpty));
 	expect(screen.queryByPlaceholderText(t.common.value)).toBeNull();
-	await toggleAutocomplete(t.dataGrid.operatorLabel);
+	await fireEvent.press(screen.getByRole('button', { name: t.dataGrid.operatorLabel }));
 	await fireEvent.press(screen.getByText(t.filterPanel.contains));
 	expect(screen.getByPlaceholderText(t.common.value).props.value).toBe('');
 });
@@ -106,26 +148,29 @@ it.each(['ios', 'android'] as const)(
 	async (platform) => {
 		const os = jest.replaceProperty(Platform, 'OS', platform);
 		try {
-			await render(<Panel initial={{ items: [{ id: 'f', field: 'created', operator: 'onOrAfter', value: '' }] }} />);
-			await fireEvent.press(screen.getByLabelText(t.common.value + ' (Created)'));
-			await fireEvent(screen.getByTestId('filter-date-picker'), 'dismiss');
+			await render(<Panel initial={{ items: [{ id: 'f', field: 'created', operator: 'between', value: '' }] }} />);
+			await fireEvent.press(screen.getByRole('button', { name: t.dateRange.from }));
+			await fireEvent(screen.getByTestId('date-picker-' + t.dateRange.from), 'dismiss');
 			expect(change).not.toHaveBeenCalled();
-			expect(screen.queryByTestId('filter-date-picker')).toBeNull();
-			await fireEvent.press(screen.getByLabelText(t.common.value + ' (Created)'));
+			expect(screen.queryByTestId('date-picker-' + t.dateRange.from)).toBeNull();
+			await fireEvent.press(screen.getByRole('button', { name: t.dateRange.from }));
 			const date = new Date(2026, 4, 6, 0, 0, 0);
 			await fireEvent(
-				screen.getByTestId('filter-date-picker'),
+				screen.getByTestId('date-picker-' + t.dateRange.from),
 				'valueChange',
 				{ nativeEvent: { timestamp: date.getTime(), utcOffset: 0 } },
 				date,
 			);
-			expect(change.mock.calls.at(-1)[0].items[0].value).toBe('2026-05-06');
-			if (platform === 'android') expect(screen.queryByTestId('filter-date-picker')).toBeNull();
-			else {
-				expect(screen.getByTestId('filter-date-picker')).toBeOnTheScreen();
+			if (platform === 'ios') {
+				expect(change).not.toHaveBeenCalled();
+				expect(screen.getByTestId('date-picker-' + t.dateRange.from)).toBeOnTheScreen();
 				await fireEvent.press(screen.getByLabelText(t.dataGrid.done));
-				expect(screen.queryByTestId('filter-date-picker')).toBeNull();
 			}
+			expect(screen.queryByTestId('date-picker-' + t.dateRange.from)).toBeNull();
+			expect(change.mock.calls.at(-1)[0].items[0].value).toEqual({
+				from: '2026-05-06',
+				to: format(new Date(), 'yyyy-MM-dd'),
+			});
 		} finally {
 			os.restore();
 		}
@@ -270,7 +315,7 @@ describe('CustomFilterPanel component', () => {
 	});
 	test('changes filter operator when operator selector changes', async () => {
 		await render(<Panel initial={{ items: [{ id: '1', field: 'name', operator: 'contains', value: 'test' }] }} />);
-		await toggleAutocomplete(t.dataGrid.operatorLabel);
+		await fireEvent.press(screen.getByRole('button', { name: t.dataGrid.operatorLabel }));
 		await fireEvent.press(screen.getByText(t.filterPanel.equals));
 		expect(change.mock.calls[0][0].items[0]).toMatchObject({ operator: 'equals', value: 'test' });
 	});
@@ -290,7 +335,7 @@ describe('CustomFilterPanel component', () => {
 				onChange={change}
 			/>,
 		);
-		await toggleAutocomplete(t.dataGrid.fieldLabel);
+		await fireEvent.press(screen.getByRole('button', { name: t.dataGrid.fieldLabel }));
 		expect(screen.queryByText('Actions')).toBeNull();
 		expect(screen.queryByText('Hidden')).toBeNull();
 		expect(screen.getByText('Created')).toBeOnTheScreen();

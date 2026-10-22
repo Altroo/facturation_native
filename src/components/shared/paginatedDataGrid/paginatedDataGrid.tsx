@@ -32,10 +32,12 @@ import ApiAlert from '@/components/nativeElements/apiLoading/apiAlert/apiAlert';
 import CustomFilterPanel, { filterHasValue } from '@/components/shared/filterPanel/customFilterPanel';
 import KeyboardAwareScrollView from '@/components/shared/keyboardAwareScrollView/keyboardAwareScrollView';
 import { INFINITE_SCROLL_THRESHOLD } from '@/utils/rawData';
+import { createDateRangeFilterOperator } from '@/components/shared/dateRangeFilter/dateRangeFilterOperator';
+import BottomNavigation from '@/components/shared/bottomNavigation/bottomNavigation';
 
 type GridFilterResultType = {
 	params: Record<string, string>;
-	error?: 'andOnly' | 'duplicateFilter' | 'unsupportedFilter' | 'invalidDate';
+	error?: 'duplicateFilter' | 'unsupportedFilter' | 'invalidDate';
 };
 
 export type DateRangeFilterValue = {
@@ -45,7 +47,13 @@ export type DateRangeFilterValue = {
 
 /** Type guard for DateRangeFilterValue */
 export const isDateRangeValue = (value: unknown): value is DateRangeFilterValue => {
-	return typeof value === 'object' && value !== null && 'from' in value;
+	return typeof value === 'object' && value !== null && ('from' in value || 'to' in value);
+};
+
+const isValidFilterDate = (value: unknown): value is string => {
+	if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+	const date = new Date(value + 'T00:00:00.000Z');
+	return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
 };
 
 /** Map frontend operator names to backend query param suffixes */
@@ -107,7 +115,7 @@ export const mapOperatorToParam = (field: string, operator: string, value: unkno
 			params[`${field}__lte`] = strValue;
 			break;
 
-		// Native date controls submit each bound separately.
+		// Also accept existing single-bound models when reopening an older filter.
 		case 'onOrAfter':
 			params[`${field}_after`] = strValue;
 			break;
@@ -125,41 +133,52 @@ export const mapOperatorToParam = (field: string, operator: string, value: unkno
 
 export const extractCustomFilterParams = (model: FilterModel): GridFilterResultType => {
 	const params: Record<string, string> = {};
-	if (model.logicOperator === 'or' && model.items.length > 1) return { params, error: 'andOnly' };
+	const groups: Record<string, string>[] = [];
 	for (const item of model.items) {
 		const valueless = item.operator === 'isEmpty' || item.operator === 'isNotEmpty';
-		if (!valueless && (item.value === undefined || item.value === null || String(item.value).trim() === '')) continue;
-		if (item.operator === 'onOrAfter' || item.operator === 'onOrBefore') {
-			const value = String(item.value);
-			const date = new Date(value + 'T00:00:00.000Z');
-			if (
-				!/^\d{4}-\d{2}-\d{2}$/.test(value) ||
-				!Number.isFinite(date.getTime()) ||
-				date.toISOString().slice(0, 10) !== value
-			)
+		if (!valueless && !filterHasValue(item)) continue;
+		let mapped: Record<string, string>;
+		if (item.operator === 'between') {
+			if (!isDateRangeValue(item.value)) return { params: {}, error: 'invalidDate' };
+			const { from, to } = item.value;
+			if ((from && !isValidFilterDate(from)) || (to && !isValidFilterDate(to)) || (from && to && from > to))
 				return { params: {}, error: 'invalidDate' };
+			mapped = {
+				...(from ? { [`${item.field}_after`]: from } : {}),
+				...(to ? { [`${item.field}_before`]: to } : {}),
+			};
+			if (!Object.keys(mapped).length) continue;
+		} else {
+			if (item.operator === 'onOrAfter' || item.operator === 'onOrBefore') {
+				if (!isValidFilterDate(item.value)) return { params: {}, error: 'invalidDate' };
+			}
+			if (
+				![
+					'contains',
+					'equals',
+					'startsWith',
+					'endsWith',
+					'isEmpty',
+					'isNotEmpty',
+					'is',
+					'onOrAfter',
+					'onOrBefore',
+				].includes(item.operator)
+			)
+				return { params: {}, error: 'unsupportedFilter' };
+			mapped = mapOperatorToParam(item.field, item.operator, item.value);
+			if (!Object.keys(mapped).length) return { params: {}, error: 'unsupportedFilter' };
 		}
-		if (
-			![
-				'contains',
-				'equals',
-				'startsWith',
-				'endsWith',
-				'isEmpty',
-				'isNotEmpty',
-				'is',
-				'onOrAfter',
-				'onOrBefore',
-			].includes(item.operator)
-		)
-			return { params: {}, error: 'unsupportedFilter' };
-		const mapped = mapOperatorToParam(item.field, item.operator, item.value);
-		if (!Object.keys(mapped).length) return { params: {}, error: 'unsupportedFilter' };
+		groups.push(mapped);
 		for (const [key, value] of Object.entries(mapped)) {
-			if (key in params && params[key] !== value) return { params: {}, error: 'duplicateFilter' };
+			if (model.logicOperator !== 'or' && key in params && params[key] !== value)
+				return { params: {}, error: 'duplicateFilter' };
 			params[key] = value;
 		}
 	}
+	// Each row remains one group, so both date bounds stay together inside OR.
+	if (model.logicOperator === 'or' && groups.length > 1)
+		return { params: { filter_logic: 'or', filter_groups: JSON.stringify(groups) } };
 	return { params };
 };
 
@@ -169,7 +188,8 @@ export const getServerFilterOperators = <TRow,>() => {
 		string: defaults.string.filter(({ value }) =>
 			['contains', 'equals', 'startsWith', 'endsWith', 'isEmpty', 'isNotEmpty'].includes(value),
 		),
-		date: defaults.date.filter(({ value }) => ['onOrAfter', 'onOrBefore'].includes(value)),
+		date: createDateRangeFilterOperator<TRow>(),
+		datetime: createDateRangeFilterOperator<TRow>(),
 		boolean: defaults.boolean.filter(({ value }) => value === 'is'),
 	};
 };
@@ -291,7 +311,7 @@ const PaginatedDataGrid = <TRow,>(props: PaginatedDataGridProps<TRow>) => {
 		setFilterError(null);
 		const firstColumn = columns.find((column) => column.field !== 'actions' && column.filterable !== false);
 		setCustomFilters({
-			logicOperator: 'and',
+			logicOperator: filterModel?.logicOperator ?? 'and',
 			items: filterModel?.items.length
 				? filterModel.items.map((item) => ({ ...item }))
 				: firstColumn
@@ -357,9 +377,21 @@ const PaginatedDataGrid = <TRow,>(props: PaginatedDataGridProps<TRow>) => {
 					/>
 				</>
 			) : rows.length > 0 ? (
-				<Text className="font-sans text-sm text-slate-500 dark:text-slate-400">
-					{hasNextPage ? t.dataGrid.scrollForMore : t.dataGrid.endOfList}
-				</Text>
+				<View className="w-full flex-row items-center justify-center gap-3 py-2">
+					{!hasNextPage && <View className="h-px w-8 bg-slate-200 dark:bg-slate-700" />}
+					<View className="flex-row items-center gap-2">
+						<MaterialIcons
+							name={hasNextPage ? 'south' : 'done-all'}
+							size={18}
+							color={colors.brand}
+							accessible={false}
+						/>
+						<Text className="font-poppins-medium text-xs text-slate-500 dark:text-slate-400">
+							{hasNextPage ? t.dataGrid.scrollForMore : t.dataGrid.endOfList}
+						</Text>
+					</View>
+					{!hasNextPage && <View className="h-px w-8 bg-slate-200 dark:bg-slate-700" />}
+				</View>
 			) : null}
 		</View>
 	);
@@ -434,7 +466,7 @@ const PaginatedDataGrid = <TRow,>(props: PaginatedDataGridProps<TRow>) => {
 			>
 				<View className="flex-row items-center justify-end gap-2">
 					{props.selectionControl}
-					{!searchOpen && (
+					{!searchOpen && rows.length > 0 && (
 						<Text className="mr-auto flex-1 font-sans text-sm" style={{ color: theme.toolbarTextColor }}>
 							{t.dataGrid.loadedCount(rows.length, rowCount ?? rows.length)}
 						</Text>
@@ -528,19 +560,6 @@ const PaginatedDataGrid = <TRow,>(props: PaginatedDataGridProps<TRow>) => {
 							<MaterialIcons name="sort" size={22} color={sorting.ordering ? colors.brand : theme.toolbarTextColor} />
 						</Pressable>
 					)}
-					{props.createAction && !searchOpen && (
-						<Pressable
-							accessibilityRole="button"
-							accessibilityLabel={props.createAction.label}
-							accessibilityState={{ disabled: !!disabled }}
-							disabled={disabled}
-							onPress={props.createAction.onPress}
-							className="min-h-11 min-w-11 items-center justify-center bg-brand"
-							style={{ borderRadius: surfaceStyles[mode].borderRadius }}
-						>
-							<MaterialIcons name="add" size={24} color={colors.white} />
-						</Pressable>
-					)}
 				</View>
 				{(searchTerm !== '' || activeFilterCount > 0) && (
 					<Pressable
@@ -561,6 +580,7 @@ const PaginatedDataGrid = <TRow,>(props: PaginatedDataGridProps<TRow>) => {
 			) : (
 				<FlashList ref={nativeListRef} maintainVisibleContentPosition={{ disabled: true }} {...listProps} />
 			)}
+			<BottomNavigation createAction={props.createAction} disabled={disabled} hidden={searchOpen} />
 			{sorting && sortDraft !== null && (
 				<BottomSheet
 					visible

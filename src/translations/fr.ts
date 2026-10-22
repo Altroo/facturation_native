@@ -27,7 +27,6 @@ export const fr: TranslationDictionary = {
 		fieldLabel: 'Colonne',
 		operatorLabel: 'Opérateur',
 		removeFilter: 'Supprimer le filtre',
-		andOnly: 'Ces listes permettent de combiner les filtres avec ET. Choisissez ET pour les appliquer.',
 		duplicateFilter: 'Deux filtres utilisent la même colonne et le même opérateur. Gardez une seule valeur.',
 		unsupportedFilter: 'Cet opérateur de filtre n’est pas disponible pour cette liste.',
 		operatorLabels: {

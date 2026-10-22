@@ -1,5 +1,6 @@
 import { toggleAutocomplete } from '@/components/nativeElements/customAutoCompleteSelect/setupAutocomplete';
 import { configureStore } from '@reduxjs/toolkit';
+import notification from '@/store/slices/notificationSlice';
 import _initReducer, { setAuthenticated } from '@/store/slices/_initSlice';
 import accountReducer, { setProfil } from '@/store/slices/accountSlice';
 import companiesReducer, { setUserCompanies } from '@/store/slices/companiesSlice';
@@ -111,7 +112,7 @@ const reachEnd = async () =>
 	);
 const setup = async (role = 'Caissier') => {
 	const store = configureStore({
-		reducer: { _init: _initReducer, account: accountReducer, companies: companiesReducer },
+		reducer: { _init: _initReducer, account: accountReducer, companies: companiesReducer, notification },
 	});
 	const dispatch = jest.spyOn(store, 'dispatch');
 	store.dispatch(
@@ -427,13 +428,23 @@ it('applies and clears server filters and restarts the result set for the change
 		expect.anything(),
 	);
 });
-it('does not offer unsupported OR filtering', async () => {
+it('combines filter rows with AND or OR on the server', async () => {
 	await setup();
 	await fireEvent.press(screen.getByLabelText(translations.fr.dataGrid.toolbarFilters));
 	await fireEvent.changeText(screen.getByPlaceholderText(translations.fr.common.value), 'Example');
 	await fireEvent.press(screen.getByLabelText(translations.fr.common.addFilter));
 	expect(screen.getByText(translations.fr.filterPanel.and)).toBeOnTheScreen();
-	expect(screen.queryByText(translations.fr.filterPanel.or)).toBeNull();
+	await fireEvent.changeText(screen.getAllByPlaceholderText(translations.fr.common.value).at(-1)!, 'Other');
+	await fireEvent.press(screen.getByRole('button', { name: translations.fr.filterPanel.logicOperator }));
+	await fireEvent.press(screen.getByRole('radio', { name: translations.fr.filterPanel.or }));
+	await fireEvent.press(screen.getByRole('button', { name: translations.fr.dataGrid.searchApply }));
+	expect(useGetCompaniesInfiniteListInfiniteQuery).toHaveBeenLastCalledWith(
+		expect.objectContaining({
+			filter_logic: 'or',
+			filter_groups: JSON.stringify([{ raison_sociale__icontains: 'Example' }, { raison_sociale__icontains: 'Other' }]),
+		}),
+		expect.anything(),
+	);
 });
 it('keeps inline search open after submitting and clears a later draft directly', async () => {
 	await setup();
@@ -464,13 +475,9 @@ it('combines both date bounds in the web preview using the Django date contract'
 		await fireEvent.press(screen.getByLabelText(translations.fr.dataGrid.toolbarFilters));
 		await toggleAutocomplete(translations.fr.dataGrid.fieldLabel, -1);
 		await fireEvent.press(screen.getAllByText(translations.fr.common.dateCreation).at(-1)!);
-		await fireEvent.changeText(screen.getByPlaceholderText('YYYY-MM-DD'), '2026-10-01');
-		await fireEvent.press(screen.getByLabelText(translations.fr.common.addFilter));
-		await toggleAutocomplete(translations.fr.dataGrid.fieldLabel, -1);
-		await fireEvent.press(screen.getAllByText(translations.fr.common.dateCreation).at(-1)!);
-		await toggleAutocomplete(translations.fr.dataGrid.operatorLabel, -1);
-		await fireEvent.press(screen.getByText(translations.fr.dataGrid.operatorLabels.onOrAfter));
-		await fireEvent.changeText(screen.getAllByPlaceholderText('YYYY-MM-DD').at(-1)!, '2026-01-01');
+		expect(screen.getByRole('button', { name: translations.fr.dataGrid.operatorLabel })).toBeDisabled();
+		await fireEvent.changeText(screen.getByLabelText(translations.fr.dateRange.from), '2026-01-01');
+		await fireEvent.changeText(screen.getByLabelText(translations.fr.dateRange.to), '2026-10-01');
 		await fireEvent.press(screen.getByText(translations.fr.dataGrid.searchApply));
 		expect(useGetCompaniesInfiniteListInfiniteQuery).toHaveBeenLastCalledWith(
 			expect.objectContaining({

@@ -26,7 +26,6 @@ export const en: TranslationDictionary = {
 		fieldLabel: 'Column',
 		operatorLabel: 'Operator',
 		removeFilter: 'Remove filter',
-		andOnly: 'These lists support combining filters with AND. Choose AND to apply them.',
 		duplicateFilter: 'Two filters use the same column and operator. Keep a single value.',
 		unsupportedFilter: 'This filter operator is unavailable for this list.',
 		operatorLabels: {

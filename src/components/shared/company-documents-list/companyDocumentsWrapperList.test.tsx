@@ -98,6 +98,10 @@ it('brings a partially hidden tab into view and passes its company and role to t
 	expect(screen.getByText('Company 2: Commercial')).toBeOnTheScreen();
 	expect(scrollView.scrollTo).toHaveBeenLastCalledWith({ x: 188, animated: true });
 
+	// The company page remounts its tab control. Native measures the new
+	// viewport before reporting the selected tab's new font/layout.
+	await fireEvent.layout(screen.getByLabelText(t.common.companiesTabs), { width: 212, height: 56 });
+
 	// The selected font can make the tab wider after the press.
 	await fireEvent(screen.getByRole('tab', { name: 'Horizon' }), 'layout', {
 		nativeEvent: { layout: { x: 200, y: 0, width: 212, height: 56 } },

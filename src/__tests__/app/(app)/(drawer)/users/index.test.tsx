@@ -1,5 +1,6 @@
 import { toggleAutocomplete } from '@/components/nativeElements/customAutoCompleteSelect/setupAutocomplete';
 import { configureStore } from '@reduxjs/toolkit';
+import notification from '@/store/slices/notificationSlice';
 import _initReducer, { setAuthenticated } from '@/store/slices/_initSlice';
 import accountReducer, { setProfil } from '@/store/slices/accountSlice';
 import companiesReducer, { setUserCompanies } from '@/store/slices/companiesSlice';
@@ -121,7 +122,7 @@ const reachEnd = async () =>
 	);
 const setup = async (role = 'Caissier', staff = true) => {
 	const store = configureStore({
-		reducer: { _init: _initReducer, account: accountReducer, companies: companiesReducer },
+		reducer: { _init: _initReducer, account: accountReducer, companies: companiesReducer, notification },
 	});
 	store.dispatch(setProfil({ ...profile, is_staff: staff }));
 	store.dispatch(setUserCompanies([{ id: 4, raison_sociale: 'Company Four', role, uses_foreign_currency: false }]));
