@@ -5,6 +5,7 @@ import { useColorMode } from '@/providers/themeProvider';
 
 type Props = {
 	buttonText: string;
+	accessibilityLabel?: string;
 	loading: boolean;
 	onClick?: (event: GestureResponderEvent) => void;
 	active?: boolean;
@@ -26,18 +27,17 @@ const PrimaryLoadingButton: FC<Props> = (props: Props) => {
 			: mode === 'dark' && props.color === colors.slate[200]
 				? colors.ink
 				: colors.white;
-	// Custom action colors also apply to page-provided icons and loaders.
+	// Text, icons and loaders share one foreground, including ordinary blue
+	// primary buttons. Callers cannot accidentally leave their add icon gray.
 	const startIcon =
-		(darkDanger || props.color) &&
-		isValidElement<{ color?: ColorValue }>(props.startIcon) &&
-		'color' in props.startIcon.props
+		isValidElement<{ color?: ColorValue }>(props.startIcon) && 'color' in props.startIcon.props
 			? cloneElement(props.startIcon, { color: foreground })
 			: props.startIcon;
 	return (
 		<Pressable
 			testID={props.testID}
 			accessibilityRole="button"
-			accessibilityLabel={props.buttonText}
+			accessibilityLabel={props.accessibilityLabel ?? props.buttonText}
 			accessibilityState={{ disabled: !props.active || props.loading, busy: props.loading }}
 			disabled={!props.active || props.loading}
 			onPress={props.onClick}

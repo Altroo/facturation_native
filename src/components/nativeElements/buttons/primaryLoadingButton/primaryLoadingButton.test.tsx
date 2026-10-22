@@ -1,6 +1,28 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { Text } from 'react-native';
 import PrimaryLoadingButton from './primaryLoadingButton';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { colors } from '@/utils/themes';
+
+jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
+
+it.each([false, true])('keeps the add icon and text in the shared foreground, inverted=%s', async (inverted) => {
+	await render(
+		<PrimaryLoadingButton
+			buttonText="Ajouter"
+			loading={false}
+			active
+			inverted={inverted}
+			startIcon={<MaterialIcons name="add" size={20} color={colors.slate[400]} />}
+		/>,
+	);
+	const icon = screen.container.queryAll((node) => node.props.name === 'add')[0];
+	expect(icon).toHaveProp('color', inverted ? colors.brand : colors.white);
+	expect(screen.getByRole('button')).toHaveProp(
+		'className',
+		expect.stringContaining(inverted ? 'bg-white' : 'bg-brand'),
+	);
+});
 
 it('uses original buttonText/onClick/startIcon props and keeps its native test ID', async () => {
 	const onClick = jest.fn();

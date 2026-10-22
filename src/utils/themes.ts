@@ -48,6 +48,13 @@ export const cardShadows = {
 	dark: { boxShadow: '0px 3px 12px rgba(0, 0, 0, 0.28)' },
 } as const;
 
+export const navigationShadows = {
+	light: { boxShadow: '0px -3px 18px rgba(13, 7, 11, 0.09)' },
+	dark: { boxShadow: '0px -3px 18px rgba(0, 0, 0, 0.3)' },
+	addLight: { boxShadow: `0px 6px 14px ${colors.brand}55` },
+	addDark: { boxShadow: '0px 6px 16px rgba(0, 0, 0, 0.5)' },
+} as const;
+
 // Use the same names when loading fonts and setting native fontFamily props.
 export const fonts = {
 	regular: 'Poppins',
