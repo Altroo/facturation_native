@@ -81,6 +81,28 @@ it('supports multiline content without replacing native input options', async ()
 });
 
 describe('CustomTextInput', () => {
+	it('keeps addresses to two visible lines and remarks to four without truncating their values', async () => {
+		await render(
+			<>
+				<CustomTextInput label="Adresse" multiline numberOfLines={2} value={'Rue 1\nImmeuble A\nCasablanca'} />
+				<CustomTextInput label="Remarque" multiline numberOfLines={4} value="Instructions de livraison" />
+			</>,
+		);
+		const address = screen.getByLabelText('Adresse');
+		const remark = screen.getByLabelText('Remarque');
+		expect(address).toHaveProp('numberOfLines', 2);
+		expect(remark).toHaveProp('numberOfLines', 4);
+		expect(address).toHaveProp('scrollEnabled', true);
+		expect(address).toHaveProp('value', 'Rue 1\nImmeuble A\nCasablanca');
+		const addressHeight = address.props.style
+			.flat()
+			.find((entry: { height?: number } | undefined) => entry?.height)?.height;
+		const remarkHeight = remark.props.style
+			.flat()
+			.find((entry: { height?: number } | undefined) => entry?.height)?.height;
+		expect(addressHeight).toBeGreaterThan(48);
+		expect(addressHeight).toBeLessThan(remarkHeight);
+	});
 	it('passes its ref to the input element', async () => {
 		const ref = createRef<TextInputInstance>();
 		await render(<CustomTextInput ref={ref} id="custom-input" value="" onChangeText={() => {}} />);

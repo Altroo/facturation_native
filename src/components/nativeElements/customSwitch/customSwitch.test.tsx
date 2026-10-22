@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Platform } from 'react-native';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import CustomSwitch from './customSwitch';
+import { colors } from '@/utils/themes';
 
 it('keeps the parent in control of the value', async () => {
 	const Field = () => {
@@ -12,6 +13,13 @@ it('keeps the parent in control of the value', async () => {
 	expect(screen.getByRole('switch', { name: 'Active' })).not.toBeChecked();
 	await fireEvent(screen.getByRole('switch', { name: 'Active' }), 'valueChange', true);
 	expect(screen.getByRole('switch', { name: 'Active' })).toBeChecked();
+});
+
+it('uses the requested active color without changing the default switch color', async () => {
+	await render(<CustomSwitch label="Account active" value onValueChange={jest.fn()} activeColor={colors.success} />);
+	expect(screen.getByRole('switch')).toHaveProp('onTintColor', colors.success);
+	await screen.rerender(<CustomSwitch label="Account active" value onValueChange={jest.fn()} />);
+	expect(screen.getByRole('switch')).toHaveProp('onTintColor', colors.brand);
 });
 
 it.each([

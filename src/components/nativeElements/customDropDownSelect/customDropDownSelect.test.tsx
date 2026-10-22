@@ -12,6 +12,23 @@ const items = [
 	{ code: 'H', value: 'Homme' },
 	{ code: 'F', value: 'Femme' },
 ];
+it('shows option labels while returning stable values without an editable text field', async () => {
+	const onChange = jest.fn();
+	await render(
+		<CustomDropDownSelect
+			label="Colonne"
+			items={['date_created', 'email']}
+			value="date_created"
+			getOptionLabel={(value) => (value === 'date_created' ? 'Date de création' : 'Email')}
+			onChange={onChange}
+		/>,
+	);
+	expect(screen.getByText('Date de création')).toBeOnTheScreen();
+	expect(screen.queryByRole('combobox')).toBeNull();
+	await fireEvent.press(screen.getByRole('button', { name: 'Colonne' }));
+	await fireEvent.press(screen.getByRole('radio', { name: 'Email' }));
+	expect(onChange).toHaveBeenCalledWith('email');
+});
 it.each(['ios', 'android', 'web'] as const)('opens inline choices and toggles them closed on %s', async (platform) => {
 	const os = jest.replaceProperty(Platform, 'OS', platform);
 	try {

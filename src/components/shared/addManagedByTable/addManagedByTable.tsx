@@ -11,6 +11,7 @@ import { useLanguage } from '@/utils/hooks';
 import type { UserCompaniesType } from '@/types/usersTypes';
 import type { DropDownType } from '@/types/accountTypes';
 import { colors } from '@/utils/themes';
+import SectionCard from '@/components/shared/sectionCard/sectionCard';
 
 export type ManagedByType = {
 	id: number;
@@ -63,19 +64,7 @@ const ManagedByTableSection: FC<ManagedByTableSectionProps> = (props: ManagedByT
 	} = props;
 	const { t } = useLanguage();
 	return (
-		<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
-			<View className="mb-1 flex-row items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
-				<View className="h-10 w-10 items-center justify-center rounded-xl bg-blue-50 dark:bg-slate-800">{icon}</View>
-				<Text
-					accessibilityRole="header"
-					className="flex-1 font-poppins-semibold text-base text-ink dark:text-slate-100"
-				>
-					{title}
-				</Text>
-				<Text className="rounded-full bg-slate-100 px-3 py-1 font-poppins-medium text-xs text-ink dark:bg-slate-800 dark:text-slate-100">
-					{data.length}
-				</Text>
-			</View>
+		<SectionCard title={title} startIcon={icon} count={data.length}>
 			{!data.length && (
 				<View className="items-center gap-3 py-6">
 					{emptyIcon}
@@ -150,7 +139,7 @@ const ManagedByTableSection: FC<ManagedByTableSectionProps> = (props: ManagedByT
 				);
 			})}
 			<AddManagedBySection {...addSectionProps} disabled={disabled || addSectionProps.disabled} />
-		</View>
+		</SectionCard>
 	);
 };
 

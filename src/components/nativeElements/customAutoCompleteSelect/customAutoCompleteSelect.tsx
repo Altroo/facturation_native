@@ -20,6 +20,7 @@ import { colors, fonts } from '@/utils/themes';
 export type Props = {
 	id?: string;
 	label: string;
+	labelActions?: ReactNode;
 	required?: boolean;
 	items: Array<DropDownType>;
 	value: DropDownType | null;
@@ -97,10 +98,14 @@ const CustomAutoCompleteSelect: FC<Props> = (props: Props) => {
 	};
 	return (
 		<View className={'gap-2 ' + (cssClass ?? '')}>
-			<Text className="text-ink dark:text-slate-100 font-poppins-medium text-sm">
-				{label}
-				{required ? ' *' : ''}
-			</Text>
+			{/* Field actions live beside the label so long names retain the input's width. */}
+			<View className="flex-row items-center justify-between gap-2">
+				<Text className="min-w-0 flex-1 text-ink dark:text-slate-100 font-poppins-medium text-sm">
+					{label}
+					{required ? ' *' : ''}
+				</Text>
+				{props.labelActions}
+			</View>
 			<View
 				pointerEvents={disabled ? 'none' : 'auto'}
 				onTouchEnd={(event) => event.stopPropagation()}

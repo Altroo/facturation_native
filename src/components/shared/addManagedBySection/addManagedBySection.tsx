@@ -77,7 +77,6 @@ const AddManagedBySection: FC<AddManagedBySectionProps> = (props: AddManagedBySe
 			/>
 			<PrimaryLoadingButton
 				buttonText={t.common.add}
-				inverted
 				onClick={onAdd}
 				active={!disabled && !isAddDisabled}
 				loading={false}

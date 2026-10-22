@@ -9,6 +9,7 @@ type Props = {
 	disabled?: boolean;
 	startIcon?: ReactNode;
 	helperText?: string;
+	activeColor?: string;
 };
 
 const CustomSwitch = (props: Props) => (
@@ -50,8 +51,8 @@ const CustomSwitch = (props: Props) => (
 				onValueChange={props.disabled ? undefined : props.onValueChange}
 				trackColor={
 					props.disabled
-						? { false: colors.slate[400], true: colors.brandDisabled }
-						: { false: colors.slate[300], true: colors.brand }
+						? { false: colors.slate[400], true: props.activeColor ?? colors.brandDisabled }
+						: { false: colors.slate[300], true: props.activeColor ?? colors.brand }
 				}
 				thumbColor={props.disabled ? colors.slate[200] : colors.white}
 			/>

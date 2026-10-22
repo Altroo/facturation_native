@@ -24,6 +24,31 @@ const longItems: DropDownType[] = [
 	...items,
 	...Array.from({ length: 4 }, (_, index) => ({ value: String(index + 4), code: 'Person ' + index })),
 ];
+
+it('keeps label actions separate from the full-width searchable field', async () => {
+	const onAdd = jest.fn();
+	await render(
+		<CustomAutoCompleteSelect
+			label="Ville"
+			items={items}
+			value={items[0]}
+			noOptionsText="Aucune ville"
+			labelActions={
+				<Pressable accessibilityRole="button" accessibilityLabel="Ajouter une ville" onPress={onAdd}>
+					<Text>Ajouter</Text>
+				</Pressable>
+			}
+		/>,
+	);
+	await fireEvent.press(screen.getByRole('button', { name: 'Ajouter une ville' }));
+	expect(onAdd).toHaveBeenCalledTimes(1);
+	expect(screen.getByRole('combobox', { name: 'Ville' })).toHaveProp('value', items[0].code);
+	expect(screen.getByRole('button', { name: 'Ville' })).toHaveProp('accessibilityState', {
+		disabled: false,
+		expanded: false,
+	});
+	expect(screen.queryByRole('radio')).toBeNull();
+});
 it('clears a dismissed dropdown search before reopening without selecting an option', async () => {
 	const onChange = jest.fn();
 	await render(

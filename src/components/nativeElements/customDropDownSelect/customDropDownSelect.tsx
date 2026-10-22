@@ -11,6 +11,7 @@ export type Props = {
 	required?: boolean;
 	items: Array<DropDownType> | Array<string>;
 	value: string | null;
+	getOptionLabel?: (value: string) => string;
 	// Native selection returns the value directly, without a DOM event.
 	onChange?: (value: string) => void;
 	onBlur?: PressableProps['onBlur'];
@@ -50,7 +51,7 @@ const CustomDropDownSelect: FC<Props> = (props: Props) => {
 				<Text
 					className={'font-sans flex-1 text-sm ' + (props.value ? 'text-ink dark:text-slate-100' : 'text-slate-400')}
 				>
-					{props.value || t.common.selectValue}
+					{props.value ? (props.getOptionLabel?.(props.value) ?? props.value) : t.common.selectValue}
 				</Text>
 				{props.endIcon || (
 					<MaterialIcons name={open ? 'expand-less' : 'expand-more'} size={22} color={colors.slate[400]} />
@@ -87,7 +88,7 @@ const CustomDropDownSelect: FC<Props> = (props: Props) => {
 												: 'font-sans text-ink dark:text-slate-100')
 										}
 									>
-										{value || t.common.selectValue}
+										{value ? (props.getOptionLabel?.(value) ?? value) : t.common.selectValue}
 									</Text>
 									<View className="h-5 w-5 items-center justify-center">
 										{props.value === value && <MaterialIcons name="check-circle" size={20} color={colors.brand} />}
