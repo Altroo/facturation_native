@@ -29,7 +29,7 @@ const DrawerStackLayout = () => {
 		headerBackVisible: false,
 		headerLeft,
 		unstable_headerLeftItems: drawerHeaderItems,
-	};
+	} satisfies NativeStackNavigationOptions;
 	const closeUtilityScreen = () => {
 		if (router.canGoBack()) router.back();
 		else router.replace(DASHBOARD);
@@ -59,7 +59,7 @@ const DrawerStackLayout = () => {
 				hidesSharedBackground: true,
 			},
 		],
-	};
+	} satisfies NativeStackNavigationOptions;
 	const titleOptions = (title: string, options: NativeStackNavigationOptions = {}): NativeStackNavigationOptions => {
 		// Android supports start alignment directly. On iOS, place only the text
 		// in the leading slot, preserving UIKit's own back icon and bar height.
@@ -103,6 +103,10 @@ const DrawerStackLayout = () => {
 				const editing = route.params && 'id' in route.params && route.params.id !== undefined;
 				const screens: Record<string, NativeStackNavigationOptions> = {
 					index: { title: t.navigation.dashboard, ...drawerHeaderOptions },
+					'articles/index': { title: t.articles.listTitle, ...drawerHeaderOptions },
+					'articles/archived': { title: t.articles.archivedTitle, ...drawerHeaderOptions },
+					'articles/form': { title: editing ? t.articles.editTitle : t.articles.navAddTitle },
+					'articles/[id]/index': { title: t.articles.detailsTitle },
 					'clients/index': { title: t.clients.listTitle, ...drawerHeaderOptions },
 					'clients/archived': { title: t.clients.archivedTitle, ...drawerHeaderOptions },
 					'clients/form': { title: editing ? t.clients.editTitle : t.clients.addTitle },

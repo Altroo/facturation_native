@@ -1,6 +1,19 @@
 import { reloadAppAsync } from 'expo';
 import { APP_VERSION, NECTAR_RAISON_SOCIALE } from '@/utils/rawData';
-import { COMPANIES_EDIT, COMPANIES_VIEW, USERS_EDIT, USERS_VIEW } from '@/utils/routes';
+import {
+	COMPANIES_VIEW,
+	COMPANIES_EDIT,
+	USERS_VIEW,
+	USERS_EDIT,
+	DASHBOARD_EDIT_PROFILE,
+	DASHBOARD_PASSWORD,
+	DASHBOARD,
+	COMPANIES_LIST,
+	COMPANIES_ADD,
+	USERS_LIST,
+	USERS_ADD,
+	DASHBOARD_NOTIFICATIONS,
+} from '@/utils/routes';
 
 jest.mock('expo', () => ({
 	...jest.requireActual<typeof import('expo')>('expo'),
@@ -9,6 +22,8 @@ jest.mock('expo', () => ({
 
 import { AxiosError, AxiosHeaders, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
 import {
+	calculateSalePriceHT,
+	calculateSalePriceTTC,
 	runWithCleanup,
 	runWithErrorHandler,
 	parseEntityId,
@@ -29,6 +44,7 @@ import {
 	getLabelForKey,
 	getCompanyDocumentLabelForKey,
 	getDjangoNextPageParam,
+	getNotificationDestination,
 } from '@/utils/helpers';
 import { auth, publicInstance, InvalidSessionError } from '@/auth';
 
@@ -717,4 +733,57 @@ it('normalizes company names before matching Nectar', () => {
 	expect(normalizeCompanyName(undefined)).toBe('');
 	expect(isNectarRaisonSociale(' immobiliere nectar ')).toBe(true);
 	expect(isNectarRaisonSociale('Another company')).toBe(false);
+});
+
+it('converts article entry prices with consistent cent rounding', () => {
+	expect(calculateSalePriceHT(120, 20, 'TTC')).toBe(100);
+	expect(calculateSalePriceHT(100, 20, 'HT')).toBe(100);
+	expect(calculateSalePriceTTC(100, 20)).toBe(120);
+	expect(calculateSalePriceHT(1.01, 20, 'TTC')).toBe(0.84);
+	expect(calculateSalePriceTTC(0.84, 20)).toBe(1.01);
+});
+
+it.each([
+	['/dashboard', DASHBOARD],
+	['/dashboard/?source=notification', DASHBOARD],
+	['/dashboard/companies', COMPANIES_LIST],
+	['/dashboard/companies/new', COMPANIES_ADD],
+	['/dashboard/users', USERS_LIST],
+	['/dashboard/users/new', USERS_ADD],
+	['/dashboard/companies/7', COMPANIES_VIEW(7)],
+	['/dashboard/companies/7/edit?company_id=2', COMPANIES_EDIT(7)],
+	['/dashboard/users/8/', USERS_VIEW(8)],
+	['/dashboard/users/8/edit', USERS_EDIT(8)],
+	['/dashboard/settings/edit-profile', DASHBOARD_EDIT_PROFILE],
+	['/dashboard/settings/password', DASHBOARD_PASSWORD],
+	['/dashboard/settings/notifications', DASHBOARD_NOTIFICATIONS],
+])('maps the implemented original destination %s', (target, expected) => {
+	expect(getNotificationDestination(target as string)).toEqual(expected);
+});
+it.each([
+	undefined,
+	'',
+	'https://example.invalid/dashboard/users/1',
+	'//example.invalid/dashboard/users/1',
+	'/dashboard/clients/4',
+	'/dashboard/stock',
+	'/dashboard/users/0',
+	'/dashboard/users/01',
+	'/dashboard/users/1.5',
+	'/dashboard/users/9007199254740993',
+	'/dashboard/users/4/delete',
+])('does not invent a destination for %s', (target) => {
+	expect(getNotificationDestination(target)).toBeNull();
+});
+
+it.each([
+	['/dashboard/articles', '/articles'],
+	['/dashboard/articles/archived', '/articles/archived'],
+	['/dashboard/articles/new?company_id=5', { pathname: '/articles/form', params: { company_id: '5' } }],
+	['/dashboard/articles/7?company_id=5', { pathname: '/articles/[id]', params: { id: '7', company_id: '5' } }],
+	['/dashboard/articles/7/edit?company_id=5', { pathname: '/articles/form', params: { id: '7', company_id: '5' } }],
+	['/dashboard/articles/7', '/articles'],
+	['/dashboard/articles/7?company_id=bad', '/articles'],
+])('maps the implemented Articles notification target %s', (url, expected) => {
+	expect(getNotificationDestination(url as string)).toEqual(expected);
 });

@@ -1,7 +1,7 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { useToast } from '@/utils/hooks';
 import { openURL } from 'expo-linking';
-import { BACKEND_SITE_ADMIN, CLIENTS_LIST, CLIENTS_ARCHIVED } from '@/utils/routes';
+import { BACKEND_SITE_ADMIN, CLIENTS_LIST, CLIENTS_ARCHIVED, ARTICLES_LIST, ARTICLES_ARCHIVED } from '@/utils/routes';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Provider } from 'react-redux';
 import type { DrawerContentComponentProps } from 'expo-router/drawer';
@@ -162,10 +162,18 @@ it('navigates to the implemented destination and leaves placeholders disabled', 
 		expect(router.navigate).toHaveBeenLastCalledWith(path);
 	}
 	await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.articles }));
-	const archived = screen.getByRole('button', { name: translations.fr.navigation.articlesArchived });
-	expect(archived).toBeDisabled();
-	await fireEvent.press(archived);
-	expect(router.navigate).toHaveBeenCalledTimes(3);
+	for (const [name, path] of [
+		[translations.fr.navigation.articlesList, ARTICLES_LIST],
+		[translations.fr.navigation.articlesArchived, ARTICLES_ARCHIVED],
+	]) {
+		const entry = screen.getByRole('button', { name });
+		expect(entry).toBeEnabled();
+		await fireEvent.press(entry);
+		expect(router.navigate).toHaveBeenLastCalledWith(path);
+	}
+	await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.devis }));
+	expect(screen.getByRole('button', { name: translations.fr.navigation.devisList })).toBeDisabled();
+	expect(router.navigate).toHaveBeenCalledTimes(5);
 });
 it('hides staff-only sections for regular users and requests logout', async () => {
 	const store = await setup();

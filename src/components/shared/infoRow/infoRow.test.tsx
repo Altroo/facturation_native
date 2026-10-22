@@ -21,6 +21,7 @@ it('preserves custom elements supplied by a detail page', async () => {
 it.each([
 	{ tone: 'danger' as const, light: 'text-red-600', dark: 'dark:text-red-300' },
 	{ tone: 'success' as const, light: 'text-emerald-600', dark: 'dark:text-emerald-300' },
+	{ tone: 'warning' as const, light: 'text-orange-600', dark: 'dark:text-orange-300' },
 ])('uses $tone for the value while keeping missing values muted', async ({ tone, light, dark }) => {
 	await render(<InfoRow icon={null} label="Amount" value="100,00 MAD" valueTone={tone} />);
 	expect(screen.getByText('100,00 MAD').props.className).toContain(light);

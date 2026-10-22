@@ -181,9 +181,11 @@ it('only shows bulk actions with a selection and leaves more typing space while 
 	const base = props({
 		createAction: { label: 'New client', onPress: create },
 		selectionActions: <Text>Archive selection</Text>,
+		toolbarActions: <Text>List tools</Text>,
 		sorting: { ordering: '', sortModel: [], onSortModelChange: jest.fn() },
 	});
 	await render(<PaginatedDataGrid {...base} />);
+	expect(within(screen.getByTestId('list-toolbar')).getByText('List tools')).toBeOnTheScreen();
 	expect(screen.queryByText('Archive selection')).toBeNull();
 	await fireEvent.press(screen.getByRole('button', { name: 'New client' }));
 	expect(create).toHaveBeenCalledTimes(1);
@@ -192,9 +194,11 @@ it('only shows bulk actions with a selection and leaves more typing space while 
 	await fireEvent.press(screen.getByRole('button', { name: t.common.search }));
 	expect(screen.queryByRole('button', { name: 'New client' })).toBeNull();
 	expect(screen.queryByRole('button', { name: t.dataGrid.toolbarSort })).toBeNull();
+	expect(screen.queryByText('List tools')).toBeNull();
 	await fireEvent.press(screen.getByRole('button', { name: t.common.close }));
 	expect(screen.getByRole('button', { name: 'New client' })).toBeOnTheScreen();
 	expect(screen.getByRole('button', { name: t.dataGrid.toolbarSort })).toBeOnTheScreen();
+	expect(within(screen.getByTestId('list-toolbar')).getByText('List tools')).toBeOnTheScreen();
 });
 
 it('expands search inline, debounces server queries, and clears without reopening a modal', async () => {
@@ -642,4 +646,18 @@ describe('PaginatedDataGrid', () => {
 		expect(screen.getByText(t.common.noResults)).toBeOnTheScreen();
 		expect(screen.queryByText(t.common.loading)).toBeNull();
 	});
+});
+
+it.each([
+	['equals', 'prix_vente'],
+	['doesNotEqual', 'prix_vente__ne'],
+	['>', 'prix_vente__gt'],
+	['>=', 'prix_vente__gte'],
+	['<', 'prix_vente__lt'],
+	['<=', 'prix_vente__lte'],
+])('sends the supported article price operator %s to Django', (operator, key) => {
+	expect(extractCustomFilterParams({ items: [{ field: 'prix_vente', operator, value: '100.50' }] })).toEqual({
+		params: { [key]: '100.50' },
+	});
+	expect(getServerFilterOperators().number.map((item) => item.value)).toContain(operator);
 });

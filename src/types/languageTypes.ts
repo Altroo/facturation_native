@@ -329,6 +329,19 @@ export type TranslationDictionary = {
 		noCompaniesUserMessage: string;
 	};
 	articles: {
+		selectArticle: (name: string) => string;
+		fetchIdsError: string;
+		stockSection: string;
+		stockMinimum: string;
+		stockMinimumHelp: string;
+		physicalQuantity: string;
+		reservedQuantity: string;
+		availableQuantity: string;
+		incomingQuantity: string;
+		currency: string;
+		importInvalidFile: string;
+		importRow: (row: number) => string;
+
 		listTitle: string;
 		archivedTitle: string;
 		detailsTitle: string;
@@ -378,6 +391,7 @@ export type TranslationDictionary = {
 		noMarque: string;
 		resetReference: string;
 		importTooltip: string;
+		importMenu: string;
 		emailTooltip: string;
 		importErrorsTitle: string;
 		addSuccess: string;
@@ -1655,6 +1669,12 @@ export type TranslationDictionary = {
 		homeBtn: string;
 	};
 	filterPanel: {
+		doesNotEqual: string;
+		greaterThan: string;
+		greaterThanOrEqual: string;
+		lessThan: string;
+		lessThanOrEqual: string;
+
 		logicOperator: string;
 		and: string;
 		or: string;

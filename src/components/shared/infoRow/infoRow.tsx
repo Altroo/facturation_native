@@ -6,7 +6,7 @@ type Props = {
 	icon: ReactNode;
 	label: string;
 	value: ReactNode;
-	valueTone?: 'danger' | 'success';
+	valueTone?: 'danger' | 'success' | 'warning';
 	dense?: boolean;
 };
 
@@ -19,7 +19,9 @@ const InfoRow = (props: Props) => {
 			? 'text-red-600 dark:text-red-300'
 			: props.valueTone === 'success'
 				? 'text-emerald-600 dark:text-emerald-300'
-				: 'text-ink dark:text-slate-100';
+				: props.valueTone === 'warning'
+					? 'text-orange-600 dark:text-orange-300'
+					: 'text-ink dark:text-slate-100';
 	return (
 		<View className={'flex-row items-start gap-3 ' + (props.dense ? '' : 'py-2')}>
 			{icon}

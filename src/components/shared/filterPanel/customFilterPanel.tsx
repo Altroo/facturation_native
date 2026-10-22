@@ -111,12 +111,21 @@ const CustomFilterPanel = <TRow,>(props: Props<TRow>) => {
 				if (!column) return null;
 				const id = item.id ?? String(index);
 				const operators = getFilterOperatorsForColumn(column, config);
+				const numericLabels: Record<string, string> = {
+					doesNotEqual: t.filterPanel.doesNotEqual,
+					'>': t.filterPanel.greaterThan,
+					'>=': t.filterPanel.greaterThanOrEqual,
+					'<': t.filterPanel.lessThan,
+					'<=': t.filterPanel.lessThanOrEqual,
+				};
 				const operatorOptions = operators.map((operator) => ({
 					value: operator.value,
 					code:
+						(column.type === 'number' ? numericLabels[operator.value] : undefined) ??
 						(operator.value in t.filterPanel
 							? t.filterPanel[operator.value as keyof typeof t.filterPanel]
-							: t.dataGrid.operatorLabels[operator.value as keyof typeof t.dataGrid.operatorLabels]) ?? operator.label,
+							: t.dataGrid.operatorLabels[operator.value as keyof typeof t.dataGrid.operatorLabels]) ??
+						operator.label,
 				}));
 				const valueOptions =
 					column.filterSelectOptions ??
@@ -199,7 +208,10 @@ const CustomFilterPanel = <TRow,>(props: Props<TRow>) => {
 									disabled={disabled}
 									autoCorrect={false}
 									autoCapitalize="none"
-									onChangeText={(value) => handleItemChange(id, { value })}
+									keyboardType={column.type === 'number' ? 'decimal-pad' : 'default'}
+									onChangeText={(value) =>
+										handleItemChange(id, { value: column.type === 'number' ? value.replace(',', '.') : value })
+									}
 								/>
 							))}
 						<PrimaryLoadingButton

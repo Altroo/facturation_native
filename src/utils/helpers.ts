@@ -1,3 +1,25 @@
+import {
+	ARTICLES_ADD,
+	ARTICLES_ARCHIVED,
+	ARTICLES_EDIT,
+	ARTICLES_LIST,
+	ARTICLES_VIEW,
+	CLIENTS_ARCHIVED,
+	CLIENTS_LIST,
+	COMPANIES_ADD,
+	COMPANIES_EDIT,
+	COMPANIES_LIST,
+	COMPANIES_VIEW,
+	DASHBOARD,
+	DASHBOARD_EDIT_PROFILE,
+	DASHBOARD_NOTIFICATIONS,
+	DASHBOARD_PASSWORD,
+	USERS_ADD,
+	USERS_EDIT,
+	USERS_LIST,
+	USERS_VIEW,
+} from '@/utils/routes';
+import type { SalePriceBasis } from '@/types/articleTypes';
 import { reloadAppAsync } from 'expo';
 import { NECTAR_RAISON_SOCIALE } from '@/utils/rawData';
 import axios, { type AxiosInstance, type AxiosResponse } from 'axios';
@@ -416,3 +438,56 @@ export const normalizeCompanyName = (value?: string | null): string => (value ??
 
 export const isNectarRaisonSociale = (value?: string | null): boolean =>
 	normalizeCompanyName(value) === NECTAR_RAISON_SOCIALE;
+
+export const calculateSalePriceHT = (price: number, tva: number, basis: SalePriceBasis = 'HT'): number => {
+	if (basis === 'HT') return price;
+	// Work in cents and VAT basis points so half-cent results round consistently.
+	const cents = Math.round(price * 100);
+	const taxFactor = 10_000 + Math.round(tva * 100);
+	return Math.round((cents * 10_000) / taxFactor) / 100;
+};
+
+export const calculateSalePriceTTC = (priceHT: number, tva: number): number => {
+	const cents = Math.round(priceHT * 100);
+	const taxFactor = 10_000 + Math.round(tva * 100);
+	return Math.round((cents * taxFactor) / 10_000) / 100;
+};
+
+// Backend notification targets still use the web paths. Only map implemented mobile screens.
+export const getNotificationDestination = (target?: string) => {
+	if (!target || !/^\/dashboard(?:[/?]|$)/.test(target)) return null;
+	const path = target.split('?')[0].replace(/\/$/, '');
+	if (path === '/dashboard') return DASHBOARD;
+	if (path === '/dashboard/companies') return COMPANIES_LIST;
+	if (path === '/dashboard/companies/new') return COMPANIES_ADD;
+	// Articles use the web's company query parameter for tenant-scoped screens.
+	if (path === '/dashboard/articles') return ARTICLES_LIST;
+	if (path === '/dashboard/articles/archived') return ARTICLES_ARCHIVED;
+	if (path === '/dashboard/articles/new' || /^\/dashboard\/articles\/[1-9]\d*(?:\/edit)?$/.test(path)) {
+		const company = new URLSearchParams(target.split('?')[1] ?? '').get('company_id');
+		const companyId = company && /^[1-9]\d*$/.test(company) ? Number(company) : null;
+		if (companyId === null || !Number.isSafeInteger(companyId)) return ARTICLES_LIST;
+		if (path.endsWith('/new')) return { pathname: ARTICLES_ADD, params: { company_id: String(companyId) } };
+		const articleId = Number(path.split('/')[3]);
+		if (!Number.isSafeInteger(articleId)) return null;
+		const route = path.endsWith('/edit') ? ARTICLES_EDIT(articleId) : ARTICLES_VIEW(articleId);
+		return { ...route, params: { ...route.params, company_id: String(companyId) } };
+	}
+	if (path === '/dashboard/clients') return CLIENTS_LIST;
+	if (path === '/dashboard/clients/archived') return CLIENTS_ARCHIVED;
+	if (path === '/dashboard/users') return USERS_LIST;
+	if (path === '/dashboard/users/new') return USERS_ADD;
+	if (path === '/dashboard/settings/edit-profile') return DASHBOARD_EDIT_PROFILE;
+	if (path === '/dashboard/settings/password') return DASHBOARD_PASSWORD;
+	if (path === '/dashboard/settings/notifications') return DASHBOARD_NOTIFICATIONS;
+	const match = /^\/dashboard\/(companies|users)\/([1-9]\d*)(\/edit)?$/.exec(path);
+	if (!match || !Number.isSafeInteger(Number(match[2]))) return null;
+	const id = Number(match[2]);
+	return match[1] === 'companies'
+		? match[3]
+			? COMPANIES_EDIT(id)
+			: COMPANIES_VIEW(id)
+		: match[3]
+			? USERS_EDIT(id)
+			: USERS_VIEW(id);
+};

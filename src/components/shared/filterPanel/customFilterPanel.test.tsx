@@ -360,3 +360,20 @@ test('displays active filter count', async () => {
 	);
 	expect(screen.getByText('2 filtre(s) actif(s)')).toBeOnTheScreen();
 });
+
+it('localizes article price operators and normalizes French decimals for the server', async () => {
+	await render(
+		<CustomFilterPanel
+			columns={[{ field: 'prix_vente', headerName: 'Prix', type: 'number' }]}
+			filterModel={{ items: [{ id: 'price', field: 'prix_vente', operator: '>', value: '' }] }}
+			filterOperatorsByType={getServerFilterOperators()}
+			onChange={change}
+		/>,
+	);
+	expect(screen.getByText(t.filterPanel.greaterThan)).toBeOnTheScreen();
+	expect(screen.getByPlaceholderText(t.common.value)).toHaveProp('keyboardType', 'decimal-pad');
+	await fireEvent.changeText(screen.getByPlaceholderText(t.common.value), '100,50');
+	expect(change).toHaveBeenLastCalledWith({
+		items: [{ id: 'price', field: 'prix_vente', operator: '>', value: '100.50' }],
+	});
+});

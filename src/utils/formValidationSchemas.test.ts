@@ -9,6 +9,7 @@ import {
 	userSchema,
 	passwordResetStorageSchema,
 	clientSchema,
+	articleSchema,
 } from './formValidationSchemas';
 
 describe('clientSchema', () => {
@@ -473,4 +474,42 @@ it('accepts a finite persisted recovery expiration', () => {
 	expect(passwordResetStorageSchema.parse({ email: 'test@example.invalid', code: '123456', expiresAt }).expiresAt).toBe(
 		expiresAt,
 	);
+});
+
+describe('articleSchema', () => {
+	const article = {
+		type_article: 'Produit',
+		reference: 'ART001',
+		designation: 'Article Atlas',
+		company: 5,
+		prix_achat: 50,
+		prix_vente: 100,
+		tva: 20,
+		prix_vente_base: 'HT',
+	};
+	it('accepts an article without a photo and rejects missing required business fields', () => {
+		expect(articleSchema.safeParse({ ...article, photo: null }).success).toBe(true);
+		for (const field of ['reference', 'designation', 'company'] as const)
+			expect(articleSchema.safeParse({ ...article, [field]: '' }).success).toBe(false);
+	});
+	it('compares prices using the stored HT value and currency rates, as on the web', () => {
+		expect(
+			articleSchema.safeParse({ ...article, prix_achat: 100, prix_vente: 120, prix_vente_base: 'TTC' }).success,
+		).toBe(false);
+		expect(
+			articleSchema.safeParse({ ...article, prix_achat: 100, prix_vente: 121.2, prix_vente_base: 'TTC' }).success,
+		).toBe(true);
+		expect(
+			articleSchema.safeParse({
+				...article,
+				prix_achat: 11,
+				devise_prix_achat: 'EUR',
+				prix_vente: 100,
+				devise_prix_vente: 'MAD',
+			}).success,
+		).toBe(false);
+	});
+	it.each([-1, Infinity, NaN])('rejects invalid stock minimum %s', (stock_minimum) => {
+		expect(articleSchema.safeParse({ ...article, stock_minimum }).success).toBe(false);
+	});
 });

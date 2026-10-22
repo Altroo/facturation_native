@@ -15,10 +15,9 @@ import {
 import { getUnreadNotificationCount } from '@/store/selectors';
 import { setUnreadCount } from '@/store/slices/notificationSlice';
 import type { NotificationType } from '@/types/notificationTypes';
-import { normalizeApiError } from '@/utils/helpers';
+import { getNotificationDestination, normalizeApiError } from '@/utils/helpers';
 import { useAppDispatch, useAppSelector, useLanguage, useToast } from '@/utils/hooks';
 import { INFINITE_SCROLL_THRESHOLD } from '@/utils/rawData';
-import { getNotificationDestination } from '@/utils/routes';
 import { colors } from '@/utils/themes';
 
 const NotificationsPage = () => {

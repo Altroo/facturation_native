@@ -8,6 +8,8 @@ import {
 	COMPANIES_ADD,
 	USERS_LIST,
 	USERS_ADD,
+	ARTICLES_LIST,
+	ARTICLES_ARCHIVED,
 	CLIENTS_LIST,
 	CLIENTS_ARCHIVED,
 	BACKEND_SITE_ADMIN,
@@ -23,7 +25,7 @@ import {
 	requestPermissionsAsync,
 	setNotificationChannelAsync,
 } from 'expo-notifications';
-import { router, useGlobalSearchParams, usePathname } from 'expo-router';
+import { router, useGlobalSearchParams, usePathname, type NativeStackNavigationOptions } from 'expo-router';
 import { DrawerContentScrollView, type DrawerContentComponentProps } from 'expo-router/drawer';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useLanguage, useAppDispatch, useAppSelector, useToast } from '@/utils/hooks';
@@ -47,8 +49,9 @@ export const useNavigationHeader = () => {
 		headerTitleAlign: 'left' as const,
 		headerTitleStyle: { fontFamily: fonts.semibold, fontSize: 15 },
 		headerRight,
+		// The iOS native stack consumes this callback; headerRight is the fallback.
 		unstable_headerRightItems: () => [{ type: 'custom' as const, element: headerRight(), hidesSharedBackground: true }],
-	};
+	} satisfies NativeStackNavigationOptions;
 };
 
 const getNavigationMenu = (isStaff: boolean, t: TranslationDictionary) => {
@@ -62,8 +65,8 @@ const getNavigationMenu = (isStaff: boolean, t: TranslationDictionary) => {
 			title: t.navigation.articles,
 			icon: <MaterialIcons name="library-books" size={21} color={colors.slate[500]} />,
 			items: [
-				{ title: t.navigation.articlesList, label: t.navigation.articlesList, path: undefined },
-				{ title: t.navigation.articlesArchived, label: t.navigation.articlesArchived, path: undefined },
+				{ title: t.navigation.articlesList, label: t.navigation.articlesList, path: ARTICLES_LIST },
+				{ title: t.navigation.articlesArchived, label: t.navigation.articlesArchived, path: ARTICLES_ARCHIVED },
 			],
 		},
 		clients: {

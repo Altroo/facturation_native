@@ -88,6 +88,7 @@ export const mapOperatorToParam = (field: string, operator: string, value: unkno
 		case 'numEquals':
 			params[field] = strValue;
 			break;
+		case 'doesNotEqual':
 		case 'numNotEquals':
 		case '!=':
 		case 'ne':
@@ -163,6 +164,11 @@ export const extractCustomFilterParams = (model: FilterModel): GridFilterResultT
 					'is',
 					'onOrAfter',
 					'onOrBefore',
+					'doesNotEqual',
+					'>',
+					'>=',
+					'<',
+					'<=',
 				].includes(item.operator)
 			)
 				return { params: {}, error: 'unsupportedFilter' };
@@ -187,6 +193,9 @@ export const getServerFilterOperators = <TRow,>() => {
 	return {
 		string: defaults.string.filter(({ value }) =>
 			['contains', 'equals', 'startsWith', 'endsWith', 'isEmpty', 'isNotEmpty'].includes(value),
+		),
+		number: defaults.number.filter(({ value }) =>
+			['equals', 'doesNotEqual', '>', '>=', '<', '<=', 'isEmpty', 'isNotEmpty'].includes(value),
 		),
 		date: createDateRangeFilterOperator<TRow>(),
 		datetime: createDateRangeFilterOperator<TRow>(),
@@ -225,6 +234,7 @@ export type PaginatedDataGridProps<TRow> = Pick<
 	createAction?: { label: string; onPress: () => void };
 	selectionControl?: ReactNode;
 	selectionActions?: ReactNode;
+	toolbarActions?: ReactNode;
 	additionalFilters?: { count: number; key: string; onClear: () => void };
 	isLoading?: boolean;
 	sorting?: DataGridSorting;
@@ -560,6 +570,7 @@ const PaginatedDataGrid = <TRow,>(props: PaginatedDataGridProps<TRow>) => {
 							<MaterialIcons name="sort" size={22} color={sorting.ordering ? colors.brand : theme.toolbarTextColor} />
 						</Pressable>
 					)}
+					{!searchOpen && props.toolbarActions && <View style={surfaceStyles[mode]}>{props.toolbarActions}</View>}
 				</View>
 				{(searchTerm !== '' || activeFilterCount > 0) && (
 					<Pressable

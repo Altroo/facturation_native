@@ -2,6 +2,7 @@ import z from 'zod';
 import { pmRequired, ppRequired } from '@/utils/rawData';
 import {
 	INPUT_MAX,
+	INPUT_PRICE_VENTE_ACHAT,
 	INPUT_MIN,
 	INPUT_PASSWORD_MIN,
 	INPUT_PHONE,
@@ -244,3 +245,47 @@ export const passwordResetStorageSchema = z.object({
 	code: z.string().regex(/^(\d{6})?$/),
 	expiresAt: z.number(),
 });
+
+export const articleSchema = z
+	.object({
+		type_article: z.enum(['Produit', 'Service']),
+		reference: requiredTextField(2, 100),
+		designation: requiredTextField(2, 500),
+		company: requiredNumberField(1),
+		// optional fields
+		photo: z.preprocess((value) => (value === '' ? null : value), base64ImageField),
+		photo_cropped: z.preprocess((value) => (value === '' ? null : value), base64ImageField),
+		emplacement: optionalNumberField(1).nullable(),
+		marque: optionalNumberField(1).nullable(),
+		categorie: optionalNumberField(1).nullable(),
+		unite: optionalNumberField(1).nullable(),
+		prix_achat: optionalNumberField(0).nullable(),
+		devise_prix_achat: z.enum(['MAD', 'EUR', 'USD']).default('MAD'),
+		prix_vente: optionalNumberField(0).nullable(),
+		prix_vente_base: z.enum(['HT', 'TTC']).default('HT'),
+		devise_prix_vente: z.enum(['MAD', 'EUR', 'USD']).default('MAD'),
+		tva: optionalNumberField(0).nullable(),
+		stock_minimum: optionalNumberField(0).default(0),
+		remarque: optionalTextField(2, 2000).nullable(),
+		globalError: optionalTextField(1, 500),
+	})
+	.refine(
+		(data) => {
+			const a = data.prix_achat;
+			const v = data.prix_vente;
+			if (a === undefined || a === null || v === undefined || v === null) return true;
+			const rates: Record<'MAD' | 'EUR' | 'USD', number> = { MAD: 1, EUR: 10, USD: 9 };
+			const deviseAchat = (data.devise_prix_achat ?? 'MAD') as 'MAD' | 'EUR' | 'USD';
+			const deviseVente = (data.devise_prix_vente ?? 'MAD') as 'MAD' | 'EUR' | 'USD';
+			const aInMAD = a * rates[deviseAchat];
+			// This file also validates auth tokens. Keep the price constraint pure to
+			// avoid importing helpers, which depend on the authenticated transport.
+			const saleHT =
+				data.prix_vente_base === 'TTC'
+					? Math.round((Math.round(v * 100) * 10_000) / (10_000 + Math.round((data.tva ?? 0) * 100))) / 100
+					: v;
+			const vInMAD = saleHT * rates[deviseVente];
+			return vInMAD > aInMAD;
+		},
+		{ error: INPUT_PRICE_VENTE_ACHAT, path: ['prix_vente'] },
+	);
