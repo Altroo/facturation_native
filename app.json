@@ -40,7 +40,19 @@
 					"microphonePermission": false
 				}
 			],
-			"@react-native-community/datetimepicker",
+			[
+				"@react-native-community/datetimepicker",
+				{
+					"android": {
+						"datePicker": {
+							"colorAccent": {
+								"light": "#0274d7",
+								"dark": "#0274d7"
+							}
+						}
+					}
+				}
+			],
 			"expo-image",
 			"expo-asset",
 			[
