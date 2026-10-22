@@ -22,7 +22,7 @@ it('does not reserve space when the page supplies no permitted actions', async (
 	expect(screen.queryByRole('button')).toBeNull();
 });
 
-it.each(['fr', 'en'] as const)('provides visible edit and delete actions in %s', async (language) => {
+it.each(['fr', 'en'] as const)('provides a compact delete icon and a labelled edit action in %s', async (language) => {
 	mockLanguage = language;
 	const t = translations[language];
 	const onEdit = jest.fn();
@@ -32,6 +32,16 @@ it.each(['fr', 'en'] as const)('provides visible edit and delete actions in %s',
 		t.common.delete,
 		t.common.edit,
 	]);
+	expect(screen.queryByText(t.common.delete)).toBeNull();
+	expect(screen.getByText(t.common.edit)).toBeOnTheScreen();
+	expect(screen.getByRole('button', { name: t.common.delete })).toHaveProp(
+		'className',
+		expect.stringContaining('h-12 w-12 shrink-0 p-0'),
+	);
+	expect(screen.getByRole('button', { name: t.common.edit })).toHaveProp(
+		'className',
+		expect.stringContaining('flex-1'),
+	);
 	await fireEvent.press(screen.getByRole('button', { name: t.common.edit }));
 	expect(onEdit).toHaveBeenCalledTimes(1);
 	expect(onDelete).not.toHaveBeenCalled();
@@ -47,6 +57,11 @@ it('uses the company suspension action without offering deletion', async () => {
 		translations.fr.common.edit,
 	]);
 	expect(screen.queryByRole('button', { name: translations.fr.common.delete })).toBeNull();
+	expect(screen.queryByText(translations.fr.companies.suspendBtn)).toBeNull();
+	expect(screen.getByRole('button', { name: translations.fr.companies.suspendBtn })).toHaveProp(
+		'className',
+		expect.stringContaining('h-12 w-12 shrink-0 p-0'),
+	);
 	await fireEvent.press(screen.getByRole('button', { name: translations.fr.companies.suspendBtn }));
 	expect(onSuspend).toHaveBeenCalledTimes(1);
 });

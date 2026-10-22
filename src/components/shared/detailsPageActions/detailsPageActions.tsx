@@ -24,7 +24,7 @@ const DetailsPageActions = (props: Props) => {
 	const availableActions = actions.filter((action) => action.onClick);
 	if (!availableActions.length) return null;
 	return (
-		<View testID="details-page-actions" className="flex-row gap-3">
+		<View testID="details-page-actions" className="flex-row items-center gap-3">
 			{availableActions.map((action) => (
 				<PrimaryLoadingButton
 					key={action.icon}
@@ -33,7 +33,8 @@ const DetailsPageActions = (props: Props) => {
 					active={!props.disabled && !props.loading}
 					inverted={action.danger}
 					danger={action.danger}
-					cssClass="flex-1"
+					iconOnly={action.danger}
+					cssClass={action.danger ? undefined : 'flex-1'}
 					onClick={action.onClick}
 					startIcon={
 						<MaterialIcons name={action.icon} size={20} color={action.danger ? colors.danger : colors.brand} />

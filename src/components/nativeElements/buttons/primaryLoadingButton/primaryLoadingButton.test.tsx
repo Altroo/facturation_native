@@ -42,6 +42,29 @@ it('uses original buttonText/onClick/startIcon props and keeps its native test I
 	await fireEvent.press(button);
 	expect(onClick).toHaveBeenCalledTimes(1);
 });
+
+it('keeps an icon-only action labelled for accessibility without rendering its text', async () => {
+	const onClick = jest.fn();
+	await render(
+		<PrimaryLoadingButton
+			buttonText="Supprimer"
+			active
+			loading={false}
+			onClick={onClick}
+			iconOnly
+			danger
+			inverted
+			startIcon={<MaterialIcons name="delete-outline" size={20} color={colors.danger} />}
+		/>,
+	);
+	const button = screen.getByRole('button', { name: 'Supprimer' });
+	expect(screen.queryByText('Supprimer')).toBeNull();
+	expect(screen.container.queryAll((node) => node.props.name === 'delete-outline')).toHaveLength(1);
+	expect(button).toHaveProp('className', expect.stringContaining('h-12 w-12 shrink-0 p-0'));
+	await fireEvent.press(button);
+	expect(onClick).toHaveBeenCalledTimes(1);
+});
+
 it.each([
 	{ active: false, loading: false },
 	{ active: undefined, loading: false },

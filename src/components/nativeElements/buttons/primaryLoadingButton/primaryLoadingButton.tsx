@@ -10,6 +10,7 @@ type Props = {
 	onClick?: (event: GestureResponderEvent) => void;
 	active?: boolean;
 	startIcon?: ReactNode;
+	iconOnly?: boolean;
 	cssClass?: string;
 	inverted?: boolean;
 	danger?: boolean;
@@ -57,7 +58,8 @@ const PrimaryLoadingButton: FC<Props> = (props: Props) => {
 						: undefined
 			}
 			className={
-				'min-h-12 flex-row items-center justify-center gap-2 rounded-xl px-5 py-3 ' +
+				'flex-row items-center justify-center gap-2 rounded-xl ' +
+				(props.iconOnly ? 'h-12 w-12 shrink-0 p-0 ' : 'min-h-12 px-5 py-3 ') +
 				(props.inverted
 					? props.danger
 						? 'border border-red-200 bg-red-50 '
@@ -71,15 +73,17 @@ const PrimaryLoadingButton: FC<Props> = (props: Props) => {
 		>
 			<View className="shrink flex-row items-center justify-center gap-2" style={{ opacity: props.loading ? 0 : 1 }}>
 				{startIcon}
-				<Text
-					style={darkDanger || props.color ? { color: foreground } : undefined}
-					className={
-						'shrink text-center font-poppins-medium text-sm ' +
-						(props.inverted ? (props.danger ? 'text-red-600' : 'text-brand dark:text-blue-300') : 'text-white')
-					}
-				>
-					{props.buttonText}
-				</Text>
+				{!props.iconOnly && (
+					<Text
+						style={darkDanger || props.color ? { color: foreground } : undefined}
+						className={
+							'shrink text-center font-poppins-medium text-sm ' +
+							(props.inverted ? (props.danger ? 'text-red-600' : 'text-brand dark:text-blue-300') : 'text-white')
+						}
+					>
+						{props.buttonText}
+					</Text>
+				)}
 			</View>
 			{props.loading && (
 				<ActivityIndicator
