@@ -90,8 +90,7 @@ it('shows company permissions and requires the confirmation modal before deletin
 	remove.mockReturnValue({ unwrap: () => Promise.resolve() });
 	await setup();
 	expect(screen.getByText('Company Four')).toBeOnTheScreen();
-	expect(screen.getByText('ID: 7')).toBeOnTheScreen();
-	expect(screen.getByText('ID: 3')).toBeOnTheScreen();
+	expect(screen.queryByText(/^ID:/)).toBeNull();
 	expect(screen.getByText(translations.fr.managedByTable.invoiceValidation)).toBeOnTheScreen();
 	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.delete }));
 	expect(remove).not.toHaveBeenCalled();
@@ -102,6 +101,14 @@ it('shows company permissions and requires the confirmation modal before deletin
 	await waitFor(() => expect(remove).toHaveBeenCalledWith({ id: 7 }));
 	expect(mockSuccess).toHaveBeenCalledWith(translations.fr.users.deleteSuccess);
 	expect(router.dismissTo).toHaveBeenCalledWith('/users');
+});
+
+it('keeps the complete header email selectable without forcing it onto one line', async () => {
+	await setup('Caissier', { ...user, email: 'purchase-lecture@example.invalid' });
+	const email = screen.getAllByText('purchase-lecture@example.invalid')[0];
+	expect(email).toHaveProp('selectable', true);
+	expect(email).not.toHaveProp('numberOfLines');
+	expect(screen.queryByText(/^ID:/)).toBeNull();
 });
 it('closes the modal and reports a failed delete without navigating', async () => {
 	remove.mockReturnValue({ unwrap: () => Promise.reject(new Error('Server failed')) });
@@ -214,6 +221,13 @@ it.each(['loading', 'error'])('keeps edit actions hidden while the original deta
 it('keeps edit navigation and relies on the header for Back', async () => {
 	await setup();
 	expect(screen.queryByRole('button', { name: translations.fr.users.backToList })).toBeNull();
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.edit }));
+	const actions = within(screen.getByTestId('details-page-actions'));
+	expect(actions.getAllByRole('button').map((button) => button.props.accessibilityLabel)).toEqual([
+		translations.fr.common.delete,
+		translations.fr.common.edit,
+	]);
+	expect(within(screen.getByTestId('details-page')).queryByTestId('details-page-actions')).toBeNull();
+	expect(within(screen.getByTestId('page-action-bar')).getByTestId('details-page-actions')).toBeOnTheScreen();
+	await fireEvent.press(actions.getByRole('button', { name: translations.fr.common.edit }));
 	expect(router.push).toHaveBeenCalledWith({ pathname: '/users/form', params: { id: '7' } });
 });

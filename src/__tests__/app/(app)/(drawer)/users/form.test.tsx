@@ -3,7 +3,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import _initReducer, { setAuthenticated } from '@/store/slices/_initSlice';
 import accountReducer, { setProfil, setGroupes } from '@/store/slices/accountSlice';
 import companiesReducer, { setUserCompanies } from '@/store/slices/companiesSlice';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import { Provider } from 'react-redux';
 import { router } from 'expo-router';
 import UsersFormPage from '@/app/(app)/(drawer)/users/form';
@@ -16,6 +16,7 @@ import {
 import { useGetCompaniesListQuery } from '@/store/services/company';
 
 import { translations } from '@/translations';
+import { colors } from '@/utils/themes';
 import {
 	AutocompleteDropdownContextProvider,
 	toggleAutocomplete,
@@ -109,6 +110,21 @@ beforeEach(() => {
 	checkEmail.mockReturnValue({ unwrap: () => Promise.resolve() });
 	addUser.mockReturnValue({ unwrap: () => Promise.resolve() });
 	editUser.mockReturnValue({ unwrap: () => Promise.resolve({ first_name: 'Updated' }) });
+});
+
+it('uses green for the active account control and keeps the submit action in the fixed bar', async () => {
+	await setup();
+	expect(screen.getByRole('switch', { name: translations.fr.users.isActiveLabel })).toHaveProp(
+		'onTintColor',
+		colors.success,
+	);
+	expect(screen.getByRole('switch', { name: translations.fr.users.isAdminLabel })).toHaveProp(
+		'onTintColor',
+		colors.brand,
+	);
+	expect(
+		within(screen.getByTestId('page-action-bar')).getByRole('button', { name: translations.fr.users.addTitle }),
+	).toBeOnTheScreen();
 });
 it.each(['', ['7'], '../7', '0'])('blocks malformed edit id %s without requesting a user', async (id) => {
 	const store = await setup(true);
@@ -363,9 +379,9 @@ it('adds companies by ID, excludes duplicates and clears both add selectors afte
 	]);
 });
 
-it('renders the original add title, explicit personal fields, sections, and back target', async () => {
+it('renders personal fields and compact sections without repeating the navbar title', async () => {
 	await setup();
-	expect(screen.getByRole('header', { name: translations.fr.users.addTitle })).toBeOnTheScreen();
+	expect(screen.queryByRole('header', { name: translations.fr.users.addTitle })).toBeNull();
 	for (const label of [
 		translations.fr.users.fieldEmail,
 		translations.fr.users.fieldNom,

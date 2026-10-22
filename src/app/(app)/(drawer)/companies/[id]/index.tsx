@@ -1,11 +1,14 @@
 import InfoRow from '@/components/shared/infoRow/infoRow';
+import SectionCard from '@/components/shared/sectionCard/sectionCard';
+import DetailsPage from '@/components/shared/detailsPage/detailsPage';
+import DetailsPageActions from '@/components/shared/detailsPageActions/detailsPageActions';
 import EntityImage from '@/components/shared/entityImage/entityImage';
 import NoPermission from '@/components/shared/noPermission/noPermission';
 import QueryError from '@/components/shared/queryError/queryError';
 import ApiAlert from '@/components/nativeElements/apiLoading/apiAlert/apiAlert';
 import ApiProgress from '@/components/nativeElements/apiLoading/apiProgress/apiProgress';
 import { useRef, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useGetCompanyQuery, useSuspendCompanyMutation } from '@/store/services/company';
@@ -66,52 +69,43 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 	if (!is_staff) return <NoPermission />;
 	if (query.error)
 		return (
-			<ScrollView
-				className="flex-1 bg-slate-50 dark:bg-night"
-				keyboardShouldPersistTaps="handled"
-				contentContainerStyle={{
-					padding: 20,
-					paddingBottom: 48,
-					gap: 20,
-					flexGrow: 1,
-				}}
-			>
+			<DetailsPage>
 				<QueryError
 					error={query.error}
 					onRetry={() => void query.refetch()}
 					loading={query.isFetching}
 					disabled={mutation.isLoading}
 				/>
-			</ScrollView>
+			</DetailsPage>
 		);
 	const companyData = query.currentData;
 	if (!companyData) return <ApiProgress />;
 	return (
 		<>
-			<ScrollView
-				className="flex-1 bg-slate-50 dark:bg-night"
-				keyboardShouldPersistTaps="handled"
-				contentContainerStyle={{
-					padding: 20,
-					paddingBottom: 48,
-					gap: 20,
-					flexGrow: 1,
+			<DetailsPage
+				refreshing={query.isFetching}
+				onRefresh={() => {
+					if (!mutation.isLoading) void query.refetch();
 				}}
+				actions={
+					<DetailsPageActions
+						onEdit={() => router.push(COMPANIES_EDIT(id))}
+						onSuspend={() => setShowSuspendModal(true)}
+						loading={mutation.isLoading}
+					/>
+				}
 			>
-				<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
+				<SectionCard>
 					<View className="flex-row items-center gap-4">
 						<EntityImage
 							image={companyData.logo_cropped || companyData.logo}
 							previewImage={companyData.logo}
 							label={t.companies.logoLabel}
-							large
+							size={112}
 						/>
-						<View className="flex-1 gap-3">
+						<View className="min-w-0 flex-1 gap-3">
 							<Text accessibilityRole="header" className="text-ink dark:text-slate-100 font-poppins-semibold text-2xl">
 								{companyData.raison_sociale}
-							</Text>
-							<Text className="font-sans text-ink dark:text-slate-100 self-start rounded-full bg-slate-100 px-3 py-1.5 text-xs dark:bg-slate-800">
-								ID: {companyData.id}
 							</Text>
 							<View className="flex-row items-center gap-1.5 self-start rounded-full px-3 py-1.5 bg-blue-50 dark:bg-slate-800">
 								<MaterialIcons name="business" size={14} color={colors.brand} />
@@ -121,488 +115,176 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 							</View>
 						</View>
 					</View>
-					<PrimaryLoadingButton
-						buttonText={t.common.edit}
-						onClick={() => router.push(COMPANIES_EDIT(id))}
-						active={!mutation.isLoading}
-						loading={false}
-						startIcon={<MaterialIcons name="edit" size={20} color={colors.white} />}
+				</SectionCard>
+				<SectionCard title={t.companies.stampSection} icon="image">
+					<EntityImage
+						image={companyData.cachet_cropped || companyData.cachet}
+						previewImage={companyData.cachet}
+						label={t.companies.stampLabel}
+						icon="image"
+						large
+						fullWidth
 					/>
-				</View>
-				<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
-					<View className="mb-1 flex-row items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
-						<View className="h-10 w-10 items-center justify-center rounded-xl bg-blue-50 dark:bg-slate-800">
-							<MaterialIcons name="image" size={21} color={colors.brand} />
-						</View>
-						<View className="flex-1 gap-1">
-							<Text accessibilityRole="header" className="text-ink dark:text-slate-100 font-poppins-semibold text-base">
-								{t.companies.stampSection}
-							</Text>
-						</View>
-					</View>
-					<>
-						<EntityImage
-							image={companyData.cachet_cropped || companyData.cachet}
-							previewImage={companyData.cachet}
-							label={t.companies.stampLabel}
-							icon="image"
-							large
-						/>
-					</>
-				</View>
-				<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
-					<View className="mb-1 flex-row items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
-						<View className="h-10 w-10 items-center justify-center rounded-xl bg-blue-50 dark:bg-slate-800">
-							<MaterialIcons name="business" size={21} color={colors.brand} />
-						</View>
-						<View className="flex-1 gap-1">
-							<Text accessibilityRole="header" className="text-ink dark:text-slate-100 font-poppins-semibold text-base">
-								{t.companies.generalSection}
-							</Text>
-						</View>
-					</View>
-					<>
-						<InfoRow
-							icon={
-								<MaterialIcons
-									name="business"
-									size={20}
-									color={colors.slate[400]}
-									style={{
-										marginTop: 3,
-									}}
+				</SectionCard>
+				<SectionCard title={t.companies.generalSection} icon="business">
+					<InfoRow
+						icon={<MaterialIcons name="business" size={20} color={colors.slate[400]} />}
+						label={t.companies.fieldRaisonSociale}
+						value={companyData.raison_sociale}
+					/>
+					<InfoRow
+						icon={<MaterialIcons name="groups" size={20} color={colors.slate[400]} />}
+						label={t.companies.fieldNbrEmploye}
+						value={companyData.nbr_employe}
+					/>
+					<InfoRow
+						icon={<MaterialIcons name="location-on" size={20} color={colors.slate[400]} />}
+						label={t.companies.fieldAdresse}
+						value={companyData.adresse}
+					/>
+					<InfoRow
+						icon={<MaterialIcons name="language" size={20} color={colors.slate[400]} />}
+						label={t.companies.fieldSiteWeb}
+						value={companyData.site_web}
+					/>
+					<InfoRow
+						icon={<MaterialIcons name="event" size={20} color={colors.slate[400]} />}
+						label={t.companies.fieldDateCreation}
+						value={companyData.date_created ? formatDate(companyData.date_created) : null}
+					/>
+					<InfoRow
+						icon={<MaterialIcons name="update" size={20} color={colors.slate[400]} />}
+						label={t.companies.fieldDateMaj}
+						value={companyData.date_updated ? formatDate(companyData.date_updated) : null}
+					/>
+				</SectionCard>
+				<SectionCard title={t.companies.adminSection} icon="account-balance">
+					<InfoRow
+						icon={<MaterialIcons name="credit-card" size={20} color={colors.slate[400]} />}
+						label={t.companies.fieldNumeroCompte}
+						value={companyData.numero_du_compte}
+					/>
+					<InfoRow
+						icon={<MaterialIcons name="fingerprint" size={20} color={colors.slate[400]} />}
+						label={t.companies.fieldICE}
+						value={companyData.ICE}
+					/>
+					<InfoRow
+						icon={<MaterialIcons name="description" size={20} color={colors.slate[400]} />}
+						label={t.companies.fieldRegistreCommerce}
+						value={companyData.registre_de_commerce}
+					/>
+					<InfoRow
+						icon={<MaterialIcons name="badge" size={20} color={colors.slate[400]} />}
+						label={t.companies.fieldIdentifiantFiscal}
+						value={companyData.identifiant_fiscal}
+					/>
+					<InfoRow
+						icon={<MaterialIcons name="receipt-long" size={20} color={colors.slate[400]} />}
+						label={t.companies.fieldTaxeProfessionnelle}
+						value={companyData.tax_professionnelle}
+					/>
+					<InfoRow
+						icon={<MaterialIcons name="verified-user" size={20} color={colors.slate[400]} />}
+						label={t.companies.fieldCNSS}
+						value={companyData.CNSS}
+					/>
+				</SectionCard>
+				<SectionCard title={t.companies.responsableSection} icon="person-outline">
+					<InfoRow
+						icon={<MaterialIcons name="person" size={20} color={colors.slate[400]} />}
+						label={t.companies.fieldCivilite}
+						value={companyData.civilite_responsable}
+					/>
+					<InfoRow
+						icon={<MaterialIcons name="badge" size={20} color={colors.slate[400]} />}
+						label={t.companies.fieldNomResponsable}
+						value={companyData.nom_responsable}
+					/>
+					<InfoRow
+						icon={<MaterialIcons name="smartphone" size={20} color={colors.slate[400]} />}
+						label={t.companies.fieldGsmResponsable}
+						value={companyData.gsm_responsable}
+					/>
+				</SectionCard>
+				<SectionCard title={t.companies.contactSection} icon="contacts">
+					<InfoRow
+						icon={<MaterialIcons name="mail-outline" size={20} color={colors.slate[400]} />}
+						label={t.companies.fieldEmail}
+						value={companyData.email}
+					/>
+					<InfoRow
+						icon={<MaterialIcons name="phone" size={20} color={colors.slate[400]} />}
+						label={t.companies.fieldTelephone}
+						value={companyData.telephone}
+					/>
+					<InfoRow
+						icon={<MaterialIcons name="print" size={20} color={colors.slate[400]} />}
+						label={t.companies.fieldFax}
+						value={companyData.fax}
+					/>
+				</SectionCard>
+				<SectionCard title={t.companies.settingsSection} icon="settings">
+					<InfoRow
+						icon={<MaterialIcons name="currency-exchange" size={20} color={colors.slate[400]} />}
+						label={t.companies.foreignCurrencyLabel}
+						value={companyData.uses_foreign_currency ? t.common.yes : t.common.no}
+					/>
+					<InfoRow
+						icon={<MaterialIcons name="inventory-2" size={20} color={colors.slate[400]} />}
+						label={t.companies.stockManagementLabel}
+						value={companyData.stock_management_enabled ? t.common.yes : t.common.no}
+					/>
+					<InfoRow
+						icon={<MaterialIcons name="fact-check" size={20} color={colors.slate[400]} />}
+						label={t.companies.inventoryManagementLabel}
+						value={companyData.inventory_management_enabled ? t.common.yes : t.common.no}
+					/>
+				</SectionCard>
+				<SectionCard title={t.companies.managersSection} icon="manage-accounts">
+					{companyData.admins?.map((entry) => (
+						<View key={entry.id} className="gap-2 rounded-xl bg-slate-50 p-4 dark:bg-slate-800">
+							<View className="flex-row items-center gap-3">
+								<EntityImage
+									label={
+										[entry.first_name, entry.last_name].filter(Boolean).join(' ').trim() ||
+										t.users.userFallback(entry.id)
+									}
+									avatar
+									icon="person-outline"
 								/>
-							}
-							label={t.companies.fieldRaisonSociale}
-							value={companyData.raison_sociale}
-						/>
-						<InfoRow
-							icon={
-								<MaterialIcons
-									name="groups"
-									size={20}
-									color={colors.slate[400]}
-									style={{
-										marginTop: 3,
-									}}
-								/>
-							}
-							label={t.companies.fieldNbrEmploye}
-							value={companyData.nbr_employe}
-						/>
-						<InfoRow
-							icon={
-								<MaterialIcons
-									name="location-on"
-									size={20}
-									color={colors.slate[400]}
-									style={{
-										marginTop: 3,
-									}}
-								/>
-							}
-							label={t.companies.fieldAdresse}
-							value={companyData.adresse}
-						/>
-						<InfoRow
-							icon={
-								<MaterialIcons
-									name="language"
-									size={20}
-									color={colors.slate[400]}
-									style={{
-										marginTop: 3,
-									}}
-								/>
-							}
-							label={t.companies.fieldSiteWeb}
-							value={companyData.site_web}
-						/>
-						<InfoRow
-							icon={
-								<MaterialIcons
-									name="event"
-									size={20}
-									color={colors.slate[400]}
-									style={{
-										marginTop: 3,
-									}}
-								/>
-							}
-							label={t.companies.fieldDateCreation}
-							value={formatDate(companyData.date_created ?? null)}
-						/>
-						<InfoRow
-							icon={
-								<MaterialIcons
-									name="update"
-									size={20}
-									color={colors.slate[400]}
-									style={{
-										marginTop: 3,
-									}}
-								/>
-							}
-							label={t.companies.fieldDateMaj}
-							value={formatDate(companyData.date_updated ?? null)}
-						/>
-					</>
-				</View>
-				<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
-					<View className="mb-1 flex-row items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
-						<View className="h-10 w-10 items-center justify-center rounded-xl bg-blue-50 dark:bg-slate-800">
-							<MaterialIcons name="account-balance" size={21} color={colors.brand} />
-						</View>
-						<View className="flex-1 gap-1">
-							<Text accessibilityRole="header" className="text-ink dark:text-slate-100 font-poppins-semibold text-base">
-								{t.companies.adminSection}
-							</Text>
-						</View>
-					</View>
-					<>
-						<InfoRow
-							icon={
-								<MaterialIcons
-									name="credit-card"
-									size={20}
-									color={colors.slate[400]}
-									style={{
-										marginTop: 3,
-									}}
-								/>
-							}
-							label={t.companies.fieldNumeroCompte}
-							value={companyData.numero_du_compte}
-						/>
-						<InfoRow
-							icon={
-								<MaterialIcons
-									name="fingerprint"
-									size={20}
-									color={colors.slate[400]}
-									style={{
-										marginTop: 3,
-									}}
-								/>
-							}
-							label={t.companies.fieldICE}
-							value={companyData.ICE}
-						/>
-						<InfoRow
-							icon={
-								<MaterialIcons
-									name="description"
-									size={20}
-									color={colors.slate[400]}
-									style={{
-										marginTop: 3,
-									}}
-								/>
-							}
-							label={t.companies.fieldRegistreCommerce}
-							value={companyData.registre_de_commerce}
-						/>
-						<InfoRow
-							icon={
-								<MaterialIcons
-									name="badge"
-									size={20}
-									color={colors.slate[400]}
-									style={{
-										marginTop: 3,
-									}}
-								/>
-							}
-							label={t.companies.fieldIdentifiantFiscal}
-							value={companyData.identifiant_fiscal}
-						/>
-						<InfoRow
-							icon={
-								<MaterialIcons
-									name="receipt-long"
-									size={20}
-									color={colors.slate[400]}
-									style={{
-										marginTop: 3,
-									}}
-								/>
-							}
-							label={t.companies.fieldTaxeProfessionnelle}
-							value={companyData.tax_professionnelle}
-						/>
-						<InfoRow
-							icon={
-								<MaterialIcons
-									name="verified-user"
-									size={20}
-									color={colors.slate[400]}
-									style={{
-										marginTop: 3,
-									}}
-								/>
-							}
-							label={t.companies.fieldCNSS}
-							value={companyData.CNSS}
-						/>
-					</>
-				</View>
-				<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
-					<View className="mb-1 flex-row items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
-						<View className="h-10 w-10 items-center justify-center rounded-xl bg-blue-50 dark:bg-slate-800">
-							<MaterialIcons name="person-outline" size={21} color={colors.brand} />
-						</View>
-						<View className="flex-1 gap-1">
-							<Text accessibilityRole="header" className="text-ink dark:text-slate-100 font-poppins-semibold text-base">
-								{t.companies.responsableSection}
-							</Text>
-						</View>
-					</View>
-					<>
-						<InfoRow
-							icon={
-								<MaterialIcons
-									name="person"
-									size={20}
-									color={colors.slate[400]}
-									style={{
-										marginTop: 3,
-									}}
-								/>
-							}
-							label={t.companies.fieldCivilite}
-							value={companyData.civilite_responsable}
-						/>
-						<InfoRow
-							icon={
-								<MaterialIcons
-									name="badge"
-									size={20}
-									color={colors.slate[400]}
-									style={{
-										marginTop: 3,
-									}}
-								/>
-							}
-							label={t.companies.fieldNomResponsable}
-							value={companyData.nom_responsable}
-						/>
-						<InfoRow
-							icon={
-								<MaterialIcons
-									name="smartphone"
-									size={20}
-									color={colors.slate[400]}
-									style={{
-										marginTop: 3,
-									}}
-								/>
-							}
-							label={t.companies.fieldGsmResponsable}
-							value={companyData.gsm_responsable}
-						/>
-					</>
-				</View>
-				<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
-					<View className="mb-1 flex-row items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
-						<View className="h-10 w-10 items-center justify-center rounded-xl bg-blue-50 dark:bg-slate-800">
-							<MaterialIcons name="contacts" size={21} color={colors.brand} />
-						</View>
-						<View className="flex-1 gap-1">
-							<Text accessibilityRole="header" className="text-ink dark:text-slate-100 font-poppins-semibold text-base">
-								{t.companies.contactSection}
-							</Text>
-						</View>
-					</View>
-					<>
-						<InfoRow
-							icon={
-								<MaterialIcons
-									name="mail-outline"
-									size={20}
-									color={colors.slate[400]}
-									style={{
-										marginTop: 3,
-									}}
-								/>
-							}
-							label={t.companies.fieldEmail}
-							value={companyData.email}
-						/>
-						<InfoRow
-							icon={
-								<MaterialIcons
-									name="phone"
-									size={20}
-									color={colors.slate[400]}
-									style={{
-										marginTop: 3,
-									}}
-								/>
-							}
-							label={t.companies.fieldTelephone}
-							value={companyData.telephone}
-						/>
-						<InfoRow
-							icon={
-								<MaterialIcons
-									name="print"
-									size={20}
-									color={colors.slate[400]}
-									style={{
-										marginTop: 3,
-									}}
-								/>
-							}
-							label={t.companies.fieldFax}
-							value={companyData.fax}
-						/>
-					</>
-				</View>
-				<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
-					<View className="mb-1 flex-row items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
-						<View className="h-10 w-10 items-center justify-center rounded-xl bg-blue-50 dark:bg-slate-800">
-							<MaterialIcons name="settings" size={21} color={colors.brand} />
-						</View>
-						<View className="flex-1 gap-1">
-							<Text accessibilityRole="header" className="text-ink dark:text-slate-100 font-poppins-semibold text-base">
-								{t.companies.settingsSection}
-							</Text>
-						</View>
-					</View>
-					<>
-						<InfoRow
-							icon={
-								<MaterialIcons
-									name="currency-exchange"
-									size={20}
-									color={colors.slate[400]}
-									style={{
-										marginTop: 3,
-									}}
-								/>
-							}
-							label={t.companies.foreignCurrencyLabel}
-							value={companyData.uses_foreign_currency ? t.common.yes : t.common.no}
-						/>
-						<InfoRow
-							icon={
-								<MaterialIcons
-									name="inventory-2"
-									size={20}
-									color={colors.slate[400]}
-									style={{
-										marginTop: 3,
-									}}
-								/>
-							}
-							label={t.companies.stockManagementLabel}
-							value={companyData.stock_management_enabled ? t.common.yes : t.common.no}
-						/>
-						<InfoRow
-							icon={
-								<MaterialIcons
-									name="fact-check"
-									size={20}
-									color={colors.slate[400]}
-									style={{
-										marginTop: 3,
-									}}
-								/>
-							}
-							label={t.companies.inventoryManagementLabel}
-							value={companyData.inventory_management_enabled ? t.common.yes : t.common.no}
-						/>
-					</>
-				</View>
-				<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
-					<View className="mb-1 flex-row items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
-						<View className="h-10 w-10 items-center justify-center rounded-xl bg-blue-50 dark:bg-slate-800">
-							<MaterialIcons name="manage-accounts" size={21} color={colors.brand} />
-						</View>
-						<View className="flex-1 gap-1">
-							<Text accessibilityRole="header" className="text-ink dark:text-slate-100 font-poppins-semibold text-base">
-								{t.companies.managersSection}
-							</Text>
-						</View>
-						<Text className="text-ink dark:text-slate-100 rounded-full bg-slate-100 px-3 py-1 font-poppins-medium text-xs dark:bg-slate-800">
-							{companyData.admins?.length ?? 0}
-						</Text>
-					</View>
-					<>
-						{companyData.admins?.map((entry) => (
-							<View key={entry.id} className="gap-2 rounded-xl bg-slate-50 p-4 dark:bg-slate-800">
-								<View className="flex-row items-center gap-3">
-									<EntityImage
-										label={
-											[entry.first_name, entry.last_name].filter(Boolean).join(' ').trim() ||
-											t.users.userFallback(entry.id)
-										}
-										avatar
-										icon="person-outline"
-									/>
-									<View className="flex-1 gap-2">
-										<Text className="text-ink dark:text-slate-100 font-poppins-medium">
-											{[entry.first_name, entry.last_name].filter(Boolean).join(' ').trim() ||
-												t.users.userFallback(entry.id)}
+								<View className="flex-1 gap-2">
+									<Text className="text-ink dark:text-slate-100 font-poppins-medium">
+										{[entry.first_name, entry.last_name].filter(Boolean).join(' ').trim() ||
+											t.users.userFallback(entry.id)}
+									</Text>
+									<View className="flex-row items-center gap-1.5 self-start rounded-full px-3 py-1.5 bg-blue-50 dark:bg-slate-800">
+										<MaterialIcons name="shield" size={14} color={colors.brand} />
+										<Text className="font-poppins-medium text-xs text-brand dark:text-blue-300">
+											{entry.role || t.common.noData}
 										</Text>
-										<Text className="font-sans text-xs text-slate-500 dark:text-slate-400">ID: {entry.id}</Text>
-										<View className="flex-row items-center gap-1.5 self-start rounded-full px-3 py-1.5 bg-blue-50 dark:bg-slate-800">
-											<MaterialIcons name="shield" size={14} color={colors.brand} />
-											<Text className="font-poppins-medium text-xs text-brand dark:text-blue-300">
-												{entry.role || t.common.noData}
-											</Text>
-										</View>
 									</View>
 								</View>
-								<InfoRow
-									icon={
-										<MaterialIcons
-											name="verified"
-											size={20}
-											color={colors.slate[400]}
-											style={{
-												marginTop: 3,
-											}}
-										/>
-									}
-									label={t.managedByTable.invoiceValidation}
-									value={entry.can_validate_factures ? t.common.yes : t.common.no}
-								/>
-								<InfoRow
-									icon={
-										<MaterialIcons
-											name="published-with-changes"
-											size={20}
-											color={colors.slate[400]}
-											style={{
-												marginTop: 3,
-											}}
-										/>
-									}
-									label={t.managedByTable.documentStatusChange}
-									value={entry.can_change_document_status ? t.common.yes : t.common.no}
-								/>
 							</View>
-						))}
-						{!companyData.admins?.length && (
-							<Text className="font-sans dark:text-slate-100 py-4 text-center text-sm text-slate-400">
-								{t.companies.noManager}
-							</Text>
-						)}
-					</>
-				</View>
-				<PrimaryLoadingButton
-					buttonText={t.companies.suspendBtn}
-					danger
-					inverted
-					onClick={() => {
-						setShowSuspendModal(true);
-					}}
-					active={!mutation.isLoading}
-					loading={false}
-					startIcon={<MaterialIcons name="block" size={20} color={colors.danger} />}
-				/>
-			</ScrollView>
+							<InfoRow
+								icon={<MaterialIcons name="verified" size={20} color={colors.slate[400]} />}
+								label={t.managedByTable.invoiceValidation}
+								value={entry.can_validate_factures ? t.common.yes : t.common.no}
+							/>
+							<InfoRow
+								icon={<MaterialIcons name="published-with-changes" size={20} color={colors.slate[400]} />}
+								label={t.managedByTable.documentStatusChange}
+								value={entry.can_change_document_status ? t.common.yes : t.common.no}
+							/>
+						</View>
+					))}
+					{!companyData.admins?.length && (
+						<Text className="font-sans dark:text-slate-100 py-4 text-center text-sm text-slate-400">
+							{t.companies.noManager}
+						</Text>
+					)}
+				</SectionCard>
+			</DetailsPage>
 			{showSuspendModal && (
 				<ConfirmationModal
 					title={t.companies.suspendModalTitle}
@@ -627,17 +309,8 @@ const CompaniesViewPage = () => {
 	const id = parseEntityId(params.id);
 	if (id === null)
 		return (
-			<ScrollView
-				className="flex-1 bg-slate-50 dark:bg-night"
-				keyboardShouldPersistTaps="handled"
-				contentContainerStyle={{
-					padding: 20,
-					paddingBottom: 48,
-					gap: 20,
-					flexGrow: 1,
-				}}
-			>
-				<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
+			<DetailsPage>
+				<SectionCard>
 					<ApiAlert errorDetails={t.notFound.message} />
 					<PrimaryLoadingButton
 						buttonText={t.common.back}
@@ -646,8 +319,8 @@ const CompaniesViewPage = () => {
 						active
 						loading={false}
 					/>
-				</View>
-			</ScrollView>
+				</SectionCard>
+			</DetailsPage>
 		);
 	return <CompaniesViewPageContent key={id} id={id} />;
 };

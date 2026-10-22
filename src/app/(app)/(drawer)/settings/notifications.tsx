@@ -1,3 +1,4 @@
+import SectionCard from '@/components/shared/sectionCard/sectionCard';
 import CustomSwitch from '@/components/nativeElements/customSwitch/customSwitch';
 import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
@@ -13,6 +14,7 @@ import { normalizeApiError, runWithCleanup, setFormikAutoErrors } from '@/utils/
 import type { NotificationPreferenceFormValues } from '@/types/notificationTypes';
 import CustomDropDownSelect from '@/components/nativeElements/customDropDownSelect/customDropDownSelect';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
+import PageActionBar from '@/components/shared/pageActionBar/pageActionBar';
 
 const NotificationsPage = () => {
 	const { onSuccess, onError } = useToast();
@@ -84,83 +86,87 @@ const NotificationsPage = () => {
 	}
 
 	return (
-		<ScrollView
-			className="flex-1 bg-slate-50 dark:bg-night"
-			keyboardShouldPersistTaps="handled"
-			contentContainerStyle={{
-				padding: 20,
-				paddingBottom: 48,
-				gap: 20,
-				flexGrow: 1,
-			}}
-		>
-			<Text className="text-ink dark:text-slate-100 font-poppins-semibold text-2xl">
-				{t.settings.notificationPreferences}
-			</Text>
-			<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
-				<CustomSwitch
-					label={t.settings.notifyOverdueInvoice}
-					value={formik.values.notify_overdue_invoice}
-					onValueChange={(value) => void formik.setFieldValue('notify_overdue_invoice', value)}
-					disabled={isPending}
-				/>
-				<CustomSwitch
-					label={t.settings.notifyExpiringQuote}
-					value={formik.values.notify_expiring_quote}
-					onValueChange={(value) => void formik.setFieldValue('notify_expiring_quote', value)}
-					disabled={isPending}
-				/>
-				<CustomSwitch
-					label={t.settings.notifyUninvoicedBdl}
-					value={formik.values.notify_uninvoiced_bdl}
-					onValueChange={(value) => void formik.setFieldValue('notify_uninvoiced_bdl', value)}
-					disabled={isPending}
-				/>
-				<CustomSwitch
-					label={t.settings.notifyDocumentCreated}
-					value={formik.values.notify_document_created}
-					onValueChange={(value) => void formik.setFieldValue('notify_document_created', value)}
-					disabled={isPending}
-				/>
-				<CustomSwitch
-					label={t.settings.notifyLowStock}
-					value={formik.values.notify_low_stock}
-					onValueChange={(value) => void formik.setFieldValue('notify_low_stock', value)}
-					disabled={isPending}
-				/>
-				<CustomDropDownSelect
-					label={t.settings.lowStockRepeatHours}
-					value={formik.values.low_stock_repeat_hours + ' h'}
-					items={[6, 12, 24, 48, 72].map((hours) => hours + ' h')}
-					onChange={(value) => void formik.setFieldValue('low_stock_repeat_hours', Number.parseInt(value, 10))}
-					disabled={isPending || !formik.values.notify_low_stock}
-					helperText={formik.errors.low_stock_repeat_hours}
-					error={Boolean(formik.errors.low_stock_repeat_hours)}
-				/>
-				<CustomDropDownSelect
-					label={t.settings.quoteExpiryDays}
-					value={
-						quoteExpiryOptions.find((item) => item.value === formik.values.quote_expiry_days)?.label ??
-						String(formik.values.quote_expiry_days)
-					}
-					items={quoteExpiryOptions.map((item) => item.label)}
-					onChange={(value) => {
-						const option = quoteExpiryOptions.find((item) => item.label === value);
-						if (option) void formik.setFieldValue('quote_expiry_days', option.value);
-					}}
-					disabled={isPending}
-					helperText={formik.errors.quote_expiry_days}
-					error={Boolean(formik.errors.quote_expiry_days)}
-				/>
-				{!!formik.errors.globalError && <ApiAlert errorDetails={formik.errors.globalError} />}
+		<View className="flex-1 bg-slate-50 dark:bg-night">
+			<ScrollView
+				className="flex-1 bg-slate-50 dark:bg-night"
+				keyboardShouldPersistTaps="handled"
+				contentContainerStyle={{
+					padding: 20,
+					paddingBottom: 48,
+					gap: 20,
+					flexGrow: 1,
+				}}
+			>
+				<Text className="text-ink dark:text-slate-100 font-poppins-semibold text-2xl">
+					{t.settings.notificationPreferences}
+				</Text>
+				<SectionCard>
+					<CustomSwitch
+						label={t.settings.notifyOverdueInvoice}
+						value={formik.values.notify_overdue_invoice}
+						onValueChange={(value) => void formik.setFieldValue('notify_overdue_invoice', value)}
+						disabled={isPending}
+					/>
+					<CustomSwitch
+						label={t.settings.notifyExpiringQuote}
+						value={formik.values.notify_expiring_quote}
+						onValueChange={(value) => void formik.setFieldValue('notify_expiring_quote', value)}
+						disabled={isPending}
+					/>
+					<CustomSwitch
+						label={t.settings.notifyUninvoicedBdl}
+						value={formik.values.notify_uninvoiced_bdl}
+						onValueChange={(value) => void formik.setFieldValue('notify_uninvoiced_bdl', value)}
+						disabled={isPending}
+					/>
+					<CustomSwitch
+						label={t.settings.notifyDocumentCreated}
+						value={formik.values.notify_document_created}
+						onValueChange={(value) => void formik.setFieldValue('notify_document_created', value)}
+						disabled={isPending}
+					/>
+					<CustomSwitch
+						label={t.settings.notifyLowStock}
+						value={formik.values.notify_low_stock}
+						onValueChange={(value) => void formik.setFieldValue('notify_low_stock', value)}
+						disabled={isPending}
+					/>
+					<CustomDropDownSelect
+						label={t.settings.lowStockRepeatHours}
+						value={formik.values.low_stock_repeat_hours + ' h'}
+						items={[6, 12, 24, 48, 72].map((hours) => hours + ' h')}
+						onChange={(value) => void formik.setFieldValue('low_stock_repeat_hours', Number.parseInt(value, 10))}
+						disabled={isPending || !formik.values.notify_low_stock}
+						helperText={formik.errors.low_stock_repeat_hours}
+						error={Boolean(formik.errors.low_stock_repeat_hours)}
+					/>
+					<CustomDropDownSelect
+						label={t.settings.quoteExpiryDays}
+						value={
+							quoteExpiryOptions.find((item) => item.value === formik.values.quote_expiry_days)?.label ??
+							String(formik.values.quote_expiry_days)
+						}
+						items={quoteExpiryOptions.map((item) => item.label)}
+						onChange={(value) => {
+							const option = quoteExpiryOptions.find((item) => item.label === value);
+							if (option) void formik.setFieldValue('quote_expiry_days', option.value);
+						}}
+						disabled={isPending}
+						helperText={formik.errors.quote_expiry_days}
+						error={Boolean(formik.errors.quote_expiry_days)}
+					/>
+					{!!formik.errors.globalError && <ApiAlert errorDetails={formik.errors.globalError} />}
+				</SectionCard>
+			</ScrollView>
+			<PageActionBar>
 				<PrimaryLoadingButton
 					buttonText={t.settings.save}
 					loading={isPending || isUpdateLoading}
 					onClick={() => void formik.submitForm()}
 					active
 				/>
-			</View>
-		</ScrollView>
+			</PageActionBar>
+		</View>
 	);
 };
 

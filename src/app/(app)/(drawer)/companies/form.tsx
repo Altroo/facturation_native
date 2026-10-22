@@ -1,10 +1,11 @@
+import SectionCard from '@/components/shared/sectionCard/sectionCard';
 import CustomSwitch from '@/components/nativeElements/customSwitch/customSwitch';
 import type { UserClass } from '@/models/classes';
 import { useInitAccessToken } from '@/contexts/InitContext';
 import type { DropDownType } from '@/types/accountTypes';
 import ApiAlert from '@/components/nativeElements/apiLoading/apiAlert/apiAlert';
 import NoPermission from '@/components/shared/noPermission/noPermission';
-import { ScrollView, View, Platform, Text } from 'react-native';
+import { ScrollView, View, Platform } from 'react-native';
 import type { KeyboardAwareScrollViewRef } from 'react-native-keyboard-controller';
 import KeyboardAwareScrollView from '@/components/shared/keyboardAwareScrollView/keyboardAwareScrollView';
 import ApiProgress from '@/components/nativeElements/apiLoading/apiProgress/apiProgress';
@@ -25,6 +26,7 @@ import CustomTextInput from '@/components/nativeElements/customTextInput/customT
 import CustomDropDownSelect from '@/components/nativeElements/customDropDownSelect/customDropDownSelect';
 import CustomSquareImageUploading from '@/components/nativeElements/customSquareImageUploading/customSquareImageUploading';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
+import PageActionBar from '@/components/shared/pageActionBar/pageActionBar';
 import ManagedByTableSection, { type ManagedByType } from '@/components/shared/addManagedByTable/addManagedByTable';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { colors } from '@/utils/themes';
@@ -295,38 +297,12 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 				}}
 			>
 				<>
-					<View className="flex-row items-center gap-4 py-1">
-						<View className="h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 dark:bg-panel">
-							<MaterialIcons name={'business'} size={25} color={colors.brand} />
-						</View>
-						<View className="flex-1 gap-1">
-							<Text accessibilityRole="header" className="text-ink dark:text-slate-100 font-poppins-semibold text-2xl">
-								{isEditMode ? t.companies.editTitle : t.companies.addTitle}
-							</Text>
-							{!!rawData?.raison_sociale && (
-								<Text className="font-sans text-sm text-slate-500 dark:text-slate-400">{rawData?.raison_sociale}</Text>
-							)}
-						</View>
-					</View>
 					<>
 						{formik.errors.globalError || hasValidationErrors ? (
 							<ApiAlert variant="banner" errorDetails={validationMessage || t.common.correctErrors} />
 						) : null}
 					</>
-					<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
-						<View className="mb-1 flex-row items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
-							<View className="h-10 w-10 items-center justify-center rounded-xl bg-blue-50 dark:bg-slate-800">
-								<MaterialIcons name={'image'} size={21} color={colors.brand} />
-							</View>
-							<View className="flex-1 gap-1">
-								<Text
-									accessibilityRole="header"
-									className="text-ink dark:text-slate-100 font-poppins-semibold text-base"
-								>
-									{t.companies.logoSection}
-								</Text>
-							</View>
-						</View>
+					<SectionCard title={t.companies.logoSection} icon={'image'}>
 						<>
 							<CustomSquareImageUploading
 								label={t.companies.logoLabel}
@@ -347,21 +323,8 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 								disabled={isPending}
 							/>
 						</>
-					</View>
-					<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
-						<View className="mb-1 flex-row items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
-							<View className="h-10 w-10 items-center justify-center rounded-xl bg-blue-50 dark:bg-slate-800">
-								<MaterialIcons name={'business'} size={21} color={colors.brand} />
-							</View>
-							<View className="flex-1 gap-1">
-								<Text
-									accessibilityRole="header"
-									className="text-ink dark:text-slate-100 font-poppins-semibold text-base"
-								>
-									{t.companies.generalSection}
-								</Text>
-							</View>
-						</View>
+					</SectionCard>
+					<SectionCard title={t.companies.generalSection} icon={'business'}>
 						<>
 							<CustomTextInput
 								id="raison_sociale"
@@ -424,6 +387,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 								onChangeText={formik.handleChange('adresse')}
 								onBlur={formik.handleBlur('adresse')}
 								multiline
+								numberOfLines={2}
 								disabled={isPending}
 								error={formik.touched.adresse && Boolean(formik.errors.adresse)}
 								helperText={formik.touched.adresse ? formik.errors.adresse : ''}
@@ -457,21 +421,8 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 								}
 							/>
 						</>
-					</View>
-					<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
-						<View className="mb-1 flex-row items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
-							<View className="h-10 w-10 items-center justify-center rounded-xl bg-blue-50 dark:bg-slate-800">
-								<MaterialIcons name={'person-outline'} size={21} color={colors.brand} />
-							</View>
-							<View className="flex-1 gap-1">
-								<Text
-									accessibilityRole="header"
-									className="text-ink dark:text-slate-100 font-poppins-semibold text-base"
-								>
-									{t.companies.responsableSection}
-								</Text>
-							</View>
-						</View>
+					</SectionCard>
+					<SectionCard title={t.companies.responsableSection} icon={'person-outline'}>
 						<>
 							<CustomDropDownSelect
 								id="civilite_responsable"
@@ -528,21 +479,8 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 								}
 							/>
 						</>
-					</View>
-					<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
-						<View className="mb-1 flex-row items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
-							<View className="h-10 w-10 items-center justify-center rounded-xl bg-blue-50 dark:bg-slate-800">
-								<MaterialIcons name={'contacts'} size={21} color={colors.brand} />
-							</View>
-							<View className="flex-1 gap-1">
-								<Text
-									accessibilityRole="header"
-									className="text-ink dark:text-slate-100 font-poppins-semibold text-base"
-								>
-									{t.companies.contactSection}
-								</Text>
-							</View>
-						</View>
+					</SectionCard>
+					<SectionCard title={t.companies.contactSection} icon={'contacts'}>
 						<>
 							<CustomTextInput
 								id="telephone"
@@ -583,21 +521,8 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 								}
 							/>
 						</>
-					</View>
-					<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
-						<View className="mb-1 flex-row items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
-							<View className="h-10 w-10 items-center justify-center rounded-xl bg-blue-50 dark:bg-slate-800">
-								<MaterialIcons name={'account-balance'} size={21} color={colors.brand} />
-							</View>
-							<View className="flex-1 gap-1">
-								<Text
-									accessibilityRole="header"
-									className="text-ink dark:text-slate-100 font-poppins-semibold text-base"
-								>
-									{t.companies.adminSection}
-								</Text>
-							</View>
-						</View>
+					</SectionCard>
+					<SectionCard title={t.companies.adminSection} icon={'account-balance'}>
 						<>
 							<CustomTextInput
 								id="numero_du_compte"
@@ -724,21 +649,8 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 								}
 							/>
 						</>
-					</View>
-					<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
-						<View className="mb-1 flex-row items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
-							<View className="h-10 w-10 items-center justify-center rounded-xl bg-blue-50 dark:bg-slate-800">
-								<MaterialIcons name={'settings'} size={21} color={colors.brand} />
-							</View>
-							<View className="flex-1 gap-1">
-								<Text
-									accessibilityRole="header"
-									className="text-ink dark:text-slate-100 font-poppins-semibold text-base"
-								>
-									{t.companies.settingsSection}
-								</Text>
-							</View>
-						</View>
+					</SectionCard>
+					<SectionCard title={t.companies.settingsSection} icon={'settings'}>
 						<>
 							<CustomSwitch
 								label={t.companies.foreignCurrencyLabel}
@@ -768,7 +680,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 								helperText={t.companies.inventoryManagementHelper}
 							/>
 						</>
-					</View>
+					</SectionCard>
 
 					<ManagedByTableSection
 						title={t.companies.managersSection}
@@ -819,22 +731,24 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 							<ApiAlert variant="banner" errorDetails={validationMessage || t.common.correctErrors} />
 						) : null}
 					</>
-					<PrimaryLoadingButton
-						buttonText={isEditMode ? t.common.update : t.companies.addTitle}
-						loading={isPending || isAddLoading || isUpdateLoading}
-						onClick={() => {
-							setHasAttemptedSubmit(true);
-							void formik.submitForm();
-							if (!formik.isValid) {
-								onError(t.common.correctErrors);
-								scrollRef.current?.scrollTo({ y: 0, animated: true });
-							}
-						}}
-						active
-						startIcon={<MaterialIcons name={isEditMode ? 'save' : 'add'} size={20} color={colors.white} />}
-					/>
 				</>
 			</KeyboardAwareScrollView>
+			<PageActionBar>
+				<PrimaryLoadingButton
+					buttonText={isEditMode ? t.common.update : t.companies.addTitle}
+					loading={isPending || isAddLoading || isUpdateLoading}
+					onClick={() => {
+						setHasAttemptedSubmit(true);
+						void formik.submitForm();
+						if (!formik.isValid) {
+							onError(t.common.correctErrors);
+							scrollRef.current?.scrollTo({ y: 0, animated: true });
+						}
+					}}
+					active
+					startIcon={<MaterialIcons name={isEditMode ? 'save' : 'add'} size={20} color={colors.white} />}
+				/>
+			</PageActionBar>
 		</View>
 	);
 };
@@ -855,7 +769,7 @@ const CompaniesFormPage = () => {
 				keyboardShouldPersistTaps="handled"
 				contentContainerStyle={{ padding: 20, paddingBottom: 48, gap: 20, flexGrow: 1 }}
 			>
-				<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
+				<SectionCard>
 					<ApiAlert errorDetails={t.notFound.message} />
 					<PrimaryLoadingButton
 						buttonText={t.common.back}
@@ -864,7 +778,7 @@ const CompaniesFormPage = () => {
 						active
 						loading={false}
 					/>
-				</View>
+				</SectionCard>
 			</ScrollView>
 		);
 	return <FormikContent key={id ?? 'new'} id={id} />;

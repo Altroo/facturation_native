@@ -1,3 +1,4 @@
+import SectionCard from '@/components/shared/sectionCard/sectionCard';
 import ApiAlert from '@/components/nativeElements/apiLoading/apiAlert/apiAlert';
 import { useState } from 'react';
 import { Text, View, Platform } from 'react-native';
@@ -13,6 +14,7 @@ import { changePasswordSchema } from '@/utils/formValidationSchemas';
 import { runWithCleanup, setFormikAutoErrors } from '@/utils/helpers';
 import CustomPasswordInput from '@/components/nativeElements/customPasswordInput/customPasswordInput';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
+import PageActionBar from '@/components/shared/pageActionBar/pageActionBar';
 import { colors } from '@/utils/themes';
 
 const ChangePasswordPage = () => {
@@ -98,20 +100,7 @@ const ChangePasswordPage = () => {
 							</Text>
 						</View>
 					)}
-					<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
-						<View className="mb-1 flex-row items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
-							<View className="h-10 w-10 items-center justify-center rounded-xl bg-blue-50 dark:bg-slate-800">
-								<MaterialIcons name={'lock-reset'} size={21} color={colors.brand} />
-							</View>
-							<View className="flex-1 gap-1">
-								<Text
-									accessibilityRole="header"
-									className="text-ink dark:text-slate-100 font-poppins-semibold text-base"
-								>
-									{t.settings.passwordTitle}
-								</Text>
-							</View>
-						</View>
+					<SectionCard title={t.settings.passwordTitle} icon={'lock-reset'}>
 						<>
 							<CustomPasswordInput
 								id="old_password"
@@ -177,21 +166,23 @@ const ChangePasswordPage = () => {
 								}
 							/>
 						</>
-					</View>
+					</SectionCard>
 					<>
 						{formik.errors.globalError || (formik.submitCount > 0 && !formik.isValid) ? (
 							<ApiAlert variant="banner" errorDetails={formik.errors.globalError || t.common.correctErrors} />
 						) : null}
 					</>
-					<PrimaryLoadingButton
-						buttonText={t.settings.changePasswordBtn}
-						loading={isPending || isChangePasswordLoading}
-						onClick={() => void formik.submitForm()}
-						active
-						startIcon={<MaterialIcons name="lock-reset" size={20} color={colors.white} />}
-					/>
 				</>
 			</KeyboardAwareScrollView>
+			<PageActionBar>
+				<PrimaryLoadingButton
+					buttonText={t.settings.changePasswordBtn}
+					loading={isPending || isChangePasswordLoading}
+					onClick={() => void formik.submitForm()}
+					active
+					startIcon={<MaterialIcons name="lock-reset" size={20} color={colors.white} />}
+				/>
+			</PageActionBar>
 		</View>
 	);
 };

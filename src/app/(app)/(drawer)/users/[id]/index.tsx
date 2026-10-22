@@ -1,11 +1,14 @@
 import InfoRow from '@/components/shared/infoRow/infoRow';
+import SectionCard from '@/components/shared/sectionCard/sectionCard';
+import DetailsPage from '@/components/shared/detailsPage/detailsPage';
+import DetailsPageActions from '@/components/shared/detailsPageActions/detailsPageActions';
 import EntityImage from '@/components/shared/entityImage/entityImage';
 import NoPermission from '@/components/shared/noPermission/noPermission';
 import QueryError from '@/components/shared/queryError/queryError';
 import ApiAlert from '@/components/nativeElements/apiLoading/apiAlert/apiAlert';
 import ApiProgress from '@/components/nativeElements/apiLoading/apiProgress/apiProgress';
 import { useRef, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useGetUserQuery, useDeleteUserMutation } from '@/store/services/account';
@@ -65,23 +68,14 @@ const UsersViewPageContent = (props: UsersViewProps) => {
 	if (!allowed) return <NoPermission />;
 	if (query.error)
 		return (
-			<ScrollView
-				className="flex-1 bg-slate-50 dark:bg-night"
-				keyboardShouldPersistTaps="handled"
-				contentContainerStyle={{
-					padding: 20,
-					paddingBottom: 48,
-					gap: 20,
-					flexGrow: 1,
-				}}
-			>
+			<DetailsPage>
 				<QueryError
 					error={query.error}
 					onRetry={() => void query.refetch()}
 					loading={query.isFetching}
 					disabled={mutation.isLoading}
 				/>
-			</ScrollView>
+			</DetailsPage>
 		);
 	const userData = query.currentData;
 	if (!userData) return <ApiProgress />;
@@ -89,17 +83,22 @@ const UsersViewPageContent = (props: UsersViewProps) => {
 	const name = [userData.first_name, userData.last_name].filter(Boolean).join(' ') || userData.email;
 	return (
 		<>
-			<ScrollView
-				className="flex-1 bg-slate-50 dark:bg-night"
-				keyboardShouldPersistTaps="handled"
-				contentContainerStyle={{
-					padding: 20,
-					paddingBottom: 48,
-					gap: 20,
-					flexGrow: 1,
+			<DetailsPage
+				refreshing={query.isFetching}
+				onRefresh={() => {
+					if (!mutation.isLoading) void query.refetch();
 				}}
+				actions={
+					editable && (
+						<DetailsPageActions
+							onEdit={() => router.push(USERS_EDIT(id))}
+							onDelete={() => setShowDeleteModal(true)}
+							loading={mutation.isLoading}
+						/>
+					)
+				}
 			>
-				<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
+				<SectionCard>
 					<View className="flex-row items-center gap-4">
 						<EntityImage
 							image={userData.avatar_cropped || userData.avatar}
@@ -113,17 +112,12 @@ const UsersViewPageContent = (props: UsersViewProps) => {
 							<Text accessibilityRole="header" className="text-ink dark:text-slate-100 font-poppins-semibold text-2xl">
 								{name}
 							</Text>
-							<ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }}>
-								<Text numberOfLines={1} selectable className="font-sans text-sm text-slate-500 dark:text-slate-400">
-									{userData.email}
-								</Text>
-							</ScrollView>
+							<Text selectable className="font-sans text-sm leading-6 text-slate-500 dark:text-slate-400">
+								{userData.email}
+							</Text>
 						</View>
 					</View>
 					<View className="flex-row flex-wrap gap-2">
-						<Text className="font-sans text-ink dark:text-slate-100 self-start rounded-full bg-slate-100 px-3 py-1.5 text-xs dark:bg-slate-800">
-							ID: {userData.id}
-						</Text>
 						{userData.is_staff && (
 							<View className="flex-row items-center gap-1.5 self-start rounded-full px-3 py-1.5 bg-blue-50 dark:bg-slate-800">
 								<MaterialIcons name="admin-panel-settings" size={14} color={colors.brand} />
@@ -151,237 +145,86 @@ const UsersViewPageContent = (props: UsersViewProps) => {
 							</Text>
 						</View>
 					</View>
-					{editable && (
-						<PrimaryLoadingButton
-							buttonText={t.common.edit}
-							onClick={() => router.push(USERS_EDIT(id))}
-							active={!mutation.isLoading}
-							loading={false}
-							startIcon={<MaterialIcons name="edit" size={20} color={colors.white} />}
-						/>
-					)}
-				</View>
-				<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
-					<View className="mb-1 flex-row items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
-						<View className="h-10 w-10 items-center justify-center rounded-xl bg-blue-50 dark:bg-slate-800">
-							<MaterialIcons name="person-outline" size={21} color={colors.brand} />
-						</View>
-						<View className="flex-1 gap-1">
-							<Text accessibilityRole="header" className="text-ink dark:text-slate-100 font-poppins-semibold text-base">
-								{t.users.generalInfoSection}
-							</Text>
-						</View>
-					</View>
-					<>
-						<InfoRow
-							icon={
-								<MaterialIcons
-									name="person"
-									size={20}
-									color={colors.slate[400]}
-									style={{
-										marginTop: 3,
-									}}
-								/>
-							}
-							label={t.users.colNom}
-							value={userData.first_name}
-						/>
-						<InfoRow
-							icon={
-								<MaterialIcons
-									name="badge"
-									size={20}
-									color={colors.slate[400]}
-									style={{
-										marginTop: 3,
-									}}
-								/>
-							}
-							label={t.users.colPrenom}
-							value={userData.last_name}
-						/>
-						<InfoRow
-							icon={
-								<MaterialIcons
-									name="mail-outline"
-									size={20}
-									color={colors.slate[400]}
-									style={{
-										marginTop: 3,
-									}}
-								/>
-							}
-							label={t.users.colEmail}
-							value={userData.email}
-						/>
-						<InfoRow
-							icon={
-								<MaterialIcons
-									name="groups"
-									size={20}
-									color={colors.slate[400]}
-									style={{
-										marginTop: 3,
-									}}
-								/>
-							}
-							label={t.users.colSexe}
-							value={userData.gender}
-						/>
-						<InfoRow
-							icon={
-								<MaterialIcons
-									name="admin-panel-settings"
-									size={20}
-									color={colors.slate[400]}
-									style={{
-										marginTop: 3,
-									}}
-								/>
-							}
-							label={t.users.colAdmin}
-							value={userData.is_staff ? t.common.yes : t.common.no}
-						/>
-						<InfoRow
-							icon={
-								<MaterialIcons
-									name="check-circle-outline"
-									size={20}
-									color={colors.slate[400]}
-									style={{
-										marginTop: 3,
-									}}
-								/>
-							}
-							label={t.users.colActive}
-							value={userData.is_active ? t.common.yes : t.common.no}
-						/>
-						<InfoRow
-							icon={
-								<MaterialIcons
-									name="event"
-									size={20}
-									color={colors.slate[400]}
-									style={{
-										marginTop: 3,
-									}}
-								/>
-							}
-							label={t.users.colDateInscription}
-							value={formatDate(userData.date_joined ?? null)}
-						/>
-						<InfoRow
-							icon={
-								<MaterialIcons
-									name="update"
-									size={20}
-									color={colors.slate[400]}
-									style={{
-										marginTop: 3,
-									}}
-								/>
-							}
-							label={t.common.dateMaj}
-							value={formatDate(userData.date_updated ?? null)}
-						/>
-						<InfoRow
-							icon={
-								<MaterialIcons
-									name="login"
-									size={20}
-									color={colors.slate[400]}
-									style={{
-										marginTop: 3,
-									}}
-								/>
-							}
-							label={t.users.colDerniereConnexion}
-							value={formatDate(userData.last_login ?? null)}
-						/>
-					</>
-				</View>
-				<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
-					<View className="mb-1 flex-row items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
-						<View className="h-10 w-10 items-center justify-center rounded-xl bg-blue-50 dark:bg-slate-800">
-							<MaterialIcons name="business" size={21} color={colors.brand} />
-						</View>
-						<View className="flex-1 gap-1">
-							<Text accessibilityRole="header" className="text-ink dark:text-slate-100 font-poppins-semibold text-base">
-								{t.users.companiesSection}
-							</Text>
-						</View>
-						<Text className="text-ink dark:text-slate-100 rounded-full bg-slate-100 px-3 py-1 font-poppins-medium text-xs dark:bg-slate-800">
-							{userData.companies.length}
-						</Text>
-					</View>
-					<>
-						{userData.companies.map((entry) => (
-							<View key={entry.company_id} className="gap-2 rounded-xl bg-slate-50 p-4 dark:bg-slate-800">
-								<View className="flex-row items-center gap-3">
-									<EntityImage label={entry.raison_sociale} />
-									<View className="flex-1 gap-2">
-										<Text className="text-ink dark:text-slate-100 font-poppins-medium">{entry.raison_sociale}</Text>
-										<Text className="font-sans text-xs text-slate-500 dark:text-slate-400">
-											ID: {entry.membership_id}
-										</Text>
-										<View className="flex-row items-center gap-1.5 self-start rounded-full px-3 py-1.5 bg-blue-50 dark:bg-slate-800">
-											<MaterialIcons name="shield" size={14} color={colors.brand} />
-											<Text className="font-poppins-medium text-xs text-brand dark:text-blue-300">{entry.role}</Text>
-										</View>
+				</SectionCard>
+				<SectionCard title={t.users.generalInfoSection} icon="person-outline">
+					<InfoRow
+						icon={<MaterialIcons name="person" size={20} color={colors.slate[400]} />}
+						label={t.users.colNom}
+						value={userData.first_name}
+					/>
+					<InfoRow
+						icon={<MaterialIcons name="badge" size={20} color={colors.slate[400]} />}
+						label={t.users.colPrenom}
+						value={userData.last_name}
+					/>
+					<InfoRow
+						icon={<MaterialIcons name="mail-outline" size={20} color={colors.slate[400]} />}
+						label={t.users.colEmail}
+						value={userData.email}
+					/>
+					<InfoRow
+						icon={<MaterialIcons name="groups" size={20} color={colors.slate[400]} />}
+						label={t.users.colSexe}
+						value={userData.gender}
+					/>
+					<InfoRow
+						icon={<MaterialIcons name="admin-panel-settings" size={20} color={colors.slate[400]} />}
+						label={t.users.colAdmin}
+						value={userData.is_staff ? t.common.yes : t.common.no}
+					/>
+					<InfoRow
+						icon={<MaterialIcons name="check-circle-outline" size={20} color={colors.slate[400]} />}
+						label={t.users.colActive}
+						value={userData.is_active ? t.common.yes : t.common.no}
+					/>
+					<InfoRow
+						icon={<MaterialIcons name="event" size={20} color={colors.slate[400]} />}
+						label={t.users.colDateInscription}
+						value={userData.date_joined ? formatDate(userData.date_joined) : null}
+					/>
+					<InfoRow
+						icon={<MaterialIcons name="update" size={20} color={colors.slate[400]} />}
+						label={t.common.dateMaj}
+						value={userData.date_updated ? formatDate(userData.date_updated) : null}
+					/>
+					<InfoRow
+						icon={<MaterialIcons name="login" size={20} color={colors.slate[400]} />}
+						label={t.users.colDerniereConnexion}
+						value={userData.last_login ? formatDate(userData.last_login) : null}
+					/>
+				</SectionCard>
+				<SectionCard title={t.users.companiesSection} icon="business" count={userData.companies.length}>
+					{userData.companies.map((entry) => (
+						<View key={entry.company_id} className="gap-2 rounded-xl bg-slate-50 p-4 dark:bg-slate-800">
+							<View className="flex-row items-center gap-3">
+								<EntityImage label={entry.raison_sociale} />
+								<View className="flex-1 gap-2">
+									<Text className="text-ink dark:text-slate-100 font-poppins-medium">{entry.raison_sociale}</Text>
+									<View className="flex-row items-center gap-1.5 self-start rounded-full px-3 py-1.5 bg-blue-50 dark:bg-slate-800">
+										<MaterialIcons name="shield" size={14} color={colors.brand} />
+										<Text className="font-poppins-medium text-xs text-brand dark:text-blue-300">{entry.role}</Text>
 									</View>
 								</View>
-								<InfoRow
-									icon={
-										<MaterialIcons
-											name="verified"
-											size={20}
-											color={colors.slate[400]}
-											style={{
-												marginTop: 3,
-											}}
-										/>
-									}
-									label={t.managedByTable.invoiceValidation}
-									value={entry.can_validate_factures ? t.common.yes : t.common.no}
-								/>
-								<InfoRow
-									icon={
-										<MaterialIcons
-											name="published-with-changes"
-											size={20}
-											color={colors.slate[400]}
-											style={{
-												marginTop: 3,
-											}}
-										/>
-									}
-									label={t.managedByTable.documentStatusChange}
-									value={entry.can_change_document_status ? t.common.yes : t.common.no}
-								/>
 							</View>
-						))}
-						{!userData.companies.length && (
-							<Text className="font-sans dark:text-slate-100 py-4 text-center text-sm text-slate-400">
-								{t.users.noCompany}
-							</Text>
-						)}
-					</>
-				</View>
-				{editable && (
-					<PrimaryLoadingButton
-						buttonText={t.common.delete}
-						danger
-						inverted
-						onClick={() => {
-							setShowDeleteModal(true);
-						}}
-						active={!mutation.isLoading}
-						loading={false}
-						startIcon={<MaterialIcons name="delete-outline" size={20} color={colors.danger} />}
-					/>
-				)}
-			</ScrollView>
+							<InfoRow
+								icon={<MaterialIcons name="verified" size={20} color={colors.slate[400]} />}
+								label={t.managedByTable.invoiceValidation}
+								value={entry.can_validate_factures ? t.common.yes : t.common.no}
+							/>
+							<InfoRow
+								icon={<MaterialIcons name="published-with-changes" size={20} color={colors.slate[400]} />}
+								label={t.managedByTable.documentStatusChange}
+								value={entry.can_change_document_status ? t.common.yes : t.common.no}
+							/>
+						</View>
+					))}
+					{!userData.companies.length && (
+						<Text className="font-sans dark:text-slate-100 py-4 text-center text-sm text-slate-400">
+							{t.users.noCompany}
+						</Text>
+					)}
+				</SectionCard>
+			</DetailsPage>
 			{showDeleteModal && (
 				<ConfirmationModal
 					title={t.users.deleteModalTitle}
@@ -406,17 +249,8 @@ const UsersViewPage = () => {
 	const id = parseEntityId(params.id);
 	if (id === null)
 		return (
-			<ScrollView
-				className="flex-1 bg-slate-50 dark:bg-night"
-				keyboardShouldPersistTaps="handled"
-				contentContainerStyle={{
-					padding: 20,
-					paddingBottom: 48,
-					gap: 20,
-					flexGrow: 1,
-				}}
-			>
-				<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">
+			<DetailsPage>
+				<SectionCard>
 					<ApiAlert errorDetails={t.notFound.message} />
 					<PrimaryLoadingButton
 						buttonText={t.common.back}
@@ -425,8 +259,8 @@ const UsersViewPage = () => {
 						active
 						loading={false}
 					/>
-				</View>
-			</ScrollView>
+				</SectionCard>
+			</DetailsPage>
 		);
 	return <UsersViewPageContent key={id} id={id} />;
 };

@@ -481,9 +481,9 @@ it.each([
 	},
 );
 
-it('renders the original add title and sections without duplicating header Back', async () => {
+it('renders compact sections and the submit button without repeating the navbar title or Back', async () => {
 	await setup();
-	expect(screen.getByRole('header', { name: translations.fr.companies.addTitle })).toBeOnTheScreen();
+	expect(screen.queryByRole('header', { name: translations.fr.companies.addTitle })).toBeNull();
 	for (const section of [
 		translations.fr.companies.generalSection,
 		translations.fr.companies.responsableSection,

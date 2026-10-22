@@ -13,6 +13,10 @@ import { useGetCompanyQuery, useSuspendCompanyMutation, companyApi } from '@/sto
 import { watchCompanies } from '@/store/sagas/companiesSaga';
 import { translations } from '@/translations';
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
+jest.mock(
+	'react-native-safe-area-context',
+	() => jest.requireActual('react-native-safe-area-context/jest/mock').default,
+);
 jest.mock('expo-router', () => ({
 	useLocalSearchParams: () => ({ id: '4' }),
 	router: { dismissTo: jest.fn(), push: jest.fn() },
@@ -151,7 +155,7 @@ afterEach(() => {
 });
 it('shows original company fields and manager permissions and cancelling confirmation does not suspend anything', async () => {
 	const store = await setup();
-	expect(screen.getByText('ID: 4')).toBeOnTheScreen();
+	expect(screen.queryByText(/^ID:/)).toBeNull();
 	expect(screen.getByText(company.ICE)).toBeOnTheScreen();
 	expect(screen.getByText(company.numero_du_compte)).toBeOnTheScreen();
 	expect(screen.getByText('Test Creator')).toBeOnTheScreen();
@@ -167,19 +171,21 @@ it('shows original company fields and manager permissions and cancelling confirm
 	expect(companyApi.endpoints.getUserCompanies.initiate).not.toHaveBeenCalled();
 	expect(store.getState().companies.user_companies).toEqual(memberships);
 });
-it('opens the original logo from the cropped thumbnail and closes the preview', async () => {
-	await setup();
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.companies.logoLabel }));
-	const preview = screen
-		.getAllByLabelText(translations.fr.companies.logoLabel)
-		.find((element) => element.props.source?.uri === company.logo);
-	expect(preview).toBeDefined();
-	expect(preview).toHaveProp('resizeMode', 'contain');
+it.each(['logo', 'cachet'] as const)(
+	'opens the original %s from the cropped thumbnail and closes the preview',
+	async (image) => {
+		await setup();
+		const label = image === 'logo' ? translations.fr.companies.logoLabel : translations.fr.companies.stampLabel;
+		await fireEvent.press(screen.getByRole('button', { name: label }));
+		const preview = screen.getAllByLabelText(label).find((element) => element.props.source?.uri === company[image]);
+		expect(preview).toBeDefined();
+		expect(preview).toHaveProp('resizeMode', 'contain');
 
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.close }));
-	expect(screen.queryByRole('button', { name: translations.fr.common.close })).toBeNull();
-	expect(screen.getByRole('button', { name: translations.fr.companies.logoLabel })).toBeOnTheScreen();
-});
+		await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.close }));
+		expect(screen.queryByRole('button', { name: translations.fr.common.close })).toBeNull();
+		expect(screen.getByRole('button', { name: label })).toBeOnTheScreen();
+	},
+);
 it('suspends only after confirmation, dispatches the membership update and returns to the company list', async () => {
 	const store = await setup();
 	await openModal();
@@ -213,11 +219,11 @@ it('finishes suspension without starting a separate membership request', async (
 	expect(router.dismissTo).toHaveBeenCalledWith('/companies');
 });
 
-it('identifies a manager with empty names using the original fallback and ID', async () => {
+it('identifies a manager with empty names using the original fallback without an ID field', async () => {
 	await setup({ ...company, admins: [{ ...company.admins[0], first_name: '', last_name: '' }] });
 	expect(screen.getByText('Utilisateur 7')).toBeOnTheScreen();
 	expect(screen.getByLabelText('Utilisateur 7')).toBeOnTheScreen();
-	expect(screen.getByText('ID: 7')).toBeOnTheScreen();
+	expect(screen.queryByText(/^ID:/)).toBeNull();
 });
 
 it('submits only once while a detail destructive request is unresolved, then permits retry after failure', async () => {
@@ -265,6 +271,14 @@ it.each(['loading', 'error'])('keeps edit actions hidden while the original deta
 it('keeps edit navigation and relies on the header for Back', async () => {
 	await setup();
 	expect(screen.queryByRole('button', { name: translations.fr.companies.backToList })).toBeNull();
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.edit }));
+	const actions = within(screen.getByTestId('details-page-actions'));
+	expect(actions.getAllByRole('button').map((button) => button.props.accessibilityLabel)).toEqual([
+		translations.fr.companies.suspendBtn,
+		translations.fr.common.edit,
+	]);
+	expect(screen.queryByRole('button', { name: translations.fr.common.delete })).toBeNull();
+	expect(within(screen.getByTestId('details-page')).queryByTestId('details-page-actions')).toBeNull();
+	expect(within(screen.getByTestId('page-action-bar')).getByTestId('details-page-actions')).toBeOnTheScreen();
+	await fireEvent.press(actions.getByRole('button', { name: translations.fr.common.edit }));
 	expect(router.push).toHaveBeenCalledWith({ pathname: '/companies/form', params: { id: '4' } });
 });
