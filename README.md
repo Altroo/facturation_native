@@ -1,6 +1,6 @@
 # E.B.H Facturation Native
 
-Mobile version of the Facturation platform for iOS and Android. The application is under active development: authentication, users, companies and account settings provide the foundation for progressively bringing the web application's business modules to mobile.
+Mobile version of the Facturation platform for iOS and Android. The application is under active development: authentication, users, companies, clients, articles and account settings provide the foundation for progressively bringing the web application's business modules to mobile.
 
 The project follows the web application's folder structure, API contracts and Redux conventions, adapting navigation, storage and interface components to native devices.
 
@@ -17,15 +17,17 @@ The project follows the web application's folder structure, API contracts and Re
 - Login and password recovery: reset request, verification code, new password and completion.
 - Users and companies: full-detail cards, server-side search, filtering and sorting, infinite scrolling and pull to refresh.
 - User creation, editing and deletion; company creation, editing and suspension, with permission checks and confirmation dialogs.
+- Clients: active and archived lists, creation, editing, details, account statements and document history.
+- Articles: active and archived lists, creation, editing, photos, HT/TTC pricing, classification and stock snapshots. CSV/Excel import and the import guide use the same Django endpoints as the web.
 - Profile editing, avatar upload, password changes and logout.
 - Compact drawer navigation and stack navigation that returns to the previous screen.
 - French/English translations, flag controls and saved light/dark appearance.
 - In-app notifications, notification preferences and system notifications from the active WebSocket connection.
-- Camera/gallery selection, image preview and cropping for avatars, company logos and stamps.
+- Camera/gallery selection, image preview and cropping for avatars, company logos, stamps and article photos.
 - A logo splash screen while local resources and preferences load.
 - Backend-controlled maintenance and local development version checks.
 
-The dashboard is still a foundation screen. Business modules beyond users and companies are not fully migrated; their menu destinations remain placeholders. Django controls maintenance and version data. Background push delivery and app-store distribution are not configured.
+The dashboard is still a foundation screen. Business modules beyond users, companies, clients and articles are not fully migrated; their menu destinations remain placeholders. Django controls maintenance and version data. Background push delivery and app-store distribution are not configured.
 
 ## Stack
 
@@ -102,26 +104,26 @@ The APK is written to `android/app/build/outputs/apk/release/app-release.apk`. `
 
 ### Project Structure
 
-| Location                                                  | Purpose                                                                  |
-| --------------------------------------------------------- | ------------------------------------------------------------------------ |
-| `src/app/login.tsx`, `src/app/reset-password/`            | Login and password recovery screens                                      |
-| `src/app/(app)/(drawer)/`                                 | Dashboard and module folders sharing one navigation stack                |
-| `src/app/(app)/(drawer)/clients/`, `companies/`, `users/` | Each module’s list, form, detail screen, and archive when applicable     |
-| `src/app/api/app-version+api.ts`                          | Local version endpoint, equivalent to the web API route                  |
-| `src/components/nativeElements/`                          | Individual controls: inputs, selects, buttons, checkboxes and dialogs    |
+| Location                                                  | Purpose                                                                              |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `src/app/login.tsx`, `src/app/reset-password/`            | Login and password recovery screens                                                  |
+| `src/app/(app)/(drawer)/`                                 | Dashboard and module folders sharing one navigation stack                            |
+| `src/app/(app)/(drawer)/clients/`, `companies/`, `users/` | Each module’s list, form, detail screen, and archive when applicable                 |
+| `src/app/api/app-version+api.ts`                          | Local version endpoint, equivalent to the web API route                              |
+| `src/components/nativeElements/`                          | Individual controls: inputs, selects, buttons, checkboxes and dialogs                |
 | `src/components/shared/`                                  | Reusable compositions and logic: list cards, actions, confirmations and retry blocks |
-| `src/components/layouts/`, `portals/`                      | Navigation, auth layout and toasts                                      |
-| `src/contexts/`, `src/providers/`                         | Initialization, sessions, theme, language and feedback                   |
-| `src/store/`                                              | Actions, services, sagas, slices and selectors                           |
-| `src/models/`, `src/types/`                               | Domain models and shared data contracts                                  |
-| `src/utils/`                                              | API helpers, hooks, routes, `rawData.ts` and separate validation schemas |
-| `src/Storage/`, `src/local/auth/`                         | Session/recovery storage and persistent storage adapters                 |
-| `src/styles/`, `src/translations/`                        | Theme styles and French/English text                                     |
-| `src/__tests__/app/`                                      | Route behavior tests, kept outside Expo Router's screen tree             |
+| `src/components/layouts/`, `portals/`                     | Navigation, auth layout and toasts                                                   |
+| `src/contexts/`, `src/providers/`                         | Initialization, sessions, theme, language and feedback                               |
+| `src/store/`                                              | Actions, services, sagas, slices and selectors                                       |
+| `src/models/`, `src/types/`                               | Domain models and shared data contracts                                              |
+| `src/utils/`                                              | API helpers, hooks, routes, `rawData.ts` and separate validation schemas             |
+| `src/Storage/`, `src/local/auth/`                         | Session/recovery storage and persistent storage adapters                             |
+| `src/styles/`, `src/translations/`                        | Theme styles and French/English text                                                 |
+| `src/__tests__/app/`                                      | Route behavior tests, kept outside Expo Router's screen tree                         |
 
-Tests sit beside the files they cover, including `babel.config.test.ts` and `metro.config.test.ts` beside the root configs. Screen and navigation tests are the Expo Router exception: they stay in `src/__tests__/app/` because files inside `src/app/` become routes. Inside `src/__tests__/app/`, folders mirror `src/app/`, including `(app)/(drawer)/companies`, `users`, `settings`, each module’s forms and `[id]` views, `reset-password`, and `api`. Test filenames match their screen where possible; `reset-password/flow.test.tsx` covers the complete recovery journey, and `form-navigation.test.tsx` covers navigation across modules. Shared autocomplete test helpers live beside `customAutoCompleteSelect`, and query test helpers live in `src/store/` beside `setupApiStore`.
+Tests sit beside the files they cover, including `babel.config.test.ts` and `metro.config.test.ts` beside the root configs. Screen and navigation tests are the Expo Router exception: they stay in `src/__tests__/app/` because files inside `src/app/` become routes. Inside `src/__tests__/app/`, folders mirror `src/app/`, including `(app)/(drawer)/articles`, `clients`, `companies`, `users`, `settings`, each module’s forms and `[id]` views, `reset-password`, and `api`. Test filenames match their screen where possible; `reset-password/flow.test.tsx` covers the complete recovery journey, and `form-navigation.test.tsx` covers navigation across modules. Shared autocomplete test helpers live beside `customAutoCompleteSelect`, and query test helpers live in `src/store/` beside `setupApiStore`.
 
-Route groups such as `(app)` and `(drawer)` organize navigators without adding URL segments. All authenticated screens live in `src/app/(app)/(drawer)/`, grouped by module: `clients/`, `companies/`, `users/`, and `settings/`. Each module keeps its list (`index.tsx`), archive when applicable (`archived.tsx`), form (`form.tsx`), and detail (`[id]/index.tsx`) together. The drawer wraps one shared stack, so Back follows the actual visit history across modules. The dashboard, lists, and archives show the menu button; forms, details, and settings use Back when history exists. Direct links have the dashboard as their Back destination. An optional route ID distinguishes creation from editing.
+Route groups such as `(app)` and `(drawer)` organize navigators without adding URL segments. All authenticated screens live in `src/app/(app)/(drawer)/`, grouped by module: `articles/`, `clients/`, `companies/`, `users/`, and `settings/`. Each module keeps its list (`index.tsx`), archive when applicable (`archived.tsx`), form (`form.tsx`), and detail (`[id]/index.tsx`) together. The drawer wraps one shared stack, so Back follows the actual visit history across modules. The dashboard, lists, and archives show the menu button; forms, details, and settings use Back when history exists. Direct links have the dashboard as their Back destination. An optional route ID distinguishes creation from editing.
 
 Authentication is enforced in `src/app/_layout.tsx`: `Stack.Protected` guards the entire `(app)` group, including its nested drawer lists. `src/app/(app)/_layout.tsx` provides the drawer and redirects accounts that must change their default password. `src/app/(app)/(drawer)/_layout.tsx` configures every screen’s title and menu or Back header in one stack. Its `Stack.Screen` entries configure navigation; the root guard decides whether the group is accessible. Module permissions remain separate checks in the screens and Django API.
 
