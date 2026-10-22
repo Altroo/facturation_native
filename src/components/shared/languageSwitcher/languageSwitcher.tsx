@@ -4,10 +4,11 @@ import { useLanguage } from '@/utils/hooks';
 import type { Language } from '@/types/languageTypes';
 import FrenchFlag from '../../../../assets/flags/fr.svg';
 import EnglishFlag from '../../../../assets/flags/en.svg';
+import DutchFlag from '../../../../assets/flags/nl.svg';
 import { type FC } from 'react';
 
 type Props = {
-	language: Language;
+	language: Language | 'nl';
 	size?: number;
 };
 
@@ -15,7 +16,7 @@ export const LanguageFlag = (props: Props) => {
 	const { language, size = 20 } = props;
 	return (
 		<Image
-			source={language === 'fr' ? FrenchFlag : EnglishFlag}
+			source={language === 'fr' ? FrenchFlag : language === 'nl' ? DutchFlag : EnglishFlag}
 			style={{ width: size, height: Math.round(size * 0.714) }}
 			accessible={false}
 			contentFit="contain"

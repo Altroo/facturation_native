@@ -7,7 +7,22 @@ import axios, {
 } from 'axios';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
-import { checkAppUpdate, getApi, getAppVersion, postApi } from '@/utils/apiHelpers';
+import { checkAppUpdate, getApi, getAppVersion, openClientStatementPdf, openPdf, postApi } from '@/utils/apiHelpers';
+import { auth } from '@/auth';
+
+jest.mock('@/auth', () => {
+	const { create } = jest.requireActual<typeof import('axios')>('axios');
+	return { ...jest.requireActual<typeof import('@/auth')>('@/auth'), auth: { instance: create() } };
+});
+jest.mock('expo-file-system', () => ({
+	Paths: { cache: 'file:///cache' },
+	File: jest
+		.fn()
+		.mockImplementation(() => ({ write: mockWritePdf, canPreview: mockCanPreviewPdf, preview: mockPreviewPdf })),
+}));
+const mockWritePdf = jest.fn();
+const mockCanPreviewPdf = jest.fn();
+const mockPreviewPdf = jest.fn();
 
 jest.mock('expo-constants', () => ({
 	__esModule: true,
@@ -24,6 +39,82 @@ const response = (config: InternalAxiosRequestConfig, data: unknown, status = 20
 	headers: {},
 });
 beforeEach(() => adapter.mockReset());
+
+describe('openPdf', () => {
+	const pdf = new Uint8Array([37, 80, 68, 70, 45, 49, 46, 55]);
+	beforeEach(() => {
+		jest.replaceProperty(Platform, 'OS', 'ios');
+		auth.instance.defaults.adapter = adapter;
+		mockWritePdf.mockReset().mockResolvedValue(undefined);
+		mockCanPreviewPdf.mockReset().mockResolvedValue(true);
+		mockPreviewPdf.mockReset().mockResolvedValue(undefined);
+		adapter.mockImplementation(async (config) => response(config, pdf.buffer));
+	});
+	afterEach(() => jest.restoreAllMocks());
+
+	it.each(['fr', 'en', 'nl'] as const)(
+		'opens a %s client statement using configured backend endpoints and filters',
+		async (language) => {
+			jest.replaceProperty(process.env, 'EXPO_PUBLIC_ROOT_API_URL', 'https://api.example.invalid/api');
+			jest.replaceProperty(process.env, 'EXPO_PUBLIC_CLIENT_ROOT', '/custom-clients');
+			await expect(
+				openClientStatementPdf(7, 5, language, {
+					date_from: '2026-01-02',
+					date_to: '2026-01-31',
+					type: 'invoice',
+				}),
+			).resolves.toBe(true);
+			expect(adapter.mock.calls[0][0]).toMatchObject({
+				url: `https://api.example.invalid/api/custom-clients/pdf/${language}/7/?company_id=5&date_from=2026-01-02&date_to=2026-01-31&type=invoice`,
+				responseType: 'arraybuffer',
+			});
+			expect(mockPreviewPdf).toHaveBeenCalledWith({ mimeType: 'application/pdf' });
+		},
+	);
+
+	it('defaults client statements to French and omits empty date filters', async () => {
+		await expect(openClientStatementPdf(7, 5)).resolves.toBe(true);
+		const url = new URL(adapter.mock.calls[0][0].url!);
+		expect(url.pathname).toBe('/api/client/pdf/fr/7/');
+		expect([...url.searchParams.entries()]).toEqual([['company_id', '5']]);
+	});
+
+	it.each(['ios', 'android'] as const)(
+		'downloads through the authenticated Axios instance and previews the PDF on %s',
+		async (platform) => {
+			jest.replaceProperty(Platform, 'OS', platform);
+			await expect(openPdf('https://example.invalid/client/pdf/fr/7/?company_id=5')).resolves.toBe(true);
+			expect(adapter.mock.calls[0][0]).toMatchObject({
+				method: 'get',
+				responseType: 'arraybuffer',
+				url: 'https://example.invalid/client/pdf/fr/7/?company_id=5',
+			});
+			expect(mockWritePdf).toHaveBeenCalledWith(pdf);
+			expect(mockCanPreviewPdf).toHaveBeenCalledWith({ mimeType: 'application/pdf' });
+			expect(mockPreviewPdf).toHaveBeenCalledWith({ mimeType: 'application/pdf' });
+		},
+	);
+
+	it('rejects a non-PDF response without writing it or opening a viewer', async () => {
+		adapter.mockImplementation(async (config) => response(config, new Uint8Array([123, 125]).buffer));
+		await expect(openPdf('/client/pdf/fr/7/')).resolves.toBe(false);
+		expect(mockWritePdf).not.toHaveBeenCalled();
+		expect(mockPreviewPdf).not.toHaveBeenCalled();
+	});
+
+	it('returns a recoverable result when no PDF viewer is available', async () => {
+		mockCanPreviewPdf.mockResolvedValue(false);
+		await expect(openPdf('/client/pdf/fr/7/')).resolves.toBe(false);
+		expect(mockPreviewPdf).not.toHaveBeenCalled();
+	});
+
+	it.each(['download', 'write', 'preview'])('handles a %s failure without an unhandled rejection', async (stage) => {
+		if (stage === 'download') adapter.mockRejectedValue(new AxiosError('Offline', 'ERR_NETWORK'));
+		if (stage === 'write') mockWritePdf.mockRejectedValue(new Error('Disk unavailable'));
+		if (stage === 'preview') mockPreviewPdf.mockRejectedValue(new Error('Viewer unavailable'));
+		await expect(openPdf('/client/pdf/fr/7/')).resolves.toBe(false);
+	});
+});
 
 describe('getAppVersion', () => {
 	const originalDev = __DEV__;
