@@ -14,7 +14,7 @@ type Props = {
 	onConfirm: () => void;
 	onClose: () => void;
 	loading?: boolean;
-	action?: 'delete' | 'suspend' | 'archive';
+	action?: 'delete' | 'suspend' | 'archive' | 'unarchive';
 	children?: ReactNode;
 };
 
@@ -22,7 +22,7 @@ const ConfirmationModal = (props: Props) => {
 	const { t } = useLanguage();
 	const { mode } = useColorMode();
 	const cancelColor = mode === 'dark' ? colors.slate[300] : colors.slate[500];
-	const archive = props.action === 'archive';
+	const archive = props.action === 'archive' || props.action === 'unarchive';
 	const actionColor = archive ? colors.warning : mode === 'dark' ? colors.dangerDarkForeground : colors.danger;
 	const handleClose = () => {
 		if (!props.loading) props.onClose();
@@ -31,7 +31,13 @@ const ConfirmationModal = (props: Props) => {
 		<ActionModals
 			compact
 			title={props.title}
-			titleIcon={<MaterialIcons name={archive ? 'archive' : 'warning-amber'} size={24} color={actionColor} />}
+			titleIcon={
+				<MaterialIcons
+					name={props.action === 'unarchive' ? 'unarchive' : archive ? 'archive' : 'warning-amber'}
+					size={24}
+					color={actionColor}
+				/>
+			}
 			maxWidth="xs"
 			fullWidth
 			onClose={handleClose}

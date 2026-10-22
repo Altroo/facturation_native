@@ -7,6 +7,7 @@ import { colors } from '@/utils/themes';
 type Props = {
 	onEdit?: () => void;
 	onArchive?: () => void;
+	onUnarchive?: () => void;
 	onDelete?: () => void;
 	onSuspend?: () => void;
 	disabled?: boolean;
@@ -37,6 +38,16 @@ const ListCardActions = (props: Props) => {
 								onClick: props.onArchive,
 								color: colors.warning,
 								icon: <MaterialIcons name="archive" size={22} color={colors.warning} />,
+							},
+						]
+					: []),
+				...(props.onUnarchive
+					? [
+							{
+								label: t.common.unarchive,
+								onClick: props.onUnarchive,
+								color: colors.warning,
+								icon: <MaterialIcons name="unarchive" size={22} color={colors.warning} />,
 							},
 						]
 					: []),

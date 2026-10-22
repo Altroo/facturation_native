@@ -2,10 +2,11 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import { Text } from 'react-native';
 import ConfirmationModal from './confirmationModal';
 import { translations } from '@/translations';
+import { colors } from '@/utils/themes';
 
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
 
-it.each(['delete', 'suspend', 'archive'] as const)(
+it.each(['delete', 'suspend', 'archive', 'unarchive'] as const)(
 	'only confirms %s after an explicit confirm press',
 	async (action) => {
 		const onConfirm = jest.fn();
@@ -25,6 +26,10 @@ it.each(['delete', 'suspend', 'archive'] as const)(
 		);
 		expect(screen.getByText('Selected record')).toBeOnTheScreen();
 		expect(screen.getByText('Atlas Services')).toBeOnTheScreen();
+		if (action === 'archive' || action === 'unarchive') {
+			const icon = screen.container.queryAll((node) => node.props.name === action)[0];
+			expect(icon).toHaveProp('color', colors.warning);
+		}
 		expect(onConfirm).not.toHaveBeenCalled();
 		await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.cancel }));
 		expect(onClose).toHaveBeenCalledTimes(1);

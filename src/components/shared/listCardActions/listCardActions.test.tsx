@@ -35,16 +35,23 @@ it('only exposes available actions in a compact menu and dispatches the chosen c
 	expect(onDelete).not.toHaveBeenCalled();
 });
 
-it('uses orange for archive and places destructive actions last', async () => {
-	await render(<ListCardActions onEdit={jest.fn()} onArchive={jest.fn()} onDelete={jest.fn()} />);
+it.each(['archive', 'unarchive'] as const)('uses orange for %s and places destructive actions last', async (action) => {
+	const onArchive = jest.fn();
+	const archiveAction = action === 'archive' ? { onArchive } : { onUnarchive: onArchive };
+	await render(<ListCardActions onEdit={jest.fn()} {...archiveAction} onDelete={jest.fn()} />);
 	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.moreActions }));
 	expect(screen.getAllByRole('menuitem').map((item) => item.props.accessibilityLabel)).toEqual([
 		translations.fr.common.edit,
-		translations.fr.common.archive,
+		translations.fr.common[action],
 		translations.fr.common.delete,
 	]);
-	expect(screen.getByText(translations.fr.common.archive)).toHaveStyle({ color: colors.warning });
+	expect(screen.getByText(translations.fr.common[action])).toHaveStyle({ color: colors.warning });
 	expect(screen.getByText(translations.fr.common.delete)).toHaveStyle({ color: colors.danger });
+	expect(screen.container.queryAll((node) => node.props.name === action)[0]).toHaveProp('color', colors.warning);
+	const modal = screen.getByTestId('custom-menu');
+	await fireEvent.press(screen.getByRole('menuitem', { name: translations.fr.common[action] }));
+	await act(() => modal.props.onDismiss());
+	expect(onArchive).toHaveBeenCalledTimes(1);
 });
 
 it('blocks its trigger while the page is busy', async () => {
