@@ -1,4 +1,5 @@
 import z from 'zod';
+import { pmRequired, ppRequired } from '@/utils/rawData';
 import {
 	INPUT_MAX,
 	INPUT_MIN,
@@ -73,6 +74,48 @@ const requiredNumberField = (min: number = 1, max?: number) =>
 			.min(min, { error: INPUT_MIN(min) })
 			.max(max ?? Number.MAX_SAFE_INTEGER, { error: INPUT_MAX(max ?? Number.MAX_SAFE_INTEGER) }),
 	);
+
+const optionalNumberField = (min: number = 1, max?: number) =>
+	z.preprocess(
+		(val) => (val === undefined || val === null || val === '' ? undefined : Number(val)),
+		z
+			.number()
+			.min(min, { error: INPUT_MIN(min) })
+			.max(max ?? Number.MAX_SAFE_INTEGER)
+			.optional(),
+	);
+
+export const clientSchema = z
+	.object({
+		client_type: z.enum(['PM', 'PP', 'CD']),
+		code_client: requiredTextField(1, 100),
+		company: requiredNumberField(1),
+		raison_sociale: optionalTextField(2, 255).nullable(),
+		nom: optionalTextField(2, 255).nullable(),
+		prenom: optionalTextField(2, 255).nullable(),
+		adresse: optionalTextField(2, 255).nullable(),
+		ville: optionalNumberField(1).nullable(),
+		tel: optionalPhoneField.nullable(),
+		email: optionalEmailField,
+		delai_de_paiement: optionalNumberField(0).nullable(),
+		remarque: optionalTextField(2, 2000).nullable(),
+		numero_du_compte: optionalTextField(2, 100).nullable(),
+		ICE: optionalTextField(2, 100).nullable(),
+		registre_de_commerce: optionalTextField(2, 100).nullable(),
+		identifiant_fiscal: optionalTextField(2, 100).nullable(),
+		taxe_professionnelle: optionalTextField(2, 100).nullable(),
+		CNSS: optionalTextField(2, 100).nullable(),
+		globalError: optionalTextField(1, 500),
+	})
+	.superRefine((data, ctx) => {
+		const required = data.client_type === 'PM' ? pmRequired : data.client_type === 'PP' ? ppRequired : [];
+		for (const field of required) {
+			const value = data[field];
+			if (value === undefined || value === null || (typeof value === 'string' && value.trim() === '')) {
+				ctx.addIssue({ path: [field], code: 'custom', message: INPUT_REQUIRED });
+			}
+		}
+	});
 
 // Formik normalizes an empty native code field to undefined before validation.
 // Restore the empty string so the original required message remains visible.

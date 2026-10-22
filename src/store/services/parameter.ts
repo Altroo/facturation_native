@@ -16,7 +16,19 @@ export const citiesApi = createApi({
 			}),
 			providesTags: ['Cities'],
 		}),
+		addCity: builder.mutation<CitiesClass, { data: Partial<CitiesClass> }>({
+			query: ({ data }) => ({ url: process.env.EXPO_PUBLIC_PARAMETER_VILLE, method: 'POST', data }),
+			invalidatesTags: (_result, error) => (error ? [] : ['Cities']),
+		}),
+		editCity: builder.mutation<CitiesClass, { id: number; data: Partial<CitiesClass> }>({
+			query: ({ id, data }) => ({ url: `${process.env.EXPO_PUBLIC_PARAMETER_VILLE}${id}/`, method: 'PUT', data }),
+			invalidatesTags: (_result, error) => (error ? [] : ['Cities']),
+		}),
+		deleteCity: builder.mutation<void, { id: number }>({
+			query: ({ id }) => ({ url: `${process.env.EXPO_PUBLIC_PARAMETER_VILLE}${id}/`, method: 'DELETE' }),
+			invalidatesTags: (_result, error) => (error ? [] : ['Cities']),
+		}),
 	}),
 });
 
-export const { useGetCitiesListQuery } = citiesApi;
+export const { useGetCitiesListQuery, useAddCityMutation, useEditCityMutation, useDeleteCityMutation } = citiesApi;

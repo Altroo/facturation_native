@@ -35,41 +35,110 @@ afterEach(async () => {
 	jest.useRealTimers();
 });
 
-it('sends company, search, type codes, cities and ordering to Django for every infinite page', async () => {
+it('generates a client code for the requested company and sends client creation and edit payloads through axios', async () => {
 	adapter.mockImplementation(async (config) =>
-		response(config, {
-			count: 2,
-			previous: null,
-			next: config.params.page === 1 ? 'https://example.invalid/client/?page=2' : null,
-			results: [{ id: config.params.page, code_client: `CLT${config.params.page}` }],
-		}),
+		response(config, config.method === 'get' ? { code_client: 'CLT020' } : { id: 8, ...JSON.parse(config.data) }),
 	);
-	const args = {
-		company_id: 5,
-		pageSize: 1,
-		search: 'Atlas',
+	await expect(store.dispatch(clientApi.endpoints.getCodeClient.initiate({ company_id: 5 })).unwrap()).resolves.toEqual(
+		{ code_client: 'CLT020' },
+	);
+	const data = {
+		company: 5,
 		client_type: 'PM',
-		ville_ids: '2,3',
-		archived: false,
-		ordering: '-nom',
+		code_client: 'CLT020',
+		raison_sociale: 'Client Atlas',
+		tel: '0612345678',
 	};
-	await store.dispatch(clientApi.endpoints.getClientsInfiniteList.initiate(args)).unwrap();
-	await store.dispatch(clientApi.endpoints.getClientsInfiniteList.initiate(args, { direction: 'forward' })).unwrap();
-	expect(adapter.mock.calls.map(([config]) => config.params)).toEqual(
-		[1, 2].map((page) => ({
+	await store.dispatch(clientApi.endpoints.addClient.initiate({ data })).unwrap();
+	await store
+		.dispatch(clientApi.endpoints.editClient.initiate({ id: 8, data: { ...data, raison_sociale: 'Updated' } }))
+		.unwrap();
+	expect(
+		adapter.mock.calls.map(([config]) => ({ method: config.method, url: config.url, params: config.params })),
+	).toEqual(
+		expect.arrayContaining([
+			{ method: 'get', url: '/client/generate_code_client/', params: { company_id: 5 } },
+			{ method: 'post', url: '/client/', params: undefined },
+			{ method: 'put', url: '/client/8/', params: undefined },
+		]),
+	);
+	expect(JSON.parse(adapter.mock.calls.find(([config]) => config.method === 'post')![0].data)).toEqual(data);
+});
+
+it('fetches a client and its history from the same Django paths as the web, with separate cache entries', async () => {
+	const history = { devis: [], factures: [], avoirs: [], reglements: [] };
+	adapter.mockImplementation(async (config) =>
+		response(config, config.url?.endsWith('/history/') ? history : { id: 7, company: 5 }),
+	);
+	await expect(store.dispatch(clientApi.endpoints.getClient.initiate({ id: 7 })).unwrap()).resolves.toEqual({
+		id: 7,
+		company: 5,
+	});
+	await expect(store.dispatch(clientApi.endpoints.getClientHistory.initiate({ id: 7 })).unwrap()).resolves.toEqual(
+		history,
+	);
+	expect(adapter.mock.calls.map(([config]) => ({ method: config.method, url: config.url }))).toEqual([
+		{ method: 'get', url: '/client/7/' },
+		{ method: 'get', url: '/client/7/history/' },
+	]);
+	await store.dispatch(clientApi.endpoints.getClient.initiate({ id: 7 })).unwrap();
+	await store.dispatch(clientApi.endpoints.getClientHistory.initiate({ id: 7 })).unwrap();
+	expect(adapter).toHaveBeenCalledTimes(2);
+});
+
+it('returns a history error through RTK Query and allows retrying the same client', async () => {
+	adapter.mockImplementationOnce(async (config) => {
+		throw new AxiosError('Offline', 'ERR_NETWORK', config);
+	});
+	await expect(store.dispatch(clientApi.endpoints.getClientHistory.initiate({ id: 7 })).unwrap()).rejects.toMatchObject(
+		{ status: 0 },
+	);
+	adapter.mockImplementation(async (config) =>
+		response(config, { devis: [], factures: [], avoirs: [], reglements: [] }),
+	);
+	await expect(
+		store.dispatch(clientApi.endpoints.getClientHistory.initiate({ id: 7 }, { forceRefetch: true })).unwrap(),
+	).resolves.toMatchObject({ factures: [] });
+});
+
+it.each([false, true])(
+	'sends company, search, type codes, cities and ordering for every page, archived=%s',
+	async (archived) => {
+		adapter.mockImplementation(async (config) =>
+			response(config, {
+				count: 2,
+				previous: null,
+				next: config.params.page === 1 ? 'https://example.invalid/client/?page=2' : null,
+				results: [{ id: config.params.page, code_client: `CLT${config.params.page}` }],
+			}),
+		);
+		const args = {
 			company_id: 5,
-			page_size: 1,
-			page,
-			pagination: true,
+			pageSize: 1,
 			search: 'Atlas',
 			client_type: 'PM',
 			ville_ids: '2,3',
-			archived: false,
+			archived,
 			ordering: '-nom',
-		})),
-	);
-	expect(clientApi.endpoints.getClientsInfiniteList.select(args)(store.getState()).data?.pages).toHaveLength(2);
-});
+		};
+		await store.dispatch(clientApi.endpoints.getClientsInfiniteList.initiate(args)).unwrap();
+		await store.dispatch(clientApi.endpoints.getClientsInfiniteList.initiate(args, { direction: 'forward' })).unwrap();
+		expect(adapter.mock.calls.map(([config]) => config.params)).toEqual(
+			[1, 2].map((page) => ({
+				company_id: 5,
+				page_size: 1,
+				page,
+				pagination: true,
+				search: 'Atlas',
+				client_type: 'PM',
+				ville_ids: '2,3',
+				archived,
+				ordering: '-nom',
+			})),
+		);
+		expect(clientApi.endpoints.getClientsInfiniteList.select(args)(store.getState()).data?.pages).toHaveLength(2);
+	},
+);
 
 it('keeps search and filters when selecting all matching clients without pagination', async () => {
 	adapter.mockImplementation(async (config) => response(config, [{ id: 2 }, { id: 9 }]));
@@ -173,4 +242,37 @@ it('invalidates active lists after success but keeps them after a rejected delet
 	await store.dispatch(clientApi.endpoints.deleteClient.initiate({ id: 7 })).unwrap();
 	await Promise.all(store.dispatch(clientApi.util.getRunningQueriesThunk()));
 	expect(adapter.mock.calls.filter(([config]) => config.method === 'get')).toHaveLength(2);
+});
+
+it.each(['single', 'bulk'] as const)('refreshes both cached lists after a successful %s restore', async (action) => {
+	let restored = false;
+	adapter.mockImplementation(async (config) => {
+		if (config.method === 'patch') {
+			restored = true;
+			return response(config, action === 'bulk' ? { updated: 1 } : { id: 7, archived: false });
+		}
+		const results = config.params.archived === !restored ? [{ id: 7 }] : [];
+		return response(config, { count: results.length, next: null, results });
+	});
+	const activeArgs = { company_id: 5, archived: false };
+	const archivedArgs = { company_id: 5, archived: true };
+	await store.dispatch(clientApi.endpoints.getClientsInfiniteList.initiate(activeArgs)).unwrap();
+	await store.dispatch(clientApi.endpoints.getClientsInfiniteList.initiate(archivedArgs)).unwrap();
+	const activeRows = () =>
+		clientApi.endpoints.getClientsInfiniteList.select(activeArgs)(store.getState()).data?.pages[0].results;
+	const archivedRows = () =>
+		clientApi.endpoints.getClientsInfiniteList.select(archivedArgs)(store.getState()).data?.pages[0].results;
+	expect(activeRows()).toEqual([]);
+	expect(archivedRows()).toEqual([{ id: 7 }]);
+	if (action === 'bulk')
+		await store.dispatch(clientApi.endpoints.bulkArchiveClients.initiate({ ids: [7], archived: false })).unwrap();
+	else await store.dispatch(clientApi.endpoints.patchArchive.initiate({ id: 7, data: { archived: false } })).unwrap();
+	await Promise.all(store.dispatch(clientApi.util.getRunningQueriesThunk()));
+	expect(adapter.mock.calls.find(([config]) => config.method === 'patch')?.[0]).toMatchObject({
+		url: action === 'bulk' ? '/client/bulk_archive/' : '/client/archive/7/',
+		data: JSON.stringify(action === 'bulk' ? { ids: [7], archived: false } : { archived: false }),
+	});
+	expect(adapter.mock.calls.filter(([config]) => config.method === 'get')).toHaveLength(4);
+	expect(activeRows()).toEqual([{ id: 7 }]);
+	expect(archivedRows()).toEqual([]);
 });

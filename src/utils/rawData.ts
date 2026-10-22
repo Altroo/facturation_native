@@ -43,5 +43,8 @@ export const EMAIL_MAX_LENGTH = 254;
 export const valueLessFilterOperators = new Set(['isEmpty', 'isNotEmpty']);
 
 export const NECTAR_RAISON_SOCIALE = 'IMMOBILIERE NECTAR';
+
+export const pmRequired = ['raison_sociale', 'ville', 'ICE', 'registre_de_commerce', 'delai_de_paiement'] as const;
+export const ppRequired = ['nom', 'prenom', 'adresse', 'ville', 'delai_de_paiement'] as const;
 // Bundled with the running code, never copied from the server announcement.
 export const APP_VERSION = version;

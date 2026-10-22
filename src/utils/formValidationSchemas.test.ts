@@ -8,7 +8,51 @@ import {
 	companySchema,
 	userSchema,
 	passwordResetStorageSchema,
+	clientSchema,
 } from './formValidationSchemas';
+
+describe('clientSchema', () => {
+	const pm = {
+		company: 5,
+		client_type: 'PM',
+		code_client: 'CLT001',
+		raison_sociale: 'Client Atlas',
+		ville: 2,
+		ICE: '123456789012345',
+		registre_de_commerce: 'RC-123',
+		delai_de_paiement: 60,
+	};
+	it('requires the company-client fields enforced by Django, including the trade register', () => {
+		expect(clientSchema.safeParse(pm).success).toBe(true);
+		const result = clientSchema.safeParse({ ...pm, registre_de_commerce: '' });
+		expect(result.success).toBe(false);
+		if (!result.success)
+			expect(result.error.issues.map((issue) => issue.path)).toContainEqual(['registre_de_commerce']);
+	});
+	it('requires a physical person name, first name, address, city and payment term', () => {
+		const pp = {
+			company: 5,
+			client_type: 'PP',
+			code_client: 'CLT002',
+			nom: 'Amine',
+			prenom: 'Benali',
+			adresse: 'Casablanca',
+			ville: 2,
+			delai_de_paiement: 60,
+		};
+		expect(clientSchema.safeParse(pp).success).toBe(true);
+		expect(clientSchema.safeParse({ ...pp, adresse: '' }).success).toBe(false);
+	});
+	it('keeps payment term zero valid and rejects negative days and malformed contact details', () => {
+		expect(clientSchema.safeParse({ ...pm, delai_de_paiement: 0, tel: '+212612345678' }).success).toBe(true);
+		expect(clientSchema.safeParse({ ...pm, delai_de_paiement: -1 }).success).toBe(false);
+		expect(clientSchema.safeParse({ ...pm, tel: 'abcd' }).success).toBe(false);
+		expect(clientSchema.safeParse({ ...pm, email: 'invalid' }).success).toBe(false);
+	});
+	it('allows the web Client Divers fields to be empty', () => {
+		expect(clientSchema.safeParse({ company: 5, client_type: 'CD', code_client: 'DIV001' }).success).toBe(true);
+	});
+});
 
 describe('Zod Schema Validation', () => {
 	describe('loginSchema', () => {

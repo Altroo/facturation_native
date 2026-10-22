@@ -4,7 +4,7 @@ import { getDjangoNextPageParam, isAuthenticatedInstance } from '@/utils/helpers
 import { MODULES_PAGE_SIZE } from '@/utils/rawData';
 import type { ClientClass } from '@/models/classes';
 import type { PaginationResponseType } from '@/types/_initTypes';
-import type { ClientsQueryParams } from '@/types/clientTypes';
+import type { ClientHistoryResponseType, ClientsQueryParams } from '@/types/clientTypes';
 
 export const clientApi = createApi({
 	reducerPath: 'clientApi',
@@ -47,9 +47,42 @@ export const clientApi = createApi({
 			},
 			providesTags: ['Client'],
 		}),
+		// Same request as the web; Expo exposes this URL through EXPO_PUBLIC_ variables.
+		getClient: builder.query<ClientClass, { id: number }>({
+			query: ({ id }) => ({
+				url: `${process.env.EXPO_PUBLIC_CLIENT_ROOT}/${id}/`,
+				method: 'GET',
+			}),
+			providesTags: ['Client'],
+		}),
+		getCodeClient: builder.query<Pick<ClientClass, 'code_client'>, { company_id: number }>({
+			// A new form needs a fresh code, rather than the previous form's suggestion.
+			keepUnusedDataFor: 0,
+			query: ({ company_id }) => ({
+				url: process.env.EXPO_PUBLIC_CLIENT_GENERATE_CODE_CLIENT,
+				method: 'GET',
+				params: { company_id },
+			}),
+			providesTags: ['Client'],
+		}),
+		addClient: builder.mutation<ClientClass, { data: Partial<ClientClass> }>({
+			query: ({ data }) => ({ url: `${process.env.EXPO_PUBLIC_CLIENT_ROOT}/`, method: 'POST', data }),
+			invalidatesTags: (_result, error) => (error ? [] : ['Client']),
+		}),
+		editClient: builder.mutation<ClientClass, { id: number; data: Partial<ClientClass> }>({
+			query: ({ id, data }) => ({ url: `${process.env.EXPO_PUBLIC_CLIENT_ROOT}/${id}/`, method: 'PUT', data }),
+			invalidatesTags: (_result, error) => (error ? [] : ['Client']),
+		}),
 		deleteClient: builder.mutation<void, { id: number }>({
 			query: ({ id }) => ({ url: `${process.env.EXPO_PUBLIC_CLIENT_ROOT}/${id}/`, method: 'DELETE' }),
 			invalidatesTags: (_result, error) => (error ? [] : ['Client']),
+		}),
+		getClientHistory: builder.query<ClientHistoryResponseType, { id: number }>({
+			query: ({ id }) => ({
+				url: `${process.env.EXPO_PUBLIC_CLIENT_ROOT}/${id}/history/`,
+				method: 'GET',
+			}),
+			providesTags: ['Client'],
 		}),
 		patchArchive: builder.mutation<ClientClass, { id: number; data: { archived: boolean } }>({
 			query: ({ id, data }) => ({ url: `${process.env.EXPO_PUBLIC_ARCHIVE_CLIENT}${id}/`, method: 'PATCH', data }),
@@ -75,9 +108,13 @@ export const clientApi = createApi({
 });
 
 export const {
-	useGetClientsListQuery,
 	useLazyGetClientsListQuery,
 	useGetClientsInfiniteListInfiniteQuery,
+	useGetClientQuery,
+	useGetCodeClientQuery,
+	useAddClientMutation,
+	useEditClientMutation,
+	useGetClientHistoryQuery,
 	useDeleteClientMutation,
 	usePatchArchiveMutation,
 	useBulkDeleteClientsMutation,
