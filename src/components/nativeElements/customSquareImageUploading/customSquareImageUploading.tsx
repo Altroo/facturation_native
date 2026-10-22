@@ -7,7 +7,7 @@ import { Image as ExpoImage, type ImageRef } from 'expo-image';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { CropZoom, type CropZoomRefType } from 'react-native-zoom-toolkit';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import ImagePreview from '@/components/nativeElements/modals/imagePreview/imagePreview';
 import BottomSheet from '@/components/nativeElements/modals/bottomSheet/bottomSheet';
@@ -43,9 +43,15 @@ const CustomSquareImageUploading: FC<CustomSquareImageUploadingProps> = (props: 
 	const [draftImage, setDraftImage] = useState<string | null>(null);
 	const [source, setSource] = useState<ImageRef | null>(null);
 	const [cropError, setCropError] = useState('');
+	const [cropViewport, setCropViewport] = useState<{ width: number; height: number } | null>(null);
 	const name = label ?? t.common.addImage;
-	const ratio = avatar ? 1 : 36 / 25;
-	const cropWidth = Math.max(1, Math.min(360, width - 48, Math.max(1, height - 260) * ratio));
+	// Logos and stamps start with the whole original visible. A forced landscape
+	// ratio would crop square logos before the user has moved or zoomed anything.
+	const ratio = avatar || !source ? 1 : source.width / source.height;
+	const cropWidth = Math.max(
+		1,
+		Math.min((cropViewport?.width ?? width) - 32, Math.max(1, (cropViewport?.height ?? height - 260) - 32) * ratio),
+	);
 	const cropSize = { width: cropWidth, height: cropWidth / ratio };
 
 	useEffect(
@@ -258,13 +264,13 @@ const CustomSquareImageUploading: FC<CustomSquareImageUploadingProps> = (props: 
 						'overflow-hidden border border-slate-200 bg-white dark:border-slate-600 dark:bg-panel ' +
 						(avatar ? 'rounded-full' : 'rounded-2xl')
 					}
-					style={{ width: 136, height: 136 }}
+					style={avatar ? { width: 136, height: 136 } : { width: '100%', aspectRatio: 36 / 25 }}
 				>
 					{preview ? (
 						<Image
 							accessibilityLabel={name}
 							source={{ uri: preview }}
-							style={{ width: 136, height: 136 }}
+							style={{ width: '100%', height: '100%' }}
 							resizeMode={avatar ? 'cover' : 'contain'}
 						/>
 					) : (
@@ -305,8 +311,8 @@ const CustomSquareImageUploading: FC<CustomSquareImageUploadingProps> = (props: 
 					</View>
 				)}
 				<PrimaryLoadingButton
-					buttonText={preview ? t.common.editPhoto : t.common.addImage}
-					inverted
+					buttonText={preview ? (avatar ? t.common.editPhoto : t.common.replaceImage) : t.common.addImage}
+					inverted={!!preview}
 					loading={busy}
 					onClick={handleImageUploadClick}
 					active={!disabled}
@@ -358,55 +364,69 @@ const CustomSquareImageUploading: FC<CustomSquareImageUploadingProps> = (props: 
 			</BottomSheet>
 			{isEditing && source && (
 				<Modal visible animationType="slide" presentationStyle="fullScreen" onRequestClose={handleClose}>
-					<GestureHandlerRootView style={{ flex: 1 }}>
-						<SafeAreaView style={{ flex: 1, backgroundColor: colors.slate[900] }}>
-							<Text accessibilityRole="header" className="px-6 py-5 font-poppins-semibold text-lg text-white">
-								{t.common.clickToEditCrop}
-							</Text>
-							<View className="flex-1 items-center justify-center">
+					<SafeAreaProvider>
+						<GestureHandlerRootView style={{ flex: 1 }}>
+							<SafeAreaView style={{ flex: 1, backgroundColor: colors.slate[900] }}>
+								<Text accessibilityRole="header" className="px-6 py-5 font-poppins-semibold text-lg text-white">
+									{t.common.clickToEditCrop}
+								</Text>
 								<View
-									testID="image-crop-frame"
-									style={{
-										width: cropSize.width,
-										height: cropSize.height,
-										overflow: 'hidden',
-										borderWidth: 1,
-										borderColor: colors.white,
+									testID="image-crop-viewport"
+									className="flex-1 items-center justify-center"
+									onLayout={({ nativeEvent: { layout } }) => {
+										// Measure the space left after the safe area, heading and
+										// buttons, including rotation and larger text settings.
+										setCropViewport((current) =>
+											current?.width === layout.width && current.height === layout.height
+												? current
+												: { width: layout.width, height: layout.height },
+										);
 									}}
 								>
-									<CropZoom
-										ref={cropperRef}
-										cropSize={cropSize}
-										resolution={{ width: source.width * source.scale, height: source.height * source.scale }}
-										panMode="clamp"
-										scaleMode="clamp"
+									<View
+										testID="image-crop-frame"
+										style={{
+											width: cropSize.width,
+											height: cropSize.height,
+											overflow: 'hidden',
+											borderWidth: 1,
+											borderColor: colors.white,
+										}}
 									>
-										<ExpoImage source={source} contentFit="fill" style={{ width: '100%', height: '100%' }} />
-									</CropZoom>
+										<CropZoom
+											ref={cropperRef}
+											cropSize={cropSize}
+											resolution={{ width: source.width * source.scale, height: source.height * source.scale }}
+											panMode="clamp"
+											scaleMode="clamp"
+										>
+											<ExpoImage source={source} contentFit="fill" style={{ width: '100%', height: '100%' }} />
+										</CropZoom>
+									</View>
 								</View>
-							</View>
-							<View className="gap-3 p-6">
-								{!!cropError && (
-									<Text accessibilityRole="alert" className="font-sans text-sm text-red-300">
-										{cropError}
-									</Text>
-								)}
-								<PrimaryLoadingButton
-									buttonText={t.common.confirm}
-									loading={busy}
-									active={!disabled}
-									onClick={() => void handleCrop()}
-								/>
-								<PrimaryLoadingButton
-									buttonText={t.common.cancel}
-									loading={false}
-									inverted
-									active={!busy}
-									onClick={handleClose}
-								/>
-							</View>
-						</SafeAreaView>
-					</GestureHandlerRootView>
+								<View className="gap-3 p-6">
+									{!!cropError && (
+										<Text accessibilityRole="alert" className="font-sans text-sm text-red-300">
+											{cropError}
+										</Text>
+									)}
+									<PrimaryLoadingButton
+										buttonText={t.common.confirm}
+										loading={busy}
+										active={!disabled}
+										onClick={() => void handleCrop()}
+									/>
+									<PrimaryLoadingButton
+										buttonText={t.common.cancel}
+										loading={false}
+										inverted
+										active={!busy}
+										onClick={handleClose}
+									/>
+								</View>
+							</SafeAreaView>
+						</GestureHandlerRootView>
+					</SafeAreaProvider>
 				</Modal>
 			)}
 		</View>

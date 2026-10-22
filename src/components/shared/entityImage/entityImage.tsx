@@ -13,6 +13,8 @@ type Props = {
 	icon?: IconName;
 	avatar?: boolean;
 	large?: boolean;
+	size?: number;
+	fullWidth?: boolean;
 };
 
 const EntityImage = (props: Props) => {
@@ -22,7 +24,7 @@ const EntityImage = (props: Props) => {
 	const uri = typeof image === 'string' ? image : '';
 	const fullUri = typeof previewImage === 'string' && previewImage ? previewImage : uri;
 	const visibleImage = !!uri && failedUri !== uri;
-	const size = large ? 88 : 56;
+	const size = props.size ?? (large ? 88 : 56);
 	return (
 		<>
 			<Pressable
@@ -34,13 +36,14 @@ const EntityImage = (props: Props) => {
 					setOpen(true);
 				}}
 				className={
-					'items-center justify-center overflow-hidden border border-slate-200 bg-blue-50 dark:border-slate-700 dark:bg-slate-800 ' +
+					'items-center justify-center overflow-hidden border border-slate-200 dark:border-slate-700 ' +
+					(props.fullWidth && visibleImage ? 'bg-white dark:bg-panel ' : 'bg-blue-50 dark:bg-slate-800 ') +
 					(avatar ? 'rounded-full' : 'rounded-2xl')
 				}
-				style={{
-					width: size,
-					height: size,
-				}}
+				// Documents can fill their section; missing images keep a compact fallback.
+				style={
+					props.fullWidth && visibleImage ? { width: '100%', aspectRatio: 36 / 25 } : { width: size, height: size }
+				}
 			>
 				{visibleImage ? (
 					<Image
@@ -51,13 +54,13 @@ const EntityImage = (props: Props) => {
 						}}
 						onError={() => setFailedUri(uri)}
 						style={{
-							width: size,
-							height: size,
+							width: '100%',
+							height: '100%',
 						}}
 						resizeMode={avatar ? 'cover' : 'contain'}
 					/>
 				) : (
-					<MaterialIcons name={icon} size={large ? 38 : 27} color={colors.brand} />
+					<MaterialIcons name={icon} size={size > 56 ? 38 : 27} color={colors.brand} />
 				)}
 			</Pressable>
 			{open && <ImagePreview uri={fullUri} label={label} visible onClose={() => setOpen(false)} />}

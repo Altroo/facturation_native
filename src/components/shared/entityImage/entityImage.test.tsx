@@ -27,3 +27,24 @@ it('disables a failed image preview and recovers when a new image arrives', asyn
 	await view.rerender(<EntityImage image="file:///replacement.jpg" label="Logo" />);
 	expect(screen.getByRole('button', { name: 'Logo' })).toBeOnTheScreen();
 });
+
+it('shows a full-width document without cropping it and keeps failed images compact', async () => {
+	await render(
+		<EntityImage
+			image="file:///stamp-thumbnail.png"
+			previewImage="file:///original-stamp.png"
+			label="Cachet"
+			fullWidth
+			large
+		/>,
+	);
+	expect(screen.getByRole('button', { name: 'Cachet' })).toHaveStyle({ width: '100%', aspectRatio: 36 / 25 });
+	const image = screen.container.queryAll((node) => node.type === 'Image')[0]!;
+	expect(image).toHaveProp('resizeMode', 'contain');
+	await fireEvent.press(screen.getByRole('button', { name: 'Cachet' }));
+	expect(screen.getByText('file:///original-stamp.png')).toBeOnTheScreen();
+	await fireEvent.press(screen.getByRole('button', { name: 'Close preview' }));
+	await fireEvent(image, 'error');
+	expect(screen.queryByRole('button', { name: 'Cachet' })).toBeNull();
+	expect(screen.getByLabelText('Cachet')).toHaveStyle({ width: 88, height: 88 });
+});

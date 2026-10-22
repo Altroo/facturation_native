@@ -69,6 +69,7 @@ const source = { width: 600, height: 400, scale: 2 } as ImageRef;
 const region = { originX: 120, originY: 80, width: 360, height: 250 };
 const props = (): CustomSquareImageUploadingProps => ({
 	label: 'Photo de profil',
+	avatar: true,
 	image: original,
 	croppedImage: crop,
 	onChange: jest.fn(),
@@ -318,8 +319,8 @@ it('keeps the picked original separate from the confirmed PNG crop', async () =>
 });
 it.each([
 	[true, 1],
-	[false, 36 / 25],
-] as const)('uses the correct fixed ratio for avatar=%s and pixel resolution', async (avatar, ratio) => {
+	[false, source.width / source.height],
+] as const)('uses the correct crop ratio for avatar=%s and pixel resolution', async (avatar, ratio) => {
 	await render(<CustomSquareImageUploading {...props()} avatar={avatar} />);
 	await openCrop();
 	const frame = screen.getByTestId('cropper').props;
@@ -327,6 +328,52 @@ it.each([
 	expect(frame.resolution).toEqual({ width: 1200, height: 800 });
 	expect(frame.panMode).toBe('clamp');
 	expect(frame.scaleMode).toBe('clamp');
+});
+
+it.each([
+	{ width: 800, height: 800 },
+	{ width: 1200, height: 600 },
+	{ width: 400, height: 1200 },
+])('keeps the full $width by $height company image visible before zooming', async (resolution) => {
+	jest.mocked(ExpoImage.loadAsync).mockResolvedValueOnce({ ...source, ...resolution } as ImageRef);
+	await render(<CustomSquareImageUploading {...props()} avatar={false} />);
+	await openCrop();
+	await fireEvent.layout(screen.getByTestId('image-crop-viewport'), { width: 400, height: 600 });
+	const cropSize = screen.getByTestId('cropper').props.cropSize;
+	expect(cropSize.width / cropSize.height).toBeCloseTo(resolution.width / resolution.height);
+	expect(cropSize.width).toBeLessThanOrEqual(368);
+	expect(cropSize.height).toBeLessThanOrEqual(568);
+});
+
+it('fits the crop between the controls when the device rotates to landscape', async () => {
+	await render(<CustomSquareImageUploading {...props()} avatar={false} />);
+	await openCrop();
+	await fireEvent.layout(screen.getByTestId('image-crop-viewport'), { width: 800, height: 220 });
+	const cropSize = screen.getByTestId('cropper').props.cropSize;
+	expect(cropSize.height).toBe(188);
+	expect(cropSize.width / cropSize.height).toBeCloseTo(source.width / source.height);
+});
+
+it('uses the available form width for logos and stamps while keeping avatars compact', async () => {
+	const view = await render(<CustomSquareImageUploading {...props()} avatar={false} />);
+	expect(screen.getByRole('button', { name: t.common.display + ' Photo de profil' })).toHaveStyle({
+		width: '100%',
+		aspectRatio: 36 / 25,
+	});
+	expect(screen.getByLabelText('Photo de profil')).toHaveStyle({ width: '100%', height: '100%' });
+	await view.rerender(<CustomSquareImageUploading {...props()} avatar />);
+	expect(screen.getByRole('button', { name: t.common.display + ' Photo de profil' })).toHaveStyle({
+		width: 136,
+		height: 136,
+	});
+});
+
+it('offers to replace a company image without calling it a personal photo', async () => {
+	await render(<CustomSquareImageUploading {...props()} avatar={false} label="Logo de l’entreprise" />);
+	expect(screen.queryByRole('button', { name: t.common.editPhoto })).toBeNull();
+	await openImagePicker('library', t.common.replaceImage);
+	await screen.findByTestId('cropper');
+	expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalledTimes(1);
 });
 it('recrops the existing original without replacing its raw field or reopening the picker', async () => {
 	const data = props();
