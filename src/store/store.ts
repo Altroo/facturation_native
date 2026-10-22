@@ -7,7 +7,8 @@ import wsReducer from '@/store/slices/wsSlice';
 import { accountApi, profilApi, groupApi, usersApi } from '@/store/services/account';
 import { companyApi } from '@/store/services/company';
 import { clientApi } from '@/store/services/client';
-import { citiesApi } from '@/store/services/parameter';
+import { articleApi } from '@/store/services/article';
+import { citiesApi, marqueApi, categorieApi, uniteApi, emplacementApi } from '@/store/services/parameter';
 import { notificationApi } from '@/store/services/notification';
 import notificationReducer from '@/store/slices/notificationSlice';
 
@@ -23,6 +24,11 @@ const rootReducer = combineReducers({
 	[usersApi.reducerPath]: usersApi.reducer,
 	[companyApi.reducerPath]: companyApi.reducer,
 	[clientApi.reducerPath]: clientApi.reducer,
+	[articleApi.reducerPath]: articleApi.reducer,
+	[marqueApi.reducerPath]: marqueApi.reducer,
+	[categorieApi.reducerPath]: categorieApi.reducer,
+	[uniteApi.reducerPath]: uniteApi.reducer,
+	[emplacementApi.reducerPath]: emplacementApi.reducer,
 	[citiesApi.reducerPath]: citiesApi.reducer,
 	[notificationApi.reducerPath]: notificationApi.reducer,
 });
@@ -58,6 +64,11 @@ export const makeStore = (): SagaStore => {
 					groupApi.middleware,
 					companyApi.middleware,
 					clientApi.middleware,
+					articleApi.middleware,
+					marqueApi.middleware,
+					categorieApi.middleware,
+					uniteApi.middleware,
+					emplacementApi.middleware,
 					citiesApi.middleware,
 					usersApi.middleware,
 					notificationApi.middleware,

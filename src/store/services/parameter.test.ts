@@ -1,7 +1,8 @@
+import { setupApiStore } from '@/store/setupApiStore';
 import { configureStore } from '@reduxjs/toolkit';
 import { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
 import { auth } from '@/auth';
-import { citiesApi } from './parameter';
+import { citiesApi, marqueApi, categorieApi, uniteApi, emplacementApi } from './parameter';
 
 jest.mock('@/auth', () => {
 	const { create } = jest.requireActual<typeof import('axios')>('axios');
@@ -71,4 +72,41 @@ it('keeps city lookups scoped to their company and exposes failed writes without
 	expect(citiesApi.endpoints.getCitiesList.select({ company_id: 5 })(store.getState()).data).toMatchObject([
 		{ id: 2, nom: 'Casablanca' },
 	]);
+});
+
+it.each([
+	['marque', marqueApi, 'getMarqueList', 'addMarque', 'editMarque', 'deleteMarque'],
+	['categorie', categorieApi, 'getCategorieList', 'addCategorie', 'editCategorie', 'deleteCategorie'],
+	['unite', uniteApi, 'getUniteList', 'addUnite', 'editUnite', 'deleteUnite'],
+	['emplacement', emplacementApi, 'getEmplacementList', 'addEmplacement', 'editEmplacement', 'deleteEmplacement'],
+] as const)('uses scoped CRUD for the article %s selector', async (name, api, get, add, edit, remove) => {
+	const { store: scopedStore } = setupApiStore(api);
+	adapter.mockImplementation(async (config) =>
+		response(
+			config,
+			config.method === 'get'
+				? [{ id: 3, company: 5, nom: 'Initial' }]
+				: config.method === 'delete'
+					? undefined
+					: { id: 3, ...JSON.parse(config.data) },
+		),
+	);
+	// These APIs retain the distinct endpoint names used by the web.
+	const endpoints = api.endpoints as unknown as Record<
+		string,
+		{ initiate: (args: unknown) => ReturnType<typeof citiesApi.endpoints.addCity.initiate> }
+	>;
+	await scopedStore.dispatch(endpoints[get].initiate({ company_id: 5 })).unwrap();
+	await scopedStore.dispatch(endpoints[add].initiate({ data: { company: 5, nom: 'New' } })).unwrap();
+	await scopedStore.dispatch(endpoints[edit].initiate({ id: 3, data: { company: 5, nom: 'Renamed' } })).unwrap();
+	await scopedStore.dispatch(endpoints[remove].initiate({ id: 3 })).unwrap();
+	expect(adapter.mock.calls[0][0]).toMatchObject({ params: { company_id: 5 }, url: `/parameter/${name}/` });
+	expect(
+		adapter.mock.calls.filter(([config]) => config.method !== 'get').map(([config]) => [config.url, config.method]),
+	).toEqual([
+		[`/parameter/${name}/`, 'post'],
+		[`/parameter/${name}/3/`, 'put'],
+		[`/parameter/${name}/3/`, 'delete'],
+	]);
+	scopedStore.dispatch(api.util.resetApiState());
 });

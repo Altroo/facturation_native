@@ -1,5 +1,6 @@
 import type { NbrEmployeType, CiviliteType, ManagedByWriteOnlyType } from '@/types/companyTypes';
 import { type ManagedByType } from '@/components/shared/addManagedByTable/addManagedByTable';
+import type { TypeArticleType, CurrencyType, SalePriceBasis } from '@/types/articleTypes';
 import type { TypeClientType } from '@/types/clientTypes';
 
 export class UserClass {
@@ -95,5 +96,77 @@ export class CompanyClass {
 		public uses_foreign_currency: boolean,
 		public can_validate_factures?: boolean,
 		public can_change_document_status?: boolean,
+	) {}
+}
+
+export class ArticleClass {
+	public prix_vente_base: SalePriceBasis = 'HT';
+	public stock_minimum = 0;
+	public readonly stock_management_enabled: boolean = false;
+	public readonly physical_quantity: number = 0;
+	public readonly reserved_quantity: number = 0;
+	public readonly available_quantity: number = 0;
+	public readonly incoming_quantity: number = 0;
+	public readonly projected_quantity: number = 0;
+	public readonly stock_state: 'not_managed' | 'disponible' | 'minimum' | 'a_approvisionner' = 'not_managed';
+
+	constructor(
+		public readonly id: number,
+		public reference: string,
+		public type_article: TypeArticleType,
+		public company: number,
+		public readonly company_name: string | null,
+		public marque: number | null,
+		public readonly marque_name: string | null,
+		public categorie: number | null,
+		public readonly categorie_name: string | null,
+		public emplacement: number | null,
+		public readonly emplacement_name: string | null,
+		public unite: number | null,
+		public readonly unite_name: string | null,
+		public designation: string | null,
+		public photo: string | ArrayBuffer | null,
+		public prix_achat: number | null,
+		public devise_prix_achat: CurrencyType,
+		public prix_vente: number | null,
+		public devise_prix_vente: CurrencyType,
+		public tva: number,
+		public remarque: string | null,
+		public readonly date_created: string,
+		public readonly date_updated: string,
+		public archived: boolean,
+	) {}
+}
+
+export class MarqueClass {
+	email?: string;
+	constructor(
+		public readonly id: number,
+		public nom: string,
+		public company: number,
+	) {}
+}
+
+export class CategorieClass {
+	constructor(
+		public readonly id: number,
+		public nom: string,
+		public company: number,
+	) {}
+}
+
+export class UniteClass {
+	constructor(
+		public readonly id: number,
+		public nom: string,
+		public company: number,
+	) {}
+}
+
+export class EmplacementClass {
+	constructor(
+		public readonly id: number,
+		public nom: string,
+		public company: number,
 	) {}
 }

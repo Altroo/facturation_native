@@ -1,7 +1,7 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 import { axiosBaseQuery } from '@/utils/axiosBaseQuery';
 import { isAuthenticatedInstance } from '@/utils/helpers';
-import type { CitiesClass } from '@/models/classes';
+import type { CitiesClass, MarqueClass, CategorieClass, UniteClass, EmplacementClass } from '@/models/classes';
 
 export const citiesApi = createApi({
 	reducerPath: 'citiesApi',
@@ -32,3 +32,134 @@ export const citiesApi = createApi({
 });
 
 export const { useGetCitiesListQuery, useAddCityMutation, useEditCityMutation, useDeleteCityMutation } = citiesApi;
+
+export const marqueApi = createApi({
+	reducerPath: 'marqueApi',
+	tagTypes: ['Marque'],
+	baseQuery: axiosBaseQuery(() => isAuthenticatedInstance()),
+	endpoints: (builder) => ({
+		getMarqueList: builder.query<Array<MarqueClass>, { company_id: number }>({
+			query: ({ company_id }) => ({
+				url: process.env.EXPO_PUBLIC_PARAMETER_MARQUE,
+				method: 'GET',
+				params: { company_id },
+			}),
+			providesTags: ['Marque'],
+		}),
+		addMarque: builder.mutation<MarqueClass, { data: Partial<MarqueClass> }>({
+			query: ({ data }) => ({ url: process.env.EXPO_PUBLIC_PARAMETER_MARQUE, method: 'POST', data }),
+			invalidatesTags: (_result, error) => (error ? [] : ['Marque']),
+		}),
+		editMarque: builder.mutation<MarqueClass, { id: number; data: Partial<MarqueClass> }>({
+			query: ({ id, data }) => ({ url: `${process.env.EXPO_PUBLIC_PARAMETER_MARQUE}${id}/`, method: 'PUT', data }),
+			invalidatesTags: (_result, error) => (error ? [] : ['Marque']),
+		}),
+		deleteMarque: builder.mutation<void, { id: number }>({
+			query: ({ id }) => ({ url: `${process.env.EXPO_PUBLIC_PARAMETER_MARQUE}${id}/`, method: 'DELETE' }),
+			invalidatesTags: (_result, error) => (error ? [] : ['Marque']),
+		}),
+	}),
+});
+
+export const { useGetMarqueListQuery, useAddMarqueMutation, useEditMarqueMutation, useDeleteMarqueMutation } =
+	marqueApi;
+
+export const categorieApi = createApi({
+	reducerPath: 'categorieApi',
+	tagTypes: ['Categorie'],
+	baseQuery: axiosBaseQuery(() => isAuthenticatedInstance()),
+	endpoints: (builder) => ({
+		getCategorieList: builder.query<Array<CategorieClass>, { company_id: number }>({
+			query: ({ company_id }) => ({
+				url: process.env.EXPO_PUBLIC_PARAMETER_CATEGORIE,
+				method: 'GET',
+				params: { company_id },
+			}),
+			providesTags: ['Categorie'],
+		}),
+		addCategorie: builder.mutation<CategorieClass, { data: Partial<CategorieClass> }>({
+			query: ({ data }) => ({ url: process.env.EXPO_PUBLIC_PARAMETER_CATEGORIE, method: 'POST', data }),
+			invalidatesTags: (_result, error) => (error ? [] : ['Categorie']),
+		}),
+		editCategorie: builder.mutation<CategorieClass, { id: number; data: Partial<CategorieClass> }>({
+			query: ({ id, data }) => ({ url: `${process.env.EXPO_PUBLIC_PARAMETER_CATEGORIE}${id}/`, method: 'PUT', data }),
+			invalidatesTags: (_result, error) => (error ? [] : ['Categorie']),
+		}),
+		deleteCategorie: builder.mutation<void, { id: number }>({
+			query: ({ id }) => ({ url: `${process.env.EXPO_PUBLIC_PARAMETER_CATEGORIE}${id}/`, method: 'DELETE' }),
+			invalidatesTags: (_result, error) => (error ? [] : ['Categorie']),
+		}),
+	}),
+});
+
+export const {
+	useGetCategorieListQuery,
+	useAddCategorieMutation,
+	useEditCategorieMutation,
+	useDeleteCategorieMutation,
+} = categorieApi;
+
+export const uniteApi = createApi({
+	reducerPath: 'uniteApi',
+	tagTypes: ['Unite'],
+	baseQuery: axiosBaseQuery(() => isAuthenticatedInstance()),
+	endpoints: (builder) => ({
+		getUniteList: builder.query<Array<UniteClass>, { company_id: number }>({
+			query: ({ company_id }) => ({
+				url: process.env.EXPO_PUBLIC_PARAMETER_UNITE,
+				method: 'GET',
+				params: { company_id },
+			}),
+			providesTags: ['Unite'],
+		}),
+		addUnite: builder.mutation<UniteClass, { data: Partial<UniteClass> }>({
+			query: ({ data }) => ({ url: process.env.EXPO_PUBLIC_PARAMETER_UNITE, method: 'POST', data }),
+			invalidatesTags: (_result, error) => (error ? [] : ['Unite']),
+		}),
+		editUnite: builder.mutation<UniteClass, { id: number; data: Partial<UniteClass> }>({
+			query: ({ id, data }) => ({ url: `${process.env.EXPO_PUBLIC_PARAMETER_UNITE}${id}/`, method: 'PUT', data }),
+			invalidatesTags: (_result, error) => (error ? [] : ['Unite']),
+		}),
+		deleteUnite: builder.mutation<void, { id: number }>({
+			query: ({ id }) => ({ url: `${process.env.EXPO_PUBLIC_PARAMETER_UNITE}${id}/`, method: 'DELETE' }),
+			invalidatesTags: (_result, error) => (error ? [] : ['Unite']),
+		}),
+	}),
+});
+
+export const { useGetUniteListQuery, useAddUniteMutation, useEditUniteMutation, useDeleteUniteMutation } = uniteApi;
+
+export const emplacementApi = createApi({
+	reducerPath: 'emplacementApi',
+	tagTypes: ['Emplacement'],
+	baseQuery: axiosBaseQuery(() => isAuthenticatedInstance()),
+	endpoints: (builder) => ({
+		getEmplacementList: builder.query<Array<EmplacementClass>, { company_id: number }>({
+			query: ({ company_id }) => ({
+				url: process.env.EXPO_PUBLIC_PARAMETER_EMPLACEMENT,
+				method: 'GET',
+				params: { company_id },
+			}),
+			providesTags: ['Emplacement'],
+		}),
+		addEmplacement: builder.mutation<EmplacementClass, { data: Partial<EmplacementClass> }>({
+			query: ({ data }) => ({ url: process.env.EXPO_PUBLIC_PARAMETER_EMPLACEMENT, method: 'POST', data }),
+			invalidatesTags: (_result, error) => (error ? [] : ['Emplacement']),
+		}),
+		editEmplacement: builder.mutation<EmplacementClass, { id: number; data: Partial<EmplacementClass> }>({
+			query: ({ id, data }) => ({ url: `${process.env.EXPO_PUBLIC_PARAMETER_EMPLACEMENT}${id}/`, method: 'PUT', data }),
+			invalidatesTags: (_result, error) => (error ? [] : ['Emplacement']),
+		}),
+		deleteEmplacement: builder.mutation<void, { id: number }>({
+			query: ({ id }) => ({ url: `${process.env.EXPO_PUBLIC_PARAMETER_EMPLACEMENT}${id}/`, method: 'DELETE' }),
+			invalidatesTags: (_result, error) => (error ? [] : ['Emplacement']),
+		}),
+	}),
+});
+
+export const {
+	useGetEmplacementListQuery,
+	useAddEmplacementMutation,
+	useEditEmplacementMutation,
+	useDeleteEmplacementMutation,
+} = emplacementApi;
