@@ -12,4 +12,6 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 	jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
 jest.mock('uniwind', () => ({ Uniwind: { setTheme: jest.fn() } }));
+// Native font loading is outside the scope of component behavior tests.
+jest.mock('@expo/vector-icons/Ionicons', () => 'Icon');
 jest.mock('react-native-keyboard-controller', () => jest.requireActual('react-native-keyboard-controller/jest'));

@@ -11,6 +11,7 @@ import { useFonts } from 'expo-font';
 import { useAssets } from 'expo-asset';
 import * as SplashScreen from 'expo-splash-screen';
 import { Stack } from 'expo-router';
+import { useReducedMotion } from 'react-native-reanimated';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
@@ -38,6 +39,7 @@ void SplashScreen.preventAutoHideAsync().catch((error: unknown) => {
 });
 
 export const RootNavigator = () => {
+	const reduceMotion = useReducedMotion();
 	const dispatch = useAppDispatch();
 	const { status, error } = useAppSelector(getInitState);
 	const { t } = useLanguage();
@@ -89,6 +91,7 @@ export const RootNavigator = () => {
 		<Stack
 			screenOptions={{
 				headerShown: false,
+				animation: reduceMotion ? 'none' : 'fade',
 				contentStyle: { backgroundColor: mode === 'dark' ? colors.night : colors.screenBackground },
 			}}
 		>

@@ -1,69 +1,60 @@
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
-import { Dimensions } from 'react-native';
-import type { ReactNode } from 'react';
+import { render } from '@testing-library/react-native';
+import type { NativeStackNavigationOptions } from 'expo-router';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import DrawerStackLayout from '@/app/(app)/(drawer)/_layout';
-
-const mockNavigator = ({
-	screenOptions,
-}: {
-	screenOptions: {
-		headerTitle: (props: { children: string; tintColor: string }) => ReactNode;
-		headerRight: () => ReactNode;
-	};
-}) => (
-	<>
-		{screenOptions.headerTitle({ children: 'Modifier l’utilisateur', tintColor: '#0f172a' })}
-		{screenOptions.headerRight()}
-	</>
-);
+let mockOptions: NativeStackNavigationOptions;
+let mockRouteName = 'users/form';
+let mockReduceMotion = false;
+jest.mock('react-native-reanimated', () => ({
+	...jest.requireActual<typeof import('react-native-reanimated')>('react-native-reanimated'),
+	useReducedMotion: () => mockReduceMotion,
+}));
 jest.mock('expo-router', () => ({
-	usePathname: () => '/',
-	Stack: Object.assign((props: Parameters<typeof mockNavigator>[0]) => mockNavigator(props), { Screen: () => null }),
-}));
-jest.mock('expo-router/drawer', () => ({
-	Drawer: Object.assign((props: Parameters<typeof mockNavigator>[0]) => mockNavigator(props), { Screen: () => null }),
-	DrawerToggleButton: () => null,
-}));
-jest.mock('react-native-safe-area-context', () => ({
-	useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
-}));
-jest.mock('@/utils/hooks', () => ({
-	...jest.requireActual<typeof import('@/utils/hooks')>('@/utils/hooks'),
-	useAppSelector: () => null,
-}));
-jest.mock('@/components/layouts/navigationBar/navigationBar', () => {
-	const actual = jest.requireActual<typeof import('@/components/layouts/navigationBar/navigationBar')>(
-		'@/components/layouts/navigationBar/navigationBar',
-	);
-	const { cloneElement } = jest.requireActual<typeof import('react')>('react');
-	return {
-		...actual,
-		NavigationDrawer: () => null,
-		Notifications: () => null,
-		useNavigationHeader: () => {
-			const options = actual.useNavigationHeader();
-			return { ...options, headerRight: () => cloneElement(options.headerRight(), {}, null) };
+	Stack: Object.assign(
+		(props: { screenOptions: (args: { route: { name: string } }) => NativeStackNavigationOptions }) => {
+			mockOptions = props.screenOptions({ route: { name: mockRouteName } });
+			return null;
 		},
-	};
+		{ Screen: () => null },
+	),
+}));
+jest.mock('expo-router/drawer', () => ({ DrawerToggleButton: () => null }));
+const setup = async () => {
+	await render(
+		<SafeAreaProvider
+			initialMetrics={{
+				frame: { x: 0, y: 0, width: 390, height: 844 },
+				insets: { top: 0, right: 0, bottom: 0, left: 0 },
+			}}
+		>
+			<DrawerStackLayout />
+		</SafeAreaProvider>,
+	);
+};
+beforeEach(() => {
+	mockRouteName = 'users/form';
+	mockReduceMotion = false;
 });
-jest.mock('@/components/shared/themeToggle/themeToggle', () => () => null);
-jest.mock('@/components/shared/languageSwitcher/languageSwitcher', () => () => null);
-jest.mock('@/components/shared/appUpdate/appUpdate', () => () => null);
 
-const originalWindow = Dimensions.get('window');
-beforeEach(() => Dimensions.set({ window: { width: 320, height: 640, scale: 2, fontScale: 1 } }));
-afterAll(() => Dimensions.set({ window: originalWindow }));
-it('keeps the title and controls separate at narrow widths', async () => {
-	await render(<DrawerStackLayout />);
-	const title = screen.getByRole('header', { name: 'Modifier l’utilisateur' });
-	expect(title).toHaveProp('numberOfLines', 1);
-	expect(title).toHaveProp('ellipsizeMode', 'tail');
-	expect(title).toHaveStyle({ maxWidth: 60, flexShrink: 1, color: '#0f172a' });
-	const controls = screen.container
-		.queryAll((node) => node.type === 'View')
-		.find((view) => typeof view.props.onLayout === 'function')!;
-	await fireEvent.layout(controls, { width: 280 });
-	expect(title).toHaveStyle({ maxWidth: 0 });
-	await act(() => Dimensions.set({ window: { width: 768, height: 1024, scale: 2, fontScale: 2 } }));
-	expect(title).toHaveStyle({ maxWidth: 408 });
+it('preserves the native navbar and original back icon', async () => {
+	await setup();
+	expect(mockOptions.header).toBeUndefined();
+	expect(mockOptions.headerBackIcon).toBeUndefined();
+	expect(mockOptions.headerBackImageSource).toBeUndefined();
+	expect(mockOptions.headerStyle).not.toHaveProperty('height');
+	expect(mockOptions.headerTitleAlign).toBe('left');
+	expect(mockOptions.headerBackVisible).toBe(true);
+});
+
+it.each([
+	['future-module/index', 'slide_from_right'],
+	['notifications/index', 'slide_from_bottom'],
+	['settings/index', 'slide_from_bottom'],
+])('uses the shared transition for %s and respects Reduced Motion', async (route, animation) => {
+	mockRouteName = route;
+	await setup();
+	expect(mockOptions.animation).toBe(animation);
+	mockReduceMotion = true;
+	await setup();
+	expect(mockOptions.animation).toBe('none');
 });

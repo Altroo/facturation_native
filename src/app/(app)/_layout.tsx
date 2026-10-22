@@ -3,7 +3,7 @@ import { Drawer } from 'expo-router/drawer';
 import { getProfilState } from '@/store/selectors';
 import { DASHBOARD_PASSWORD } from '@/utils/routes';
 import AppUpdate from '@/components/shared/appUpdate/appUpdate';
-import { NavigationDrawer } from '@/components/layouts/navigationBar/navigationBar';
+import { NavigationDrawer, NotificationStatus } from '@/components/layouts/navigationBar/navigationBar';
 import { useAppSelector } from '@/utils/hooks';
 
 const AuthenticatedLayout = () => {
@@ -13,6 +13,7 @@ const AuthenticatedLayout = () => {
 	if (profile?.default_password_set && pathname !== DASHBOARD_PASSWORD) return <Redirect href={DASHBOARD_PASSWORD} />;
 	return (
 		<>
+			<NotificationStatus />
 			<AppUpdate />
 			<Drawer
 				drawerContent={(props) => <NavigationDrawer {...props} />}

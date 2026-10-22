@@ -1,10 +1,13 @@
 import { configureStore } from '@reduxjs/toolkit';
+import notification from '@/store/slices/notificationSlice';
+import { translations } from '@/translations';
 import _initReducer from '@/store/slices/_initSlice';
 import accountReducer from '@/store/slices/accountSlice';
 import companiesReducer, { setUserCompanies } from '@/store/slices/companiesSlice';
 import { render } from '@testing-library/react-native';
 import { Provider } from 'react-redux';
 import DashboardPage from '@/app/(app)/(drawer)';
+jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
 
 jest.mock('@/utils/hooks', () => ({
 	...jest.requireActual<typeof import('@/utils/hooks')>('@/utils/hooks'),
@@ -16,7 +19,7 @@ const memberships = [
 ];
 const setup = async (empty = false) => {
 	const store = configureStore({
-		reducer: { _init: _initReducer, account: accountReducer, companies: companiesReducer },
+		reducer: { _init: _initReducer, account: accountReducer, companies: companiesReducer, notification },
 	});
 	store.dispatch(setUserCompanies(empty ? [] : memberships));
 	return {
@@ -31,11 +34,11 @@ const setup = async (empty = false) => {
 it('renders the home skeleton without an empty company selector when no company is assigned', async () => {
 	const view = await setup(true);
 	expect(view.getByText('Facturation')).toBeOnTheScreen();
-	expect(view.queryByRole('button')).toBeNull();
+	expect(view.getByRole('button', { name: translations.fr.navigation.settings })).toBeOnTheScreen();
 });
 it('does not introduce a dashboard company selector before the dashboard module is ported', async () => {
 	const view = await setup();
 	expect(view.getByText('Facturation')).toBeOnTheScreen();
-	expect(view.queryByRole('button')).toBeNull();
+	expect(view.getByRole('button', { name: translations.fr.common.add })).toBeDisabled();
 	expect(view.store.getState().companies.user_companies).toEqual(memberships);
 });

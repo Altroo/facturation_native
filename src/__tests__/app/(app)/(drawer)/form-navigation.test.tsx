@@ -1,10 +1,13 @@
+import { isHiddenFromAccessibility } from '@testing-library/react-native';
 import { configureStore } from '@reduxjs/toolkit';
 import type { ReactNode } from 'react';
 import _initReducer, { setAuthenticated, initToken } from '@/store/slices/_initSlice';
 import accountReducer, { setProfil, setGroupes } from '@/store/slices/accountSlice';
 import companiesReducer, { setUserCompanies } from '@/store/slices/companiesSlice';
+import notification from '@/store/slices/notificationSlice';
+import BottomNavigation from '@/components/shared/bottomNavigation/bottomNavigation';
+import SettingsPage from '@/app/(app)/(drawer)/settings';
 import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
-import { isHiddenFromAccessibility } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import { Text } from 'react-native';
 import { Provider } from 'react-redux';
@@ -65,28 +68,11 @@ jest.mock('react-native-drawer-layout', () => ({
 	),
 	useDrawerProgress: () => ({ value: 0 }),
 }));
-jest.mock('@/components/layouts/navigationBar/navigationBar', () => {
-	const actual = jest.requireActual<typeof import('@/components/layouts/navigationBar/navigationBar')>(
-		'@/components/layouts/navigationBar/navigationBar',
-	);
-	const { cloneElement } = jest.requireActual<typeof import('react')>('react');
-	return {
-		...actual,
-		Notifications: () => null,
-		useNavigationHeader: () => {
-			const options = actual.useNavigationHeader();
-			return {
-				...options,
-				headerRight: () => cloneElement(options.headerRight(), {}, null),
-				unstable_headerRightItems: () =>
-					options.unstable_headerRightItems().map((item) => ({
-						...item,
-						element: cloneElement(item.element, {}, null),
-					})),
-			};
-		},
-	};
-});
+jest.mock('@/components/layouts/navigationBar/navigationBar', () => ({
+	...jest.requireActual('@/components/layouts/navigationBar/navigationBar'),
+	NotificationStatus: () => null,
+}));
+
 jest.mock('@/components/shared/themeToggle/themeToggle', () => () => null);
 jest.mock('@/components/shared/languageSwitcher/languageSwitcher', () => () => null);
 jest.mock('@/components/shared/appUpdate/appUpdate', () => () => null);
@@ -172,15 +158,35 @@ const addUser = jest.fn();
 const addCompany = jest.fn();
 const memberships = [{ id: 4, raison_sociale: 'Company Four', role: 'Caissier', uses_foreign_currency: false }];
 
+const nativeHeaders = (title: string) => screen.queryAllByRole('header', { name: title });
+const nativeHeader = (title: string) => {
+	const headers = nativeHeaders(title);
+	expect(headers).toHaveLength(1);
+	return headers[0]!;
+};
+
 const pressNavbarBack = async () => {
-	const screens = screen.container.queryAll((node) => node.type === 'RNSScreen' && !isHiddenFromAccessibility(node));
-	expect(screens.length).toBeGreaterThan(0);
-	await fireEvent(screens.at(-1)!, 'headerBackButtonClicked');
+	const active = screen.container
+		.queryAll((node) => node.type === 'RNSScreen' && !isHiddenFromAccessibility(node))
+		.at(-1)!;
+	await fireEvent(active, 'headerBackButtonClicked');
+};
+const pressNavbarClose = async () => {
+	const header = screen.container
+		.queryAll(
+			(node) =>
+				node.type === 'RNSScreenStackHeaderConfig' &&
+				!isHiddenFromAccessibility(node) &&
+				node.props.headerLeftBarButtonItems?.some((item: { title?: string }) => item.title === t.common.close),
+		)
+		.at(-1)!;
+	const close = header.props.headerLeftBarButtonItems.find((item: { title?: string }) => item.title === t.common.close);
+	await act(() => close.onPress());
 };
 
 const setup = async (initialUrl: string, access: 'staff' | 'guest' | 'nonstaff' = 'staff') => {
 	const store = configureStore({
-		reducer: { _init: _initReducer, account: accountReducer, companies: companiesReducer },
+		reducer: { _init: _initReducer, account: accountReducer, companies: companiesReducer, notification },
 	});
 	if (access === 'guest') store.dispatch(initToken());
 	else {
@@ -205,12 +211,15 @@ const setup = async (initialUrl: string, access: 'staff' | 'guest' | 'nonstaff' 
 			'(app)/(drawer)/clients/archived': () => <Text>Archived clients</Text>,
 			'(app)/(drawer)/clients/form': () => <Text>Client form</Text>,
 			'(app)/(drawer)/clients/[id]/index': () => <Text>Client details</Text>,
+			'(app)/(drawer)/future-module/index': () => <Text>Future page</Text>,
 			'(app)/(drawer)/users/index': () => <Text>Users list</Text>,
 			'(app)/(drawer)/users/[id]/index': () => <Text>User details</Text>,
 			'(app)/(drawer)/users/form': UsersFormPage,
 			'(app)/(drawer)/companies/index': () => <Text>Companies list</Text>,
 			'(app)/(drawer)/companies/[id]/index': () => <Text>Company details</Text>,
 			'(app)/(drawer)/companies/form': CompaniesFormPage,
+			'(app)/(drawer)/notifications/index': () => <BottomNavigation activePage="notifications" />,
+			'(app)/(drawer)/settings/index': SettingsPage,
 			'(app)/(drawer)/settings/edit-profile': () => <Text>Profile content</Text>,
 			'(app)/(drawer)/settings/password': () => <Text>Password content</Text>,
 			'(app)/(drawer)/settings/notifications': () => <Text>Notification preferences content</Text>,
@@ -244,6 +253,36 @@ beforeEach(() => {
 });
 
 describe('settings header navigation', () => {
+	it.each(['/users', '/companies/7', '/clients/form?company_id=5'])(
+		'closes to the original %s page after repeatedly switching the two bottom destinations',
+		async (origin) => {
+			const result = await setup(origin);
+			await act(() => router.push('/notifications'));
+			for (let index = 0; index < 3; index += 1) {
+				await fireEvent.press(screen.getByRole('button', { name: t.navigation.settings }));
+				await waitFor(() => expect(result.getPathname()).toBe('/settings'));
+				await fireEvent.press(screen.getByRole('button', { name: t.navigation.notifications }));
+				await waitFor(() => expect(result.getPathname()).toBe('/notifications'));
+			}
+			await pressNavbarClose();
+			await waitFor(() => expect(result.getPathname()).toBe(origin.split('?')[0]));
+			if (origin.includes('company_id')) expect(result.getSearchParams()).toHaveProperty('company_id', '5');
+		},
+	);
+	it.each([
+		[t.navigation.myProfile, '/settings/edit-profile'],
+		[t.navigation.changePassword, '/settings/password'],
+		[t.navigation.notificationPreferences, '/settings/notifications'],
+	])('returns from %s to Settings before closing to the original list', async (label, path) => {
+		const result = await setup('/users');
+		await act(() => router.push('/settings'));
+		await fireEvent.press(screen.getByRole('button', { name: label }));
+		await waitFor(() => expect(result.getPathname()).toBe(path));
+		await pressNavbarBack();
+		await waitFor(() => expect(result.getPathname()).toBe('/settings'));
+		await pressNavbarClose();
+		await waitFor(() => expect(result.getPathname()).toBe('/users'));
+	});
 	it.each(['edit-profile', 'password', 'notifications'])(
 		'returns to the dashboard from a cold %s screen',
 		async (page) => {
@@ -261,12 +300,11 @@ describe('settings header navigation', () => {
 		await act(async () => router.push(('/settings/' + page) as '/settings/password' | '/settings/notifications'));
 		await waitFor(() => expect(result.getPathname()).toBe('/settings/' + page));
 		expect(screen.queryByRole('button', { name: t.common.toggleDrawer })).toBeNull();
-		const headers = screen.container.queryAll(
-			(node) => node.props.backButtonInCustomView !== undefined && node.props.hideBackButton !== undefined,
-		);
 		expect(
-			headers.some((node) => node.props.backButtonInCustomView === true && node.props.hideBackButton === false),
-		).toBe(true);
+			screen.container.queryAll(
+				(node) => node.type === 'RNSScreenStackHeaderConfig' && node.props.hideBackButton === false,
+			),
+		).not.toHaveLength(0);
 		await pressNavbarBack();
 		await waitFor(() => expect(result.getPathname()).toBe('/settings/edit-profile'));
 		await pressNavbarBack();
@@ -277,6 +315,12 @@ describe('settings header navigation', () => {
 afterEach(() => jest.restoreAllMocks());
 
 describe('shared drawer and stack', () => {
+	it('inherits a start-aligned title on a future route without per-page header configuration', async () => {
+		const result = await setup('/future-module');
+		expect(nativeHeader('future-module/index')).toHaveStyle({ textAlign: 'left' });
+		await pressNavbarBack();
+		await waitFor(() => expect(result.getPathname()).toBe('/'));
+	});
 	it.each([
 		['/', t.navigation.dashboard],
 		['/clients', t.clients.listTitle],
@@ -286,7 +330,7 @@ describe('shared drawer and stack', () => {
 	])('keeps a single menu header on %s', async (url, title) => {
 		const result = await setup(url);
 		expect(result.getPathname()).toBe(url);
-		expect(screen.getAllByRole('header', { name: title })).toHaveLength(1);
+		expect(nativeHeaders(title)).toHaveLength(1);
 		expect(screen.getAllByRole('button', { name: t.common.toggleDrawer })).toHaveLength(1);
 		await fireEvent.press(screen.getByRole('button', { name: t.common.toggleDrawer }));
 		expect(await screen.findByRole('button', { name: t.navigation.logout })).toBeOnTheScreen();
@@ -301,7 +345,7 @@ describe('shared drawer and stack', () => {
 		expect(screen.queryByRole('button', { name: t.navigation.logout })).toBeNull();
 		await act(async () => router.push(CLIENTS_ADD));
 		await screen.findByText('Client form');
-		expect(screen.getByRole('header', { name: t.clients.addTitle })).toBeOnTheScreen();
+		expect(nativeHeader(t.clients.addTitle)).toBeOnTheScreen();
 		await pressNavbarBack();
 		await waitFor(() => expect(result.getPathname()).toBe('/clients/archived'));
 	});
@@ -321,11 +365,11 @@ describe('shared drawer and stack', () => {
 		const result = await setup('/clients');
 		await act(async () => router.push(CLIENTS_VIEW(7)));
 		await screen.findByText('Client details');
-		expect(screen.getByRole('header', { name: t.clients.detailsTitle })).toBeOnTheScreen();
+		expect(nativeHeader(t.clients.detailsTitle)).toBeOnTheScreen();
 		await act(async () => router.push(CLIENTS_EDIT(7)));
 		await screen.findByText('Client form');
 		expect(result.getSearchParams()).toHaveProperty('id', '7');
-		expect(screen.getByRole('header', { name: t.clients.editTitle })).toBeOnTheScreen();
+		expect(nativeHeader(t.clients.editTitle)).toBeOnTheScreen();
 		await pressNavbarBack();
 		await waitFor(() => expect(result.getPathname()).toBe('/clients/7'));
 		await pressNavbarBack();
@@ -366,14 +410,13 @@ describe.each(['users', 'companies'] as const)('%s form route', (entity) => {
 							? t.users.detailsTitle
 							: t.companies.detailsTitle;
 			const result = await setup(url);
-			await screen.findAllByRole('header', { name: title });
-			const headers = screen.container.queryAll(
-				(node) => node.props.backButtonInCustomView !== undefined && node.props.hideBackButton !== undefined,
-			);
-			expect(headers.length).toBeGreaterThan(0);
+			await waitFor(() => expect(nativeHeaders(title)).toHaveLength(1));
 			expect(
-				headers.some((node) => node.props.backButtonInCustomView === true && node.props.hideBackButton === false),
-			).toBe(true);
+				screen.container.queryAll(
+					(node) => node.type === 'RNSScreenStackHeaderConfig' && node.props.hideBackButton === false,
+				),
+			).not.toHaveLength(0);
+			expect(nativeHeader(title)).toHaveStyle({ textAlign: 'left' });
 			await pressNavbarBack();
 			await waitFor(() => expect(result.getPathname()).toBe('/'));
 			expect(screen.getByRole('button', { name: t.common.toggleDrawer })).toBeOnTheScreen();
@@ -491,7 +534,7 @@ describe.each(['users', 'companies'] as const)('%s form route', (entity) => {
 	it('retains Back to the dashboard when a cold link is denied', async () => {
 		const result = await setup('/' + entity + '/form?id=7', 'nonstaff');
 		await screen.findByText(t.noPermission.description);
-		expect(screen.getByRole('header', { name: editTitle })).toBeOnTheScreen();
+		expect(nativeHeader(editTitle)).toBeOnTheScreen();
 		expect(router.canGoBack()).toBe(true);
 		// The native stack draws Back outside React; exercise its real router action.
 		await pressNavbarBack();

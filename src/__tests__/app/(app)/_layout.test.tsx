@@ -17,29 +17,12 @@ jest.mock('expo-router/drawer', () => ({
 	Drawer: jest.requireActual<typeof import('expo-router')>('expo-router').Stack,
 	DrawerToggleButton: () => null,
 }));
-jest.mock('@/components/layouts/navigationBar/navigationBar', () => {
-	const actual = jest.requireActual<typeof import('@/components/layouts/navigationBar/navigationBar')>(
-		'@/components/layouts/navigationBar/navigationBar',
-	);
-	const { cloneElement } = jest.requireActual<typeof import('react')>('react');
-	return {
-		...actual,
-		NavigationDrawer: () => null,
-		Notifications: () => null,
-		useNavigationHeader: () => {
-			const options = actual.useNavigationHeader();
-			return {
-				...options,
-				headerRight: () => cloneElement(options.headerRight(), {}, null),
-				unstable_headerRightItems: () =>
-					options.unstable_headerRightItems().map((item) => ({
-						...item,
-						element: cloneElement(item.element, {}, null),
-					})),
-			};
-		},
-	};
-});
+jest.mock('@/components/layouts/navigationBar/navigationBar', () => ({
+	...jest.requireActual('@/components/layouts/navigationBar/navigationBar'),
+	NavigationDrawer: () => null,
+	NotificationStatus: () => null,
+}));
+
 jest.mock('@/components/shared/themeToggle/themeToggle', () => () => null);
 jest.mock('@/components/shared/languageSwitcher/languageSwitcher', () => () => null);
 jest.mock('@/components/shared/appUpdate/appUpdate', () => () => null);
@@ -89,6 +72,8 @@ const setup = async (required: boolean, initialUrl: string) => {
 			'(app)/(drawer)/settings/password': () => <Text>Change password</Text>,
 			'(app)/(drawer)/settings/edit-profile': () => <Text>Profile</Text>,
 			'(app)/(drawer)/settings/notifications': () => <Text>Notifications</Text>,
+			'(app)/(drawer)/settings/index': () => <Text>Settings menu</Text>,
+			'(app)/(drawer)/notifications/index': () => <Text>Notification inbox</Text>,
 		},
 		{ initialUrl },
 	);

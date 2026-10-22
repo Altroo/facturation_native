@@ -25,7 +25,9 @@ let store: ReturnType<typeof createStore>;
 beforeEach(() => {
 	jest.useFakeTimers();
 	adapter.mockReset();
-	adapter.mockImplementation(async (config) => response(config, { ok: true }));
+	adapter.mockImplementation(async (config) =>
+		response(config, { ok: true, count: 0, next: null, previous: null, results: [] }),
+	);
 	auth.instance.defaults.adapter = adapter;
 	store = createStore();
 });
@@ -70,7 +72,7 @@ it('loads the correct paginated notification endpoint and preserves next/previou
 	).resolves.toEqual(data);
 	expect(adapter.mock.calls[0][0]).toMatchObject({ url: '/notifications/', method: 'get', params: { page: 2 } });
 });
-it('marks selected notifications then refreshes subscribed list and unread count', async () => {
+it('marks selected notifications in the cached list and refreshes only the unread count', async () => {
 	let read = false;
 	adapter.mockImplementation(async (config) => {
 		if (config.method === 'post') {
@@ -96,6 +98,8 @@ it('marks selected notifications then refreshes subscribed list and unread count
 	expect(JSON.parse(request.data)).toEqual({ ids: [2] });
 	expect(notificationApi.endpoints.getUnreadNotificationCount.select()(store.getState()).data).toEqual({ count: 0 });
 	expect(notificationApi.endpoints.getNotifications.select({})(store.getState()).data?.results[0].is_read).toBe(true);
+	expect(adapter.mock.calls.filter(([config]) => config.url === '/notifications/')).toHaveLength(1);
+	expect(adapter.mock.calls.filter(([config]) => config.url === '/notifications/unread-count/')).toHaveLength(2);
 	list.unsubscribe();
 	count.unsubscribe();
 });
@@ -103,6 +107,62 @@ it('uses an empty body to mark all notifications read, exactly as Django expects
 	adapter.mockImplementation(async (config) => response(config, { updated: 7 }));
 	await store.dispatch(notificationApi.endpoints.markNotificationsRead.initiate({})).unwrap();
 	expect(JSON.parse(adapter.mock.calls[0][0].data)).toEqual({});
+});
+
+it.each([{}, { ids: [] }])('marks all cached pages read without downloading them again for %j', async (data) => {
+	adapter.mockImplementation(async (config) =>
+		response(
+			config,
+			config.method === 'post'
+				? { updated: 2 }
+				: {
+						count: 2,
+						next: config.params.page === 1 ? '?page=2' : null,
+						previous: config.params.page === 2 ? '?page=1' : null,
+						results: [{ id: config.params.page, is_read: false }],
+					},
+		),
+	);
+	for (const page of [1, 2]) {
+		await store.dispatch(notificationApi.endpoints.getNotifications.initiate({ page }, { subscribe: false })).unwrap();
+	}
+	await store.dispatch(notificationApi.endpoints.markNotificationsRead.initiate(data)).unwrap();
+	for (const page of [1, 2]) {
+		expect(notificationApi.endpoints.getNotifications.select({ page })(store.getState()).data?.results[0].is_read).toBe(
+			true,
+		);
+	}
+	expect(adapter.mock.calls.filter(([config]) => config.url === '/notifications/')).toHaveLength(2);
+});
+
+it('keeps cached read flags and unread counts unchanged when acknowledgement fails', async () => {
+	adapter.mockImplementation(async (config) => {
+		if (config.method === 'post') throw new AxiosError('Offline', 'ERR_NETWORK', config);
+		return response(
+			config,
+			config.url === '/notifications/unread-count/'
+				? { count: 1 }
+				: {
+						count: 1,
+						next: null,
+						previous: null,
+						results: [{ id: 2, is_read: false }],
+					},
+		);
+	});
+	const list = store.dispatch(notificationApi.endpoints.getNotifications.initiate({ page: 1 }));
+	const count = store.dispatch(notificationApi.endpoints.getUnreadNotificationCount.initiate());
+	await Promise.all([list.unwrap(), count.unwrap()]);
+	await expect(
+		store.dispatch(notificationApi.endpoints.markNotificationsRead.initiate({ ids: [2] })).unwrap(),
+	).rejects.toMatchObject({ status: 0 });
+	expect(
+		notificationApi.endpoints.getNotifications.select({ page: 1 })(store.getState()).data?.results[0].is_read,
+	).toBe(false);
+	expect(notificationApi.endpoints.getUnreadNotificationCount.select()(store.getState()).data?.count).toBe(1);
+	expect(adapter.mock.calls.filter(([config]) => config.method === 'get')).toHaveLength(2);
+	list.unsubscribe();
+	count.unsubscribe();
 });
 it('persists preferences with PUT and refreshes their subscribed query', async () => {
 	let hours = 24;

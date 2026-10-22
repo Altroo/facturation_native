@@ -1,22 +1,8 @@
-import { FlashList } from '@shopify/flash-list';
-import ApiAlert from '@/components/nativeElements/apiLoading/apiAlert/apiAlert';
-import { format, isValid, parseISO } from 'date-fns';
-import {
-	useGetUnreadNotificationCountQuery,
-	useGetNotificationsQuery,
-	useLazyGetNotificationsQuery,
-	useMarkNotificationsReadMutation,
-} from '@/store/services/notification';
+import { useGetUnreadNotificationCountQuery } from '@/store/services/notification';
 import { setUnreadCount } from '@/store/slices/notificationSlice';
-import { normalizeApiError } from '@/utils/helpers';
-import type { NotificationType } from '@/types/notificationTypes';
 import { useColorMode } from '@/providers/themeProvider';
 import { colors, fonts } from '@/utils/themes';
 import {
-	COMPANIES_VIEW,
-	COMPANIES_EDIT,
-	USERS_VIEW,
-	USERS_EDIT,
 	DASHBOARD,
 	COMPANIES_LIST,
 	COMPANIES_ADD,
@@ -24,24 +10,12 @@ import {
 	USERS_ADD,
 	CLIENTS_LIST,
 	CLIENTS_ARCHIVED,
-	DASHBOARD_EDIT_PROFILE,
-	DASHBOARD_PASSWORD,
-	DASHBOARD_NOTIFICATIONS,
 	BACKEND_SITE_ADMIN,
+	DASHBOARD_EDIT_PROFILE,
 } from '@/utils/routes';
-import { getProfilState, getUnreadNotificationCount } from '@/store/selectors';
-import { useEffect, useEffectEvent, useRef, useState } from 'react';
-import {
-	ActivityIndicator,
-	Text,
-	Image,
-	Platform,
-	Pressable,
-	FlatList,
-	View,
-	useWindowDimensions,
-	type ColorValue,
-} from 'react-native';
+import { getProfilState } from '@/store/selectors';
+import { useEffect, useEffectEvent, useState } from 'react';
+import { Text, Image, Platform, Pressable, View } from 'react-native';
 import { openURL } from 'expo-linking';
 import {
 	AndroidImportance,
@@ -55,29 +29,14 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useLanguage, useAppDispatch, useAppSelector, useToast } from '@/utils/hooks';
 import { accountLogoutAction } from '@/store/actions/accountActions';
 import Button from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
-import BottomSheet from '@/components/nativeElements/modals/bottomSheet/bottomSheet';
 import type { TranslationDictionary } from '@/types/languageTypes';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ThemeToggle from '@/components/shared/themeToggle/themeToggle';
 import LanguageSwitcher from '@/components/shared/languageSwitcher/languageSwitcher';
-import { INFINITE_SCROLL_THRESHOLD } from '@/utils/rawData';
-
-type NavigationHeaderTitleProps = {
-	children: string;
-	tintColor?: ColorValue;
-};
 
 export const useNavigationHeader = () => {
 	const { mode } = useColorMode();
-	const [controlsWidth, setControlsWidth] = useState(180);
-	const { width } = useWindowDimensions();
-	const insets = useSafeAreaInsets();
 	const headerRight = () => (
-		<View
-			className="flex-row items-center gap-1"
-			onLayout={({ nativeEvent }) => setControlsWidth(Math.ceil(nativeEvent.layout.width))}
-		>
-			<Notifications />
+		<View className="flex-row items-center gap-1">
 			<ThemeToggle />
 			<LanguageSwitcher />
 		</View>
@@ -86,26 +45,8 @@ export const useNavigationHeader = () => {
 		headerStyle: { backgroundColor: mode === 'dark' ? colors.panel : colors.white },
 		headerTintColor: mode === 'dark' ? colors.white : colors.ink,
 		headerTitleAlign: 'left' as const,
-		headerTitle: ({ children, tintColor }: NavigationHeaderTitleProps) => (
-			<Text
-				accessibilityRole="header"
-				accessibilityLabel={children}
-				numberOfLines={1}
-				ellipsizeMode="tail"
-				style={{
-					maxWidth: Math.max(0, width - insets.left - insets.right - controlsWidth - 80),
-					minWidth: 0,
-					flexShrink: 1,
-					fontFamily: fonts.semibold,
-					fontSize: 15,
-					color: tintColor,
-				}}
-			>
-				{children}
-			</Text>
-		),
+		headerTitleStyle: { fontFamily: fonts.semibold, fontSize: 15 },
 		headerRight,
-		// iOS adds a shared glass capsule to custom header controls unless hidden.
 		unstable_headerRightItems: () => [{ type: 'custom' as const, element: headerRight(), hidesSharedBackground: true }],
 	};
 };
@@ -224,28 +165,29 @@ const getNavigationMenu = (isStaff: boolean, t: TranslationDictionary) => {
 				],
 			},
 		}),
-		parametres: {
-			title: t.navigation.settings,
-			icon: <MaterialIcons name="settings" size={21} color={colors.slate[500]} />,
-			items: [
-				{ title: t.navigation.myProfile, label: t.navigation.myProfile, path: DASHBOARD_EDIT_PROFILE },
-				{ title: t.navigation.changePassword, label: t.navigation.changePassword, path: DASHBOARD_PASSWORD },
-				{
-					title: t.navigation.notifications,
-					label: t.navigation.notificationPreferences,
-					path: DASHBOARD_NOTIFICATIONS,
-				},
-				...(isStaff
-					? [
-							{
-								title: t.navigation.monthlyObjectives,
-								label: t.navigation.configureMonthlyObjectives,
-								path: undefined,
-							},
-						]
-					: []),
-			],
-		},
+		// Settings now opens from the bottom navigation. Keep the drawer section for reference.
+		// parametres: {
+		// 	title: t.navigation.settings,
+		// 	icon: <MaterialIcons name="settings" size={21} color={colors.slate[500]} />,
+		// 	items: [
+		// 		{ title: t.navigation.myProfile, label: t.navigation.myProfile, path: DASHBOARD_EDIT_PROFILE },
+		// 		{ title: t.navigation.changePassword, label: t.navigation.changePassword, path: DASHBOARD_PASSWORD },
+		// 		{
+		// 			title: t.navigation.notifications,
+		// 			label: t.navigation.notificationPreferences,
+		// 			path: DASHBOARD_NOTIFICATIONS,
+		// 		},
+		// 		...(isStaff
+		// 			? [
+		// 					{
+		// 						title: t.navigation.monthlyObjectives,
+		// 						label: t.navigation.configureMonthlyObjectives,
+		// 						path: undefined,
+		// 					},
+		// 				]
+		// 			: []),
+		// 	],
+		// },
 	};
 };
 
@@ -447,35 +389,8 @@ export const NavigationDrawer = (props: DrawerContentComponentProps) => {
 	);
 };
 
-export const getNotificationDestination = (target?: string) => {
-	if (!target || !/^\/dashboard(?:[/?]|$)/.test(target)) return null;
-	const path = target.split('?')[0].replace(/\/$/, '');
-	if (path === '/dashboard') return DASHBOARD;
-	if (path === '/dashboard/companies') return COMPANIES_LIST;
-	if (path === '/dashboard/companies/new') return COMPANIES_ADD;
-	if (path === '/dashboard/clients') return CLIENTS_LIST;
-	if (path === '/dashboard/clients/archived') return CLIENTS_ARCHIVED;
-	if (path === '/dashboard/users') return USERS_LIST;
-	if (path === '/dashboard/users/new') return USERS_ADD;
-	if (path === '/dashboard/settings/edit-profile') return DASHBOARD_EDIT_PROFILE;
-	if (path === '/dashboard/settings/password') return DASHBOARD_PASSWORD;
-	if (path === '/dashboard/settings/notifications') return DASHBOARD_NOTIFICATIONS;
-	const match = /^\/dashboard\/(companies|users)\/([1-9]\d*)(\/edit)?$/.exec(path);
-	if (!match || !Number.isSafeInteger(Number(match[2]))) return null;
-	const id = Number(match[2]);
-	return match[1] === 'companies'
-		? match[3]
-			? COMPANIES_EDIT(id)
-			: COMPANIES_VIEW(id)
-		: match[3]
-			? USERS_EDIT(id)
-			: USERS_VIEW(id);
-};
-
-export const Notifications = () => {
+export const NotificationStatus = () => {
 	const { t } = useLanguage();
-	const { mode: theme } = useColorMode();
-	const { height } = useWindowDimensions();
 	const { onError } = useToast();
 	const onPermissionError = useEffectEvent(() => onError(t.settings.notificationUpdateError));
 	useEffect(() => {
@@ -506,287 +421,9 @@ export const Notifications = () => {
 		};
 	}, []);
 	const dispatch = useAppDispatch();
-	const [open, setOpen] = useState(false);
-	const [allNotifications, setAllNotifications] = useState<NotificationType[]>([]);
-	const [notifPage, setNotifPage] = useState(1);
-	const [hasMore, setHasMore] = useState(false);
-	const [loadingMore, setLoadingMore] = useState(false);
-	const [listError, setListError] = useState<unknown>(null);
-	const [actionError, setActionError] = useState<string | null>(null);
-	const markInProgress = useRef(false);
-	const [failedPage, setFailedPage] = useState(1);
-	const notificationVersion = useRef(0);
-	const unreadCount = useAppSelector(getUnreadNotificationCount);
 	const unread = useGetUnreadNotificationCountQuery(undefined, { pollingInterval: 30000 });
-	const firstPageQuery = useGetNotificationsQuery({ page: 1 }, { skip: !open });
-	const [fetchNotifications, query] = useLazyGetNotificationsQuery();
-	const refreshing = firstPageQuery.isFetching || (query.isFetching && query.originalArgs?.page === 1);
-	const [markRead, mutation] = useMarkNotificationsReadMutation();
-	const [previousFirstPage, setPreviousFirstPage] = useState(firstPageQuery.data);
-	// Reset paginated UI before rendering a replacement cache response.
-	if (firstPageQuery.data !== previousFirstPage) {
-		setPreviousFirstPage(firstPageQuery.data);
-		if (firstPageQuery.data) {
-			setAllNotifications(firstPageQuery.data.results);
-			setHasMore(firstPageQuery.data.next !== null);
-			setNotifPage(1);
-			setLoadingMore(false);
-			setListError(null);
-		}
-	}
-
 	useEffect(() => {
 		if (unread.data) dispatch(setUnreadCount(unread.data.count));
 	}, [unread.data, dispatch]);
-
-	useEffect(() => {
-		notificationVersion.current += 1;
-	}, [firstPageQuery.data]);
-
-	const refreshFirstNotificationsPage = async () => {
-		const version = ++notificationVersion.current;
-		setLoadingMore(false);
-		setListError(null);
-		try {
-			const result = await fetchNotifications({ page: 1 }, false).unwrap();
-			if (version !== notificationVersion.current) return;
-			setAllNotifications(result.results);
-			setHasMore(result.next !== null);
-			setNotifPage(1);
-		} catch (error) {
-			if (version !== notificationVersion.current) return;
-			setFailedPage(1);
-			setListError(error);
-		}
-	};
-	const handleNotifClose = () => {
-		notificationVersion.current += 1;
-		setLoadingMore(false);
-		setOpen(false);
-	};
-	const handleLoadMore = async () => {
-		if (!open || !hasMore || loadingMore || refreshing || query.isFetching || mutation.isLoading) return;
-		const version = notificationVersion.current;
-		const nextPage = notifPage + 1;
-		setLoadingMore(true);
-		setListError(null);
-		try {
-			const result = await fetchNotifications({ page: nextPage }, false).unwrap();
-			if (version !== notificationVersion.current) return;
-			setAllNotifications((previous) => [
-				...new Map([...previous, ...result.results].map((item) => [item.id, item])).values(),
-			]);
-			setHasMore(result.next !== null);
-			setNotifPage(nextPage);
-		} catch (error) {
-			if (version !== notificationVersion.current) return;
-			setFailedPage(nextPage);
-			setListError(error);
-		} finally {
-			if (version === notificationVersion.current) setLoadingMore(false);
-		}
-	};
-	const handleNotifOpen = () => {
-		setActionError(null);
-		setOpen(true);
-		void refreshFirstNotificationsPage();
-	};
-	const handleMarkAllRead = async () => {
-		if (markInProgress.current) return;
-		markInProgress.current = true;
-		setActionError(null);
-		try {
-			await markRead({}).unwrap();
-			dispatch(setUnreadCount(0));
-			setAllNotifications((previous) => previous.map((item) => ({ ...item, is_read: true })));
-		} catch {
-			setActionError(t.common.genericError);
-			onError(t.common.genericError);
-		} finally {
-			markInProgress.current = false;
-		}
-	};
-	const handleNotificationClick = async (notification: NotificationType) => {
-		if (markInProgress.current) return;
-		markInProgress.current = true;
-		setActionError(null);
-		try {
-			if (!notification.is_read) {
-				await markRead({ ids: [notification.id] }).unwrap();
-				dispatch(setUnreadCount(Math.max(unreadCount - 1, 0)));
-				setAllNotifications((previous) =>
-					previous.map((item) => (item.id === notification.id ? { ...item, is_read: true } : item)),
-				);
-			}
-			const destination = getNotificationDestination(notification.target_url);
-			if (destination) {
-				handleNotifClose();
-				router.push(destination);
-			}
-		} catch {
-			setActionError(t.common.genericError);
-			onError(t.common.genericError);
-		} finally {
-			markInProgress.current = false;
-		}
-	};
-	const axiosError = normalizeApiError(listError);
-	const listProps = {
-		testID: 'notifications-list',
-		data: allNotifications,
-		keyExtractor: (item: NotificationType) => String(item.id),
-		ItemSeparatorComponent: () => <View className="h-3" />,
-		onEndReachedThreshold: INFINITE_SCROLL_THRESHOLD,
-		onEndReached: () => {
-			if (!listError) void handleLoadMore();
-		},
-		refreshing,
-		onRefresh: () => {
-			if (!refreshing && !loadingMore && !mutation.isLoading) void refreshFirstNotificationsPage();
-		},
-		ListHeaderComponent:
-			refreshing && !allNotifications.length ? (
-				<Text className="font-sans text-ink dark:text-slate-100">{t.common.loading}</Text>
-			) : undefined,
-		ListEmptyComponent:
-			!refreshing && !listError ? (
-				<View className="items-center justify-center gap-4 px-6 py-8" style={{ minHeight: height * 0.32 }}>
-					<View className="h-20 w-20 items-center justify-center rounded-full bg-blue-50 dark:bg-slate-800">
-						<MaterialIcons name="notifications-none" size={36} color={colors.brand} />
-						<View
-							className="absolute right-0 top-0 h-4 w-4 rounded-full border-4 border-white bg-blue-200
-						dark:border-panel dark:bg-blue-900"
-						/>
-					</View>
-					<Text className="text-center font-poppins-medium text-base text-slate-500 dark:text-slate-300">
-						{t.navigation.noNotifications}
-					</Text>
-				</View>
-			) : undefined,
-		ListFooterComponent: loadingMore ? (
-			<ActivityIndicator accessibilityLabel={t.common.loading} color={colors.brand} style={{ padding: 16 }} />
-		) : undefined,
-		renderItem: ({ item }: { item: NotificationType }) => {
-			const date = parseISO(item.date_created);
-			return (
-				<Pressable
-					accessibilityRole="button"
-					disabled={
-						mutation.isLoading ||
-						refreshing ||
-						loadingMore ||
-						(item.is_read && !getNotificationDestination(item.target_url))
-					}
-					onPress={() => void handleNotificationClick(item)}
-				>
-					<View
-						className={
-							'gap-3 rounded-2xl border p-4 ' +
-							(item.is_read
-								? 'border-slate-200 bg-white dark:border-slate-700 dark:bg-panel'
-								: 'border-blue-100 bg-blue-50/50 dark:border-slate-600 dark:bg-slate-800')
-						}
-					>
-						<View className="flex-row items-start gap-3">
-							<MaterialIcons
-								name={item.is_read ? 'notifications-none' : 'notifications-active'}
-								size={22}
-								color={item.is_read ? colors.slate[500] : colors.brand}
-							/>
-							<View className="flex-1 gap-1">
-								<Text className="text-ink dark:text-slate-100 font-poppins-semibold">{item.title}</Text>
-								<Text className="font-sans text-sm leading-5 text-slate-600 dark:text-slate-300">{item.message}</Text>
-								<Text className="font-sans text-xs text-slate-400 dark:text-slate-400">
-									{isValid(date) ? format(date, 'dd/MM/yyyy HH:mm') : ''}
-								</Text>
-							</View>
-						</View>
-					</View>
-				</Pressable>
-			);
-		},
-	};
-	return (
-		<>
-			<Pressable
-				accessibilityRole="button"
-				accessibilityLabel={t.navigation.notifications}
-				onPress={handleNotifOpen}
-				className="h-10 w-10 items-center justify-center rounded-full"
-			>
-				<MaterialIcons
-					name="notifications-none"
-					size={23}
-					color={theme === 'dark' ? colors.slate[200] : colors.slate[700]}
-				/>
-				{unreadCount > 0 && (
-					<View className="absolute right-0 top-0 min-w-4 rounded-full bg-red-600 px-1">
-						<Text className="font-sans text-center text-[10px] text-white">
-							{unreadCount > 99 ? '99+' : unreadCount}
-						</Text>
-					</View>
-				)}
-			</Pressable>
-			<BottomSheet
-				visible={open}
-				title={t.navigation.notifications}
-				titleIcon={
-					<View className="h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 dark:bg-slate-800">
-						<MaterialIcons name="notifications" size={24} color={colors.brand} />
-					</View>
-				}
-				onClose={handleNotifClose}
-				onDismiss={handleNotifClose}
-				testID="notifications-sheet"
-				style={{ minHeight: height * 0.5, maxHeight: height * 0.75 }}
-			>
-				{unreadCount > 0 && (
-					<Pressable
-						accessibilityRole="button"
-						accessibilityLabel={t.navigation.markAllRead}
-						accessibilityState={{ busy: mutation.isLoading, disabled: mutation.isLoading || refreshing || loadingMore }}
-						disabled={mutation.isLoading || refreshing || loadingMore}
-						onPress={() => void handleMarkAllRead()}
-						className="min-h-11 flex-row items-center justify-end gap-2 self-end rounded-lg px-2 py-2
-						active:bg-blue-50 dark:active:bg-slate-800"
-					>
-						<View className="h-5 w-5 items-center justify-center">
-							{mutation.isLoading ? (
-								<ActivityIndicator size="small" color={colors.brand} />
-							) : (
-								<MaterialIcons name="done-all" size={18} color={colors.brand} />
-							)}
-						</View>
-						<Text className="font-poppins-medium text-sm text-brand">{t.navigation.markAllRead}</Text>
-					</Pressable>
-				)}
-				{!!actionError && <ApiAlert errorDetails={actionError} />}
-				{!!listError && (
-					<>
-						<ApiAlert
-							errorDetails={
-								axiosError.status_code === 0
-									? t.errors.networkError
-									: axiosError.status_code === 403
-										? t.noPermission.description
-										: axiosError.status_code === 404
-											? t.notFound.message
-											: axiosError.message
-							}
-						/>
-						<Button
-							buttonText={t.common.retry}
-							inverted
-							onClick={() => void (failedPage === 1 ? refreshFirstNotificationsPage() : handleLoadMore())}
-							active={!(refreshing || loadingMore)}
-							loading={false}
-						/>
-					</>
-				)}
-				<View style={{ height: height * 0.45, flexShrink: 1 }}>
-					{Platform.OS === 'web' ? <FlatList {...listProps} /> : <FlashList {...listProps} />}
-				</View>
-			</BottomSheet>
-		</>
-	);
+	return null;
 };
