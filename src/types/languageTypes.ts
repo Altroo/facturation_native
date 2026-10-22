@@ -161,11 +161,14 @@ export type TranslationDictionary = {
 		togglePasswordVisibility: string;
 		avatarPreview: string;
 		editPhoto: string;
+		replaceImage: string;
 		toggleDrawer: string;
 		moreActions: string;
 		companiesTabs: string;
 		companiesScrollLeft: string;
 		companiesScrollRight: string;
+		tabsScrollLeft: string;
+		tabsScrollRight: string;
 		refreshPage: string;
 	};
 	navigation: {
@@ -216,6 +219,7 @@ export type TranslationDictionary = {
 		notificationPreferences: string;
 		markAllRead: string;
 		noNotifications: string;
+		unreadNotifications: (count: number) => string;
 		loadMore: string;
 		logout: string;
 		administration: string;
@@ -437,6 +441,7 @@ export type TranslationDictionary = {
 		accountStatement: string;
 		statementDateFrom: string;
 		statementDateTo: string;
+		statementInvalidDates: string;
 		statementType: string;
 		statementAllTypes: string;
 		statementDueDate: string;
@@ -1651,6 +1656,7 @@ export type TranslationDictionary = {
 		homeBtn: string;
 	};
 	filterPanel: {
+		logicOperator: string;
 		and: string;
 		or: string;
 		contains: string;
