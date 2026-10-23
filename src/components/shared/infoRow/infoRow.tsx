@@ -8,6 +8,7 @@ type Props = {
 	value: ReactNode;
 	valueTone?: 'danger' | 'success' | 'warning';
 	dense?: boolean;
+	inline?: boolean;
 };
 
 const InfoRow = (props: Props) => {
@@ -25,15 +26,25 @@ const InfoRow = (props: Props) => {
 	return (
 		<View className={'flex-row items-start gap-3 ' + (props.dense ? '' : 'py-2')}>
 			{icon}
-			<View className="flex-1 gap-1">
-				{!!label && <Text className="font-sans text-xs text-slate-500 dark:text-slate-400">{label}</Text>}
+			<View className={props.inline ? 'min-w-0 flex-1 flex-row items-start justify-between gap-3' : 'flex-1 gap-1'}>
+				{!!label && (
+					<Text
+						className={
+							'font-sans text-xs text-slate-500 dark:text-slate-400 ' + (props.inline ? 'min-w-0 flex-1 pt-0.5' : '')
+						}
+					>
+						{label}
+					</Text>
+				)}
 				{isValidElement(value) ? (
 					value
 				) : (
 					<Text
 						selectable
 						className={
-							'text-sm leading-6 ' + (empty ? 'font-sans text-slate-400' : `font-poppins-semibold ${valueColor}`)
+							'text-sm leading-6 ' +
+							(props.inline ? 'shrink text-right ' : '') +
+							(empty ? 'font-sans text-slate-400' : `font-poppins-semibold ${valueColor}`)
 						}
 					>
 						{empty ? t.common.noData : value}

@@ -3,6 +3,7 @@ import SectionCard from '@/components/shared/sectionCard/sectionCard';
 import DetailsPage from '@/components/shared/detailsPage/detailsPage';
 import DetailsPageActions from '@/components/shared/detailsPageActions/detailsPageActions';
 import EntityImage from '@/components/shared/entityImage/entityImage';
+import ManagedByDetails from '@/components/shared/managedByDetails/managedByDetails';
 import NoPermission from '@/components/shared/noPermission/noPermission';
 import QueryError from '@/components/shared/queryError/queryError';
 import ApiAlert from '@/components/nativeElements/apiLoading/apiAlert/apiAlert';
@@ -241,43 +242,24 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 						value={companyData.inventory_management_enabled ? t.common.yes : t.common.no}
 					/>
 				</SectionCard>
-				<SectionCard title={t.companies.managersSection} icon="manage-accounts">
-					{companyData.admins?.map((entry) => (
-						<View key={entry.id} className="gap-2 rounded-xl bg-slate-50 p-4 dark:bg-slate-800">
-							<View className="flex-row items-center gap-3">
-								<EntityImage
-									label={
-										[entry.first_name, entry.last_name].filter(Boolean).join(' ').trim() ||
-										t.users.userFallback(entry.id)
-									}
-									avatar
-									icon="person-outline"
-								/>
-								<View className="flex-1 gap-2">
-									<Text className="text-ink dark:text-slate-100 font-poppins-medium">
-										{[entry.first_name, entry.last_name].filter(Boolean).join(' ').trim() ||
-											t.users.userFallback(entry.id)}
-									</Text>
-									<View className="flex-row items-center gap-1.5 self-start rounded-full px-3 py-1.5 bg-blue-50 dark:bg-slate-800">
-										<MaterialIcons name="shield" size={14} color={colors.brand} />
-										<Text className="font-poppins-medium text-xs text-brand dark:text-blue-300">
-											{entry.role || t.common.noData}
-										</Text>
-									</View>
-								</View>
-							</View>
-							<InfoRow
-								icon={<MaterialIcons name="verified" size={20} color={colors.slate[400]} />}
-								label={t.managedByTable.invoiceValidation}
-								value={entry.can_validate_factures ? t.common.yes : t.common.no}
+				<SectionCard title={t.companies.managersSection} icon="manage-accounts" count={companyData.admins?.length ?? 0}>
+					<View className="gap-4">
+						{companyData.admins?.map((entry) => (
+							<ManagedByDetails
+								key={entry.id}
+								icon="person-outline"
+								avatar
+								image={entry.avatar_cropped || entry.avatar}
+								previewImage={entry.avatar}
+								label={
+									[entry.first_name, entry.last_name].filter(Boolean).join(' ').trim() || t.users.userFallback(entry.id)
+								}
+								role={entry.role}
+								can_validate_factures={entry.can_validate_factures}
+								can_change_document_status={entry.can_change_document_status}
 							/>
-							<InfoRow
-								icon={<MaterialIcons name="published-with-changes" size={20} color={colors.slate[400]} />}
-								label={t.managedByTable.documentStatusChange}
-								value={entry.can_change_document_status ? t.common.yes : t.common.no}
-							/>
-						</View>
-					))}
+						))}
+					</View>
 					{!companyData.admins?.length && (
 						<Text className="font-sans dark:text-slate-100 py-4 text-center text-sm text-slate-400">
 							{t.companies.noManager}

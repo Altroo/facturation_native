@@ -3,6 +3,7 @@ import SectionCard from '@/components/shared/sectionCard/sectionCard';
 import DetailsPage from '@/components/shared/detailsPage/detailsPage';
 import DetailsPageActions from '@/components/shared/detailsPageActions/detailsPageActions';
 import EntityImage from '@/components/shared/entityImage/entityImage';
+import ManagedByDetails from '@/components/shared/managedByDetails/managedByDetails';
 import NoPermission from '@/components/shared/noPermission/noPermission';
 import QueryError from '@/components/shared/queryError/queryError';
 import ApiAlert from '@/components/nativeElements/apiLoading/apiAlert/apiAlert';
@@ -194,30 +195,19 @@ const UsersViewPageContent = (props: UsersViewProps) => {
 					/>
 				</SectionCard>
 				<SectionCard title={t.users.companiesSection} icon="business" count={userData.companies.length}>
-					{userData.companies.map((entry) => (
-						<View key={entry.company_id} className="gap-2 rounded-xl bg-slate-50 p-4 dark:bg-slate-800">
-							<View className="flex-row items-center gap-3">
-								<EntityImage label={entry.raison_sociale} />
-								<View className="flex-1 gap-2">
-									<Text className="text-ink dark:text-slate-100 font-poppins-medium">{entry.raison_sociale}</Text>
-									<View className="flex-row items-center gap-1.5 self-start rounded-full px-3 py-1.5 bg-blue-50 dark:bg-slate-800">
-										<MaterialIcons name="shield" size={14} color={colors.brand} />
-										<Text className="font-poppins-medium text-xs text-brand dark:text-blue-300">{entry.role}</Text>
-									</View>
-								</View>
-							</View>
-							<InfoRow
-								icon={<MaterialIcons name="verified" size={20} color={colors.slate[400]} />}
-								label={t.managedByTable.invoiceValidation}
-								value={entry.can_validate_factures ? t.common.yes : t.common.no}
+					<View className="gap-4">
+						{userData.companies.map((entry) => (
+							<ManagedByDetails
+								key={entry.membership_id}
+								label={entry.raison_sociale}
+								image={entry.logo_cropped || entry.logo}
+								previewImage={entry.logo}
+								role={entry.role}
+								can_validate_factures={entry.can_validate_factures}
+								can_change_document_status={entry.can_change_document_status}
 							/>
-							<InfoRow
-								icon={<MaterialIcons name="published-with-changes" size={20} color={colors.slate[400]} />}
-								label={t.managedByTable.documentStatusChange}
-								value={entry.can_change_document_status ? t.common.yes : t.common.no}
-							/>
-						</View>
-					))}
+						))}
+					</View>
 					{!userData.companies.length && (
 						<Text className="font-sans dark:text-slate-100 py-4 text-center text-sm text-slate-400">
 							{t.users.noCompany}

@@ -3,7 +3,7 @@ import { Text, Pressable, ScrollView, View, PressableProps } from 'react-native'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useLanguage } from '@/utils/hooks';
 import type { DropDownType } from '@/types/accountTypes';
-import { colors } from '@/utils/themes';
+import { colors, inputTextStyle } from '@/utils/themes';
 
 export type Props = {
 	id?: string;
@@ -19,6 +19,7 @@ export type Props = {
 	error?: boolean;
 	disabled?: boolean;
 	cssClass?: string;
+	compact?: boolean;
 	startIcon?: ReactNode;
 	endIcon?: ReactNode;
 };
@@ -26,6 +27,8 @@ export type Props = {
 const CustomDropDownSelect: FC<Props> = (props: Props) => {
 	const [open, setOpen] = useState(false);
 	const { t } = useLanguage();
+	// An empty stored value can be a real option, such as "Aucune" remise.
+	const selectedLabel = props.value !== null ? (props.getOptionLabel?.(props.value) ?? props.value) : '';
 	if (props.disabled && open) setOpen(false);
 	return (
 		<View className={'gap-2 ' + (props.cssClass ?? '')}>
@@ -42,16 +45,20 @@ const CustomDropDownSelect: FC<Props> = (props: Props) => {
 				onPress={() => setOpen((current) => !current)}
 				onBlur={props.onBlur}
 				className={
-					'min-h-12 flex-row items-center gap-3 rounded-xl border bg-white p-3 dark:bg-panel ' +
+					'min-h-12 flex-row items-center rounded-xl border bg-white dark:bg-panel ' +
+					(props.compact ? 'gap-2 p-2 ' : 'gap-3 p-3 ') +
 					(props.error ? 'border-red-500 ' : 'border-slate-300 dark:border-slate-600 ') +
 					(props.disabled ? 'opacity-50' : '')
 				}
 			>
 				{props.startIcon}
 				<Text
-					className={'font-sans flex-1 text-sm ' + (props.value ? 'text-ink dark:text-slate-100' : 'text-slate-400')}
+					style={inputTextStyle}
+					className={
+						'flex-1 ' + (selectedLabel ? 'text-ink dark:text-slate-100' : 'text-slate-500 dark:text-slate-400')
+					}
 				>
-					{props.value ? (props.getOptionLabel?.(props.value) ?? props.value) : t.common.selectValue}
+					{selectedLabel || t.common.selectValue}
 				</Text>
 				{props.endIcon || (
 					<MaterialIcons name={open ? 'expand-less' : 'expand-more'} size={22} color={colors.slate[400]} />
@@ -69,6 +76,7 @@ const CustomDropDownSelect: FC<Props> = (props: Props) => {
 						{props.items.map((item, index) => {
 							const isObject = typeof item === 'object' && item !== null && 'value' in item;
 							const value = isObject ? item?.value : item;
+							const label = props.getOptionLabel?.(value) ?? value;
 							return (
 								<Pressable
 									key={index}
@@ -88,7 +96,7 @@ const CustomDropDownSelect: FC<Props> = (props: Props) => {
 												: 'font-sans text-ink dark:text-slate-100')
 										}
 									>
-										{value ? (props.getOptionLabel?.(value) ?? value) : t.common.selectValue}
+										{label || t.common.selectValue}
 									</Text>
 									<View className="h-5 w-5 items-center justify-center">
 										{props.value === value && <MaterialIcons name="check-circle" size={20} color={colors.brand} />}

@@ -84,6 +84,8 @@ export type TranslationDictionary = {
 		textTooLong: string;
 	};
 	common: {
+		decreaseValue: (label: string) => string;
+		increaseValue: (label: string) => string;
 		undo: string;
 		yes: string;
 		no: string;
@@ -263,6 +265,8 @@ export type TranslationDictionary = {
 		networkError: string;
 	};
 	pdf: {
+		format: string;
+		language: string;
 		generatePdf: string;
 		chooseLanguage: string;
 		french: string;
@@ -1553,6 +1557,9 @@ export type TranslationDictionary = {
 		bulkDeleteBody: (n: number, type: string) => string;
 	};
 	documentView: {
+		stockAvailable: string;
+		stockIncomingCovered: string;
+		stockShortage: string;
 		documentInfoSection: string;
 		clientSection: string;
 		clientLabel: string;
@@ -1597,6 +1604,7 @@ export type TranslationDictionary = {
 	addArticleModal: {
 		title: string;
 		statusHeader: string;
+		articleCount: (loaded: number, total: number) => string;
 		statusExisting: string;
 		statusNew: string;
 		typeLabel: string;
@@ -1636,6 +1644,7 @@ export type TranslationDictionary = {
 		applyBtn: string;
 	};
 	totalsCard: {
+		title: string;
 		totalHT: string;
 		totalPrixAchat: string;
 		totalTVA: string;

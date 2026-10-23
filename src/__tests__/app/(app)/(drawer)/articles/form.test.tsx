@@ -149,6 +149,23 @@ it('creates in the selected company, sends the crop, and converts a TTC input ba
 	expect(router.dismissTo).toHaveBeenCalledWith('/articles');
 });
 
+it('steps TVA in both directions, respects zero, and submits a decimal rate as a number', async () => {
+	await setup();
+	await fill();
+	const label = t.articles.fieldTva;
+	await fireEvent.press(screen.getByRole('button', { name: t.common.increaseValue(label) }));
+	expect(screen.getByLabelText(label)).toHaveProp('value', '21');
+	await fireEvent.press(screen.getByRole('button', { name: t.common.decreaseValue(label) }));
+	expect(screen.getByLabelText(label)).toHaveProp('value', '20');
+	await fireEvent.changeText(screen.getByLabelText(label), '0');
+	expect(screen.getByRole('button', { name: t.common.decreaseValue(label) })).toBeDisabled();
+	await fireEvent.changeText(screen.getByLabelText(label), '7,5');
+	await fireEvent.press(screen.getByRole('button', { name: t.common.increaseValue(label) }));
+	expect(screen.getByLabelText(label)).toHaveProp('value', '8.5');
+	await fireEvent.press(screen.getByRole('button', { name: t.common.add }));
+	await waitFor(() => expect(mockAdd).toHaveBeenCalledWith({ data: expect.objectContaining({ tva: 8.5 }) }));
+});
+
 it('edits an article with its stored entry basis and leaves the user on the form', async () => {
 	mockParams.id = '7';
 	await mockArticleQuery.setResult({ currentData: article } as never);

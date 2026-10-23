@@ -21,6 +21,7 @@ type Props = {
 	onAddSuccess?: (id: number) => void;
 	onDeleteSuccess?: () => void;
 	disabled?: boolean;
+	iconOnly?: boolean;
 };
 
 // Native equivalent of the web EntityCrudControls. Every future parameter
@@ -95,11 +96,16 @@ const EntityCrudControls = (props: Props) => {
 					disabled={disabled}
 					onPress={() => open('add')}
 					className={
-						'min-h-11 items-center justify-center rounded-lg px-2 active:bg-blue-50 dark:active:bg-slate-800 ' +
+						'min-h-11 items-center justify-center rounded-lg active:bg-blue-50 dark:active:bg-slate-800 ' +
+						(props.iconOnly ? 'w-11 ' : 'px-2 ') +
 						(disabled ? 'opacity-50' : '')
 					}
 				>
-					<Text className="font-poppins-medium text-sm text-brand dark:text-blue-300">{t.common.add}</Text>
+					{props.iconOnly ? (
+						<MaterialIcons name="add" size={22} color={colors.brand} />
+					) : (
+						<Text className="font-poppins-medium text-sm text-brand dark:text-blue-300">{t.common.add}</Text>
+					)}
 				</Pressable>
 				{validSelection &&
 					secondaryActions.map((item) => (

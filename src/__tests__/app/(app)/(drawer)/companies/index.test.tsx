@@ -474,7 +474,7 @@ it('combines both date bounds in the web preview using the Django date contract'
 		await setup();
 		await fireEvent.press(screen.getByLabelText(translations.fr.dataGrid.toolbarFilters));
 		await toggleAutocomplete(translations.fr.dataGrid.fieldLabel, -1);
-		await fireEvent.press(screen.getAllByText(translations.fr.common.dateCreation).at(-1)!);
+		await fireEvent.press(screen.getByRole('radio', { name: translations.fr.common.dateCreation }));
 		expect(screen.getByRole('button', { name: translations.fr.dataGrid.operatorLabel })).toBeDisabled();
 		await fireEvent.changeText(screen.getByLabelText(translations.fr.dateRange.from), '2026-01-01');
 		await fireEvent.changeText(screen.getByLabelText(translations.fr.dateRange.to), '2026-10-01');

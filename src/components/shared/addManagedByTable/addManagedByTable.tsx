@@ -17,6 +17,8 @@ export type ManagedByType = {
 	id: number;
 	first_name: string | null;
 	last_name: string | null;
+	avatar?: string | null;
+	avatar_cropped?: string | null;
 	role: string | null;
 	can_validate_factures?: boolean;
 	can_change_document_status?: boolean;

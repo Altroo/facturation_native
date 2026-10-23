@@ -10,7 +10,7 @@ import {
 	type TextInputInstance,
 } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { colors } from '@/utils/themes';
+import { colors, inputTextStyle } from '@/utils/themes';
 
 export type CustomTextInputProps = Omit<TextInputProps, 'editable'> & {
 	ref?: Ref<TextInputInstance>;
@@ -22,10 +22,25 @@ export type CustomTextInputProps = Omit<TextInputProps, 'editable'> & {
 	startIcon?: ReactNode;
 	endIcon?: ReactNode;
 	cssClass?: string;
+	compact?: boolean;
+	hideLockIcon?: boolean;
 };
 
 const CustomTextInput = (props: CustomTextInputProps) => {
-	const { label, required, error, helperText, startIcon, endIcon, disabled, cssClass, style, ...restOfProps } = props;
+	const {
+		label,
+		required,
+		error,
+		helperText,
+		startIcon,
+		endIcon,
+		disabled,
+		cssClass,
+		compact,
+		hideLockIcon,
+		style,
+		...restOfProps
+	} = props;
 	const { mode: theme } = useColorMode();
 	const { fontScale } = useWindowDimensions();
 	const lines = props.numberOfLines ?? 4;
@@ -48,10 +63,11 @@ const CustomTextInput = (props: CustomTextInputProps) => {
 			numberOfLines={props.multiline ? lines : props.numberOfLines}
 			scrollEnabled={props.scrollEnabled ?? true}
 			className={
-				'min-h-12 min-w-0 overflow-hidden px-4 py-3 font-sans text-base text-ink dark:text-white ' +
+				'min-h-12 min-w-0 overflow-hidden text-ink dark:text-white ' +
+				(compact ? 'px-2 py-2 ' : 'px-3 py-3 ') +
 				(scrollableValue ? 'grow shrink-0 ' : 'flex-1 ')
 			}
-			style={[multilineStyle, style]}
+			style={[inputTextStyle, multilineStyle, style]}
 		/>
 	);
 	return (
@@ -69,7 +85,11 @@ const CustomTextInput = (props: CustomTextInputProps) => {
 					(disabled ? 'bg-slate-100 dark:bg-slate-800' : 'bg-white dark:bg-panel')
 				}
 			>
-				{startIcon && <View className="pl-3">{startIcon}</View>}
+				{startIcon && (
+					<View className={(compact ? 'pl-2 ' : 'pl-3 ') + (props.multiline ? 'self-start pt-3' : '')}>
+						{startIcon}
+					</View>
+				)}
 				{scrollableValue ? (
 					<ScrollView
 						horizontal
@@ -84,7 +104,7 @@ const CustomTextInput = (props: CustomTextInputProps) => {
 					input
 				)}
 				{endIcon}
-				{!endIcon && disabled && (
+				{!endIcon && disabled && !hideLockIcon && (
 					<View className="w-7 justify-center">
 						<MaterialIcons name="lock-outline" size={16} color={colors.slate[400]} />
 					</View>

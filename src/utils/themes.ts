@@ -62,6 +62,9 @@ export const fonts = {
 	semibold: 'PoppinsSemiBold',
 } as const;
 
+// Text fields and both kinds of picker share their value/placeholder typography.
+export const inputTextStyle = { fontFamily: fonts.regular, fontSize: 16 } as const;
+
 export const dataGridThemes: Record<'light' | 'dark', DataGridTheme> = {
 	light: {
 		headerBackground: '#eef4fa',

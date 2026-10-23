@@ -117,3 +117,12 @@ it('keeps Add text-only and exposes edit/delete directly only after selection', 
 	expect(edit).not.toHaveBeenCalled();
 	expect(remove).not.toHaveBeenCalled();
 });
+
+it('offers compact icon actions with accessible names for crowded form labels', async () => {
+	await render(<EntityCrudControls {...props} iconOnly />);
+	const button = screen.getByRole('button', { name: `${t.common.add} Ville` });
+	expect(button).not.toHaveTextContent(t.common.add);
+	await fireEvent.press(button);
+	expect(screen.getByTestId('entity-name-sheet')).toBeOnTheScreen();
+	expect(screen.getByLabelText(t.addEntityModal.fieldLabel('Ville'))).toBeOnTheScreen();
+});

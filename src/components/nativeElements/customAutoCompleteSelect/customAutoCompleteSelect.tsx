@@ -15,7 +15,7 @@ import { useLanguage } from '@/utils/hooks';
 import { useColorMode } from '@/providers/themeProvider';
 import type { DropDownType } from '@/types/accountTypes';
 import { KeyboardSuggestionsContext } from '@/components/shared/keyboardAwareScrollView/keyboardAwareScrollView';
-import { colors, fonts } from '@/utils/themes';
+import { colors, inputTextStyle } from '@/utils/themes';
 
 export type Props = {
 	id?: string;
@@ -164,8 +164,7 @@ const CustomAutoCompleteSelect: FC<Props> = (props: Props) => {
 						autoCapitalize: 'none',
 						autoCorrect: false,
 						style: {
-							fontFamily: fonts.regular,
-							fontSize: 14,
+							...inputTextStyle,
 							color: dark ? colors.slate[100] : colors.ink,
 							paddingLeft: startIcon ? 0 : 12,
 							paddingRight: value && expanded ? 88 : 44,

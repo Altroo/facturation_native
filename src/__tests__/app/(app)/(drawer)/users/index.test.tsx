@@ -427,7 +427,7 @@ it('uses stable gender values and preserves false boolean filters', async () => 
 	await setup();
 	await fireEvent.press(screen.getByLabelText(t.dataGrid.toolbarFilters));
 	await toggleAutocomplete(t.dataGrid.fieldLabel, -1);
-	await fireEvent.press(screen.getAllByText(t.users.colSexe).at(-1)!);
+	await fireEvent.press(screen.getByRole('radio', { name: t.users.colSexe }));
 	await toggleAutocomplete(t.common.value, -1);
 	await fireEvent.press(screen.getByRole('radio', { name: t.users.filterSexeFemme }));
 	await fireEvent.press(screen.getByText(t.dataGrid.searchApply));
@@ -438,9 +438,9 @@ it('uses stable gender values and preserves false boolean filters', async () => 
 	await fireEvent.press(screen.getByLabelText(t.dataGrid.toolbarFilters));
 	await fireEvent.press(screen.getByLabelText(t.common.addFilter));
 	await toggleAutocomplete(t.dataGrid.fieldLabel, -1);
-	await fireEvent.press(screen.getAllByText(t.users.colActive).at(-1)!);
+	await fireEvent.press(screen.getByRole('radio', { name: t.users.colActive }));
 	await toggleAutocomplete(t.common.value, -1);
-	await fireEvent.press(screen.getAllByText(t.common.no).at(-1)!);
+	await fireEvent.press(screen.getByRole('radio', { name: t.common.no }));
 	await fireEvent.press(screen.getByText(t.dataGrid.searchApply));
 	expect(useGetUsersInfiniteListInfiniteQuery).toHaveBeenLastCalledWith(
 		expect.objectContaining({ gender: 'F', is_active: 'false' }),

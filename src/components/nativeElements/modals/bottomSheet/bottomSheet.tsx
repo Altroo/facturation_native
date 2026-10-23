@@ -25,6 +25,7 @@ type Props = {
 	onClose: () => void;
 	onDismiss?: () => void;
 	style?: StyleProp<ViewStyle>;
+	contentStyle?: StyleProp<ViewStyle>;
 	testID: string;
 };
 
@@ -56,7 +57,11 @@ const BottomSheet: FC<Props> = (props: Props) => {
 							className="w-full max-w-lg rounded-t-3xl bg-white px-6 pt-5 dark:bg-panel"
 							style={[{ maxHeight: height * 0.85, flexShrink: 1 }, style]}
 						>
-							<SafeAreaView edges={['bottom']} style={{ flexShrink: 1, gap: 20, paddingBottom: 20 }}>
+							<SafeAreaView
+								testID={testID + '-content'}
+								edges={['bottom']}
+								style={[{ flexShrink: 1, gap: 20, paddingBottom: 20 }, props.contentStyle]}
+							>
 								<View className="flex-row items-center gap-3">
 									{titleIcon}
 									<View className="flex-1 gap-1">

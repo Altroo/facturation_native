@@ -1,3 +1,4 @@
+import type { ComponentProps } from 'react';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import CustomMenu from '@/components/nativeElements/customMenu/customMenu';
 import { useLanguage } from '@/utils/hooks';
@@ -5,6 +6,7 @@ import { useColorMode } from '@/providers/themeProvider';
 import { colors } from '@/utils/themes';
 
 type Props = {
+	extraActions?: ComponentProps<typeof CustomMenu>['actions'];
 	onEdit?: () => void;
 	onArchive?: () => void;
 	onUnarchive?: () => void;
@@ -22,6 +24,7 @@ const ListCardActions = (props: Props) => {
 			label={t.common.moreActions}
 			disabled={props.disabled}
 			actions={[
+				...(props.extraActions ?? []),
 				...(props.onEdit
 					? [
 							{

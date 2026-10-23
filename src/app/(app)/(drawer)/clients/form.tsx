@@ -31,12 +31,14 @@ import { colors } from '@/utils/themes';
 import ApiAlert from '@/components/nativeElements/apiLoading/apiAlert/apiAlert';
 import ApiProgress from '@/components/nativeElements/apiLoading/apiProgress/apiProgress';
 import CustomTextInput from '@/components/nativeElements/customTextInput/customTextInput';
+import CustomNumberInput from '@/components/nativeElements/customNumberInput/customNumberInput';
 import CustomDropDownSelect from '@/components/nativeElements/customDropDownSelect/customDropDownSelect';
 import CustomAutoCompleteSelect from '@/components/nativeElements/customAutoCompleteSelect/customAutoCompleteSelect';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import PageActionBar from '@/components/shared/pageActionBar/pageActionBar';
 import KeyboardAwareScrollView from '@/components/shared/keyboardAwareScrollView/keyboardAwareScrollView';
 import SectionCard from '@/components/shared/sectionCard/sectionCard';
+import RemarkSection from '@/components/shared/remarkSection/remarkSection';
 import EntityCrudControls from '@/components/shared/entityCrudControls/entityCrudControls';
 import QueryError from '@/components/shared/queryError/queryError';
 import NoPermission from '@/components/shared/noPermission/noPermission';
@@ -322,7 +324,7 @@ const FormikContent = (props: Props) => {
 							/>
 						}
 					/>
-					<CustomTextInput
+					<CustomNumberInput
 						{...textFieldProps('delai_de_paiement', 'schedule')}
 						keyboardType="number-pad"
 						onChangeText={(value) => {
@@ -331,9 +333,7 @@ const FormikContent = (props: Props) => {
 						}}
 					/>
 				</SectionCard>
-				<SectionCard title={t.clients.remarkSection} icon="notes">
-					<CustomTextInput {...textFieldProps('remarque', 'notes')} multiline numberOfLines={4} />
-				</SectionCard>
+				<RemarkSection {...textFieldProps('remarque', 'notes')} title={t.clients.remarkSection} />
 			</KeyboardAwareScrollView>
 			<PageActionBar>
 				<PrimaryLoadingButton

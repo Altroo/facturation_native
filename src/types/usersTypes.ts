@@ -4,6 +4,8 @@ export type UserCompaniesType = {
 	membership_id: number;
 	company_id: number;
 	raison_sociale: string;
+	logo?: string | null;
+	logo_cropped?: string | null;
 	role: string;
 	can_validate_factures?: boolean;
 	can_change_document_status?: boolean;

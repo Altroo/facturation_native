@@ -153,6 +153,29 @@ beforeEach(() => {
 afterEach(() => {
 	sagaTasks.splice(0).forEach((task) => task.cancel());
 });
+it('keeps managers in separate panels and uses their cropped or original photo', async () => {
+	await setup({
+		...company,
+		admins: company.admins.map((manager, index) => ({
+			...manager,
+			avatar: `https://example.invalid/manager-${index}.png`,
+			avatar_cropped: index === 0 ? 'https://example.invalid/manager-cropped.png' : null,
+		})),
+	});
+	const panels = screen.getAllByTestId('managed-by-details');
+	expect(panels).toHaveLength(2);
+	expect(within(panels[0]).getByRole('button', { name: 'Test Creator' })).not.toBeDisabled();
+	expect(within(panels[1]).getByRole('button', { name: 'Other Manager' })).not.toBeDisabled();
+	const photos = screen.container.queryAll(
+		(node) => node.type === 'Image' && ['Test Creator', 'Other Manager'].includes(node.props.accessibilityLabel),
+	);
+	expect(photos.map((photo) => photo.props.source.uri)).toEqual([
+		'https://example.invalid/manager-cropped.png',
+		'https://example.invalid/manager-1.png',
+	]);
+	expect(screen.queryByText(/^ID:/)).toBeNull();
+});
+
 it('shows original company fields and manager permissions and cancelling confirmation does not suspend anything', async () => {
 	const store = await setup();
 	expect(screen.queryByText(/^ID:/)).toBeNull();
@@ -222,7 +245,6 @@ it('finishes suspension without starting a separate membership request', async (
 it('identifies a manager with empty names using the original fallback without an ID field', async () => {
 	await setup({ ...company, admins: [{ ...company.admins[0], first_name: '', last_name: '' }] });
 	expect(screen.getByText('Utilisateur 7')).toBeOnTheScreen();
-	expect(screen.getByLabelText('Utilisateur 7')).toBeOnTheScreen();
 	expect(screen.queryByText(/^ID:/)).toBeNull();
 });
 

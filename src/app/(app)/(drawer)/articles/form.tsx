@@ -52,6 +52,7 @@ import { colors } from '@/utils/themes';
 import ApiAlert from '@/components/nativeElements/apiLoading/apiAlert/apiAlert';
 import ApiProgress from '@/components/nativeElements/apiLoading/apiProgress/apiProgress';
 import CustomTextInput from '@/components/nativeElements/customTextInput/customTextInput';
+import CustomNumberInput from '@/components/nativeElements/customNumberInput/customNumberInput';
 import CustomDropDownSelect from '@/components/nativeElements/customDropDownSelect/customDropDownSelect';
 import CustomAutoCompleteSelect from '@/components/nativeElements/customAutoCompleteSelect/customAutoCompleteSelect';
 import CustomSquareImageUploading from '@/components/nativeElements/customSquareImageUploading/customSquareImageUploading';
@@ -59,6 +60,7 @@ import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoa
 import PageActionBar from '@/components/shared/pageActionBar/pageActionBar';
 import KeyboardAwareScrollView from '@/components/shared/keyboardAwareScrollView/keyboardAwareScrollView';
 import SectionCard from '@/components/shared/sectionCard/sectionCard';
+import RemarkSection from '@/components/shared/remarkSection/remarkSection';
 import EntityCrudControls from '@/components/shared/entityCrudControls/entityCrudControls';
 import QueryError from '@/components/shared/queryError/queryError';
 import NoPermission from '@/components/shared/noPermission/noPermission';
@@ -366,7 +368,7 @@ const FormikContent = (props: Props) => {
 					)}
 					<CustomTextInput {...field('designation', 'description')} multiline numberOfLines={3} />
 					{formik.values.type_article === 'Produit' && props.company.stock_management_enabled && (
-						<CustomTextInput
+						<CustomNumberInput
 							{...numericField('stock_minimum', 'inventory-2')}
 							helperText={
 								formik.errors.stock_minimum && (formik.touched.stock_minimum || hasAttemptedSubmit)
@@ -418,7 +420,7 @@ const FormikContent = (props: Props) => {
 						disabled={disabled}
 						startIcon={icon('receipt')}
 					/>
-					<CustomTextInput {...numericField('tva', 'percent')} />
+					<CustomNumberInput {...numericField('tva', 'percent')} />
 					<View className="gap-1 rounded-xl bg-blue-50 p-3 dark:bg-slate-800">
 						<Text className="font-poppins-medium text-sm text-brand dark:text-blue-300">
 							{t.articles.colPrixHT} : {formatNumberWithSpaces(priceHT, 2)} {formik.values.devise_prix_vente}
@@ -488,9 +490,7 @@ const FormikContent = (props: Props) => {
 						);
 					})}
 				</SectionCard>
-				<SectionCard title={t.articles.remarkSection} icon="notes">
-					<CustomTextInput {...field('remarque', 'notes')} multiline numberOfLines={4} />
-				</SectionCard>
+				<RemarkSection {...field('remarque', 'notes')} title={t.articles.remarkSection} />
 			</KeyboardAwareScrollView>
 			<PageActionBar>
 				<PrimaryLoadingButton

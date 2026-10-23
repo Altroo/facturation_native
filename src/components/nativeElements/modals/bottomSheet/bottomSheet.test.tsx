@@ -56,3 +56,25 @@ it('keeps the title, content, and notification height limits while open', async 
 	);
 	expect(screen.queryByText('Example content')).toBeNull();
 });
+
+it('allows fixed-height pickers to stretch content while other sheets remain compact', async () => {
+	const view = await render(
+		<BottomSheet
+			visible
+			title="Articles"
+			testID="example-sheet"
+			onClose={jest.fn()}
+			style={{ height: 600 }}
+			contentStyle={{ flex: 1 }}
+		>
+			<Text>Picker content</Text>
+		</BottomSheet>,
+	);
+	expect(screen.getByTestId('example-sheet-content')).toHaveStyle({ flex: 1 });
+	await view.rerender(
+		<BottomSheet visible title="Actions" testID="example-sheet" onClose={jest.fn()}>
+			<Text>Compact content</Text>
+		</BottomSheet>,
+	);
+	expect(screen.getByTestId('example-sheet-content')).not.toHaveStyle({ flex: 1 });
+});

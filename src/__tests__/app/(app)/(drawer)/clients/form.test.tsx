@@ -103,6 +103,17 @@ it('creates a company-scoped client, preserves the visible phone, and returns to
 	expect(screen.getByLabelText(t.clients.fieldRemarque)).toHaveProp('numberOfLines', 4);
 	expect(screen.getByLabelText(t.clients.fieldCodeClient)).toHaveProp('value', 'CLT010');
 	await fillPM();
+	const delayLabel = t.clients.fieldDelaiPaiement;
+	expect(screen.getByLabelText(delayLabel)).toHaveProp('keyboardType', 'number-pad');
+	await fireEvent.press(screen.getByRole('button', { name: t.common.decreaseValue(delayLabel) }));
+	expect(screen.getByLabelText(delayLabel)).toHaveProp('value', '59');
+	await fireEvent.press(screen.getByRole('button', { name: t.common.increaseValue(delayLabel) }));
+	expect(screen.getByLabelText(delayLabel)).toHaveProp('value', '60');
+	await fireEvent.changeText(screen.getByLabelText(delayLabel), '0');
+	expect(screen.getByRole('button', { name: t.common.decreaseValue(delayLabel) })).toBeDisabled();
+	await fireEvent.changeText(screen.getByLabelText(delayLabel), '2.5');
+	expect(screen.getByLabelText(delayLabel)).toHaveProp('value', '0');
+	await fireEvent.press(screen.getByRole('button', { name: t.common.increaseValue(delayLabel) }));
 	await fireEvent.press(screen.getByRole('button', { name: t.common.add }));
 	await waitFor(() => expect(mockAddClient).toHaveBeenCalledTimes(1));
 	expect(mockAddClient.mock.calls[0][0].data).toMatchObject({
@@ -114,7 +125,7 @@ it('creates a company-scoped client, preserves the visible phone, and returns to
 		tel: '0612345678',
 		nom: null,
 		prenom: null,
-		delai_de_paiement: 60,
+		delai_de_paiement: 1,
 	});
 	expect(mockAddClient.mock.calls[0][0].data).not.toHaveProperty('globalError');
 	expect(mockSuccess).toHaveBeenCalledWith(t.clients.addSuccess);

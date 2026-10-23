@@ -86,6 +86,48 @@ it.each(['2026-10-15T10:09:17Z', '15/10/2026', 'Date inconnue', null, ''])(
 		await setup('Caissier', { ...user, date_joined: value });
 	},
 );
+it('separates two memberships with their own names, logos, roles and permissions without showing IDs', async () => {
+	await setup('Caissier', {
+		...user,
+		companies: [
+			{
+				...user.companies[0],
+				logo: 'https://example.invalid/logo.png',
+				logo_cropped: 'https://example.invalid/crop.png',
+			},
+			{
+				...user.companies[0],
+				membership_id: 4,
+				company_id: 9,
+				raison_sociale: 'Second Company',
+				role: 'Lecture',
+				can_validate_factures: false,
+				can_change_document_status: true,
+			},
+		],
+	});
+	const panels = screen.getAllByTestId('managed-by-details');
+	expect(panels).toHaveLength(2);
+	const first = within(panels[0]);
+	const second = within(panels[1]);
+	expect(first.getByRole('header', { name: 'Company Four' })).toBeOnTheScreen();
+	expect(first.getByRole('button', { name: 'Company Four' })).not.toBeDisabled();
+	const logo = screen.container.queryAll(
+		(node) => node.type === 'Image' && node.props.accessibilityLabel === 'Company Four',
+	)[0];
+	expect(logo).toHaveProp('source', {
+		uri: 'https://example.invalid/crop.png',
+	});
+	expect(first.getByText('Commercial')).toBeOnTheScreen();
+	expect(first.queryByText('Second Company')).toBeNull();
+	expect(second.getByRole('header', { name: 'Second Company' })).toBeOnTheScreen();
+	expect(second.getByText('Lecture')).toBeOnTheScreen();
+	expect(second.queryByRole('image')).toBeNull();
+	expect(second.getByText(translations.fr.managedByTable.invoiceValidation)).toBeOnTheScreen();
+	expect(second.getByText(translations.fr.managedByTable.documentStatusChange)).toBeOnTheScreen();
+	expect(screen.queryByText(/^ID:/)).toBeNull();
+});
+
 it('shows company permissions and requires the confirmation modal before deleting', async () => {
 	remove.mockReturnValue({ unwrap: () => Promise.resolve() });
 	await setup();

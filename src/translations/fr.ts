@@ -79,6 +79,8 @@ export const fr: TranslationDictionary = {
 		textTooLong: 'L’assistant accepte au maximum 5 000 caractères à la fois.',
 	},
 	common: {
+		decreaseValue: (label: string) => `Diminuer ${label}`,
+		increaseValue: (label: string) => `Augmenter ${label}`,
 		undo: 'Annuler',
 		yes: 'Oui',
 		no: 'Non',
@@ -260,6 +262,8 @@ export const fr: TranslationDictionary = {
 			'Il semble que nous ne puissions pas nous connecter. Veuillez vérifier votre connexion réseau et réessayer.',
 	},
 	pdf: {
+		format: 'Format du document',
+		language: 'Langue',
 		generatePdf: 'Génération du PDF',
 		chooseLanguage: 'Choisissez la langue dans laquelle vous souhaitez générer le document PDF.',
 		french: 'Français',
@@ -1603,6 +1607,9 @@ export const fr: TranslationDictionary = {
 			`Êtes-vous sûr de vouloir supprimer les ${n} ${type}(s) sélectionné(s) ? Cette action est irréversible.`,
 	},
 	documentView: {
+		stockAvailable: 'Disponible',
+		stockIncomingCovered: 'Couvert par stock entrant',
+		stockShortage: 'À approvisionner',
 		documentInfoSection: 'Informations du document',
 		clientSection: 'Client',
 		clientLabel: 'Client',
@@ -1647,6 +1654,8 @@ export const fr: TranslationDictionary = {
 	addArticleModal: {
 		title: 'Ajouter des articles',
 		statusHeader: 'Statut',
+		articleCount: (loaded: number, total: number) =>
+			`${loaded === total ? total : `${loaded} / ${total}`} article${total > 1 ? 's' : ''}`,
 		statusExisting: 'Déjà ajouté',
 		statusNew: 'Nouveau',
 		typeLabel: 'Type',
@@ -1686,6 +1695,7 @@ export const fr: TranslationDictionary = {
 		applyBtn: 'Appliquer',
 	},
 	totalsCard: {
+		title: 'Récapitulatif',
 		totalHT: 'TOTAL HT',
 		totalPrixAchat: "TOTAL PRIX D'ACHAT",
 		totalTVA: 'TOTAL TVA',

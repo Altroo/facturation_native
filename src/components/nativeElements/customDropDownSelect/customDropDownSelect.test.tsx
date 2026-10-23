@@ -76,6 +76,25 @@ it('supports original string options and an empty option', async () => {
 	await fireEvent.press(screen.getByRole('radio', { name: translations.fr.common.selectValue }));
 	expect(onChange).toHaveBeenCalledWith('');
 });
+
+it('displays a named empty option such as no discount instead of an unfinished placeholder', async () => {
+	const onChange = jest.fn();
+	await render(
+		<CustomDropDownSelect
+			label="Remise"
+			items={['', 'Pourcentage']}
+			value=""
+			getOptionLabel={(value) => value || 'Aucune'}
+			onChange={onChange}
+		/>,
+	);
+	expect(screen.getByText('Aucune')).toBeOnTheScreen();
+	expect(screen.queryByText(translations.fr.common.selectValue)).toBeNull();
+	await fireEvent.press(screen.getByRole('button', { name: 'Remise' }));
+	expect(screen.getByRole('radio', { name: 'Aucune' })).toBeChecked();
+	await fireEvent.press(screen.getByRole('radio', { name: 'Aucune' }));
+	expect(onChange).toHaveBeenCalledWith('');
+});
 it('separates helper text from error state and renders an empty list', async () => {
 	const view = await render(
 		<CustomDropDownSelect label="Entreprise" value={null} items={[]} error helperText="Entreprise requise" />,
