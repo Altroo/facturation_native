@@ -1,6 +1,6 @@
 # E.B.H Facturation Native
 
-Mobile version of the Facturation platform for iOS and Android. The application is under active development: authentication, users, companies, clients, articles, quotes and account settings provide the foundation for progressively bringing the web application's business modules to mobile.
+Mobile version of the Facturation platform for iOS and Android. The application is under active development: authentication, users, companies, clients, articles, quotes, pro-formas and account settings provide the foundation for progressively bringing the web application's business modules to mobile.
 
 The project follows the web application's folder structure, API contracts and Redux conventions, adapting navigation, storage and interface components to native devices.
 
@@ -19,7 +19,8 @@ The project follows the web application's folder structure, API contracts and Re
 - User creation, editing and deletion; company creation, editing and suspension, with permission checks and confirmation dialogs.
 - Clients: active and archived lists, creation, editing, details, account statements and document history.
 - Articles: active and archived lists, creation, editing, photos, HT/TTC pricing, classification and stock snapshots. CSV/Excel import and the import guide use the same Django endpoints as the web.
-- Quotes (Devis): company-scoped list, header creation followed by article lines, editing, details, discounts, totals, status permissions, deletion and four PDF formats in French, English or Dutch. Invoice/proforma conversion actions are visible but intentionally disabled.
+- Quotes (Devis): company-scoped list, header creation followed by article lines, editing, details, discounts, totals, status permissions, deletion and four PDF formats in French, English or Dutch. Quotes with status Sent or Accepted can be converted to a pro-forma after confirmation.
+- Pro-formas: company-scoped list, creation, editing, details, payment terms, purchase-order reference, article lines, discounts, status controls and PDF generation. Conversion to a client invoice remains disabled until that mobile module exists.
 - Profile editing, avatar upload, password changes and logout.
 - Compact drawer navigation and stack navigation that returns to the previous screen.
 - French/English translations, flag controls and saved light/dark appearance.
@@ -28,7 +29,7 @@ The project follows the web application's folder structure, API contracts and Re
 - A logo splash screen while local resources and preferences load.
 - Backend-controlled maintenance and local development version checks.
 
-The dashboard is still a foundation screen. Business modules beyond users, companies, clients, articles and quotes are not fully migrated; their menu destinations remain placeholders. Django controls maintenance and version data. Background push delivery and app-store distribution are not configured.
+The dashboard is still a foundation screen. Business modules beyond users, companies, clients, articles, quotes and pro-formas are not fully migrated; their menu destinations remain placeholders. Django controls maintenance and version data. Background push delivery and app-store distribution are not configured.
 
 ## Stack
 
@@ -40,7 +41,7 @@ The dashboard is still a foundation screen. Business modules beyond users, compa
 - Tailwind CSS through Uniwind, Material icons and Expo UI where appropriate
 - FlashList and `expo-flash-datagrid` filter/sort contracts
 - React Native Keyboard Controller and autocomplete controls
-- Expo image picker/manipulator and image preview/crop controls
+- Expo ImagePicker/ImageManipulator, image previews and native cropping with `react-native-image-crop-picker`
 - Jest 30, jest-expo and React Native Testing Library
 
 `package.json` and `bun.lock` are the source of truth for exact versions. Dependencies are installed from their published packages; no local package patches are required.
@@ -92,6 +93,8 @@ bun run ios
 # Or:
 bun run android
 ```
+
+Image cropping uses a native editor on iOS and Android and requires this development build. Camera and gallery permissions are configured through `expo-image-picker` in `app.json`; CocoaPods and Gradle link the cropper automatically. iOS also declares French and English in `CFBundleLocalizations`. Browser previews do not include the native crop editor.
 
 For subsequent sessions, use `bun run dev`. Expo uses its default port and prompts if it is occupied. `bun run web` opens the browser preview. Native modules require a development build; Expo Go is not the target runtime.
 
