@@ -157,6 +157,7 @@ export type TranslationDictionary = {
 		chooseFromGallery: string;
 		cameraPermissionRequired: string;
 		clickToEditCrop: string;
+		cropImage: string;
 		croppedPreview: string;
 		pdfUnit: string;
 		togglePasswordVisibility: string;

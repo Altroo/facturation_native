@@ -32,6 +32,7 @@ import { initAppAction } from '@/store/actions/_initActions';
 import { accountLogoutAction } from '@/store/actions/accountActions';
 import { colors, fonts } from '@/utils/themes';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
+import { dismissDropDownsOnOutsidePress } from '@/components/nativeElements/customDropDownSelect/customDropDownSelect';
 
 // Keep the native launch screen above React until local resources and preferences are ready.
 void SplashScreen.preventAutoHideAsync().catch((error: unknown) => {
@@ -130,7 +131,13 @@ const RootLayout = () => {
 								<InitEffects />
 								<ThemeProvider>
 									<LanguageContextProvider>
-										<View testID="app-root" style={{ flex: 1 }} onLayout={SplashScreen.hide}>
+										<View
+											testID="app-root"
+											style={{ flex: 1 }}
+											onLayout={SplashScreen.hide}
+											onTouchStart={dismissDropDownsOnOutsidePress}
+											onPointerDown={dismissDropDownsOnOutsidePress}
+										>
 											<ErrorBoundary>
 												<ToastContextProvider>
 													<SessionExpiredListener />

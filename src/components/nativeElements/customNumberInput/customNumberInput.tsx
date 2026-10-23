@@ -45,7 +45,7 @@ const CustomNumberInput = (props: Props) => {
 					<Pressable
 						accessibilityRole="button"
 						accessibilityLabel={t.common.decreaseValue(label)}
-						accessibilityState={{ disabled: !!decreaseDisabled }}
+						accessibilityState={{ disabled: decreaseDisabled }}
 						disabled={decreaseDisabled}
 						onPress={() => change(-1)}
 						className="min-h-12 w-12 items-center justify-center border-l border-slate-200 active:bg-slate-100 dark:border-slate-600 dark:active:bg-slate-700"
@@ -55,7 +55,7 @@ const CustomNumberInput = (props: Props) => {
 					<Pressable
 						accessibilityRole="button"
 						accessibilityLabel={t.common.increaseValue(label)}
-						accessibilityState={{ disabled: !!increaseDisabled }}
+						accessibilityState={{ disabled: increaseDisabled }}
 						disabled={increaseDisabled}
 						onPress={() => change(1)}
 						className="min-h-12 w-12 items-center justify-center border-l border-slate-200 active:bg-slate-100 dark:border-slate-600 dark:active:bg-slate-700"

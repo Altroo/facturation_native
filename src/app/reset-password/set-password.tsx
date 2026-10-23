@@ -80,9 +80,7 @@ const SetPasswordPageContent = (props: SetPasswordPageContentProps) => {
 					<MaterialIcons
 						name="lock"
 						size={20}
-						color={
-							(formik.touched.new_password ? formik.errors.new_password : undefined) ? colors.danger : colors.slate[400]
-						}
+						color={colors.slate[400]}
 					/>
 				}
 			/>
@@ -101,11 +99,7 @@ const SetPasswordPageContent = (props: SetPasswordPageContentProps) => {
 					<MaterialIcons
 						name="lock"
 						size={20}
-						color={
-							(formik.touched.new_password2 ? formik.errors.new_password2 : undefined)
-								? colors.danger
-								: colors.slate[400]
-						}
+						color={colors.slate[400]}
 					/>
 				}
 			/>

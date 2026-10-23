@@ -80,7 +80,7 @@ const ResetPasswordPageContent = () => {
 					<MaterialIcons
 						name="email"
 						size={20}
-						color={(formik.touched.email ? formik.errors.email : undefined) ? colors.danger : colors.slate[400]}
+						color={colors.slate[400]}
 					/>
 				}
 			/>

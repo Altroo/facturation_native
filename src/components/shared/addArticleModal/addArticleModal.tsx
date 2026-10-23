@@ -202,7 +202,7 @@ const AddArticleModal = (props: Props) => {
 						<Text className="font-poppins-semibold text-sm text-brand dark:text-blue-300">
 							{formatNumberWithSpaces(item.prix_vente ?? 0, 2)} {item.devise_prix_vente}
 						</Text>
-						{!!item.stock_management_enabled && item.type_article === 'Produit' && (
+						{item.stock_management_enabled && item.type_article === 'Produit' && (
 							<Text className="font-sans text-xs text-slate-500 dark:text-slate-400">
 								{t.addArticleModal.stockAvailable}: {formatNumberWithSpaces(item.available_quantity, 3)}
 							</Text>

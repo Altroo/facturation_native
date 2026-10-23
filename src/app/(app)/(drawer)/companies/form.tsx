@@ -340,9 +340,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 									<MaterialIcons
 										name="business"
 										size={20}
-										color={
-											formik.touched.raison_sociale && formik.errors.raison_sociale ? colors.danger : colors.slate[400]
-										}
+										color={colors.slate[400]}
 									/>
 								}
 							/>
@@ -363,7 +361,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 									<MaterialIcons
 										name="mail-outline"
 										size={20}
-										color={formik.touched.email && formik.errors.email ? colors.danger : colors.slate[400]}
+										color={colors.slate[400]}
 									/>
 								}
 							/>
@@ -395,7 +393,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 									<MaterialIcons
 										name="location-on"
 										size={20}
-										color={formik.touched.adresse && formik.errors.adresse ? colors.danger : colors.slate[400]}
+										color={colors.slate[400]}
 									/>
 								}
 							/>
@@ -416,7 +414,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 									<MaterialIcons
 										name="language"
 										size={20}
-										color={formik.touched.site_web && formik.errors.site_web ? colors.danger : colors.slate[400]}
+										color={colors.slate[400]}
 									/>
 								}
 							/>
@@ -447,11 +445,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 									<MaterialIcons
 										name="person-outline"
 										size={20}
-										color={
-											formik.touched.nom_responsable && formik.errors.nom_responsable
-												? colors.danger
-												: colors.slate[400]
-										}
+										color={colors.slate[400]}
 									/>
 								}
 							/>
@@ -470,11 +464,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 									<MaterialIcons
 										name="smartphone"
 										size={20}
-										color={
-											formik.touched.gsm_responsable && formik.errors.gsm_responsable
-												? colors.danger
-												: colors.slate[400]
-										}
+										color={colors.slate[400]}
 									/>
 								}
 							/>
@@ -497,7 +487,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 									<MaterialIcons
 										name="phone"
 										size={20}
-										color={formik.touched.telephone && formik.errors.telephone ? colors.danger : colors.slate[400]}
+										color={colors.slate[400]}
 									/>
 								}
 							/>
@@ -516,7 +506,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 									<MaterialIcons
 										name="print"
 										size={20}
-										color={formik.touched.fax && formik.errors.fax ? colors.danger : colors.slate[400]}
+										color={colors.slate[400]}
 									/>
 								}
 							/>
@@ -538,11 +528,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 									<MaterialIcons
 										name="credit-card"
 										size={20}
-										color={
-											formik.touched.numero_du_compte && formik.errors.numero_du_compte
-												? colors.danger
-												: colors.slate[400]
-										}
+										color={colors.slate[400]}
 									/>
 								}
 							/>
@@ -560,7 +546,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 									<MaterialIcons
 										name="fingerprint"
 										size={20}
-										color={formik.touched.ICE && formik.errors.ICE ? colors.danger : colors.slate[400]}
+										color={colors.slate[400]}
 									/>
 								}
 							/>
@@ -578,11 +564,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 									<MaterialIcons
 										name="description"
 										size={20}
-										color={
-											formik.touched.registre_de_commerce && formik.errors.registre_de_commerce
-												? colors.danger
-												: colors.slate[400]
-										}
+										color={colors.slate[400]}
 									/>
 								}
 							/>
@@ -600,11 +582,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 									<MaterialIcons
 										name="badge"
 										size={20}
-										color={
-											formik.touched.identifiant_fiscal && formik.errors.identifiant_fiscal
-												? colors.danger
-												: colors.slate[400]
-										}
+										color={colors.slate[400]}
 									/>
 								}
 							/>
@@ -622,11 +600,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 									<MaterialIcons
 										name="receipt-long"
 										size={20}
-										color={
-											formik.touched.tax_professionnelle && formik.errors.tax_professionnelle
-												? colors.danger
-												: colors.slate[400]
-										}
+										color={colors.slate[400]}
 									/>
 								}
 							/>
@@ -644,7 +618,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 									<MaterialIcons
 										name="verified-user"
 										size={20}
-										color={formik.touched.CNSS && formik.errors.CNSS ? colors.danger : colors.slate[400]}
+										color={colors.slate[400]}
 									/>
 								}
 							/>

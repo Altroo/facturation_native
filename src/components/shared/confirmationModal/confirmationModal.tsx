@@ -14,7 +14,7 @@ type Props = {
 	onConfirm: () => void;
 	onClose: () => void;
 	loading?: boolean;
-	action?: 'delete' | 'suspend' | 'archive' | 'unarchive';
+	action?: 'delete' | 'suspend' | 'archive' | 'unarchive' | 'convert';
 	children?: ReactNode;
 };
 
@@ -23,7 +23,14 @@ const ConfirmationModal = (props: Props) => {
 	const { mode } = useColorMode();
 	const cancelColor = mode === 'dark' ? colors.slate[300] : colors.slate[500];
 	const archive = props.action === 'archive' || props.action === 'unarchive';
-	const actionColor = archive ? colors.warning : mode === 'dark' ? colors.dangerDarkForeground : colors.danger;
+	const conversion = props.action === 'convert';
+	const actionColor = conversion
+		? colors.conversion
+		: archive
+			? colors.warning
+			: mode === 'dark'
+				? colors.dangerDarkForeground
+				: colors.danger;
 	const handleClose = () => {
 		if (!props.loading) props.onClose();
 	};
@@ -33,7 +40,15 @@ const ConfirmationModal = (props: Props) => {
 			title={props.title}
 			titleIcon={
 				<MaterialIcons
-					name={props.action === 'unarchive' ? 'unarchive' : archive ? 'archive' : 'warning-amber'}
+					name={
+						conversion
+							? 'receipt-long'
+							: props.action === 'unarchive'
+								? 'unarchive'
+								: archive
+									? 'archive'
+									: 'warning-amber'
+					}
 					size={24}
 					color={actionColor}
 				/>
@@ -53,7 +68,7 @@ const ConfirmationModal = (props: Props) => {
 					text: props.confirmText,
 					active: true,
 					onClick: props.onConfirm,
-					color: archive ? colors.warning : colors.danger,
+					color: conversion ? colors.conversion : archive ? colors.warning : colors.danger,
 					loading: props.loading,
 					disabled: props.loading,
 				},

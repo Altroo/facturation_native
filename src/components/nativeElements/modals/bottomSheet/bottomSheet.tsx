@@ -15,6 +15,7 @@ import { AutocompleteDropdownContextProvider } from 'react-native-autocomplete-d
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useLanguage } from '@/utils/hooks';
 import { colors } from '@/utils/themes';
+import { dismissDropDownsOnOutsidePress } from '@/components/nativeElements/customDropDownSelect/customDropDownSelect';
 
 type Props = {
 	visible: boolean;
@@ -43,7 +44,11 @@ const BottomSheet: FC<Props> = (props: Props) => {
 			onDismiss={onDismiss ?? onClose}
 		>
 			<AutocompleteDropdownContextProvider>
-				<View className="flex-1 items-center justify-end bg-black/40">
+				<View
+					className="flex-1 items-center justify-end bg-black/40"
+					onTouchStart={dismissDropDownsOnOutsidePress}
+					onPointerDown={dismissDropDownsOnOutsidePress}
+				>
 					<Pressable testID={testID + '-backdrop'} accessible={false} onPress={onClose} className="absolute inset-0" />
 					<KeyboardAvoidingView
 						behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

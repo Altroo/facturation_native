@@ -172,7 +172,7 @@ const ArticlesViewPageContent = (props: Props) => {
 					</SectionCard>
 				)}
 				<SectionCard title={t.articles.remarkSection} icon="notes">
-					<InfoRow icon={icon('notes')} label={t.articles.fieldRemarque} value={article.remarque} />
+					<InfoRow label={t.articles.fieldRemarque} value={article.remarque} />
 				</SectionCard>
 				<SectionCard title={t.articles.datesSection} icon="event">
 					<InfoRow icon={icon('event')} label={t.common.dateCreation} value={formatDate(article.date_created)} />

@@ -19,6 +19,7 @@ import { CLIENTS_EDIT, CLIENTS_LIST } from '@/utils/routes';
 import { colors, listSpacing } from '@/utils/themes';
 import type { AccountStatementRow, StatementEntryType, StatementType } from '@/types/clientTypes';
 import InfoRow from '@/components/shared/infoRow/infoRow';
+import EmptyState from '@/components/shared/emptyState/emptyState';
 import SectionCard from '@/components/shared/sectionCard/sectionCard';
 import DetailsPage from '@/components/shared/detailsPage/detailsPage';
 import DetailsPageActions from '@/components/shared/detailsPageActions/detailsPageActions';
@@ -354,7 +355,7 @@ const ClientsViewPageContent = (props: Props) => {
 					<InfoRow icon={icon('schedule')} label={t.clients.fieldDelaiPaiement} value={client.delai_de_paiement} />
 				</SectionCard>
 				<SectionCard title={t.clients.remarkSection} icon="notes">
-					<InfoRow icon={icon('notes')} label={t.clients.fieldRemarque} value={client.remarque} />
+					<InfoRow label={t.clients.fieldRemarque} value={client.remarque} />
 				</SectionCard>
 				<SectionCard title={t.clients.accountStatement} icon="account-balance" variant="list">
 					<DateRangeFilterInput
@@ -368,6 +369,7 @@ const ClientsViewPageContent = (props: Props) => {
 					/>
 					<CustomDropDownSelect
 						label={t.clients.statementType}
+						startIcon={<MaterialIcons name="category" size={20} color={colors.slate[400]} />}
 						value={statementOptions.find((item) => item.type === statementType)?.label ?? null}
 						items={statementOptions.map((item) => item.label)}
 						onChange={(value) => {
@@ -406,7 +408,7 @@ const ClientsViewPageContent = (props: Props) => {
 					) : !history ? (
 						<ApiProgress />
 					) : !hasStatementDocuments ? (
-						<Text className="py-3 font-sans text-sm text-slate-500 dark:text-slate-400">{t.clients.noHistory}</Text>
+						<EmptyState message={t.clients.noHistory} testID="client-statement-empty" />
 					) : (
 						<View style={{ marginVertical: -listSpacing / 2 }}>
 							{/* ListCard owns the spacing between documents. The section
@@ -525,7 +527,7 @@ const ClientsViewPageContent = (props: Props) => {
 					) : !history ? (
 						<ApiProgress />
 					) : historyRows.length === 0 ? (
-						<Text className="py-3 font-sans text-sm text-slate-500 dark:text-slate-400">{t.clients.noHistory}</Text>
+						<EmptyState message={t.clients.noHistory} testID="client-history-empty" />
 					) : (
 						<View style={{ marginVertical: -listSpacing / 2 }}>
 							{historyRows.map((row) => (

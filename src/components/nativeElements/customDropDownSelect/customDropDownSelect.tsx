@@ -1,9 +1,26 @@
-import { useState, type FC, type ReactNode } from 'react';
-import { Text, Pressable, ScrollView, View, PressableProps } from 'react-native';
+import { useEffect, useRef, useState, type FC, type ReactNode } from 'react';
+import {
+	Text,
+	Pressable,
+	ScrollView,
+	View,
+	type PressableProps,
+	type GestureResponderEvent,
+	type PointerEvent,
+} from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useLanguage } from '@/utils/hooks';
 import type { DropDownType } from '@/types/accountTypes';
 import { colors, inputTextStyle } from '@/utils/themes';
+
+type DropDownPressEvent = GestureResponderEvent | PointerEvent;
+const openDropDowns = new Set<(event: DropDownPressEvent) => void>();
+
+// Native has no document-wide click event. The existing app and modal roots
+// forward bubbling presses here without capturing or consuming the user's tap.
+export const dismissDropDownsOnOutsidePress = (event: DropDownPressEvent) => {
+	for (const dismiss of openDropDowns) dismiss(event);
+};
 
 export type Props = {
 	id?: string;
@@ -26,7 +43,24 @@ export type Props = {
 
 const CustomDropDownSelect: FC<Props> = (props: Props) => {
 	const [open, setOpen] = useState(false);
+	const insidePress = useRef<{ target: DropDownPressEvent['target']; timeStamp: number } | null>(null);
 	const { t } = useLanguage();
+	useEffect(() => {
+		if (!open) return;
+		const dismiss = (event: DropDownPressEvent) => {
+			const inside = insidePress.current;
+			if (event.target !== inside?.target || event.timeStamp !== inside?.timeStamp) setOpen(false);
+		};
+		openDropDowns.add(dismiss);
+		return () => {
+			openDropDowns.delete(dismiss);
+		};
+	}, [open]);
+	const markInsidePress = (event: DropDownPressEvent) => {
+		// Match this touch only. A previous tap on the same native element must
+		// never make a later outside press count as an inside press.
+		insidePress.current = { target: event.target, timeStamp: event.timeStamp };
+	};
 	// An empty stored value can be a real option, such as "Aucune" remise.
 	const selectedLabel = props.value !== null ? (props.getOptionLabel?.(props.value) ?? props.value) : '';
 	if (props.disabled && open) setOpen(false);
@@ -37,6 +71,8 @@ const CustomDropDownSelect: FC<Props> = (props: Props) => {
 				{props.required ? ' *' : ''}
 			</Text>
 			<Pressable
+				onTouchStart={markInsidePress}
+				onPointerDown={markInsidePress}
 				nativeID={props.id}
 				accessibilityRole="button"
 				accessibilityLabel={props.label}
@@ -67,6 +103,8 @@ const CustomDropDownSelect: FC<Props> = (props: Props) => {
 			{open && !props.disabled && (
 				<View
 					testID="dropdown-options"
+					onTouchStart={markInsidePress}
+					onPointerDown={markInsidePress}
 					className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-600 dark:bg-panel"
 				>
 					<ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled" style={{ maxHeight: 240 }}>

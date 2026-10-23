@@ -23,11 +23,13 @@ beforeEach(() => {
 });
 it('sends the chosen PDF format and language without exposing backend codes', async () => {
 	await render(<DocumentPdfModal onClose={mockClose} onOpen={mockOpen} />);
-	expect(screen.getByText(t.pdf.french)).toBeOnTheScreen();
-	await fireEvent.press(screen.getByRole('button', { name: t.pdf.format }));
+	expect(screen.getAllByRole('radio')).toHaveLength(7);
+	expect(screen.getByRole('radio', { name: t.common.pdfWithDiscount })).toBeChecked();
+	expect(screen.getByRole('radio', { name: t.pdf.french })).toBeChecked();
 	await fireEvent.press(screen.getByRole('radio', { name: t.common.pdfWithUnitWithoutDiscount }));
-	await fireEvent.press(screen.getByRole('button', { name: t.pdf.language }));
 	await fireEvent.press(screen.getByRole('radio', { name: t.pdf.english }));
+	expect(screen.getByRole('radio', { name: t.common.pdfWithDiscount })).not.toBeChecked();
+	expect(screen.getByRole('radio', { name: t.pdf.english })).toBeChecked();
 	expect(mockOpen).not.toHaveBeenCalled();
 	const onDismiss = screen.getByTestId('document-pdf-modal').props.onDismiss;
 	await fireEvent.press(screen.getByRole('button', { name: t.pdf.generatePdf }));
@@ -35,6 +37,19 @@ it('sends the chosen PDF format and language without exposing backend codes', as
 	await act(() => onDismiss());
 	await waitFor(() => expect(mockOpen).toHaveBeenCalledWith('avec_unite_sans_remise', 'en'));
 	expect(mockClose).toHaveBeenCalledTimes(1);
+});
+it('keeps the default format and French language when generating immediately', async () => {
+	await render(<DocumentPdfModal onClose={mockClose} onOpen={mockOpen} />);
+	const onDismiss = screen.getByTestId('document-pdf-modal').props.onDismiss;
+	await fireEvent.press(screen.getByRole('button', { name: t.pdf.generatePdf }));
+	await act(() => onDismiss());
+	await waitFor(() => expect(mockOpen).toHaveBeenCalledWith('avec_remise', 'fr'));
+});
+it('closes without requesting a PDF when cancelled', async () => {
+	await render(<DocumentPdfModal onClose={mockClose} onOpen={mockOpen} />);
+	await fireEvent.press(screen.getByRole('button', { name: t.common.close }));
+	expect(mockClose).toHaveBeenCalledTimes(1);
+	expect(mockOpen).not.toHaveBeenCalled();
 });
 it('shows a recoverable toast when preview fails', async () => {
 	mockOpen.mockResolvedValue(false);

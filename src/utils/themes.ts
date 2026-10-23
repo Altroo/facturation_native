@@ -17,6 +17,7 @@ export const colors = {
 	dangerDarkBorder: '#7f4b52',
 	dangerDarkBackground: '#39272f',
 	success: '#059669',
+	conversion: '#2e7d32',
 	warning: '#d97706',
 	info: '#0284c7',
 	maintenance: '#c2410c',

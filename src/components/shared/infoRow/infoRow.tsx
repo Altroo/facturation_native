@@ -3,7 +3,7 @@ import { Text, View } from 'react-native';
 import { useLanguage } from '@/utils/hooks';
 
 type Props = {
-	icon: ReactNode;
+	icon?: ReactNode;
 	label: string;
 	value: ReactNode;
 	valueTone?: 'danger' | 'success' | 'warning';

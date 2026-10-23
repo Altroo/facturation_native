@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { Platform, ScrollView } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import BottomSheet from '@/components/nativeElements/modals/bottomSheet/bottomSheet';
-import CustomDropDownSelect from '@/components/nativeElements/customDropDownSelect/customDropDownSelect';
+import CustomChoiceButtons from '@/components/nativeElements/customChoiceButtons/customChoiceButtons';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import { useLanguage, useToast } from '@/utils/hooks';
 import { colors } from '@/utils/themes';
@@ -25,16 +25,16 @@ const DocumentPdfModal = (props: Props) => {
 	const pending = useRef(false);
 	const previewStarted = useRef(false);
 	const formats = [
-		{ code: t.common.pdfWithDiscount, value: 'avec_remise' },
-		{ code: t.common.pdfWithoutDiscount, value: 'sans_remise' },
-		{ code: t.common.pdfWithUnitWithoutDiscount, value: 'avec_unite_sans_remise' },
-		{ code: t.common.pdfWithUnitWithDiscount, value: 'avec_unite_avec_remise' },
-	];
+		{ label: t.common.pdfWithDiscount, value: 'avec_remise' },
+		{ label: t.common.pdfWithoutDiscount, value: 'sans_remise' },
+		{ label: t.common.pdfWithUnitWithoutDiscount, value: 'avec_unite_sans_remise' },
+		{ label: t.common.pdfWithUnitWithDiscount, value: 'avec_unite_avec_remise' },
+	] as const;
 	const languages = [
-		{ code: t.pdf.french, value: 'fr' },
-		{ code: t.pdf.english, value: 'en' },
-		{ code: t.pdf.dutch, value: 'nl' },
-	];
+		{ label: t.pdf.french, value: 'fr', icon: <LanguageFlag language="fr" size={24} /> },
+		{ label: t.pdf.english, value: 'en', icon: <LanguageFlag language="en" size={24} /> },
+		{ label: t.pdf.dutch, value: 'nl', icon: <LanguageFlag language="nl" size={24} /> },
+	] as const;
 	const preview = async () => {
 		if (!pending.current || previewStarted.current) return;
 		previewStarted.current = true;
@@ -70,26 +70,14 @@ const DocumentPdfModal = (props: Props) => {
 			titleIcon={<MaterialIcons name="picture-as-pdf" size={24} color={colors.brand} />}
 		>
 			<ScrollView style={{ flexShrink: 1 }} contentContainerStyle={{ gap: 16 }} keyboardShouldPersistTaps="handled">
-				<CustomDropDownSelect
-					label={t.pdf.format}
-					items={formats}
-					value={type}
-					getOptionLabel={(value) => formats.find((item) => item.value === value)?.code ?? value}
-					disabled={loading}
-					onChange={(value) => {
-						if (value) setType(value as DocumentPdfType);
-					}}
-				/>
-				<CustomDropDownSelect
+				<CustomChoiceButtons label={t.pdf.format} items={formats} value={type} disabled={loading} onChange={setType} />
+				<CustomChoiceButtons
 					label={t.pdf.language}
 					items={languages}
-					startIcon={<LanguageFlag language={language} size={24} />}
 					value={language}
-					getOptionLabel={(value) => languages.find((item) => item.value === value)?.code ?? value}
+					columns={3}
 					disabled={loading}
-					onChange={(value) => {
-						if (value) setLanguage(value as 'fr' | 'en' | 'nl');
-					}}
+					onChange={setLanguage}
 				/>
 			</ScrollView>
 			<PrimaryLoadingButton

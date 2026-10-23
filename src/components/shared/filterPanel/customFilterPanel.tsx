@@ -144,6 +144,7 @@ const CustomFilterPanel = <TRow,>(props: Props<TRow>) => {
 						{index === 1 ? (
 							<CustomDropDownSelect
 								label={t.filterPanel.logicOperator}
+								startIcon={<MaterialIcons name="merge" size={20} color={colors.slate[400]} />}
 								items={['and', 'or']}
 								value={filterModel.logicOperator ?? 'and'}
 								getOptionLabel={(value) => (value === 'or' ? t.filterPanel.or : t.filterPanel.and)}
@@ -159,6 +160,7 @@ const CustomFilterPanel = <TRow,>(props: Props<TRow>) => {
 						) : null}
 						<CustomDropDownSelect
 							label={t.dataGrid.fieldLabel}
+							startIcon={<MaterialIcons name="view-column" size={20} color={colors.slate[400]} />}
 							items={filterableColumns.map((col) => col.field)}
 							value={column.field}
 							getOptionLabel={(field) => filterableColumns.find((col) => col.field === field)?.headerName ?? field}
@@ -168,6 +170,7 @@ const CustomFilterPanel = <TRow,>(props: Props<TRow>) => {
 						{!column.filterHideOperator && (
 							<CustomDropDownSelect
 								label={t.dataGrid.operatorLabel}
+								startIcon={<MaterialIcons name="rule" size={20} color={colors.slate[400]} />}
 								items={operatorOptions.map((option) => option.value)}
 								value={item.operator}
 								getOptionLabel={(operator) =>
@@ -194,6 +197,7 @@ const CustomFilterPanel = <TRow,>(props: Props<TRow>) => {
 							) : valueOptions.length > 0 ? (
 								<CustomDropDownSelect
 									label={t.common.value}
+									startIcon={<MaterialIcons name="checklist" size={20} color={colors.slate[400]} />}
 									items={valueOptions.map((_option, i) => String(i))}
 									value={selectedOption < 0 ? null : String(selectedOption)}
 									getOptionLabel={(index) => valueOptions[Number(index)]?.label ?? index}
@@ -203,6 +207,13 @@ const CustomFilterPanel = <TRow,>(props: Props<TRow>) => {
 							) : (
 								<CustomTextInput
 									label={t.common.value}
+									startIcon={
+										<MaterialIcons
+											name={column.type === 'number' ? 'tag' : 'short-text'}
+											size={20}
+											color={colors.slate[400]}
+										/>
+									}
 									placeholder={t.common.value}
 									value={String(item.value ?? '')}
 									disabled={disabled}

@@ -6,7 +6,7 @@ import { colors } from '@/utils/themes';
 
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
 
-it.each(['delete', 'suspend', 'archive', 'unarchive'] as const)(
+it.each(['delete', 'suspend', 'archive', 'unarchive', 'convert'] as const)(
 	'only confirms %s after an explicit confirm press',
 	async (action) => {
 		const onConfirm = jest.fn();
@@ -26,6 +26,11 @@ it.each(['delete', 'suspend', 'archive', 'unarchive'] as const)(
 		);
 		expect(screen.getByText('Selected record')).toBeOnTheScreen();
 		expect(screen.getByText('Atlas Services')).toBeOnTheScreen();
+		if (action === 'convert') {
+			const icon = screen.container.queryAll((node) => node.props.name === 'receipt-long')[0];
+			expect(icon).toHaveProp('color', colors.conversion);
+			expect(screen.getByRole('button', { name: 'Proceed' })).toHaveStyle({ backgroundColor: colors.conversion });
+		}
 		if (action === 'archive' || action === 'unarchive') {
 			const icon = screen.container.queryAll((node) => node.props.name === action)[0];
 			expect(icon).toHaveProp('color', colors.warning);

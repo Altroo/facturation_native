@@ -42,7 +42,7 @@ const ChipSelectFilter = (props: Props) => {
 				className="min-h-12 flex-row items-center gap-3 px-3 py-2"
 				style={surfaceStyles[mode]}
 			>
-				<MaterialIcons name={props.icon ?? 'location-on'} size={20} color={colors.brand} />
+				<MaterialIcons name={props.icon ?? 'location-on'} size={20} color={colors.slate[400]} />
 				<Text className="flex-1 font-sans text-sm text-ink dark:text-slate-100">
 					{selectedOptions.length ? selectedOptions.map((option) => option.nom).join(', ') : props.placeholder}
 				</Text>
@@ -56,6 +56,7 @@ const ChipSelectFilter = (props: Props) => {
 			>
 				<CustomTextInput
 					accessibilityLabel={t.common.search}
+					startIcon={<MaterialIcons name="search" size={20} color={colors.slate[400]} />}
 					placeholder={t.common.search}
 					value={inputValue}
 					onChangeText={setInputValue}

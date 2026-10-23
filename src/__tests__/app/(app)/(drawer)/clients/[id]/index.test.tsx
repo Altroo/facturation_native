@@ -467,6 +467,11 @@ it('disables PDF export for an empty statement, including a date-filtered openin
 	expect(screen.getByRole('button', { name: t.clients.statementPrint })).toBeDisabled();
 	expect(screen.queryByTestId('opening-balance')).toBeNull();
 	expect(screen.getAllByText(t.clients.noHistory)).toHaveLength(2);
+	expect(within(screen.getByTestId('client-statement-empty')).getByText(t.clients.noHistory)).toBeOnTheScreen();
+	expect(within(screen.getByTestId('client-history-empty')).getByText(t.clients.noHistory)).toBeOnTheScreen();
+	await setHistory(history);
+	expect(screen.queryByTestId('client-statement-empty')).toBeNull();
+	expect(screen.queryByTestId('client-history-empty')).toBeNull();
 });
 
 it('shows a toast if PDF preview is unavailable and allows trying again', async () => {

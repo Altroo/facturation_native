@@ -67,6 +67,7 @@ const CustomDateInput = (props: Props) => {
 			{Platform.OS === 'web' ? (
 				<CustomTextInput
 					label={props.label}
+					startIcon={<MaterialIcons name="calendar-today" size={20} color={colors.slate[400]} />}
 					placeholder="YYYY-MM-DD"
 					value={props.value}
 					onChangeText={props.onChange}
@@ -90,7 +91,7 @@ const CustomDateInput = (props: Props) => {
 							}}
 							className="min-h-12 min-w-0 flex-1 flex-row items-center gap-2 px-2"
 						>
-							<MaterialIcons name="calendar-today" size={20} color={colors.brand} />
+							<MaterialIcons name="calendar-today" size={20} color={colors.slate[400]} />
 							<Text numberOfLines={1} className="min-w-0 flex-1 font-sans text-sm text-ink dark:text-slate-100">
 								{date ? format(date, 'dd/MM/yyyy') : t.common.selectValue}
 							</Text>

@@ -307,7 +307,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 									<MaterialIcons
 										name="mail-outline"
 										size={20}
-										color={(formik.touched.email ? formik.errors.email : undefined) ? colors.danger : colors.slate[400]}
+										color={colors.slate[400]}
 									/>
 								}
 							/>
@@ -326,11 +326,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 									<MaterialIcons
 										name="person-outline"
 										size={20}
-										color={
-											(formik.touched.first_name ? formik.errors.first_name : undefined)
-												? colors.danger
-												: colors.slate[400]
-										}
+										color={colors.slate[400]}
 									/>
 								}
 							/>
@@ -349,11 +345,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 									<MaterialIcons
 										name="badge"
 										size={20}
-										color={
-											(formik.touched.last_name ? formik.errors.last_name : undefined)
-												? colors.danger
-												: colors.slate[400]
-										}
+										color={colors.slate[400]}
 									/>
 								}
 							/>

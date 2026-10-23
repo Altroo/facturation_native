@@ -3,6 +3,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import { useColorMode } from '@/providers/themeProvider';
 import { colors, surfaceStyles } from '@/utils/themes';
+import { dismissDropDownsOnOutsidePress } from '@/components/nativeElements/customDropDownSelect/customDropDownSelect';
 
 type Action = {
 	active: boolean;
@@ -56,7 +57,11 @@ const ActionModals: FC<Props> = (props: Props) => {
 	const widthLimit = maxWidth === false ? undefined : { xs: 444, sm: 600, md: 900, lg: 1200, xl: 1536 }[maxWidth];
 	return (
 		<Modal visible transparent animationType="fade" onRequestClose={handleClose}>
-			<View className="flex-1 items-center justify-center bg-black/60 p-6">
+			<View
+				className="flex-1 items-center justify-center bg-black/60 p-6"
+				onTouchStart={dismissDropDownsOnOutsidePress}
+				onPointerDown={dismissDropDownsOnOutsidePress}
+			>
 				<Pressable
 					testID="action-modal-backdrop"
 					accessible={false}

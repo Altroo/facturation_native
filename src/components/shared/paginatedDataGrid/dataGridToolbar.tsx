@@ -199,6 +199,7 @@ const DataGridToolbar = <TRow,>(props: Props<TRow>) => {
 						>
 							<CustomTextInput
 								accessibilityLabel={t.common.search}
+								startIcon={<MaterialIcons name="search" size={20} color={colors.slate[400]} />}
 								placeholder={t.dataGrid.searchPlaceholder}
 								value={searchValue}
 								onChangeText={setSearchDraft}
@@ -291,6 +292,7 @@ const DataGridToolbar = <TRow,>(props: Props<TRow>) => {
 					<ScrollView style={{ flexShrink: 1 }} contentContainerStyle={{ gap: 16 }} keyboardShouldPersistTaps="handled">
 						<CustomDropDownSelect
 							label={t.dataGrid.sortField}
+							startIcon={<MaterialIcons name="view-column" size={20} color={colors.slate[400]} />}
 							value={sortableColumns.find((column) => column.field === sortDraft[0]?.field)?.headerName ?? ''}
 							items={sortableColumns.map((column) => column.headerName ?? column.field)}
 							onChange={(value) => {
@@ -301,6 +303,7 @@ const DataGridToolbar = <TRow,>(props: Props<TRow>) => {
 						/>
 						<CustomDropDownSelect
 							label={t.dataGrid.sortDirection}
+							startIcon={<MaterialIcons name="sort" size={20} color={colors.slate[400]} />}
 							value={sortDraft[0]?.sort === 'desc' ? t.dataGrid.sortDescending : t.dataGrid.sortAscending}
 							items={[t.dataGrid.sortAscending, t.dataGrid.sortDescending]}
 							onChange={(value) => {
