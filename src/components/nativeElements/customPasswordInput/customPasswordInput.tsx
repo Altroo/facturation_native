@@ -23,6 +23,8 @@ const CustomPasswordInput = (props: Props) => {
 			autoCapitalize="none"
 			autoCorrect={false}
 			secureTextEntry={!showpassword}
+			// The eye button already provides the trailing gap inside its touch area.
+			style={[props.style, { paddingRight: 0 }]}
 			endIcon={
 				<Pressable
 					accessibilityRole="button"

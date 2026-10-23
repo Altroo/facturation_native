@@ -2,7 +2,7 @@ import SectionCard from '@/components/shared/sectionCard/sectionCard';
 import ApiAlert from '@/components/nativeElements/apiLoading/apiAlert/apiAlert';
 import { useInitAccessToken } from '@/contexts/InitContext';
 import { useState } from 'react';
-import { View, Platform, Text } from 'react-native';
+import { View, Platform } from 'react-native';
 import KeyboardAwareScrollView from '@/components/shared/keyboardAwareScrollView/keyboardAwareScrollView';
 import ApiProgress from '@/components/nativeElements/apiLoading/apiProgress/apiProgress';
 import { useFormik } from 'formik';
@@ -17,6 +17,7 @@ import CustomTextInput from '@/components/nativeElements/customTextInput/customT
 import CustomDropDownSelect from '@/components/nativeElements/customDropDownSelect/customDropDownSelect';
 import CustomSquareImageUploading from '@/components/nativeElements/customSquareImageUploading/customSquareImageUploading';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
+import SaveButton from '@/components/nativeElements/buttons/saveButton/saveButton';
 import PageActionBar from '@/components/shared/pageActionBar/pageActionBar';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { colors } from '@/utils/themes';
@@ -118,26 +119,13 @@ const EditProfilPage = () => {
 				}}
 			>
 				<>
-					<View className="flex-row items-center gap-4 py-1">
-						<View className="h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 dark:bg-panel">
-							<MaterialIcons name={'account-circle'} size={25} color={colors.brand} />
-						</View>
-						<View className="flex-1 gap-1">
-							<Text accessibilityRole="header" className="text-ink dark:text-slate-100 font-poppins-semibold text-2xl">
-								{t.settings.profileTitle}
-							</Text>
-							{!![profilData?.first_name, profilData?.last_name].filter(Boolean).join(' ') && (
-								<Text className="font-sans text-sm text-slate-500 dark:text-slate-400">
-									{[profilData?.first_name, profilData?.last_name].filter(Boolean).join(' ')}
-								</Text>
-							)}
-						</View>
-					</View>
 					<SectionCard title={t.users.photoSection} icon={'add-photo-alternate'}>
 						<>
 							<CustomSquareImageUploading
 								label={t.users.fieldAvatar}
+								hideLabel
 								avatar
+								avatarSize={176}
 								image={formik.values.avatar}
 								croppedImage={formik.values.avatar_cropped}
 								error={formik.errors.avatar || formik.errors.avatar_cropped}
@@ -169,17 +157,7 @@ const EditProfilPage = () => {
 								disabled={isPending}
 								error={Boolean(formik.touched.first_name ? formik.errors.first_name : undefined)}
 								helperText={formik.touched.first_name ? formik.errors.first_name : undefined}
-								startIcon={
-									<MaterialIcons
-										name="person-outline"
-										size={20}
-										color={
-											(formik.touched.first_name ? formik.errors.first_name : undefined)
-												? colors.danger
-												: colors.slate[400]
-										}
-									/>
-								}
+								startIcon={<MaterialIcons name="person-outline" size={20} color={colors.slate[400]} />}
 							/>
 							<CustomTextInput
 								id="last_name"
@@ -192,17 +170,7 @@ const EditProfilPage = () => {
 								disabled={isPending}
 								error={Boolean(formik.touched.last_name ? formik.errors.last_name : undefined)}
 								helperText={formik.touched.last_name ? formik.errors.last_name : undefined}
-								startIcon={
-									<MaterialIcons
-										name="badge"
-										size={20}
-										color={
-											(formik.touched.last_name ? formik.errors.last_name : undefined)
-												? colors.danger
-												: colors.slate[400]
-										}
-									/>
-								}
+								startIcon={<MaterialIcons name="badge" size={20} color={colors.slate[400]} />}
 							/>
 							<CustomDropDownSelect
 								id="gender"
@@ -225,13 +193,7 @@ const EditProfilPage = () => {
 				</>
 			</KeyboardAwareScrollView>
 			<PageActionBar>
-				<PrimaryLoadingButton
-					buttonText={t.settings.updateBtn}
-					loading={isPending || isEditLoading}
-					onClick={() => void formik.submitForm()}
-					active
-					startIcon={<MaterialIcons name="save" size={20} color={colors.white} />}
-				/>
+				<SaveButton loading={isPending || isEditLoading} onClick={() => void formik.submitForm()} active />
 			</PageActionBar>
 		</View>
 	);

@@ -1,7 +1,9 @@
 import SectionCard from '@/components/shared/sectionCard/sectionCard';
 import CustomSwitch from '@/components/nativeElements/customSwitch/customSwitch';
 import { useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { colors } from '@/utils/themes';
 import ApiProgress from '@/components/nativeElements/apiLoading/apiProgress/apiProgress';
 import ApiAlert from '@/components/nativeElements/apiLoading/apiAlert/apiAlert';
 import { useFormik } from 'formik';
@@ -14,6 +16,7 @@ import { normalizeApiError, runWithCleanup, setFormikAutoErrors } from '@/utils/
 import type { NotificationPreferenceFormValues } from '@/types/notificationTypes';
 import CustomDropDownSelect from '@/components/nativeElements/customDropDownSelect/customDropDownSelect';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
+import SaveButton from '@/components/nativeElements/buttons/saveButton/saveButton';
 import PageActionBar from '@/components/shared/pageActionBar/pageActionBar';
 
 const NotificationsPage = () => {
@@ -97,42 +100,45 @@ const NotificationsPage = () => {
 					flexGrow: 1,
 				}}
 			>
-				<Text className="text-ink dark:text-slate-100 font-poppins-semibold text-2xl">
-					{t.settings.notificationPreferences}
-				</Text>
-				<SectionCard>
+				<SectionCard title={t.settings.notificationPreferences} icon="notifications-active">
 					<CustomSwitch
 						label={t.settings.notifyOverdueInvoice}
+						startIcon={<MaterialIcons name="receipt-long" size={20} color={colors.slate[400]} />}
 						value={formik.values.notify_overdue_invoice}
 						onValueChange={(value) => void formik.setFieldValue('notify_overdue_invoice', value)}
 						disabled={isPending}
 					/>
 					<CustomSwitch
 						label={t.settings.notifyExpiringQuote}
+						startIcon={<MaterialIcons name="timer" size={20} color={colors.slate[400]} />}
 						value={formik.values.notify_expiring_quote}
 						onValueChange={(value) => void formik.setFieldValue('notify_expiring_quote', value)}
 						disabled={isPending}
 					/>
 					<CustomSwitch
 						label={t.settings.notifyUninvoicedBdl}
+						startIcon={<MaterialIcons name="local-shipping" size={20} color={colors.slate[400]} />}
 						value={formik.values.notify_uninvoiced_bdl}
 						onValueChange={(value) => void formik.setFieldValue('notify_uninvoiced_bdl', value)}
 						disabled={isPending}
 					/>
 					<CustomSwitch
 						label={t.settings.notifyDocumentCreated}
+						startIcon={<MaterialIcons name="note-add" size={20} color={colors.slate[400]} />}
 						value={formik.values.notify_document_created}
 						onValueChange={(value) => void formik.setFieldValue('notify_document_created', value)}
 						disabled={isPending}
 					/>
 					<CustomSwitch
 						label={t.settings.notifyLowStock}
+						startIcon={<MaterialIcons name="inventory-2" size={20} color={colors.slate[400]} />}
 						value={formik.values.notify_low_stock}
 						onValueChange={(value) => void formik.setFieldValue('notify_low_stock', value)}
 						disabled={isPending}
 					/>
 					<CustomDropDownSelect
 						label={t.settings.lowStockRepeatHours}
+						startIcon={<MaterialIcons name="schedule" size={20} color={colors.slate[400]} />}
 						value={formik.values.low_stock_repeat_hours + ' h'}
 						items={[6, 12, 24, 48, 72].map((hours) => hours + ' h')}
 						onChange={(value) => void formik.setFieldValue('low_stock_repeat_hours', Number.parseInt(value, 10))}
@@ -142,6 +148,7 @@ const NotificationsPage = () => {
 					/>
 					<CustomDropDownSelect
 						label={t.settings.quoteExpiryDays}
+						startIcon={<MaterialIcons name="event" size={20} color={colors.slate[400]} />}
 						value={
 							quoteExpiryOptions.find((item) => item.value === formik.values.quote_expiry_days)?.label ??
 							String(formik.values.quote_expiry_days)
@@ -159,12 +166,7 @@ const NotificationsPage = () => {
 				</SectionCard>
 			</ScrollView>
 			<PageActionBar>
-				<PrimaryLoadingButton
-					buttonText={t.settings.save}
-					loading={isPending || isUpdateLoading}
-					onClick={() => void formik.submitForm()}
-					active
-				/>
+				<SaveButton loading={isPending || isUpdateLoading} onClick={() => void formik.submitForm()} active />
 			</PageActionBar>
 		</View>
 	);

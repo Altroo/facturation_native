@@ -128,7 +128,7 @@ const setup = async () =>
 			<EditProfilPage />
 		</Provider>,
 	);
-const submit = async () => await fireEvent.press(screen.getByRole('button', { name: t.settings.updateBtn }));
+const submit = async () => await fireEvent.press(screen.getByRole('button', { name: t.settings.save }));
 
 it('keeps typing and gender selection responsive after correcting validation errors', async () => {
 	adapter.mockImplementation(async (config) =>

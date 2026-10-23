@@ -87,7 +87,7 @@ const fill = async (confirmation = 'new-example-pass') => {
 	await fireEvent.changeText(screen.getByLabelText(t.settings.fieldNewPassword), 'new-example-pass');
 	await fireEvent.changeText(screen.getByLabelText(t.settings.fieldConfirmPassword), confirmation);
 };
-const submit = async () => await fireEvent.press(screen.getByRole('button', { name: t.settings.changePasswordBtn }));
+const submit = async () => await fireEvent.press(screen.getByRole('button', { name: t.settings.save }));
 
 it('changes the password, clears the default-password warning through its action, and resets the form', async () => {
 	adapter.mockImplementation(async (config) => response(config, '', 204));
@@ -156,7 +156,7 @@ it('shows the original server-failure fallback and permits retry without changin
 	await screen.findByText(
 		'Il semble que nous ne puissions pas nous connecter. Veuillez vérifier votre connexion réseau et réessayer.',
 	);
-	expect(screen.getByRole('button', { name: t.settings.changePasswordBtn })).not.toBeDisabled();
+	expect(screen.getByRole('button', { name: t.settings.save })).not.toBeDisabled();
 	expect(getProfilState(store.getState())).toEqual(profile);
 	expect(mockError).toHaveBeenCalledWith(t.settings.passwordChangeError);
 });

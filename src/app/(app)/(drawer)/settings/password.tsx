@@ -13,7 +13,7 @@ import { useAppDispatch, useAppSelector, useLanguage, useToast } from '@/utils/h
 import { changePasswordSchema } from '@/utils/formValidationSchemas';
 import { runWithCleanup, setFormikAutoErrors } from '@/utils/helpers';
 import CustomPasswordInput from '@/components/nativeElements/customPasswordInput/customPasswordInput';
-import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
+import SaveButton from '@/components/nativeElements/buttons/saveButton/saveButton';
 import PageActionBar from '@/components/shared/pageActionBar/pageActionBar';
 import { colors } from '@/utils/themes';
 
@@ -82,16 +82,6 @@ const ChangePasswordPage = () => {
 				}}
 			>
 				<>
-					<View className="flex-row items-center gap-4 py-1">
-						<View className="h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 dark:bg-panel">
-							<MaterialIcons name={'lock-outline'} size={25} color={colors.brand} />
-						</View>
-						<View className="flex-1 gap-1">
-							<Text accessibilityRole="header" className="text-ink dark:text-slate-100 font-poppins-semibold text-2xl">
-								{t.settings.passwordTitle}
-							</Text>
-						</View>
-					</View>
 					{profil?.default_password_set && (
 						<View className="flex-row items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950">
 							<MaterialIcons name="warning-amber" size={22} color={colors.warning} />
@@ -113,15 +103,7 @@ const ChangePasswordPage = () => {
 								disabled={isPending}
 								error={formik.touched.old_password && Boolean(formik.errors.old_password)}
 								helperText={formik.touched.old_password ? formik.errors.old_password : ''}
-								startIcon={
-									<MaterialIcons
-										name="lock-outline"
-										size={20}
-										color={
-											formik.touched.old_password && formik.errors.old_password ? colors.danger : colors.slate[400]
-										}
-									/>
-								}
+								startIcon={<MaterialIcons name="lock-outline" size={20} color={colors.slate[400]} />}
 							/>
 							<CustomPasswordInput
 								id="new_password"
@@ -134,15 +116,7 @@ const ChangePasswordPage = () => {
 								disabled={isPending}
 								error={formik.touched.new_password && Boolean(formik.errors.new_password)}
 								helperText={formik.touched.new_password ? formik.errors.new_password : ''}
-								startIcon={
-									<MaterialIcons
-										name="lock-outline"
-										size={20}
-										color={
-											formik.touched.new_password && formik.errors.new_password ? colors.danger : colors.slate[400]
-										}
-									/>
-								}
+								startIcon={<MaterialIcons name="lock-outline" size={20} color={colors.slate[400]} />}
 							/>
 							<CustomPasswordInput
 								id="new_password2"
@@ -155,15 +129,7 @@ const ChangePasswordPage = () => {
 								disabled={isPending}
 								error={formik.touched.new_password2 && Boolean(formik.errors.new_password2)}
 								helperText={formik.touched.new_password2 ? formik.errors.new_password2 : ''}
-								startIcon={
-									<MaterialIcons
-										name="lock-outline"
-										size={20}
-										color={
-											formik.touched.new_password2 && formik.errors.new_password2 ? colors.danger : colors.slate[400]
-										}
-									/>
-								}
+								startIcon={<MaterialIcons name="lock-outline" size={20} color={colors.slate[400]} />}
 							/>
 						</>
 					</SectionCard>
@@ -175,13 +141,7 @@ const ChangePasswordPage = () => {
 				</>
 			</KeyboardAwareScrollView>
 			<PageActionBar>
-				<PrimaryLoadingButton
-					buttonText={t.settings.changePasswordBtn}
-					loading={isPending || isChangePasswordLoading}
-					onClick={() => void formik.submitForm()}
-					active
-					startIcon={<MaterialIcons name="lock-reset" size={20} color={colors.white} />}
-				/>
+				<SaveButton loading={isPending || isChangePasswordLoading} onClick={() => void formik.submitForm()} active />
 			</PageActionBar>
 		</View>
 	);
