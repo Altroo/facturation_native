@@ -10,6 +10,9 @@ import {
 	passwordResetStorageSchema,
 	clientSchema,
 	articleSchema,
+	deviAddSchema,
+	deviSchema,
+	devisLivraisonFactureLineSchema,
 } from './formValidationSchemas';
 
 describe('clientSchema', () => {
@@ -511,5 +514,54 @@ describe('articleSchema', () => {
 	});
 	it.each([-1, Infinity, NaN])('rejects invalid stock minimum %s', (stock_minimum) => {
 		expect(articleSchema.safeParse({ ...article, stock_minimum }).success).toBe(false);
+	});
+});
+
+describe('Devis validation', () => {
+	const header = {
+		numero_part: '001',
+		year_part: '26',
+		client: 3,
+		date_devis: '2026-10-22',
+		date_echeance: null,
+		mode_paiement: null,
+		numero_demande_prix_client: '',
+		fournisseur: '',
+		fournisseur_email: '',
+		remarque: '',
+	};
+	const line = { article: 4, prix_achat: 50, prix_vente: 100, quantity: 2, remise_type: '', remise: 0 };
+	it('accepts header-only creation and empty optional supplier/payment fields', () => {
+		expect(deviAddSchema.safeParse(header).success).toBe(true);
+		expect(deviSchema.safeParse({ ...header, lignes: [line], remise_type: '', remise: 0 }).success).toBe(true);
+	});
+	it('normalizes decimal commas for quantity, unit price and discounts', () => {
+		const result = devisLivraisonFactureLineSchema.parse({
+			...line,
+			quantity: '1,5',
+			prix_vente: '100,25',
+			remise_type: 'Pourcentage',
+			remise: '2,5',
+		});
+		expect(result.quantity).toBe(1.5);
+		expect(result.prix_vente).toBe(100.25);
+		expect(result.remise).toBe(2.5);
+	});
+	it.each([
+		{ client: null },
+		{ year_part: 'abc' },
+		{ year_part: '19' },
+		{ numero_part: '' },
+		{ fournisseur_email: 'broken' },
+	])('rejects an invalid header: %j', (value) => {
+		expect(deviAddSchema.safeParse({ ...header, ...value }).success).toBe(false);
+	});
+	it.each([
+		{ quantity: 0 },
+		{ prix_vente: 25 },
+		{ remise_type: 'Pourcentage', remise: 101 },
+		{ remise_type: 'Fixe', remise: -1 },
+	])('rejects invalid line values: %j', (value) => {
+		expect(devisLivraisonFactureLineSchema.safeParse({ ...line, ...value }).success).toBe(false);
 	});
 });

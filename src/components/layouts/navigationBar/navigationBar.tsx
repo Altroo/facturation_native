@@ -4,6 +4,7 @@ import { useColorMode } from '@/providers/themeProvider';
 import { colors, fonts } from '@/utils/themes';
 import {
 	DASHBOARD,
+	DEVIS_LIST,
 	COMPANIES_LIST,
 	COMPANIES_ADD,
 	USERS_LIST,
@@ -80,7 +81,7 @@ const getNavigationMenu = (isStaff: boolean, t: TranslationDictionary) => {
 		devis: {
 			title: t.navigation.devis,
 			icon: <MaterialIcons name="request-quote" size={21} color={colors.slate[500]} />,
-			items: [{ title: t.navigation.devisList, label: t.navigation.devisList, path: undefined }],
+			items: [{ title: t.navigation.devisList, label: t.navigation.devisList, path: DEVIS_LIST }],
 		},
 		factures_proformat: {
 			title: t.navigation.facturesProforma,

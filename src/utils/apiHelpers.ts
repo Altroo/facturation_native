@@ -3,11 +3,12 @@ import Constants from 'expo-constants';
 import { File, Paths } from 'expo-file-system';
 import { Platform } from 'react-native';
 import { isAppVersion, isAuthenticatedInstance, isNewerAppVersion } from '@/utils/helpers';
+import type { DocumentPdfType } from '@/types/devisTypes';
 import type { StatementType } from '@/types/clientTypes';
 
 // The web opens a Blob URL. Phones preview a local file instead. Axios still
 // owns authentication and token refresh; the existing Expo module owns the file.
-export const openPdf = async (url: string): Promise<boolean> => {
+export const openPdf = async (url: string, filename = 'releve-client'): Promise<boolean> => {
 	try {
 		const instance = isAuthenticatedInstance();
 		const response = await instance.get<ArrayBuffer>(url, { responseType: 'arraybuffer' });
@@ -18,13 +19,13 @@ export const openPdf = async (url: string): Promise<boolean> => {
 			const blobUrl = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
 			const link = document.createElement('a');
 			link.href = blobUrl;
-			link.download = 'releve-client.pdf';
+			link.download = `${filename}.pdf`;
 			link.click();
 			setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
 			return true;
 		}
 		// The OS may clear cache files; this is not session storage.
-		const file = new File(Paths.cache, `releve-client-${Date.now()}.pdf`);
+		const file = new File(Paths.cache, `${filename}-${Date.now()}.pdf`);
 		await file.write(bytes);
 		if (!(await file.canPreview({ mimeType: 'application/pdf' }))) return false;
 		// iOS presents Quick Look; Android opens an installed PDF viewer. Keep the
@@ -115,4 +116,17 @@ export const getApi = async <T = unknown>(
 		status: response.status,
 		data: response.data,
 	};
+};
+
+export const openDevisPdf = (
+	id: number,
+	company_id: number,
+	type: DocumentPdfType,
+	language: 'fr' | 'en' | 'nl' = 'fr',
+): Promise<boolean> => {
+	const params = new URLSearchParams({ company_id: String(company_id), type });
+	return openPdf(
+		`${process.env.EXPO_PUBLIC_ROOT_API_URL}${process.env.EXPO_PUBLIC_DEVIS_PDF}/${language}/${id}/?${params}`,
+		`devis-${id}`,
+	);
 };

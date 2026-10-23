@@ -8,6 +8,9 @@ import {
 	INPUT_PHONE,
 	INPUT_REQUIRED,
 	INPUT_URL_INVALID,
+	INPUT_REMISE_POURCENTAGE,
+	INPUT_REMISE_FIX,
+	INPUT_YEAR_PART_INVALID,
 	MINI_INPUT_EMAIL,
 	SHORT_INPUT_REQUIRED,
 } from '@/utils/formValidationErrorMessages';
@@ -289,3 +292,189 @@ export const articleSchema = z
 		},
 		{ error: INPUT_PRICE_VENTE_ACHAT, path: ['prix_vente'] },
 	);
+
+export const devisLivraisonFactureLineSchema = z
+	.object({
+		article: requiredNumberField(1),
+		prix_achat: optionalNumberField(0).nullable(),
+		devise_prix_achat: z.string().default('MAD'),
+		prix_vente: z.preprocess(
+			(value) => (typeof value === 'string' ? Number(value.replace(',', '.')) : value),
+			optionalNumberField(0).nullable(),
+		),
+		quantity: z.preprocess(
+			(val) => {
+				if (val === undefined || val === null) return NaN;
+				if (typeof val === 'string') {
+					const normalized = val.trim().replace(',', '.');
+					if (!normalized) return NaN;
+					const parsed = parseFloat(normalized);
+					return Number.isNaN(parsed) ? NaN : parsed;
+				}
+				const parsed = Number(val);
+				return Number.isNaN(parsed) ? NaN : parsed;
+			},
+			z
+				.number({ error: INPUT_REQUIRED })
+				.refine((val) => !Number.isNaN(val), { error: INPUT_REQUIRED })
+				.min(0.01, { error: INPUT_MIN(0.01) }),
+		),
+		remise_type: z.preprocess(
+			(value) => (value === '' ? undefined : value),
+			z.enum(['Pourcentage', 'Fixe']).optional().nullable(),
+		),
+		remise: z.preprocess(
+			(val) => (typeof val === 'string' ? parseFloat(val.replace(',', '.')) : val),
+			optionalNumberField(0),
+		),
+	})
+	.refine(
+		(data) => {
+			const a = data.prix_achat;
+			const v = data.prix_vente;
+			if (a === undefined || a === null || v === undefined || v === null) return true;
+			return v > a;
+		},
+		{ error: INPUT_PRICE_VENTE_ACHAT, path: ['prix_vente'] },
+	)
+	.superRefine((data, ctx) => {
+		const hasRemiseType = data.remise_type !== undefined;
+		const rType = data.remise_type ?? 'Pourcentage';
+		const remiseVal = data.remise;
+
+		if (hasRemiseType && (remiseVal === undefined || remiseVal === null || Number.isNaN(remiseVal))) {
+			ctx.addIssue({
+				path: ['remise'],
+				code: 'custom',
+				message: INPUT_REQUIRED,
+			});
+			return;
+		}
+
+		if (remiseVal !== undefined && remiseVal !== null) {
+			if (rType === 'Pourcentage') {
+				if (remiseVal < 0 || remiseVal > 100) {
+					ctx.addIssue({
+						path: ['remise'],
+						code: 'custom',
+						message: INPUT_REMISE_POURCENTAGE,
+					});
+				}
+			} else {
+				if (remiseVal < 0) {
+					ctx.addIssue({
+						path: ['remise'],
+						code: 'custom',
+						message: INPUT_REMISE_FIX,
+					});
+				}
+			}
+		}
+	});
+
+const supplierSnapshotFields = {
+	fournisseur: z.preprocess(
+		(value) => (typeof value === 'string' ? value.trim() || undefined : value),
+		z
+			.string()
+			.max(255, { error: INPUT_MAX(255) })
+			.optional(),
+	),
+	fournisseur_email: optionalEmailField,
+};
+
+export const deviSchema = z
+	.object({
+		numero_part: requiredTextField(1, 15),
+		year_part: z.preprocess(
+			(val) => {
+				if (val === undefined || val === null || val === '') {
+					return undefined;
+				}
+				return Number(val);
+			},
+			z
+				.number({ error: INPUT_YEAR_PART_INVALID })
+				.refine((val) => !Number.isNaN(val), { message: INPUT_YEAR_PART_INVALID })
+				.refine((val) => val >= 20 && val <= 99 && Number.isInteger(val), {
+					message: INPUT_YEAR_PART_INVALID,
+				}),
+		),
+		client: requiredNumberField(1),
+		date_devis: requiredTextField(1, 100),
+		date_echeance: optionalTextField(1, 100).nullable(),
+		numero_demande_prix_client: optionalTextField(1, 100).nullable(),
+		mode_paiement: optionalNumberField(0).nullable(),
+		remarque: optionalTextField(2, 2000).nullable(),
+		...supplierSnapshotFields,
+		remise_type: z.preprocess(
+			(value) => (value === '' ? undefined : value),
+			z.enum(['Pourcentage', 'Fixe']).optional().nullable(),
+		),
+		remise: z.preprocess(
+			(val) => (typeof val === 'string' ? parseFloat(val.replace(',', '.')) : val),
+			optionalNumberField(0),
+		),
+		lignes: z.array(devisLivraisonFactureLineSchema).optional(),
+		globalError: optionalTextField(1, 500),
+	})
+	.superRefine((data, ctx) => {
+		const hasRemiseType = data.remise_type !== undefined;
+		const rType = data.remise_type ?? 'Pourcentage';
+		const remiseVal = data.remise;
+
+		if (hasRemiseType && (remiseVal === undefined || remiseVal === null || Number.isNaN(remiseVal))) {
+			ctx.addIssue({
+				path: ['remise'],
+				code: 'custom',
+				message: INPUT_REQUIRED,
+			});
+			return;
+		}
+
+		if (remiseVal !== undefined && remiseVal !== null) {
+			if (rType === 'Pourcentage') {
+				if (remiseVal < 0 || remiseVal > 100) {
+					ctx.addIssue({
+						path: ['remise'],
+						code: 'custom',
+						message: INPUT_REMISE_POURCENTAGE,
+					});
+				}
+			} else {
+				if (remiseVal < 0) {
+					ctx.addIssue({
+						path: ['remise'],
+						code: 'custom',
+						message: INPUT_REMISE_FIX,
+					});
+				}
+			}
+		}
+	});
+
+export const deviAddSchema = z.object({
+	numero_part: requiredTextField(1, 15),
+	year_part: z.preprocess(
+		(val) => {
+			if (val === undefined || val === null || val === '') {
+				return undefined;
+			}
+			return Number(val);
+		},
+		z
+			.number({ error: INPUT_YEAR_PART_INVALID })
+			.refine((val) => !Number.isNaN(val), { message: INPUT_YEAR_PART_INVALID })
+			.refine((val) => val >= 20 && val <= 99 && Number.isInteger(val), {
+				message: INPUT_YEAR_PART_INVALID,
+			}),
+	),
+	client: requiredNumberField(1),
+	date_devis: requiredTextField(1, 100),
+	date_echeance: optionalTextField(1, 100).nullable(),
+	numero_demande_prix_client: optionalTextField(1, 100).nullable(),
+	mode_paiement: optionalNumberField(0).nullable(),
+	remarque: optionalTextField(2, 2000).nullable(),
+	...supplierSnapshotFields,
+	globalError: optionalTextField(1, 500),
+});

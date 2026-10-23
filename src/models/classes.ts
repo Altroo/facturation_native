@@ -1,3 +1,4 @@
+import type { TypeFactureLivraisonDevisStatus, TypeRemiseType } from '@/types/devisTypes';
 import type { NbrEmployeType, CiviliteType, ManagedByWriteOnlyType } from '@/types/companyTypes';
 import { type ManagedByType } from '@/components/shared/addManagedByTable/addManagedByTable';
 import type { TypeArticleType, CurrencyType, SalePriceBasis } from '@/types/articleTypes';
@@ -164,6 +165,70 @@ export class UniteClass {
 }
 
 export class EmplacementClass {
+	constructor(
+		public readonly id: number,
+		public nom: string,
+		public company: number,
+	) {}
+}
+
+export class DeviFactureLivraisonLineClass {
+	constructor(
+		public readonly id: number,
+		public article: number,
+		public readonly article_designation: string | null,
+		public readonly designation: string | null,
+		public prix_achat: number,
+		public devise_prix_achat: string,
+		public prix_vente: number,
+		public devise_prix_vente: string,
+		public quantity: number,
+		public remise_type: TypeRemiseType,
+		public remise: number,
+		public readonly stock_coverage?: {
+			status: 'not_managed' | 'disponible' | 'couvert_par_stock_entrant' | 'a_approvisionner';
+			requested_quantity: number;
+			available_quantity?: number;
+			incoming_quantity?: number;
+			shortage_quantity?: number;
+		},
+	) {}
+}
+
+export class DeviClass {
+	// The API returns the owning company; native routes verify it before editing.
+	public readonly company?: number;
+	constructor(
+		public readonly id: number,
+		public numero_devis: string,
+		public client: number | null,
+		public readonly client_name: string | null,
+		public date_devis: string,
+		public date_echeance: string | null,
+		public numero_demande_prix_client: string | null,
+		public mode_paiement: number | null,
+		public readonly mode_paiement_name: string | null,
+		public remarque: string | null,
+		public statut: TypeFactureLivraisonDevisStatus,
+		public readonly date_created: string,
+		public readonly date_updated: string,
+		public readonly created_by_user_id: number,
+		public readonly created_by_user_name: string | null,
+		public readonly lignes_count: number,
+		public remise_type: TypeRemiseType,
+		public remise: number,
+		public readonly total_ht: number,
+		public readonly total_tva: number,
+		public readonly total_ttc: number,
+		public readonly total_ttc_apres_remise: number,
+		public readonly devise: string,
+		public lignes: Array<DeviFactureLivraisonLineClass>,
+		public fournisseur?: string | null,
+		public fournisseur_email?: string | null,
+	) {}
+}
+
+export class ModePaiementClass {
 	constructor(
 		public readonly id: number,
 		public nom: string,

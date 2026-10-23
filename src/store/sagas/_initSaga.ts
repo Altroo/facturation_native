@@ -22,7 +22,15 @@ import { accountApi, profilApi, usersApi, groupApi } from '@/store/services/acco
 import { companyApi } from '@/store/services/company';
 import { clientApi } from '@/store/services/client';
 import { articleApi } from '@/store/services/article';
-import { citiesApi, marqueApi, categorieApi, uniteApi, emplacementApi } from '@/store/services/parameter';
+import { deviApi } from '@/store/services/devi';
+import {
+	citiesApi,
+	marqueApi,
+	categorieApi,
+	uniteApi,
+	emplacementApi,
+	modePaiementApi,
+} from '@/store/services/parameter';
 import { notificationApi } from '@/store/services/notification';
 import { setWSMaintenance, setWSServerVersion } from '@/store/slices/wsSlice';
 import { getInitState, getProfilState } from '@/store/selectors';
@@ -188,6 +196,8 @@ export function* resetApiState(): SagaIterator {
 	yield put(companyApi.util.resetApiState());
 	yield put(clientApi.util.resetApiState());
 	yield put(articleApi.util.resetApiState());
+	yield put(deviApi.util.resetApiState());
+	yield put(modePaiementApi.util.resetApiState());
 	yield put(marqueApi.util.resetApiState());
 	yield put(categorieApi.util.resetApiState());
 	yield put(uniteApi.util.resetApiState());

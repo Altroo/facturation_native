@@ -8,7 +8,15 @@ import { accountApi, profilApi, groupApi, usersApi } from '@/store/services/acco
 import { companyApi } from '@/store/services/company';
 import { clientApi } from '@/store/services/client';
 import { articleApi } from '@/store/services/article';
-import { citiesApi, marqueApi, categorieApi, uniteApi, emplacementApi } from '@/store/services/parameter';
+import { deviApi } from '@/store/services/devi';
+import {
+	citiesApi,
+	marqueApi,
+	categorieApi,
+	uniteApi,
+	emplacementApi,
+	modePaiementApi,
+} from '@/store/services/parameter';
 import { notificationApi } from '@/store/services/notification';
 import notificationReducer from '@/store/slices/notificationSlice';
 
@@ -25,6 +33,8 @@ const rootReducer = combineReducers({
 	[companyApi.reducerPath]: companyApi.reducer,
 	[clientApi.reducerPath]: clientApi.reducer,
 	[articleApi.reducerPath]: articleApi.reducer,
+	[deviApi.reducerPath]: deviApi.reducer,
+	[modePaiementApi.reducerPath]: modePaiementApi.reducer,
 	[marqueApi.reducerPath]: marqueApi.reducer,
 	[categorieApi.reducerPath]: categorieApi.reducer,
 	[uniteApi.reducerPath]: uniteApi.reducer,
@@ -65,6 +75,8 @@ export const makeStore = (): SagaStore => {
 					companyApi.middleware,
 					clientApi.middleware,
 					articleApi.middleware,
+					deviApi.middleware,
+					modePaiementApi.middleware,
 					marqueApi.middleware,
 					categorieApi.middleware,
 					uniteApi.middleware,

@@ -1,3 +1,5 @@
+import type { DeviFactureLineFormValues } from '@/types/devisTypes';
+import { translations } from '@/translations';
 import { reloadAppAsync } from 'expo';
 import { APP_VERSION, NECTAR_RAISON_SOCIALE } from '@/utils/rawData';
 import {
@@ -22,6 +24,8 @@ jest.mock('expo', () => ({
 
 import { AxiosError, AxiosHeaders, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
 import {
+	calculateDocumentTotals,
+	getStatutLabel,
 	calculateSalePriceHT,
 	calculateSalePriceTTC,
 	runWithCleanup,
@@ -786,4 +790,72 @@ it.each([
 	['/dashboard/articles/7?company_id=bad', '/articles'],
 ])('maps the implemented Articles notification target %s', (url, expected) => {
 	expect(getNotificationDestination(url as string)).toEqual(expected);
+});
+
+describe('document totals', () => {
+	const line: DeviFactureLineFormValues = {
+		article: 4,
+		prix_achat: 30,
+		devise_prix_achat: 'MAD',
+		prix_vente: 100,
+		devise_prix_vente: 'MAD',
+		quantity: 2,
+		designation: 'Desk',
+		remise_type: 'Pourcentage',
+		remise: 10,
+	};
+	it('applies line discounts and prorates a global discount across mixed VAT rates', () => {
+		const totals = calculateDocumentTotals(
+			[line, { ...line, article: 8, quantity: 1, remise_type: 'Fixe', remise: 20 }],
+			[
+				{ id: 4, tva: 20 },
+				{ id: 8, tva: 10 },
+			],
+			'Fixe',
+			26,
+		);
+		expect(totals.totalHT).toBe(260);
+		expect(totals.totalTVA).toBeCloseTo(39.6);
+		expect(totals.totalTTC).toBeCloseTo(273.6);
+		expect(totals.totalPrixAchat).toBe(90);
+		expect(totals.totalPrixAchatDevise).toBe('MAD');
+	});
+	it('returns finite zero totals for empty lines', () => {
+		expect(calculateDocumentTotals([], [])).toEqual({
+			totalHT: 0,
+			totalTVA: 0,
+			totalTTC: 0,
+			totalTTCApresRemise: 0,
+			totalPrixAchat: 0,
+			totalPrixAchatDevise: null,
+		});
+	});
+	it('translates the raw server statuses without changing their API values', () => {
+		expect(getStatutLabel('Accepté', translations.en)).toBe(translations.en.rawData.documentStatuses.accepted);
+		expect(getStatutLabel('Unknown', translations.fr)).toBe('Unknown');
+	});
+});
+
+it('formats document calendar dates without inventing a midnight time', () => {
+	expect(formatDate('2026-10-22', false)).toBe(
+		new Intl.DateTimeFormat('fr-FR', { year: 'numeric', month: 'short', day: '2-digit' }).format(
+			new Date(2026, 9, 22, 12),
+		),
+	);
+});
+
+it('maps Devis notification targets only to implemented tenant-scoped screens', () => {
+	expect(getNotificationDestination('/dashboard/devis/7?company_id=5')).toEqual({
+		pathname: '/devis/[id]',
+		params: { id: '7', company_id: '5' },
+	});
+	expect(getNotificationDestination('/dashboard/devis/7/edit?company_id=5')).toEqual({
+		pathname: '/devis/form',
+		params: { id: '7', company_id: '5' },
+	});
+	expect(getNotificationDestination('/dashboard/devis/7')).toBe('/devis');
+	expect(getNotificationDestination('/dashboard/devis/new?company_id=5')).toEqual({
+		pathname: '/devis/form',
+		params: { company_id: '5' },
+	});
 });

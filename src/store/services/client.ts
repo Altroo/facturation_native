@@ -108,6 +108,7 @@ export const clientApi = createApi({
 });
 
 export const {
+	useGetClientsListQuery,
 	useLazyGetClientsListQuery,
 	useGetClientsInfiniteListInfiniteQuery,
 	useGetClientQuery,

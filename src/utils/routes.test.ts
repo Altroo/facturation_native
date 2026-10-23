@@ -26,3 +26,11 @@ describe('routes constants', () => {
 		expect(routes.USERS_EDIT(7)).toEqual({ pathname: '/users/form', params: { id: '7' } });
 	});
 });
+
+it('keeps Devis navigation routes separate from PDF endpoints', () => {
+	expect(routes.DEVIS_LIST).toBe('/devis');
+	expect(routes.DEVIS_ADD).toBe('/devis/form');
+	expect(routes.DEVIS_VIEW(7)).toEqual({ pathname: '/devis/[id]', params: { id: '7' } });
+	expect(routes.DEVIS_EDIT(7)).toEqual({ pathname: '/devis/form', params: { id: '7' } });
+	expect(routes).not.toHaveProperty('DEVIS_PDF');
+});

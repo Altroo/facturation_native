@@ -57,3 +57,9 @@ export const USERS_EDIT = (id: number) => ({
 	pathname: '/users/form' as const,
 	params: { id: String(id) },
 });
+
+// Devis
+export const DEVIS_LIST = '/devis' as const;
+export const DEVIS_ADD = '/devis/form' as const;
+export const DEVIS_VIEW = (id: number) => ({ pathname: '/devis/[id]' as const, params: { id: String(id) } });
+export const DEVIS_EDIT = (id: number) => ({ pathname: '/devis/form' as const, params: { id: String(id) } });

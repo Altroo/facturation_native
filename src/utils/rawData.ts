@@ -48,3 +48,19 @@ export const pmRequired = ['raison_sociale', 'ville', 'ICE', 'registre_de_commer
 export const ppRequired = ['nom', 'prenom', 'adresse', 'ville', 'delai_de_paiement'] as const;
 // Bundled with the running code, never copied from the server announcement.
 export const APP_VERSION = version;
+
+export const devisFactureStatusItemsList: Array<DropDownType> = [
+	{ code: '', value: '' },
+	{ code: 'Brouillon', value: 'Brouillon' },
+	{ code: 'Envoyé', value: 'Envoyé' },
+	{ code: 'Accepté', value: 'Accepté' },
+	{ code: 'Refusé', value: 'Refusé' },
+	{ code: 'Annulé', value: 'Annulé' },
+	{ code: 'Expiré', value: 'Expiré' },
+];
+
+export const remiseTypeItemsList: Array<DropDownType> = [
+	{ code: '', value: '' },
+	{ code: 'Pourcentage', value: 'Pourcentage' },
+	{ code: 'Fixe', value: 'Fixe' },
+];

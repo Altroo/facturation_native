@@ -11,6 +11,10 @@ import {
 	COMPANIES_LIST,
 	COMPANIES_VIEW,
 	DASHBOARD,
+	DEVIS_LIST,
+	DEVIS_ADD,
+	DEVIS_VIEW,
+	DEVIS_EDIT,
 	DASHBOARD_EDIT_PROFILE,
 	DASHBOARD_NOTIFICATIONS,
 	DASHBOARD_PASSWORD,
@@ -19,6 +23,9 @@ import {
 	USERS_LIST,
 	USERS_VIEW,
 } from '@/utils/routes';
+import type { DeviFactureLineFormValues, Totals, TypeRemiseType } from '@/types/devisTypes';
+import type { TranslationDictionary } from '@/types/languageTypes';
+import type { ArticleClass } from '@/models/classes';
 import type { SalePriceBasis } from '@/types/articleTypes';
 import { reloadAppAsync } from 'expo';
 import { NECTAR_RAISON_SOCIALE } from '@/utils/rawData';
@@ -182,7 +189,7 @@ export const hexToRGB = (hex: string, alpha?: number): string => {
 	return alpha !== undefined ? `rgba(${r}, ${g}, ${b}, ${alpha})` : `rgb(${r}, ${g}, ${b})`;
 };
 
-export const formatDate = (value: string | null) => {
+export const formatDate = (value: string | null, includeTime = true) => {
 	if (!value) return '-'; // display a placeholder for null
 	// Django company details return dd/MM/yyyy; JS Date would reverse day/month or reject it.
 	const dateOnly = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value);
@@ -197,15 +204,14 @@ export const formatDate = (value: string | null) => {
 			? value
 			: '-';
 	}
-	const date = new Date(value);
+	// A document issue/due date is a calendar day, not a midnight UTC instant.
+	const date = new Date(!includeTime && /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T12:00:00` : value);
 	if (Number.isNaN(date.getTime())) return '-';
 	return new Intl.DateTimeFormat('fr-FR', {
 		year: 'numeric',
 		month: 'short',
 		day: '2-digit',
-		hour: '2-digit',
-		minute: '2-digit',
-		second: '2-digit',
+		...(includeTime ? { hour: '2-digit' as const, minute: '2-digit' as const, second: '2-digit' as const } : {}),
 	}).format(date);
 };
 
@@ -473,6 +479,16 @@ export const getNotificationDestination = (target?: string) => {
 		const route = path.endsWith('/edit') ? ARTICLES_EDIT(articleId) : ARTICLES_VIEW(articleId);
 		return { ...route, params: { ...route.params, company_id: String(companyId) } };
 	}
+	if (path === '/dashboard/devis') return DEVIS_LIST;
+	if (path === '/dashboard/devis/new' || /^\/dashboard\/devis\/[1-9]\d*(?:\/edit)?$/.test(path)) {
+		const companyId = parseEntityId(new URLSearchParams(target.split('?')[1] ?? '').get('company_id') ?? undefined);
+		if (companyId === null) return DEVIS_LIST;
+		if (path.endsWith('/new')) return { pathname: DEVIS_ADD, params: { company_id: String(companyId) } };
+		const id = parseEntityId(path.split('/')[3]);
+		if (id === null) return null;
+		const route = path.endsWith('/edit') ? DEVIS_EDIT(id) : DEVIS_VIEW(id);
+		return { ...route, params: { ...route.params, company_id: String(companyId) } };
+	}
 	if (path === '/dashboard/clients') return CLIENTS_LIST;
 	if (path === '/dashboard/clients/archived') return CLIENTS_ARCHIVED;
 	if (path === '/dashboard/users') return USERS_LIST;
@@ -490,4 +506,63 @@ export const getNotificationDestination = (target?: string) => {
 		: match[3]
 			? USERS_EDIT(id)
 			: USERS_VIEW(id);
+};
+
+// Use the same line/global discount calculation in document forms and totals.
+// VAT is reduced proportionally so documents with mixed tax rates stay correct.
+export const calculateDocumentTotals = (
+	lignes: DeviFactureLineFormValues[],
+	articles: Partial<ArticleClass>[],
+	remise_type: TypeRemiseType = '',
+	remise = 0,
+): Totals => {
+	const lineTotals = lignes.map((line) => {
+		const base = (parseNumber(line.prix_vente) ?? 0) * (parseNumber(line.quantity) ?? 0);
+		const discount = parseNumber(line.remise ?? 0) ?? 0;
+		const ht = Math.max(
+			0,
+			line.remise_type === 'Pourcentage'
+				? base * (1 - discount / 100)
+				: line.remise_type === 'Fixe'
+					? base - discount
+					: base,
+		);
+		return { ht, tva: Number(articles.find((article) => article.id === line.article)?.tva ?? 0) };
+	});
+	const totalHT = lineTotals.reduce((sum, line) => sum + line.ht, 0);
+	const discountedHT = Math.max(
+		0,
+		remise_type === 'Pourcentage'
+			? totalHT * (1 - Number(remise || 0) / 100)
+			: remise_type === 'Fixe'
+				? totalHT - Number(remise || 0)
+				: totalHT,
+	);
+	const ratio = totalHT > 0 ? discountedHT / totalHT : 0;
+	const totalTVA = lineTotals.reduce((sum, line) => sum + (line.ht * ratio * line.tva) / 100, 0);
+	const totalTTC = discountedHT + totalTVA;
+	return {
+		totalHT,
+		totalTVA,
+		totalTTC,
+		totalTTCApresRemise: totalTTC,
+		totalPrixAchat: lignes.reduce(
+			(sum, line) => sum + (parseNumber(line.prix_achat) ?? 0) * (parseNumber(line.quantity) ?? 0),
+			0,
+		),
+		totalPrixAchatDevise: lignes[0]?.devise_prix_achat || null,
+	};
+};
+
+export const getStatutLabel = (statut: string, t: TranslationDictionary): string => {
+	const labels: Record<string, string> = {
+		Brouillon: t.rawData.documentStatuses.draft,
+		Envoyé: t.rawData.documentStatuses.sent,
+		Accepté: t.rawData.documentStatuses.accepted,
+		Refusé: t.rawData.documentStatuses.refused,
+		Annulé: t.rawData.documentStatuses.cancelled,
+		Expiré: t.rawData.documentStatuses.expired,
+		Facturé: t.rawData.documentStatuses.invoiced,
+	};
+	return labels[statut] ?? statut;
 };

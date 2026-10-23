@@ -2,7 +2,7 @@ import { setupApiStore } from '@/store/setupApiStore';
 import { configureStore } from '@reduxjs/toolkit';
 import { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
 import { auth } from '@/auth';
-import { citiesApi, marqueApi, categorieApi, uniteApi, emplacementApi } from './parameter';
+import { citiesApi, marqueApi, categorieApi, uniteApi, emplacementApi, modePaiementApi } from './parameter';
 
 jest.mock('@/auth', () => {
 	const { create } = jest.requireActual<typeof import('axios')>('axios');
@@ -75,6 +75,14 @@ it('keeps city lookups scoped to their company and exposes failed writes without
 });
 
 it.each([
+	[
+		'mode_paiement',
+		modePaiementApi,
+		'getModePaiementList',
+		'addModePaiement',
+		'editModePaiement',
+		'deleteModePaiement',
+	],
 	['marque', marqueApi, 'getMarqueList', 'addMarque', 'editMarque', 'deleteMarque'],
 	['categorie', categorieApi, 'getCategorieList', 'addCategorie', 'editCategorie', 'deleteCategorie'],
 	['unite', uniteApi, 'getUniteList', 'addUnite', 'editUnite', 'deleteUnite'],

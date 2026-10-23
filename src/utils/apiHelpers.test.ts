@@ -7,7 +7,15 @@ import axios, {
 } from 'axios';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
-import { checkAppUpdate, getApi, getAppVersion, openClientStatementPdf, openPdf, postApi } from '@/utils/apiHelpers';
+import {
+	checkAppUpdate,
+	getApi,
+	getAppVersion,
+	openClientStatementPdf,
+	openDevisPdf,
+	openPdf,
+	postApi,
+} from '@/utils/apiHelpers';
 import { auth } from '@/auth';
 
 jest.mock('@/auth', () => {
@@ -72,6 +80,20 @@ describe('openPdf', () => {
 		},
 	);
 
+	it.each(['avec_remise', 'sans_remise', 'avec_unite_sans_remise', 'avec_unite_avec_remise'] as const)(
+		'previews the requested Devis format %s through configured endpoints',
+		async (type) => {
+			jest.replaceProperty(process.env, 'EXPO_PUBLIC_DEVIS_PDF', '/custom-quotes/pdf');
+			await expect(openDevisPdf(7, 5, type, 'en')).resolves.toBe(true);
+			const url = new URL(adapter.mock.calls[0][0].url!);
+			expect(url.pathname).toBe('/api/custom-quotes/pdf/en/7/');
+			expect([...url.searchParams.entries()]).toEqual([
+				['company_id', '5'],
+				['type', type],
+			]);
+			expect(mockPreviewPdf).toHaveBeenCalledWith({ mimeType: 'application/pdf' });
+		},
+	);
 	it('defaults client statements to French and omits empty date filters', async () => {
 		await expect(openClientStatementPdf(7, 5)).resolves.toBe(true);
 		const url = new URL(adapter.mock.calls[0][0].url!);

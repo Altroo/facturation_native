@@ -1,5 +1,8 @@
 import {
 	UserClass,
+	ModePaiementClass,
+	DeviFactureLivraisonLineClass,
+	DeviClass,
 	GroupClass,
 	CompanyClass,
 	ArticleClass,
@@ -193,5 +196,102 @@ describe('EmplacementClass', () => {
 		expect(emplacement.id).toBe(4);
 		expect(emplacement.nom).toBe('Dépôt Casablanca');
 		expect(emplacement.company).toBe(11);
+	});
+});
+
+describe('ModePaiementClass', () => {
+	it('creates a mode paiement instance with given properties', () => {
+		const modePaiement = new ModePaiementClass(1, 'Cash', 1);
+		expect(modePaiement.id).toBe(1);
+		expect(modePaiement.nom).toBe('Cash');
+		expect(modePaiement.company).toBe(1);
+	});
+});
+
+describe('DeviFactureLineClass', () => {
+	it('creates a devis line instance with given properties', () => {
+		const line = new DeviFactureLivraisonLineClass(
+			1,
+			10,
+			'Article name',
+			'Line designation',
+			50,
+			'MAD',
+			75,
+			'MAD',
+			3,
+			'Pourcentage',
+			10,
+		);
+
+		expect(line.id).toBe(1);
+		expect(line.article).toBe(10);
+		expect(line.article_designation).toBe('Article name');
+		expect(line.designation).toBe('Line designation');
+		expect(line.prix_achat).toBe(50);
+		expect(line.prix_vente).toBe(75);
+		expect(line.quantity).toBe(3);
+		expect(line.remise_type).toBe('Pourcentage');
+		expect(line.remise).toBe(10);
+	});
+});
+
+describe('DeviClass', () => {
+	it('creates a devis instance with lines, totals and metadata', () => {
+		const line1 = new DeviFactureLivraisonLineClass(1, 1, 'A', 'Desc A', 20, 'MAD', 30, 'MAD', 1, 'Fixe', 0);
+		const line2 = new DeviFactureLivraisonLineClass(2, 2, 'B', 'Desc B', 40, 'MAD', 60, 'MAD', 2, 'Pourcentage', 10);
+
+		const devi = new DeviClass(
+			1,
+			'DEV-1',
+			5,
+			'ClientName',
+			'2023-01-01',
+			'2023-01-15',
+			null,
+			1,
+			'Cash',
+			'Some remark',
+			'Brouillon',
+			'2023-01-01',
+			'2023-01-02',
+			10,
+			'Creator',
+			2,
+			'Pourcentage',
+			5,
+			18,
+			50,
+			480,
+			456,
+			'MAD',
+			[line1, line2],
+		);
+
+		expect(devi.id).toBe(1);
+		expect(devi.numero_devis).toBe('DEV-1');
+		expect(devi.client).toBe(5);
+		expect(devi.client_name).toBe('ClientName');
+		expect(devi.date_devis).toBe('2023-01-01');
+		expect(devi.date_echeance).toBe('2023-01-15');
+		expect(devi.mode_paiement).toBe(1);
+		expect(devi.mode_paiement_name).toBe('Cash');
+		expect(devi.remarque).toBe('Some remark');
+		expect(devi.statut).toBe('Brouillon');
+		expect(devi.date_created).toBe('2023-01-01');
+		expect(devi.date_updated).toBe('2023-01-02');
+		expect(devi.created_by_user_id).toBe(10);
+		expect(devi.created_by_user_name).toBe('Creator');
+		expect(devi.lignes_count).toBe(2);
+		expect(devi.remise_type).toBe('Pourcentage');
+		expect(devi.remise).toBe(5);
+		expect(devi.total_ht).toBe(18);
+		expect(devi.total_tva).toBe(50);
+		expect(devi.total_ttc).toBe(480);
+		expect(devi.total_ttc_apres_remise).toBe(456);
+		expect(Array.isArray(devi.lignes)).toBe(true);
+		expect(devi.lignes.length).toBe(2);
+		expect(devi.lignes[0].id).toBe(1);
+		expect(devi.lignes[1].id).toBe(2);
 	});
 });

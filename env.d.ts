@@ -1,5 +1,12 @@
 declare namespace NodeJS {
 	interface ProcessEnv {
+		EXPO_PUBLIC_DEVIS_ROOT: string;
+		EXPO_PUBLIC_DEVIS_LIST: string;
+		EXPO_PUBLIC_DEVIS_GENERATE_NUM_DEVIS: string;
+		EXPO_PUBLIC_DEVIS_SWITCH_STATUT: string;
+		EXPO_PUBLIC_DEVIS_PDF: string;
+		EXPO_PUBLIC_PARAMETER_MODE_PAIEMENT: string;
+
 		// Base urls
 		EXPO_PUBLIC_API_URL: string;
 		EXPO_PUBLIC_ROOT_API_URL: string;

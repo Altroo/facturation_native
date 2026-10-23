@@ -1,7 +1,14 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 import { axiosBaseQuery } from '@/utils/axiosBaseQuery';
 import { isAuthenticatedInstance } from '@/utils/helpers';
-import type { CitiesClass, MarqueClass, CategorieClass, UniteClass, EmplacementClass } from '@/models/classes';
+import type {
+	CitiesClass,
+	MarqueClass,
+	CategorieClass,
+	UniteClass,
+	EmplacementClass,
+	ModePaiementClass,
+} from '@/models/classes';
 
 export const citiesApi = createApi({
 	reducerPath: 'citiesApi',
@@ -163,3 +170,49 @@ export const {
 	useEditEmplacementMutation,
 	useDeleteEmplacementMutation,
 } = emplacementApi;
+
+export const modePaiementApi = createApi({
+	reducerPath: 'modePaiementApi',
+	tagTypes: ['ModePaiement'],
+	baseQuery: axiosBaseQuery(() => isAuthenticatedInstance()),
+	endpoints: (builder) => ({
+		getModePaiementList: builder.query<Array<ModePaiementClass>, { company_id: number }>({
+			query: ({ company_id }) => ({
+				url: process.env.EXPO_PUBLIC_PARAMETER_MODE_PAIEMENT,
+				method: 'GET',
+				params: { company_id },
+			}),
+			providesTags: ['ModePaiement'],
+		}),
+		deleteModePaiement: builder.mutation<void, { id: number }>({
+			query: ({ id }) => ({
+				url: `${process.env.EXPO_PUBLIC_PARAMETER_MODE_PAIEMENT}${id}/`,
+				method: 'DELETE',
+			}),
+			invalidatesTags: (_result, error) => (error ? [] : ['ModePaiement']),
+		}),
+		editModePaiement: builder.mutation<ModePaiementClass, { id: number; data: Partial<ModePaiementClass> }>({
+			query: ({ id, data }) => ({
+				url: `${process.env.EXPO_PUBLIC_PARAMETER_MODE_PAIEMENT}${id}/`,
+				method: 'PUT',
+				data,
+			}),
+			invalidatesTags: (_result, error) => (error ? [] : ['ModePaiement']),
+		}),
+		addModePaiement: builder.mutation<ModePaiementClass, { data: Partial<ModePaiementClass> }>({
+			query: ({ data }) => ({
+				url: process.env.EXPO_PUBLIC_PARAMETER_MODE_PAIEMENT,
+				method: 'POST',
+				data,
+			}),
+			invalidatesTags: (_result, error) => (error ? [] : ['ModePaiement']),
+		}),
+	}),
+});
+
+export const {
+	useGetModePaiementListQuery,
+	useDeleteModePaiementMutation,
+	useEditModePaiementMutation,
+	useAddModePaiementMutation,
+} = modePaiementApi;

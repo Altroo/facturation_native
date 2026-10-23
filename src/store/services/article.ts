@@ -139,6 +139,7 @@ export const articleApi = createApi({
 });
 
 export const {
+	useGetArticlesListQuery,
 	useLazyGetArticlesListQuery,
 	useGetArticlesInfiniteListInfiniteQuery,
 	useGetArticleQuery,
