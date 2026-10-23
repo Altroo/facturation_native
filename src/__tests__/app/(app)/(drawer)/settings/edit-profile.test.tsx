@@ -3,7 +3,7 @@ import { Provider } from 'react-redux';
 import { Platform } from 'react-native';
 import { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
 import * as ImagePicker from 'expo-image-picker';
-import type { CropZoomProps, CropZoomRefType } from 'react-native-zoom-toolkit';
+import CropPicker from 'react-native-image-crop-picker';
 import EditProfilPage from '@/app/(app)/(drawer)/settings/edit-profile';
 import { makeStore } from '@/store/store';
 import { rootSaga } from '@/store/sagas';
@@ -32,20 +32,19 @@ jest.mock(
 	'react-native-safe-area-context',
 	() => jest.requireActual('react-native-safe-area-context/jest/mock').default,
 );
-jest.mock('react-native-zoom-toolkit', () => {
-	const { createElement, forwardRef, useImperativeHandle } = jest.requireActual<typeof import('react')>('react');
-	return {
-		CropZoom: forwardRef<Pick<CropZoomRefType, 'crop'>, CropZoomProps>((props, ref) => {
-			useImperativeHandle(ref, () => ({
-				crop: () => ({
-					crop: { originX: 0, originY: 0, width: 100, height: 100 },
-					context: { rotationAngle: 0, flipHorizontal: false, flipVertical: false },
-				}),
-			}));
-			return createElement('Cropper', { ...props, testID: 'cropper' });
-		}),
-	};
-});
+jest.mock('react-native-image-crop-picker', () => ({
+	__esModule: true,
+	default: {
+		openCropper: jest.fn(async () => ({
+			path: 'file:///native.jpg',
+			width: 100,
+			height: 100,
+			mime: 'image/jpeg',
+			size: 100,
+			cropRect: { x: 0, y: 0, width: 100, height: 100 },
+		})),
+	},
+}));
 jest.mock('expo-image-manipulator', () => ({
 	SaveFormat: { PNG: 'png' },
 	ImageManipulator: {
@@ -212,9 +211,8 @@ it('uploads a selected image and reuses the saved URLs on the next edit', async 
 	const dismissSource = screen.getByTestId('image-source-modal').props.onDismiss as () => void;
 	await fireEvent.press(screen.getByRole('button', { name: t.common.chooseFromGallery }));
 	if (Platform.OS === 'ios') await act(async () => dismissSource());
-	await screen.findByTestId('cropper');
+	await waitFor(() => expect(CropPicker.openCropper).toHaveBeenCalled());
 	expect(adapter.mock.calls.some(([config]) => config.method === 'patch')).toBe(false);
-	await fireEvent.press(screen.getByRole('button', { name: t.common.confirm }));
 	await waitFor(() =>
 		expect(screen.getByLabelText(t.users.fieldAvatar)).toHaveProp('source', {
 			uri: 'data:image/png;base64,cropped-image',

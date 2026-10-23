@@ -1,13 +1,10 @@
 import { useEffect, useRef, useState, type FC } from 'react';
-import { Text, Image, Modal, Platform, Pressable, View, useWindowDimensions } from 'react-native';
+import { Text, Image, Platform, Pressable, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as ImagePicker from 'expo-image-picker';
 import { File } from 'expo-file-system';
-import { Image as ExpoImage, type ImageRef } from 'expo-image';
+import { Image as ExpoImage } from 'expo-image';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
-import { CropZoom, type CropZoomRefType } from 'react-native-zoom-toolkit';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import ImagePreview from '@/components/nativeElements/modals/imagePreview/imagePreview';
 import BottomSheet from '@/components/nativeElements/modals/bottomSheet/bottomSheet';
@@ -21,38 +18,25 @@ export type CustomSquareImageUploadingProps = {
 	onCrop: (data: string | null) => void;
 	cssClasse?: string;
 	label?: string;
+	hideLabel?: boolean;
 	error?: string;
 	disabled?: boolean;
 	avatar?: boolean;
+	avatarSize?: number;
 };
 
 const CustomSquareImageUploading: FC<CustomSquareImageUploadingProps> = (props: CustomSquareImageUploadingProps) => {
 	const { image, croppedImage, onChange, onCrop, cssClasse, label, error, disabled, avatar = false } = props;
 	const { t } = useLanguage();
 	const { onError } = useToast();
-	const { width, height } = useWindowDimensions();
-	const cropperRef = useRef<CropZoomRefType>(null);
 	const operation = useRef(0);
 	const inFlight = useRef(false);
 	const pendingSource = useRef<'camera' | 'library' | null>(null);
 	const [busy, setBusy] = useState(false);
 	const [sourceMenuOpen, setSourceMenuOpen] = useState(false);
 	const [previewOpen, setPreviewOpen] = useState(false);
-	const [isEditing, setIsEditing] = useState(false);
-	const [isNewUpload, setIsNewUpload] = useState(false);
-	const [draftImage, setDraftImage] = useState<string | null>(null);
-	const [source, setSource] = useState<ImageRef | null>(null);
-	const [cropError, setCropError] = useState('');
-	const [cropViewport, setCropViewport] = useState<{ width: number; height: number } | null>(null);
 	const name = label ?? t.common.addImage;
-	// Logos and stamps start with the whole original visible. A forced landscape
-	// ratio would crop square logos before the user has moved or zoomed anything.
-	const ratio = avatar || !source ? 1 : source.width / source.height;
-	const cropWidth = Math.max(
-		1,
-		Math.min((cropViewport?.width ?? width) - 32, Math.max(1, (cropViewport?.height ?? height - 260) - 32) * ratio),
-	);
-	const cropSize = { width: cropWidth, height: cropWidth / ratio };
+	const avatarSize = props.avatarSize ?? 136;
 
 	useEffect(
 		() => () => {
@@ -61,6 +45,86 @@ const CustomSquareImageUploading: FC<CustomSquareImageUploadingProps> = (props: 
 		},
 		[],
 	);
+
+	const handleCrop = async (uri: string, isNewUpload: boolean, current: number) => {
+		let context: ReturnType<typeof ImageManipulator.manipulate> | undefined;
+		try {
+			// Normalize remote URLs, orientation and data URIs to a local PNG before
+			// opening the native editor. Both platforms then use the same pixels.
+			const source = await ExpoImage.loadAsync(uri);
+			if (current !== operation.current) return;
+			context = ImageManipulator.manipulate(source);
+			const rendered = await context.renderAsync();
+			let normalized;
+			try {
+				normalized = await rendered.saveAsync({ format: SaveFormat.PNG });
+			} finally {
+				rendered.release();
+			}
+			if (current !== operation.current) return;
+			// Load the native module only when needed. Missing native modules and
+			// unsupported browser cropping are handled by the same error toast.
+			const { default: cropper } = await import('react-native-image-crop-picker');
+			// Avatars use one size for both dimensions to keep a square crop.
+			const avatarCropSize = normalized.width;
+			const selection = await cropper.openCropper({
+				path: normalized.uri,
+				mediaType: 'photo',
+				...(avatar ? { width: avatarCropSize, height: avatarCropSize } : {}),
+				freeStyleCropEnabled: !avatar,
+				cropperToolbarTitle: t.common.cropImage,
+				cropperChooseText: t.common.save,
+				cropperCancelText: t.common.close,
+				cropperChooseColor: colors.brand,
+				cropperCancelColor: colors.white,
+				cropperToolbarColor: colors.slate[900],
+				cropperToolbarWidgetColor: colors.white,
+				cropperActiveWidgetColor: colors.brand,
+				cropperRotateButtonsHidden: true,
+				enableRotationGesture: false,
+				hideBottomControls: true,
+			});
+			if (current !== operation.current) return;
+			const rect = selection.cropRect;
+			if (
+				!rect ||
+				![rect.x, rect.y, rect.width, rect.height].every(Number.isFinite) ||
+				rect.x < 0 ||
+				rect.y < 0 ||
+				rect.width <= 0 ||
+				rect.height <= 0 ||
+				rect.x + rect.width > normalized.width ||
+				rect.y + rect.height > normalized.height
+			) {
+				onError(t.common.genericError);
+				return;
+			}
+			// Android's editor writes JPEG. Use its confirmed rectangle on the
+			// original pixels to preserve transparency in company logos and stamps.
+			context.crop({ originX: rect.x, originY: rect.y, width: rect.width, height: rect.height });
+			const cropped = await context.renderAsync();
+			try {
+				const result = await cropped.saveAsync({ format: SaveFormat.PNG, base64: true });
+				if (current !== operation.current) return;
+				if (!result.base64 || result.width <= 0 || result.height <= 0) {
+					onError(t.common.genericError);
+					return;
+				}
+				// Cancel never changes the form. Commit the original and crop only
+				// after the native editor's save action has completed successfully.
+				if (isNewUpload) onChange(uri);
+				onCrop('data:image/png;base64,' + result.base64);
+			} finally {
+				cropped.release();
+			}
+		} catch (error) {
+			const cancelled =
+				typeof error === 'object' && error !== null && 'code' in error && error.code === 'E_PICKER_CANCELLED';
+			if (current === operation.current && !cancelled) onError(t.common.genericError);
+		} finally {
+			context?.release();
+		}
+	};
 
 	const handleFileChange = async (imageSource: 'camera' | 'library') => {
 		if (disabled || inFlight.current) return;
@@ -121,13 +185,7 @@ const CustomSquareImageUploading: FC<CustomSquareImageUploadingProps> = (props: 
 				onError(t.common.genericError);
 				return;
 			}
-			const loaded = await ExpoImage.loadAsync(raw);
-			if (current !== operation.current) return;
-			setSource(loaded);
-			setDraftImage(raw);
-			setIsNewUpload(true);
-			setCropError('');
-			setIsEditing(true);
+			await handleCrop(raw, true, current);
 		} catch {
 			if (current === operation.current) onError(t.common.genericError);
 		} finally {
@@ -165,72 +223,8 @@ const CustomSquareImageUploading: FC<CustomSquareImageUploadingProps> = (props: 
 		setBusy(true);
 		const current = ++operation.current;
 		try {
-			// Expo Image loads both an existing server URL and a local data URI.
-			const loaded = await ExpoImage.loadAsync(uri);
-			if (current !== operation.current) return;
-			setSource(loaded);
-			setDraftImage(uri);
-			setIsNewUpload(false);
-			setCropError('');
-			setIsEditing(true);
-		} catch {
-			if (current === operation.current) onError(t.common.genericError);
+			await handleCrop(uri, false, current);
 		} finally {
-			if (current === operation.current) {
-				inFlight.current = false;
-				setBusy(false);
-			}
-		}
-	};
-	const handleClose = () => {
-		if (inFlight.current) return;
-		operation.current += 1;
-		setIsEditing(false);
-		setSource(null);
-		setDraftImage(null);
-		setCropError('');
-	};
-	const handleCrop = async () => {
-		if (disabled || inFlight.current || !source || !draftImage || !cropperRef.current) return;
-		inFlight.current = true;
-		setBusy(true);
-		setCropError('');
-		const current = operation.current;
-		let context: ReturnType<typeof ImageManipulator.manipulate> | undefined;
-		try {
-			context = ImageManipulator.manipulate(source);
-			const result = cropperRef.current.crop();
-			if (result.resize) context.resize(result.resize);
-			if (result.context.flipHorizontal) context.flip('horizontal');
-			if (result.context.flipVertical) context.flip('vertical');
-			if (result.context.rotationAngle) context.rotate(result.context.rotationAngle);
-			context.crop(result.crop);
-			const rendered = await context.renderAsync();
-			try {
-				const cropped = await rendered.saveAsync({ format: SaveFormat.PNG, base64: true });
-				if (current !== operation.current) return;
-				if (!cropped.base64 || cropped.width <= 0 || cropped.height <= 0) {
-					setCropError(t.common.genericError);
-					onError(t.common.genericError);
-					return;
-				}
-				// Confirm before committing. Cancelling keeps both current form values,
-				// including when replacing an existing image.
-				if (isNewUpload) onChange(draftImage);
-				onCrop('data:image/png;base64,' + cropped.base64);
-				setIsEditing(false);
-				setSource(null);
-				setDraftImage(null);
-			} finally {
-				rendered.release();
-			}
-		} catch {
-			if (current === operation.current) {
-				setCropError(t.common.genericError);
-				onError(t.common.genericError);
-			}
-		} finally {
-			context?.release();
 			if (current === operation.current) {
 				inFlight.current = false;
 				setBusy(false);
@@ -239,9 +233,8 @@ const CustomSquareImageUploading: FC<CustomSquareImageUploadingProps> = (props: 
 	};
 	const handleClear = () => {
 		if (disabled || inFlight.current) return;
-		handleClose();
+		operation.current += 1;
 		setPreviewOpen(false);
-		setIsNewUpload(false);
 		onChange(null);
 		onCrop(null);
 	};
@@ -250,7 +243,9 @@ const CustomSquareImageUploading: FC<CustomSquareImageUploadingProps> = (props: 
 	const fullImage = typeof image === 'string' && image ? image : preview;
 	return (
 		<View className={['gap-4', cssClasse].filter(Boolean).join(' ')}>
-			{!!label && <Text className="text-ink dark:text-slate-100 font-poppins-medium text-sm">{label}</Text>}
+			{!!label && !props.hideLabel && (
+				<Text className="text-ink dark:text-slate-100 font-poppins-medium text-sm">{label}</Text>
+			)}
 			<View
 				className="items-center gap-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5
 			dark:border-slate-600 dark:bg-slate-800"
@@ -264,7 +259,7 @@ const CustomSquareImageUploading: FC<CustomSquareImageUploadingProps> = (props: 
 						'overflow-hidden border border-slate-200 bg-white dark:border-slate-600 dark:bg-panel ' +
 						(avatar ? 'rounded-full' : 'rounded-2xl')
 					}
-					style={avatar ? { width: 136, height: 136 } : { width: '100%', aspectRatio: 36 / 25 }}
+					style={avatar ? { width: avatarSize, height: avatarSize } : { width: '100%', aspectRatio: 36 / 25 }}
 				>
 					{preview ? (
 						<Image
@@ -362,73 +357,6 @@ const CustomSquareImageUploading: FC<CustomSquareImageUploadingProps> = (props: 
 					</Pressable>
 				</View>
 			</BottomSheet>
-			{isEditing && source && (
-				<Modal visible animationType="slide" presentationStyle="fullScreen" onRequestClose={handleClose}>
-					<SafeAreaProvider>
-						<GestureHandlerRootView style={{ flex: 1 }}>
-							<SafeAreaView style={{ flex: 1, backgroundColor: colors.slate[900] }}>
-								<Text accessibilityRole="header" className="px-6 py-5 font-poppins-semibold text-lg text-white">
-									{t.common.clickToEditCrop}
-								</Text>
-								<View
-									testID="image-crop-viewport"
-									className="flex-1 items-center justify-center"
-									onLayout={({ nativeEvent: { layout } }) => {
-										// Measure the space left after the safe area, heading and
-										// buttons, including rotation and larger text settings.
-										setCropViewport((current) =>
-											current?.width === layout.width && current.height === layout.height
-												? current
-												: { width: layout.width, height: layout.height },
-										);
-									}}
-								>
-									<View
-										testID="image-crop-frame"
-										style={{
-											width: cropSize.width,
-											height: cropSize.height,
-											overflow: 'hidden',
-											borderWidth: 1,
-											borderColor: colors.white,
-										}}
-									>
-										<CropZoom
-											ref={cropperRef}
-											cropSize={cropSize}
-											resolution={{ width: source.width * source.scale, height: source.height * source.scale }}
-											panMode="clamp"
-											scaleMode="clamp"
-										>
-											<ExpoImage source={source} contentFit="fill" style={{ width: '100%', height: '100%' }} />
-										</CropZoom>
-									</View>
-								</View>
-								<View className="gap-3 p-6">
-									{!!cropError && (
-										<Text accessibilityRole="alert" className="font-sans text-sm text-red-300">
-											{cropError}
-										</Text>
-									)}
-									<PrimaryLoadingButton
-										buttonText={t.common.confirm}
-										loading={busy}
-										active={!disabled}
-										onClick={() => void handleCrop()}
-									/>
-									<PrimaryLoadingButton
-										buttonText={t.common.cancel}
-										loading={false}
-										inverted
-										active={!busy}
-										onClick={handleClose}
-									/>
-								</View>
-							</SafeAreaView>
-						</GestureHandlerRootView>
-					</SafeAreaProvider>
-				</Modal>
-			)}
 		</View>
 	);
 };

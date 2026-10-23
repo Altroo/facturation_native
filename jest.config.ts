@@ -12,6 +12,7 @@ const config: Config = {
 			[
 				require.resolve('babel-jest', { paths: [require.resolve('jest-expo/package.json')] }),
 				{
+					plugins: ['@babel/plugin-transform-dynamic-import'],
 					caller: {
 						name: 'metro',
 						bundler: 'jest',

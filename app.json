@@ -11,6 +11,7 @@
 			"supportsTablet": true,
 			"bundleIdentifier": "ma.facturation.mobile",
 			"infoPlist": {
+				"CFBundleLocalizations": ["fr", "en"],
 				"NSAppTransportSecurity": {
 					"NSAllowsLocalNetworking": true
 				}

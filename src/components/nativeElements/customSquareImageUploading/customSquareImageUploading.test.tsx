@@ -5,7 +5,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { File } from 'expo-file-system';
 import { Image as ExpoImage, type ImageRef } from 'expo-image';
 import { ImageManipulator } from 'expo-image-manipulator';
-import type { CropZoomProps, CropZoomRefType } from 'react-native-zoom-toolkit';
+import CropPicker from 'react-native-image-crop-picker';
 import CustomSquareImageUploading, { type CustomSquareImageUploadingProps } from './customSquareImageUploading';
 import { translations } from '@/translations';
 
@@ -32,16 +32,13 @@ jest.mock(
 	'react-native-safe-area-context',
 	() => jest.requireActual('react-native-safe-area-context/jest/mock').default,
 );
-const mockCrop = jest.fn();
-jest.mock('react-native-zoom-toolkit', () => {
-	const { createElement, forwardRef, useImperativeHandle } = jest.requireActual<typeof import('react')>('react');
-	return {
-		CropZoom: forwardRef<Pick<CropZoomRefType, 'crop'>, CropZoomProps>((props, ref) => {
-			useImperativeHandle(ref, () => ({ crop: mockCrop }));
-			return createElement('Cropper', { ...props, testID: 'cropper' });
-		}),
-	};
-});
+let confirmNativeCrop: (result: { cropRect: typeof nativeRect }) => void;
+let cancelNativeCrop: (error: { code: string }) => void;
+const nativeRect = { x: 120, y: 80, width: 360, height: 250 };
+jest.mock('react-native-image-crop-picker', () => ({
+	__esModule: true,
+	default: { openCropper: jest.fn() },
+}));
 const mockSave = jest.fn();
 const mockCropImage = jest.fn();
 const mockRender = jest.fn();
@@ -91,8 +88,9 @@ const Example = () => {
 };
 const openCrop = async () => {
 	await fireEvent.press(screen.getByRole('button', { name: t.common.clickToEditCrop }));
-	await screen.findByTestId('cropper');
+	await waitFor(() => expect(CropPicker.openCropper).toHaveBeenCalled());
 };
+const confirmCrop = async () => await act(async () => confirmNativeCrop({ cropRect: nativeRect }));
 const openImagePicker = async (imageSource: 'camera' | 'library' = 'library', buttonText = t.common.editPhoto) => {
 	await fireEvent.press(screen.getByRole('button', { name: buttonText }));
 	if (Platform.OS === 'web') return;
@@ -104,6 +102,14 @@ const openImagePicker = async (imageSource: 'camera' | 'library' = 'library', bu
 };
 beforeEach(() => {
 	jest.clearAllMocks();
+	jest.mocked(CropPicker.openCropper).mockImplementation(
+		() =>
+			new Promise((resolve, reject) => {
+				confirmNativeCrop = (result) =>
+					resolve({ ...result, path: 'file:///native.jpg', width: 360, height: 250, mime: 'image/jpeg', size: 100 });
+				cancelNativeCrop = reject;
+			}),
+	);
 	jest.mocked(ImagePicker.requestCameraPermissionsAsync).mockResolvedValue({ granted: true } as never);
 	jest.mocked(ImagePicker.launchCameraAsync).mockResolvedValue({
 		canceled: false,
@@ -112,9 +118,12 @@ beforeEach(() => {
 	mockReadFile.mockResolvedValue('original-image');
 	mockMime = 'image/jpeg';
 	jest.mocked(ExpoImage.loadAsync).mockResolvedValue(source);
-	mockCrop.mockReturnValue({ crop: region, context: { rotationAngle: 0, flipHorizontal: false, flipVertical: false } });
 	mockRender.mockResolvedValue({ saveAsync: mockSave, release: mockReleaseRendered });
-	mockSave.mockResolvedValue({ uri: 'file:///cropped.png', base64: 'cropped-image', width: 360, height: 250 });
+	mockSave.mockImplementation(async (options) =>
+		options.base64
+			? { uri: 'file:///cropped.png', base64: 'cropped-image', width: 360, height: 250 }
+			: { uri: 'file:///normalized.png', width: 1200, height: 800 },
+	);
 	jest.mocked(ImagePicker.launchImageLibraryAsync).mockResolvedValue({
 		canceled: false,
 		assets: [{ uri: 'file:///picked.jpg', base64: 'original-image', width: 1200, height: 800 }],
@@ -161,7 +170,7 @@ it('waits for iOS dismissal before presenting the gallery and launches it only o
 		await fireEvent.press(screen.getByRole('button', { name: t.common.chooseFromGallery }));
 		expect(ImagePicker.launchImageLibraryAsync).not.toHaveBeenCalled();
 		await act(async () => onDismiss());
-		await screen.findByTestId('cropper');
+		await waitFor(() => expect(CropPicker.openCropper).toHaveBeenCalled());
 		await act(async () => onDismiss());
 		expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalledTimes(1);
 	} finally {
@@ -173,7 +182,7 @@ it('opens the Android gallery without relying on an iOS-only dismissal callback'
 	try {
 		await render(<CustomSquareImageUploading {...props()} />);
 		await openImagePicker();
-		await screen.findByTestId('cropper');
+		await waitFor(() => expect(CropPicker.openCropper).toHaveBeenCalled());
 		expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalledTimes(1);
 	} finally {
 		platform.restore();
@@ -183,7 +192,7 @@ it('requests camera permission and keeps the photo draft until its crop is confi
 	const data = props();
 	await render(<CustomSquareImageUploading {...data} />);
 	await openImagePicker('camera');
-	await screen.findByTestId('cropper');
+	await waitFor(() => expect(CropPicker.openCropper).toHaveBeenCalled());
 	expect(ImagePicker.requestCameraPermissionsAsync).toHaveBeenCalledTimes(1);
 	expect(ImagePicker.launchCameraAsync).toHaveBeenCalledWith({
 		mediaTypes: ['images'],
@@ -194,7 +203,7 @@ it('requests camera permission and keeps the photo draft until its crop is confi
 	expect(File).toHaveBeenCalledWith('file:///camera.jpg');
 	expect(data.onChange).not.toHaveBeenCalled();
 	expect(data.onCrop).not.toHaveBeenCalled();
-	await fireEvent.press(screen.getByRole('button', { name: t.common.confirm }));
+	await confirmCrop();
 	await waitFor(() => expect(data.onChange).toHaveBeenCalledWith('data:image/jpeg;base64,original-image'));
 	expect(data.onCrop).toHaveBeenCalledWith('data:image/png;base64,cropped-image');
 });
@@ -216,7 +225,7 @@ it('shows a toast if the camera is unavailable and allows choosing again', async
 	await openImagePicker('camera');
 	await waitFor(() => expect(mockOnError).toHaveBeenCalledWith(t.common.genericError));
 	await openImagePicker();
-	await screen.findByTestId('cropper');
+	await waitFor(() => expect(CropPicker.openCropper).toHaveBeenCalled());
 	expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalledTimes(1);
 });
 it('preserves the current image without an error when taking a photo is canceled', async () => {
@@ -228,7 +237,7 @@ it('preserves the current image without an error when taking a photo is canceled
 	expect(data.onChange).not.toHaveBeenCalled();
 	expect(data.onCrop).not.toHaveBeenCalled();
 	expect(mockOnError).not.toHaveBeenCalled();
-	expect(screen.queryByTestId('cropper')).toBeNull();
+	expect(screen.getByRole('button', { name: t.common.editPhoto })).toBeEnabled();
 });
 describe('CustomSquareImageUploading original behaviors', () => {
 	const mockOnChange = jest.fn();
@@ -260,7 +269,7 @@ describe('CustomSquareImageUploading original behaviors', () => {
 			<CustomSquareImageUploading image={original} croppedImage={crop} onChange={mockOnChange} onCrop={mockOnCrop} />,
 		);
 		await openCrop();
-		expect(screen.getByTestId('cropper')).toBeOnTheScreen();
+		expect(CropPicker.openCropper).toHaveBeenCalled();
 	});
 	it('handles file upload with no files', async () => {
 		jest.mocked(ImagePicker.launchImageLibraryAsync).mockResolvedValue({ canceled: true, assets: null });
@@ -298,7 +307,7 @@ it('keeps the picked original separate from the confirmed PNG crop', async () =>
 	const data = props();
 	await render(<CustomSquareImageUploading {...data} />);
 	await openImagePicker();
-	await screen.findByTestId('cropper');
+	await waitFor(() => expect(CropPicker.openCropper).toHaveBeenCalled());
 	expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalledWith({
 		mediaTypes: ['images'],
 		allowsEditing: false,
@@ -307,51 +316,35 @@ it('keeps the picked original separate from the confirmed PNG crop', async () =>
 	expect(data.onChange).not.toHaveBeenCalled();
 	expect(data.onCrop).not.toHaveBeenCalled();
 	expect(ExpoImage.loadAsync).toHaveBeenCalledWith('data:image/jpeg;base64,original-image');
-	await fireEvent.press(screen.getByRole('button', { name: t.common.confirm }));
+	await confirmCrop();
 	await waitFor(() => expect(data.onCrop).toHaveBeenCalledWith('data:image/png;base64,cropped-image'));
 	expect(data.onChange).toHaveBeenCalledWith('data:image/jpeg;base64,original-image');
 	expect(ImageManipulator.manipulate).toHaveBeenCalledWith(source);
 	expect(mockCropImage).toHaveBeenCalledWith(region);
-	expect(mockSave).toHaveBeenCalledWith({ format: 'png', base64: true });
-	expect(mockReleaseRendered).toHaveBeenCalledTimes(1);
+	expect(mockSave).toHaveBeenNthCalledWith(1, { format: 'png' });
+	expect(mockSave).toHaveBeenNthCalledWith(2, { format: 'png', base64: true });
+	expect(mockReleaseRendered).toHaveBeenCalledTimes(2);
 	expect(mockRelease).toHaveBeenCalledTimes(1);
-	expect(screen.queryByTestId('cropper')).toBeNull();
+	expect(screen.getByRole('button', { name: t.common.editPhoto })).toBeEnabled();
 });
-it.each([
-	[true, 1],
-	[false, source.width / source.height],
-] as const)('uses the correct crop ratio for avatar=%s and pixel resolution', async (avatar, ratio) => {
+it.each([true, false])('uses square avatar cropping and free company cropping for avatar=%s', async (avatar) => {
 	await render(<CustomSquareImageUploading {...props()} avatar={avatar} />);
 	await openCrop();
-	const frame = screen.getByTestId('cropper').props;
-	expect(frame.cropSize.width / frame.cropSize.height).toBeCloseTo(ratio);
-	expect(frame.resolution).toEqual({ width: 1200, height: 800 });
-	expect(frame.panMode).toBe('clamp');
-	expect(frame.scaleMode).toBe('clamp');
-});
-
-it.each([
-	{ width: 800, height: 800 },
-	{ width: 1200, height: 600 },
-	{ width: 400, height: 1200 },
-])('keeps the full $width by $height company image visible before zooming', async (resolution) => {
-	jest.mocked(ExpoImage.loadAsync).mockResolvedValueOnce({ ...source, ...resolution } as ImageRef);
-	await render(<CustomSquareImageUploading {...props()} avatar={false} />);
-	await openCrop();
-	await fireEvent.layout(screen.getByTestId('image-crop-viewport'), { width: 400, height: 600 });
-	const cropSize = screen.getByTestId('cropper').props.cropSize;
-	expect(cropSize.width / cropSize.height).toBeCloseTo(resolution.width / resolution.height);
-	expect(cropSize.width).toBeLessThanOrEqual(368);
-	expect(cropSize.height).toBeLessThanOrEqual(568);
-});
-
-it('fits the crop between the controls when the device rotates to landscape', async () => {
-	await render(<CustomSquareImageUploading {...props()} avatar={false} />);
-	await openCrop();
-	await fireEvent.layout(screen.getByTestId('image-crop-viewport'), { width: 800, height: 220 });
-	const cropSize = screen.getByTestId('cropper').props.cropSize;
-	expect(cropSize.height).toBe(188);
-	expect(cropSize.width / cropSize.height).toBeCloseTo(source.width / source.height);
+	const options = jest.mocked(CropPicker.openCropper).mock.calls[0]![0];
+	expect(options).toMatchObject({
+		path: 'file:///normalized.png',
+		freeStyleCropEnabled: !avatar,
+		cropperChooseText: t.common.save,
+		cropperCancelText: t.common.close,
+		cropperRotateButtonsHidden: true,
+		enableRotationGesture: false,
+		hideBottomControls: true,
+	});
+	if (avatar) expect(options).toMatchObject({ width: 1200, height: 1200 });
+	else {
+		expect(options.width).toBeUndefined();
+		expect(options.height).toBeUndefined();
+	}
 });
 
 it('uses the available form width for logos and stamps while keeping avatars compact', async () => {
@@ -372,7 +365,7 @@ it('offers to replace a company image without calling it a personal photo', asyn
 	await render(<CustomSquareImageUploading {...props()} avatar={false} label="Logo de l’entreprise" />);
 	expect(screen.queryByRole('button', { name: t.common.editPhoto })).toBeNull();
 	await openImagePicker('library', t.common.replaceImage);
-	await screen.findByTestId('cropper');
+	await waitFor(() => expect(CropPicker.openCropper).toHaveBeenCalled());
 	expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalledTimes(1);
 });
 it('recrops the existing original without replacing its raw field or reopening the picker', async () => {
@@ -381,7 +374,7 @@ it('recrops the existing original without replacing its raw field or reopening t
 	await openCrop();
 	expect(ExpoImage.loadAsync).toHaveBeenCalledWith(original);
 	expect(ImagePicker.launchImageLibraryAsync).not.toHaveBeenCalled();
-	await fireEvent.press(screen.getByRole('button', { name: t.common.confirm }));
+	await confirmCrop();
 	await waitFor(() => expect(data.onCrop).toHaveBeenCalledWith('data:image/png;base64,cropped-image'));
 	expect(data.onChange).not.toHaveBeenCalled();
 });
@@ -395,10 +388,10 @@ it('preserves original PNG bytes and MIME instead of the picker JPEG conversion'
 	const data = props();
 	await render(<CustomSquareImageUploading {...data} />);
 	await openImagePicker();
-	await screen.findByTestId('cropper');
+	await waitFor(() => expect(CropPicker.openCropper).toHaveBeenCalled());
 	expect(File).toHaveBeenCalledWith('file:///stamp.png');
 	expect(ExpoImage.loadAsync).toHaveBeenCalledWith('data:image/png;base64,transparent-png-bytes');
-	await fireEvent.press(screen.getByRole('button', { name: t.common.confirm }));
+	await confirmCrop();
 	await waitFor(() => expect(data.onChange).toHaveBeenCalledWith('data:image/png;base64,transparent-png-bytes'));
 	expect(data.onCrop).toHaveBeenCalledWith('data:image/png;base64,cropped-image');
 });
@@ -434,10 +427,10 @@ it('uses the original FileReader contract in browser preview without native file
 		const data = props();
 		await render(<CustomSquareImageUploading {...data} />);
 		await openImagePicker();
-		await screen.findByTestId('cropper');
+		await waitFor(() => expect(CropPicker.openCropper).toHaveBeenCalled());
 		expect(reader.readAsDataURL).toHaveBeenCalledWith(file);
 		expect(File).not.toHaveBeenCalled();
-		await fireEvent.press(screen.getByRole('button', { name: t.common.confirm }));
+		await confirmCrop();
 		await waitFor(() => expect(data.onChange).toHaveBeenCalledWith(reader.result));
 	} finally {
 		if (previousReader) Object.defineProperty(globalThis, 'FileReader', previousReader);
@@ -455,27 +448,17 @@ it('clears both original form values with null, then offers upload again', async
 	expect(screen.queryByTestId('clear-button')).toBeNull();
 	expect(screen.getByRole('button', { name: t.common.addImage })).toBeOnTheScreen();
 });
-it.each(['cancel', 'back'] as const)(
-	'keeps both previous values when a replacement crop closes via %s',
-	async (method) => {
-		const data = props();
-		await render(<CustomSquareImageUploading {...data} />);
-		await openImagePicker();
-		await screen.findByTestId('cropper');
-		if (method === 'cancel') await fireEvent.press(screen.getByRole('button', { name: t.common.cancel }));
-		else
-			await fireEvent(
-				screen.container.queryAll(
-					(node) => node.props.presentationStyle === 'fullScreen' && typeof node.props.onRequestClose === 'function',
-				)[0]!,
-				'requestClose',
-			);
-		expect(screen.queryByTestId('cropper')).toBeNull();
-		expect(data.onChange).not.toHaveBeenCalled();
-		expect(data.onCrop).not.toHaveBeenCalled();
-		expect(screen.getByLabelText('Photo de profil')).toHaveProp('source', { uri: crop });
-	},
-);
+it('preserves both values when the native editor is cancelled', async () => {
+	const data = props();
+	await render(<CustomSquareImageUploading {...data} />);
+	await openImagePicker();
+	await waitFor(() => expect(CropPicker.openCropper).toHaveBeenCalled());
+	await act(async () => cancelNativeCrop({ code: 'E_PICKER_CANCELLED' }));
+	expect(data.onChange).not.toHaveBeenCalled();
+	expect(data.onCrop).not.toHaveBeenCalled();
+	expect(mockOnError).not.toHaveBeenCalled();
+	expect(screen.getByLabelText('Photo de profil')).toHaveProp('source', { uri: crop });
+});
 it.each([
 	{ label: 'missing file', assets: [{ uri: '', width: 100, height: 100 }] },
 	{ label: 'empty selection', assets: [] },
@@ -508,78 +491,78 @@ it('reports an unavailable remote original and leaves the previous preview uncha
 	await render(<CustomSquareImageUploading {...data} />);
 	await act(async () => await fireEvent.press(screen.getByRole('button', { name: t.common.clickToEditCrop })));
 	expect(mockOnError).toHaveBeenCalledWith(t.common.genericError);
-	expect(screen.queryByTestId('cropper')).toBeNull();
+	expect(screen.getByRole('button', { name: t.common.editPhoto })).toBeEnabled();
 	expect(data.onChange).not.toHaveBeenCalled();
 	expect(data.onCrop).not.toHaveBeenCalled();
 });
-it('keeps crop errors visible inside the native modal and allows a successful retry', async () => {
-	mockSave.mockRejectedValueOnce(new Error('Cannot save'));
+it('reports a failed crop save through a toast and allows retrying', async () => {
 	const data = props();
 	await render(<CustomSquareImageUploading {...data} />);
 	await openCrop();
-	await fireEvent.press(screen.getByRole('button', { name: t.common.confirm }));
-	await screen.findByText(t.common.genericError);
-	expect(screen.getByRole('alert')).toBeOnTheScreen();
+	mockSave.mockRejectedValueOnce(new Error('Cannot save'));
+	await confirmCrop();
 	expect(mockOnError).toHaveBeenCalledWith(t.common.genericError);
 	expect(data.onCrop).not.toHaveBeenCalled();
-	expect(screen.getByRole('button', { name: t.common.confirm })).not.toBeDisabled();
-	await fireEvent.press(screen.getByRole('button', { name: t.common.confirm }));
-	await waitFor(() => expect(data.onCrop).toHaveBeenCalledTimes(1));
-	expect(screen.queryByTestId('cropper')).toBeNull();
+	await openCrop();
+	await confirmCrop();
+	expect(data.onCrop).toHaveBeenCalledTimes(1);
 });
-it('rejects an empty crop result without changing either field', async () => {
-	mockSave.mockResolvedValueOnce({ width: 0, height: 0, base64: '' });
+it('rejects an empty saved crop without changing either field', async () => {
 	const data = props();
 	await render(<CustomSquareImageUploading {...data} />);
 	await openCrop();
-	await fireEvent.press(screen.getByRole('button', { name: t.common.confirm }));
-	await screen.findByText(t.common.genericError);
+	mockSave.mockResolvedValueOnce({ width: 0, height: 0, base64: '' });
+	await confirmCrop();
+	expect(mockOnError).toHaveBeenCalledWith(t.common.genericError);
 	expect(data.onChange).not.toHaveBeenCalled();
 	expect(data.onCrop).not.toHaveBeenCalled();
 });
-it('prevents duplicate crop submissions and back dismissal while saving', async () => {
-	let finish!: (result: unknown) => void;
-	mockSave.mockImplementationOnce(
-		() =>
-			new Promise((resolve) => {
-				finish = resolve;
-			}),
-	);
+it.each([
+	{ x: -1, y: 0, width: 200, height: 200 },
+	{ x: 0, y: 0, width: 0, height: 200 },
+	{ x: 1100, y: 0, width: 200, height: 200 },
+	{ x: 0, y: 750, width: 200, height: 200 },
+	{ x: NaN, y: 0, width: 200, height: 200 },
+])('rejects an invalid confirmed rectangle', async (cropRect) => {
 	const data = props();
 	await render(<CustomSquareImageUploading {...data} />);
 	await openCrop();
-	await fireEvent.press(screen.getByRole('button', { name: t.common.confirm }));
-	await fireEvent.press(screen.getByRole('button', { name: t.common.confirm }));
-	await waitFor(() => expect(mockSave).toHaveBeenCalledTimes(1));
-	expect(screen.getByRole('button', { name: t.common.cancel })).toBeDisabled();
-	await fireEvent(
-		screen.container.queryAll(
-			(node) => node.props.presentationStyle === 'fullScreen' && typeof node.props.onRequestClose === 'function',
-		)[0]!,
-		'requestClose',
-	);
-	expect(screen.getByTestId('cropper')).toBeOnTheScreen();
-	await act(async () => finish({ base64: 'one', width: 360, height: 250 }));
+	await act(async () => confirmNativeCrop({ cropRect }));
+	expect(mockOnError).toHaveBeenCalledWith(t.common.genericError);
+	expect(data.onCrop).not.toHaveBeenCalled();
+	expect(mockCropImage).not.toHaveBeenCalled();
+});
+it('prevents duplicate crop and picker actions while the native editor is open', async () => {
+	const data = props();
+	await render(<CustomSquareImageUploading {...data} />);
+	await openCrop();
+	expect(screen.getByRole('button', { name: t.common.clickToEditCrop })).toBeDisabled();
+	expect(screen.getByTestId('clear-button')).toBeDisabled();
+	await fireEvent.press(screen.getByRole('button', { name: t.common.editPhoto }));
+	expect(ImagePicker.launchImageLibraryAsync).not.toHaveBeenCalled();
+	expect(CropPicker.openCropper).toHaveBeenCalledTimes(1);
+	await confirmCrop();
 	expect(data.onCrop).toHaveBeenCalledTimes(1);
 });
 it('ignores a crop completing after the form unmounts', async () => {
-	let finish!: (result: unknown) => void;
-	mockSave.mockImplementationOnce(
-		() =>
-			new Promise((resolve) => {
-				finish = resolve;
-			}),
-	);
 	const data = props();
 	const view = await render(<CustomSquareImageUploading {...data} />);
 	await openCrop();
-	await fireEvent.press(screen.getByRole('button', { name: t.common.confirm }));
-	await waitFor(() => expect(mockSave).toHaveBeenCalledTimes(1));
 	await view.unmount();
-	await act(async () => finish({ base64: 'late', width: 360, height: 250 }));
+	await confirmCrop();
 	expect(data.onChange).not.toHaveBeenCalled();
 	expect(data.onCrop).not.toHaveBeenCalled();
 	expect(mockRelease).toHaveBeenCalledTimes(1);
+});
+it('reports an unavailable native module through a toast without crashing the form', async () => {
+	jest.mocked(CropPicker.openCropper).mockRejectedValueOnce(new Error('Native module unavailable'));
+	const data = props();
+	await render(<CustomSquareImageUploading {...data} />);
+	await openCrop();
+	await waitFor(() => expect(mockOnError).toHaveBeenCalledWith(t.common.genericError));
+	expect(data.onChange).not.toHaveBeenCalled();
+	expect(data.onCrop).not.toHaveBeenCalled();
+	expect(screen.getByRole('button', { name: t.common.editPhoto })).toBeEnabled();
 });
 it('ignores a picker result after unmount and prevents repeated picker launches', async () => {
 	let finish!: (result: ImagePicker.ImagePickerResult) => void;
