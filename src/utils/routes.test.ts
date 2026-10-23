@@ -34,3 +34,11 @@ it('keeps Devis navigation routes separate from PDF endpoints', () => {
 	expect(routes.DEVIS_EDIT(7)).toEqual({ pathname: '/devis/form', params: { id: '7' } });
 	expect(routes).not.toHaveProperty('DEVIS_PDF');
 });
+
+it('exports Pro-forma routes without treating PDF endpoints as app routes', () => {
+	expect(routes.FACTURE_PRO_FORMA_LIST).toBe('/facture-pro-forma');
+	expect(routes.FACTURE_PRO_FORMA_ADD).toBe('/facture-pro-forma/form');
+	expect(routes.FACTURE_PRO_FORMA_VIEW(7)).toEqual({ pathname: '/facture-pro-forma/[id]', params: { id: '7' } });
+	expect(routes.FACTURE_PRO_FORMA_EDIT(7)).toEqual({ pathname: '/facture-pro-forma/form', params: { id: '7' } });
+	expect(routes).not.toHaveProperty('FACTURE_PRO_FORMA_PDF');
+});

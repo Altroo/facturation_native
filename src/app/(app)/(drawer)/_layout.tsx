@@ -71,7 +71,9 @@ const DrawerStackLayout = () => {
 				numberOfLines={1}
 				ellipsizeMode="tail"
 				style={{
-					maxWidth: Math.max(0, width - insets.left - insets.right - 184),
+					// Reserve the native back/drawer slot, two 44-point actions and
+					// UIKit's item margins so a long title cannot displace the controls.
+					maxWidth: Math.max(0, width - insets.left - insets.right - 200),
 					fontFamily: fonts.semibold,
 					fontSize: 15,
 					color: tintColor,
@@ -110,6 +112,9 @@ const DrawerStackLayout = () => {
 					'devis/index': { title: t.devis.listTitle, ...drawerHeaderOptions },
 					'devis/form': { title: editing ? t.devis.editTitle : t.devis.addTitle },
 					'devis/[id]/index': { title: t.devis.detailsTitle },
+					'facture-pro-forma/index': { title: t.facturesProforma.listTitle, ...drawerHeaderOptions },
+					'facture-pro-forma/form': { title: editing ? t.facturesProforma.editTitle : t.facturesProforma.addTitle },
+					'facture-pro-forma/[id]/index': { title: t.facturesProforma.detailsTitle },
 					'clients/index': { title: t.clients.listTitle, ...drawerHeaderOptions },
 					'clients/archived': { title: t.clients.archivedTitle, ...drawerHeaderOptions },
 					'clients/form': { title: editing ? t.clients.editTitle : t.clients.addTitle },

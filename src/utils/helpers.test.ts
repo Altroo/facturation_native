@@ -831,7 +831,14 @@ describe('document totals', () => {
 		});
 	});
 	it('translates the raw server statuses without changing their API values', () => {
+		expect(getStatutLabel('Brouillon', translations.en)).toBe(translations.en.rawData.documentStatuses.draft);
+		expect(getStatutLabel('Envoyé', translations.en)).toBe(translations.en.rawData.documentStatuses.sent);
 		expect(getStatutLabel('Accepté', translations.en)).toBe(translations.en.rawData.documentStatuses.accepted);
+		expect(getStatutLabel('Facturé', translations.en)).toBe(translations.en.rawData.documentStatuses.invoiced);
+		expect(getStatutLabel('Refusé', translations.en)).toBe(translations.en.rawData.documentStatuses.refused);
+		expect(getStatutLabel('Annulé', translations.en)).toBe(translations.en.rawData.documentStatuses.cancelled);
+		expect(getStatutLabel('Expiré', translations.en)).toBe(translations.en.rawData.documentStatuses.expired);
+		expect(getStatutLabel('Valide', translations.en)).toBe(translations.en.common.validShort);
 		expect(getStatutLabel('Unknown', translations.fr)).toBe('Unknown');
 	});
 });
@@ -858,4 +865,20 @@ it('maps Devis notification targets only to implemented tenant-scoped screens', 
 		pathname: '/devis/form',
 		params: { company_id: '5' },
 	});
+});
+
+it('maps implemented Pro-forma notification links while retaining company scope', () => {
+	expect(getNotificationDestination('/dashboard/facture-pro-forma/7?company_id=5')).toEqual({
+		pathname: '/facture-pro-forma/[id]',
+		params: { id: '7', company_id: '5' },
+	});
+	expect(getNotificationDestination('/dashboard/facture-pro-forma/7/edit?company_id=5')).toEqual({
+		pathname: '/facture-pro-forma/form',
+		params: { id: '7', company_id: '5' },
+	});
+	expect(getNotificationDestination('/dashboard/facture-pro-forma/new?company_id=5')).toEqual({
+		pathname: '/facture-pro-forma/form',
+		params: { company_id: '5' },
+	});
+	expect(getNotificationDestination('/dashboard/facture-pro-forma/7')).toBe('/facture-pro-forma');
 });

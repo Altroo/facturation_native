@@ -63,3 +63,15 @@ export const DEVIS_LIST = '/devis' as const;
 export const DEVIS_ADD = '/devis/form' as const;
 export const DEVIS_VIEW = (id: number) => ({ pathname: '/devis/[id]' as const, params: { id: String(id) } });
 export const DEVIS_EDIT = (id: number) => ({ pathname: '/devis/form' as const, params: { id: String(id) } });
+
+// Factures pro-forma
+export const FACTURE_PRO_FORMA_LIST = '/facture-pro-forma' as const;
+export const FACTURE_PRO_FORMA_ADD = '/facture-pro-forma/form' as const;
+export const FACTURE_PRO_FORMA_VIEW = (id: number) => ({
+	pathname: '/facture-pro-forma/[id]' as const,
+	params: { id: String(id) },
+});
+export const FACTURE_PRO_FORMA_EDIT = (id: number) => ({
+	pathname: '/facture-pro-forma/form' as const,
+	params: { id: String(id) },
+});

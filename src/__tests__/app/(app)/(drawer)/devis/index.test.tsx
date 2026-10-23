@@ -56,6 +56,7 @@ jest.mock('@/store/services/devi', () => ({
 	useLazyGetDevisListQuery: () => [mockFetchAll],
 	useDeleteDeviMutation: () => [mockRemove, {}],
 	useBulkDeleteDevisMutation: () => [mockBulk, {}],
+	useConvertDeviToFactureProFormaMutation: () => [mockConvert, {}],
 }));
 jest.mock('@/store/services/client', () => ({
 	useGetClientsListQuery: () => ({ currentData: [{ id: 3, raison_sociale: 'Atlas Client' }] }),
@@ -77,7 +78,10 @@ const row = (id: number) => ({
 const refetch = jest.fn();
 const fetchNextPage = jest.fn();
 const initialQuery = {
-	currentData: { pages: [{ count: 3, next: 'page2', previous: null, results: [row(7), row(8)] }], pageParams: [1] },
+	currentData: {
+		pages: [{ count: 3, next: 'page2' as string | null, previous: null, results: [row(7), row(8)] }],
+		pageParams: [1],
+	},
 	isFetching: false,
 	isLoading: false,
 	hasNextPage: true,
@@ -87,6 +91,7 @@ const initialQuery = {
 const mockQuery = createQueryMock(initialQuery);
 const mockRemove = jest.fn();
 const mockBulk = jest.fn();
+const mockConvert = jest.fn();
 const mockFetchAll = jest.fn();
 const mockSuccess = jest.fn();
 const mockError = jest.fn();
@@ -104,6 +109,7 @@ const cardAction = async (name: string) => {
 beforeEach(async () => {
 	jest.clearAllMocks();
 	mockRole = 'Caissier';
+	mockConvert.mockReturnValue({ unwrap: () => Promise.resolve({ id: 21 }) });
 	await mockQuery.setResult(initialQuery);
 	mockRemove.mockReturnValue({ unwrap: () => Promise.resolve() });
 	mockBulk.mockReturnValue({ unwrap: () => Promise.resolve() });
@@ -155,7 +161,7 @@ it('bulk-deletes all matching records after confirmation, not only loaded cards'
 	await fireEvent.press(within(screen.getByTestId('action-modal')).getByRole('button', { name: t.common.delete }));
 	await waitFor(() => expect(mockBulk).toHaveBeenCalledWith({ ids: [7, 8, 9] }));
 });
-it('does not allow Commercial deletion and keeps conversion unavailable', async () => {
+it('allows Commercial pro-forma conversion but no deletion or invoice conversion', async () => {
 	mockRole = 'Commercial';
 	await render(<DevisListPage />);
 	expect(screen.queryByRole('checkbox')).toBeNull();
@@ -167,11 +173,12 @@ it('does not allow Commercial deletion and keeps conversion unavailable', async 
 		t.devis.labelFactureClient,
 		t.common.edit,
 	]);
-	for (const label of [t.devis.labelFactureProforma, t.devis.labelFactureClient]) {
+	for (const label of [t.devis.labelFactureClient]) {
 		const action = screen.getByRole('menuitem', { name: label });
 		expect(action).toBeDisabled();
 		await fireEvent.press(action);
 	}
+	expect(screen.getByRole('menuitem', { name: t.devis.labelFactureProforma })).toBeEnabled();
 	expect(router.push).not.toHaveBeenCalled();
 });
 it('Lecture can view without printing or editing', async () => {
@@ -226,4 +233,40 @@ it('cancels select-all when switching company and ignores its late response', as
 	await act(() => resolve([{ id: 7 }, { id: 8 }, { id: 9 }]));
 	expect(lastArgs()).toMatchObject({ company_id: 11 });
 	expect(screen.queryByRole('button', { name: t.documentList.bulkDeleteBtn(3) })).toBeNull();
+});
+
+it('converts only after confirmation and opens the new pro-forma in the same company', async () => {
+	await render(<DevisListPage />);
+	await cardAction(t.devis.labelFactureProforma);
+	expect(mockConvert).not.toHaveBeenCalled();
+	expect(screen.getByText(t.devis.convertToProformaBody)).toBeOnTheScreen();
+	await fireEvent.press(within(screen.getByTestId('action-modal')).getByRole('button', { name: t.common.convert }));
+	await waitFor(() => expect(mockConvert).toHaveBeenCalledWith({ id: 7 }));
+	expect(router.push).toHaveBeenCalledWith({
+		pathname: '/facture-pro-forma/form',
+		params: { id: '21', company_id: '5' },
+	});
+});
+it('leaves draft conversion disabled, as on the web', async () => {
+	await mockQuery.setResult({
+		...initialQuery,
+		currentData: {
+			pages: [{ count: 1, next: null, previous: null, results: [{ ...row(7), statut: 'Brouillon' }] }],
+			pageParams: [1],
+		},
+	});
+	await render(<DevisListPage />);
+	await fireEvent.press(screen.getByRole('button', { name: t.common.moreActions }));
+	expect(screen.getByRole('menuitem', { name: t.devis.labelFactureProforma })).toBeDisabled();
+	expect(mockConvert).not.toHaveBeenCalled();
+});
+it('reports a failed conversion without navigating', async () => {
+	mockConvert.mockReturnValue({
+		unwrap: () => Promise.reject({ status: 400, data: { detail: 'Conversion refused' } }),
+	});
+	await render(<DevisListPage />);
+	await cardAction(t.devis.labelFactureProforma);
+	await fireEvent.press(within(screen.getByTestId('action-modal')).getByRole('button', { name: t.common.convert }));
+	await waitFor(() => expect(mockError).toHaveBeenCalled());
+	expect(router.push).not.toHaveBeenCalled();
 });

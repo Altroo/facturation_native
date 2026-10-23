@@ -9,6 +9,7 @@ import { companyApi } from '@/store/services/company';
 import { clientApi } from '@/store/services/client';
 import { articleApi } from '@/store/services/article';
 import { deviApi } from '@/store/services/devi';
+import { factureProFormaApi } from '@/store/services/factureProForma';
 import {
 	citiesApi,
 	marqueApi,
@@ -34,6 +35,7 @@ const rootReducer = combineReducers({
 	[clientApi.reducerPath]: clientApi.reducer,
 	[articleApi.reducerPath]: articleApi.reducer,
 	[deviApi.reducerPath]: deviApi.reducer,
+	[factureProFormaApi.reducerPath]: factureProFormaApi.reducer,
 	[modePaiementApi.reducerPath]: modePaiementApi.reducer,
 	[marqueApi.reducerPath]: marqueApi.reducer,
 	[categorieApi.reducerPath]: categorieApi.reducer,
@@ -76,6 +78,7 @@ export const makeStore = (): SagaStore => {
 					clientApi.middleware,
 					articleApi.middleware,
 					deviApi.middleware,
+					factureProFormaApi.middleware,
 					modePaiementApi.middleware,
 					marqueApi.middleware,
 					categorieApi.middleware,

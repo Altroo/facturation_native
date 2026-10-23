@@ -2,6 +2,7 @@ import { createApi } from '@reduxjs/toolkit/query/react';
 import { axiosBaseQuery } from '@/utils/axiosBaseQuery';
 import { getDjangoNextPageParam, isAuthenticatedInstance } from '@/utils/helpers';
 import { MODULES_PAGE_SIZE } from '@/utils/rawData';
+import { factureProFormaApi } from '@/store/services/factureProForma';
 import type { DeviClass } from '@/models/classes';
 import type { PaginationResponseType } from '@/types/_initTypes';
 import type { DevisQueryParams, DeviFactureLineFormValues, TypeFactureLivraisonDevisStatus } from '@/types/devisTypes';
@@ -84,6 +85,21 @@ export const deviApi = createApi({
 			}),
 			invalidatesTags: (_result, error) => (error ? [] : ['Devi']),
 		}),
+		convertDeviToFactureProForma: builder.mutation<{ id: number }, { id: number }>({
+			query: ({ id }) => ({
+				url: `${process.env.EXPO_PUBLIC_DEVIS_CONVERT_TO_FACTURE_PRO_FORMA}${id}/`,
+				method: 'POST',
+			}),
+			invalidatesTags: (_result, error) => (error ? [] : ['Devi']),
+			async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+				try {
+					await queryFulfilled;
+					dispatch(factureProFormaApi.util.invalidateTags(['FactureProForma']));
+				} catch {
+					// The caller reports rejected conversions; keep the destination cache intact.
+				}
+			},
+		}),
 	}),
 });
 
@@ -97,4 +113,5 @@ export const {
 	useDeleteDeviMutation,
 	usePatchStatutMutation,
 	useBulkDeleteDevisMutation,
+	useConvertDeviToFactureProFormaMutation,
 } = deviApi;

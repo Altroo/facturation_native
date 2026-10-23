@@ -3,6 +3,7 @@ import {
 	ModePaiementClass,
 	DeviFactureLivraisonLineClass,
 	DeviClass,
+	FactureClass,
 	GroupClass,
 	CompanyClass,
 	ArticleClass,
@@ -293,5 +294,69 @@ describe('DeviClass', () => {
 		expect(devi.lignes.length).toBe(2);
 		expect(devi.lignes[0].id).toBe(1);
 		expect(devi.lignes[1].id).toBe(2);
+	});
+});
+
+describe('FactureClass', () => {
+	it('creates a devis instance with lines, totals and metadata', () => {
+		const line1 = new DeviFactureLivraisonLineClass(1, 1, 'A', 'Desc A', 20, 'MAD', 30, 'MAD', 1, 'Fixe', 0);
+		const line2 = new DeviFactureLivraisonLineClass(2, 2, 'B', 'Desc B', 40, 'MAD', 60, 'MAD', 2, 'Pourcentage', 10);
+
+		const facture = new FactureClass(
+			1,
+			'P001/26',
+			5,
+			'ClientName',
+			'2023-01-01',
+			'2023-01-15',
+			'BC-2026',
+			'30 jours',
+			1,
+			'Cash',
+			'Some remark',
+			'Brouillon',
+			'2023-01-01',
+			'2023-01-02',
+			10,
+			'Creator',
+			2,
+			'Pourcentage',
+			5,
+			18,
+			50,
+			480,
+			456,
+			'MAD',
+			[line1, line2],
+		);
+
+		expect(facture.id).toBe(1);
+		expect(facture.numero_facture).toBe('P001/26');
+		expect(facture.client).toBe(5);
+		expect(facture.client_name).toBe('ClientName');
+		expect(facture.date_facture).toBe('2023-01-01');
+		expect(facture.date_echeance).toBe('2023-01-15');
+		expect(facture.numero_bon_commande_client).toBe('BC-2026');
+		expect(facture.termes_paiement).toBe('30 jours');
+		expect(facture.has_logistics_dossier).toBe(false);
+		expect(facture.mode_paiement).toBe(1);
+		expect(facture.mode_paiement_name).toBe('Cash');
+		expect(facture.remarque).toBe('Some remark');
+		expect(facture.statut).toBe('Brouillon');
+		expect(facture.date_created).toBe('2023-01-01');
+		expect(facture.date_updated).toBe('2023-01-02');
+		expect(facture.created_by_user_id).toBe(10);
+		expect(facture.created_by_user_name).toBe('Creator');
+		expect(facture.lignes_count).toBe(2);
+		expect(facture.remise_type).toBe('Pourcentage');
+		expect(facture.remise).toBe(5);
+		expect(facture.total_ht).toBe(18);
+		expect(facture.total_tva).toBe(50);
+		expect(facture.total_ttc).toBe(480);
+		expect(facture.total_ttc_apres_remise).toBe(456);
+		expect(Array.isArray(facture.lignes)).toBe(true);
+		expect(facture.lignes.length).toBe(2);
+		expect(facture.lignes[0].id).toBe(1);
+		expect(facture.lignes[1].id).toBe(2);
 	});
 });

@@ -5,6 +5,7 @@ import { colors, fonts } from '@/utils/themes';
 import {
 	DASHBOARD,
 	DEVIS_LIST,
+	FACTURE_PRO_FORMA_LIST,
 	COMPANIES_LIST,
 	COMPANIES_ADD,
 	USERS_LIST,
@@ -39,7 +40,7 @@ import LanguageSwitcher from '@/components/shared/languageSwitcher/languageSwitc
 export const useNavigationHeader = () => {
 	const { mode } = useColorMode();
 	const headerRight = () => (
-		<View className="flex-row items-center gap-1">
+		<View className="w-23 flex-row items-center gap-1">
 			<ThemeToggle />
 			<LanguageSwitcher />
 		</View>
@@ -90,7 +91,7 @@ const getNavigationMenu = (isStaff: boolean, t: TranslationDictionary) => {
 				{
 					title: t.navigation.facturesProformaList,
 					label: t.navigation.facturesProformaList,
-					path: undefined,
+					path: FACTURE_PRO_FORMA_LIST,
 				},
 			],
 		},

@@ -130,3 +130,16 @@ export const openDevisPdf = (
 		`devis-${id}`,
 	);
 };
+
+export const openFactureProFormaPdf = (
+	id: number,
+	company_id: number,
+	type: DocumentPdfType,
+	language: 'fr' | 'en' | 'nl' = 'fr',
+): Promise<boolean> => {
+	const params = new URLSearchParams({ company_id: String(company_id), type });
+	return openPdf(
+		`${process.env.EXPO_PUBLIC_ROOT_API_URL}${process.env.EXPO_PUBLIC_FACTURE_PROFORMA_PDF}/${language}/${id}/?${params}`,
+		`facture-proforma-${id}`,
+	);
+};

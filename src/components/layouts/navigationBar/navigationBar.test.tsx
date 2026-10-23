@@ -176,8 +176,10 @@ it('navigates to the implemented destination and leaves placeholders disabled', 
 	await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.devisList }));
 	expect(router.navigate).toHaveBeenLastCalledWith('/devis');
 	await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.facturesProforma }));
-	expect(screen.getByRole('button', { name: translations.fr.navigation.facturesProformaList })).toBeDisabled();
-	expect(router.navigate).toHaveBeenCalledTimes(6);
+	expect(screen.getByRole('button', { name: translations.fr.navigation.facturesProformaList })).toBeEnabled();
+	await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.facturesProformaList }));
+	expect(router.navigate).toHaveBeenLastCalledWith('/facture-pro-forma');
+	expect(router.navigate).toHaveBeenCalledTimes(7);
 });
 it('hides staff-only sections for regular users and requests logout', async () => {
 	const store = await setup();

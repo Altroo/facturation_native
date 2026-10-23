@@ -15,6 +15,10 @@ import {
 	DEVIS_ADD,
 	DEVIS_VIEW,
 	DEVIS_EDIT,
+	FACTURE_PRO_FORMA_LIST,
+	FACTURE_PRO_FORMA_ADD,
+	FACTURE_PRO_FORMA_VIEW,
+	FACTURE_PRO_FORMA_EDIT,
 	DASHBOARD_EDIT_PROFILE,
 	DASHBOARD_NOTIFICATIONS,
 	DASHBOARD_PASSWORD,
@@ -490,6 +494,19 @@ export const getNotificationDestination = (target?: string) => {
 		return { ...route, params: { ...route.params, company_id: String(companyId) } };
 	}
 	if (path === '/dashboard/clients') return CLIENTS_LIST;
+	if (path === '/dashboard/facture-pro-forma') return FACTURE_PRO_FORMA_LIST;
+	if (
+		path === '/dashboard/facture-pro-forma/new' ||
+		/^\/dashboard\/facture-pro-forma\/[1-9]\d*(?:\/edit)?$/.test(path)
+	) {
+		const companyId = parseEntityId(new URLSearchParams(target.split('?')[1] ?? '').get('company_id') ?? undefined);
+		if (companyId === null) return FACTURE_PRO_FORMA_LIST;
+		if (path.endsWith('/new')) return { pathname: FACTURE_PRO_FORMA_ADD, params: { company_id: String(companyId) } };
+		const id = parseEntityId(path.split('/')[3]);
+		if (id === null) return null;
+		const route = path.endsWith('/edit') ? FACTURE_PRO_FORMA_EDIT(id) : FACTURE_PRO_FORMA_VIEW(id);
+		return { ...route, params: { ...route.params, company_id: String(companyId) } };
+	}
 	if (path === '/dashboard/clients/archived') return CLIENTS_ARCHIVED;
 	if (path === '/dashboard/users') return USERS_LIST;
 	if (path === '/dashboard/users/new') return USERS_ADD;
@@ -555,14 +572,24 @@ export const calculateDocumentTotals = (
 };
 
 export const getStatutLabel = (statut: string, t: TranslationDictionary): string => {
-	const labels: Record<string, string> = {
-		Brouillon: t.rawData.documentStatuses.draft,
-		Envoyé: t.rawData.documentStatuses.sent,
-		Accepté: t.rawData.documentStatuses.accepted,
-		Refusé: t.rawData.documentStatuses.refused,
-		Annulé: t.rawData.documentStatuses.cancelled,
-		Expiré: t.rawData.documentStatuses.expired,
-		Facturé: t.rawData.documentStatuses.invoiced,
-	};
-	return labels[statut] ?? statut;
+	switch (statut) {
+		case 'Brouillon':
+			return t.rawData.documentStatuses.draft;
+		case 'Envoyé':
+			return t.rawData.documentStatuses.sent;
+		case 'Accepté':
+			return t.rawData.documentStatuses.accepted;
+		case 'Facturé':
+			return t.rawData.documentStatuses.invoiced;
+		case 'Refusé':
+			return t.rawData.documentStatuses.refused;
+		case 'Annulé':
+			return t.rawData.documentStatuses.cancelled;
+		case 'Expiré':
+			return t.rawData.documentStatuses.expired;
+		case 'Valide':
+			return t.common.validShort;
+		default:
+			return statut;
+	}
 };

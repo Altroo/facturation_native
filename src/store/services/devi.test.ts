@@ -2,6 +2,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
 import { auth } from '@/auth';
 import { deviApi } from './devi';
+import { factureProFormaApi } from './factureProForma';
 
 jest.mock('@/auth', () => {
 	const { create } = jest.requireActual<typeof import('axios')>('axios');
@@ -17,8 +18,8 @@ const response = (config: InternalAxiosRequestConfig, data: unknown, status = 20
 });
 const createStore = () =>
 	configureStore({
-		reducer: { [deviApi.reducerPath]: deviApi.reducer },
-		middleware: (get) => get().concat(deviApi.middleware),
+		reducer: { [deviApi.reducerPath]: deviApi.reducer, [factureProFormaApi.reducerPath]: factureProFormaApi.reducer },
+		middleware: (get) => get().concat(deviApi.middleware, factureProFormaApi.middleware),
 	});
 let store: ReturnType<typeof createStore>;
 beforeEach(() => {
@@ -29,6 +30,7 @@ beforeEach(() => {
 });
 afterEach(async () => {
 	store.dispatch(deviApi.util.resetApiState());
+	store.dispatch(factureProFormaApi.util.resetApiState());
 	await jest.runOnlyPendingTimersAsync();
 	jest.useRealTimers();
 });
@@ -146,4 +148,26 @@ it('preserves cached lists after rejected writes and keeps company caches separa
 	expect(adapter.mock.calls.filter(([config]) => config.method === 'get')).toHaveLength(2);
 	expect(deviApi.endpoints.getDevisList.select({ company_id: 5 })(store.getState()).data).toEqual([{ id: 5 }]);
 	expect(deviApi.endpoints.getDevisList.select({ company_id: 11 })(store.getState()).data).toEqual([{ id: 11 }]);
+});
+
+it('converts through the configured endpoint and refreshes the Pro-forma list only on success', async () => {
+	adapter.mockImplementation(async (config) => response(config, config.method === 'post' ? { id: 21 } : []));
+	await store.dispatch(factureProFormaApi.endpoints.getFactureProFormaList.initiate({ company_id: 5 })).unwrap();
+	await expect(
+		store.dispatch(deviApi.endpoints.convertDeviToFactureProForma.initiate({ id: 7 })).unwrap(),
+	).resolves.toEqual({ id: 21 });
+	expect(adapter.mock.calls.find(([config]) => config.method === 'post')?.[0]).toMatchObject({
+		url: '/devi/convert_to_facture_proforma/7/',
+		method: 'post',
+	});
+	expect(adapter.mock.calls.filter(([config]) => config.method === 'get')).toHaveLength(2);
+	adapter.mockImplementation(async (config) =>
+		Promise.reject(
+			new AxiosError('Denied', 'ERR_BAD_REQUEST', config, undefined, response(config, { detail: 'Denied' }, 403)),
+		),
+	);
+	await expect(
+		store.dispatch(deviApi.endpoints.convertDeviToFactureProForma.initiate({ id: 8 })).unwrap(),
+	).rejects.toMatchObject({ status: 403 });
+	expect(adapter.mock.calls.filter(([config]) => config.method === 'get')).toHaveLength(2);
 });

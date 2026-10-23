@@ -13,6 +13,7 @@ import {
 	getAppVersion,
 	openClientStatementPdf,
 	openDevisPdf,
+	openFactureProFormaPdf,
 	openPdf,
 	postApi,
 } from '@/utils/apiHelpers';
@@ -100,6 +101,20 @@ describe('openPdf', () => {
 		expect(url.pathname).toBe('/api/client/pdf/fr/7/');
 		expect([...url.searchParams.entries()]).toEqual([['company_id', '5']]);
 	});
+	it.each(['avec_remise', 'sans_remise', 'avec_unite_sans_remise', 'avec_unite_avec_remise'] as const)(
+		'previews pro-forma format %s using its own configured endpoint',
+		async (type) => {
+			jest.replaceProperty(process.env, 'EXPO_PUBLIC_FACTURE_PROFORMA_PDF', '/custom-proforma/pdf');
+			await expect(openFactureProFormaPdf(12, 5, type, 'nl')).resolves.toBe(true);
+			const url = new URL(adapter.mock.calls[0][0].url!);
+			expect(url.pathname).toBe('/api/custom-proforma/pdf/nl/12/');
+			expect([...url.searchParams.entries()]).toEqual([
+				['company_id', '5'],
+				['type', type],
+			]);
+			expect(mockPreviewPdf).toHaveBeenCalledWith({ mimeType: 'application/pdf' });
+		},
+	);
 
 	it.each(['ios', 'android'] as const)(
 		'downloads through the authenticated Axios instance and previews the PDF on %s',

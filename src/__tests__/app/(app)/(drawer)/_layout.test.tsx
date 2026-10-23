@@ -1,10 +1,25 @@
-import { render } from '@testing-library/react-native';
+import { fireEvent, render, screen } from '@testing-library/react-native';
 import type { NativeStackNavigationOptions } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import DrawerStackLayout from '@/app/(app)/(drawer)/_layout';
+import { translations } from '@/translations';
 let mockOptions: NativeStackNavigationOptions;
 let mockRouteName = 'users/form';
 let mockReduceMotion = false;
+const mockToggleTheme = jest.fn();
+const mockSetLanguage = jest.fn();
+jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
+jest.mock('@/providers/themeProvider', () => ({
+	useColorMode: () => ({ mode: 'light', toggleTheme: mockToggleTheme }),
+}));
+jest.mock('@/utils/hooks', () => ({
+	...jest.requireActual<typeof import('@/utils/hooks')>('@/utils/hooks'),
+	useLanguage: () => ({
+		t: jest.requireActual('@/translations').translations.fr,
+		language: 'fr',
+		setLanguage: mockSetLanguage,
+	}),
+}));
 jest.mock('react-native-reanimated', () => ({
 	...jest.requireActual<typeof import('react-native-reanimated')>('react-native-reanimated'),
 	useReducedMotion: () => mockReduceMotion,
@@ -32,8 +47,28 @@ const setup = async () => {
 	);
 };
 beforeEach(() => {
+	jest.clearAllMocks();
 	mockRouteName = 'users/form';
 	mockReduceMotion = false;
+});
+
+it.each([
+	['facture-pro-forma/index', translations.fr.facturesProforma.listTitle],
+	['facture-pro-forma/[id]/index', translations.fr.facturesProforma.detailsTitle],
+])('keeps both theme and language actions usable on %s', async (route, title) => {
+	mockRouteName = route;
+	await setup();
+	expect(mockOptions.title).toBe(title);
+	const action = mockOptions.unstable_headerRightItems?.({ canGoBack: true })[0];
+	if (action?.type !== 'custom') {
+		expect(action?.type).toBe('custom');
+		return;
+	}
+	await render(action.element);
+	await fireEvent.press(screen.getByRole('button', { name: 'Activer le mode sombre' }));
+	expect(mockToggleTheme).toHaveBeenCalledTimes(1);
+	await fireEvent.press(screen.getByRole('button', { name: 'English' }));
+	expect(mockSetLanguage).toHaveBeenCalledWith('en');
 });
 
 it('preserves the native navbar and original back icon', async () => {

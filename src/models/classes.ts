@@ -235,3 +235,48 @@ export class ModePaiementClass {
 		public company: number,
 	) {}
 }
+
+export class FactureClass {
+	public fournisseur: string | null = null;
+	public fournisseur_email: string | null = null;
+	public has_logistics_dossier = false;
+
+	constructor(
+		public readonly id: number,
+		public numero_facture: string,
+		public client: number | null,
+		public readonly client_name: string | null,
+		public date_facture: string,
+		public date_echeance: string | null,
+		public numero_bon_commande_client: string | null,
+		public termes_paiement: string | null,
+		public mode_paiement: number | null,
+		public readonly mode_paiement_name: string | null,
+		public remarque: string | null,
+		public statut: TypeFactureLivraisonDevisStatus,
+		public readonly date_created: string,
+		public readonly date_updated: string,
+		public readonly created_by_user_id: number,
+		public readonly created_by_user_name: string | null,
+		public readonly lignes_count: number,
+		public remise_type: TypeRemiseType,
+		public remise: number,
+		public readonly total_ht: number,
+		public readonly total_tva: number,
+		public readonly total_ttc: number,
+		public readonly total_ttc_apres_remise: number,
+		public readonly devise: string,
+		public lignes: Array<DeviFactureLivraisonLineClass>,
+		public readonly nombre_paiements?: number,
+		public readonly total_paye?: number | string,
+		public readonly reste_a_payer?: number | string,
+		public readonly statut_paiement?: string,
+		public readonly source_devis?: number | null,
+		public readonly source_devis_numero?: string | null,
+		public readonly source_proforma?: number | null,
+		public readonly source_proforma_numero?: string | null,
+		public readonly converted_facture_client?: number | null,
+		public readonly converted_facture_client_numero?: string | null,
+		public readonly company?: number,
+	) {}
+}

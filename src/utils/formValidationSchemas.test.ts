@@ -1,3 +1,4 @@
+import { factureProformaAddSchema, factureProformaSchema } from './formValidationSchemas';
 import {
 	loginSchema,
 	emailSchema,
@@ -563,5 +564,37 @@ describe('Devis validation', () => {
 		{ remise_type: 'Fixe', remise: -1 },
 	])('rejects invalid line values: %j', (value) => {
 		expect(devisLivraisonFactureLineSchema.safeParse({ ...line, ...value }).success).toBe(false);
+	});
+});
+
+describe('Pro-forma validation', () => {
+	const header = {
+		numero_part: 'P001',
+		year_part: '26',
+		client: 3,
+		date_facture: '2026-10-23',
+		date_echeance: null,
+		numero_bon_commande_client: 'BC-2026',
+		termes_paiement: '30 jours',
+		mode_paiement: null,
+		fournisseur: '',
+		fournisseur_email: '',
+		remarque: '',
+	};
+	it('accepts the web pro-forma header, payment terms and a header-only creation', () => {
+		expect(factureProformaAddSchema.safeParse(header).success).toBe(true);
+		expect(factureProformaAddSchema.parse(header)).toMatchObject({
+			date_facture: '2026-10-23',
+			numero_bon_commande_client: 'BC-2026',
+			termes_paiement: '30 jours',
+		});
+	});
+	it('requires the invoice date and caps payment terms at the web limit', () => {
+		expect(factureProformaAddSchema.safeParse({ ...header, date_facture: '' }).success).toBe(false);
+		expect(factureProformaAddSchema.safeParse({ ...header, termes_paiement: 'a'.repeat(2001) }).success).toBe(false);
+	});
+	it('accepts no discount and rejects percentage discounts above 100', () => {
+		expect(factureProformaSchema.safeParse({ ...header, lignes: [], remise_type: '', remise: 0 }).success).toBe(true);
+		expect(factureProformaSchema.safeParse({ ...header, remise_type: 'Pourcentage', remise: 101 }).success).toBe(false);
 	});
 });
