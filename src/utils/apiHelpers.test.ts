@@ -15,6 +15,7 @@ import {
 	openDevisPdf,
 	openFactureProFormaPdf,
 	openFactureClientPdf,
+	openFactureAvoirPdf,
 	openPdf,
 	postApi,
 } from '@/utils/apiHelpers';
@@ -61,6 +62,21 @@ describe('openPdf', () => {
 		adapter.mockImplementation(async (config) => response(config, pdf.buffer));
 	});
 	afterEach(() => jest.restoreAllMocks());
+
+	it.each(['avec_remise', 'sans_remise', 'avec_unite_sans_remise', 'avec_unite_avec_remise'] as const)(
+		'previews credit-note format %s through the configured authenticated endpoint',
+		async (type) => {
+			jest.replaceProperty(process.env, 'EXPO_PUBLIC_FACTURE_AVOIR_PDF', '/custom-credits/pdf');
+			await expect(openFactureAvoirPdf(7, 5, type, 'en')).resolves.toBe(true);
+			const url = new URL(adapter.mock.calls[0][0].url!);
+			expect(url.pathname).toBe('/api/custom-credits/pdf/en/7/');
+			expect([...url.searchParams.entries()]).toEqual([
+				['company_id', '5'],
+				['type', type],
+			]);
+			expect(mockPreviewPdf).toHaveBeenCalledWith({ mimeType: 'application/pdf' });
+		},
+	);
 
 	it.each(['fr', 'en', 'nl'] as const)(
 		'opens a %s client statement using configured backend endpoints and filters',

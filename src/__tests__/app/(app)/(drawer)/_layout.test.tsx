@@ -53,6 +53,9 @@ beforeEach(() => {
 });
 
 it.each([
+	['facture-avoir/index', translations.fr.facturesAvoir.listTitle],
+	['facture-avoir/form', translations.fr.facturesAvoir.addTitle],
+	['facture-avoir/[id]/index', translations.fr.facturesAvoir.detailsTitle],
 	['facture-pro-forma/index', translations.fr.facturesProforma.listTitle],
 	['facture-pro-forma/[id]/index', translations.fr.facturesProforma.detailsTitle],
 	['facture-client/index', translations.fr.facturesClient.listTitle],

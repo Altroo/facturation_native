@@ -89,6 +89,37 @@ const optionalNumberField = (min: number = 1, max?: number) =>
 			.optional(),
 	);
 
+// Credit notes may refund below the purchase price, so they intentionally do
+// not reuse the sales document's sale-price-greater-than-purchase rule.
+const decimalNumberField = (min: number) =>
+	z.preprocess(
+		(value) => (typeof value === 'string' ? Number(value.replace(',', '.')) : value),
+		z.number().min(min, { error: INPUT_MIN(min) }),
+	);
+
+export const factureAvoirSchema = z.object({
+	date_avoir: z.iso.date({ error: INPUT_REQUIRED }),
+	facture_origine: optionalNumberField(1).nullable(),
+	client: optionalNumberField(1).nullable(),
+	mode_paiement: optionalNumberField(1).nullable(),
+	motif_avoir: z.enum(['', 'retour_marchandise', 'erreur_facturation', 'remise', 'annulation', 'autre']).optional(),
+	fournisseur: z.string().max(255).optional(),
+	fournisseur_email: optionalEmailField,
+	numero_bon_commande_client: optionalTextField(0, 100),
+	remarque: optionalTextField(0, 2000),
+	remise_type: z.enum(['', 'Pourcentage', 'Fixe']).optional(),
+	remise: decimalNumberField(0),
+	lignes: z.array(
+		z.object({
+			article: z.number().int().positive(),
+			quantity: decimalNumberField(0.01),
+			prix_vente: decimalNumberField(0),
+			remise_type: z.enum(['', 'Pourcentage', 'Fixe']).optional(),
+			remise: decimalNumberField(0).optional(),
+		}),
+	),
+});
+
 export const clientSchema = z
 	.object({
 		client_type: z.enum(['PM', 'PP', 'CD']),

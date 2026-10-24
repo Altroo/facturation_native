@@ -781,6 +781,25 @@ it('normalizes company names before matching Nectar', () => {
 	expect(isNectarRaisonSociale('Another company')).toBe(false);
 });
 
+it('maps credit-note notifications to implemented screens and requires a valid company', () => {
+	expect(getNotificationDestination('/dashboard/facture-avoir')).toBe('/facture-avoir');
+	expect(getNotificationDestination('/dashboard/facture-avoir/new?company_id=5')).toEqual({
+		pathname: '/facture-avoir/form',
+		params: { company_id: '5' },
+	});
+	expect(getNotificationDestination('/dashboard/facture-avoir/7?company_id=5')).toEqual({
+		pathname: '/facture-avoir/[id]',
+		params: { id: '7', company_id: '5' },
+	});
+	expect(getNotificationDestination('/dashboard/facture-avoir/7/edit?company_id=5')).toEqual({
+		pathname: '/facture-avoir/form',
+		params: { id: '7', company_id: '5' },
+	});
+	expect(getNotificationDestination('/dashboard/facture-avoir/7')).toBe('/facture-avoir');
+	expect(getNotificationDestination('/dashboard/facture-avoir/7?company_id=-1')).toBe('/facture-avoir');
+	expect(getNotificationDestination('/dashboard/facture-avoir/0?company_id=5')).toBeNull();
+});
+
 it('converts article entry prices with consistent cent rounding', () => {
 	expect(calculateSalePriceHT(120, 20, 'TTC')).toBe(100);
 	expect(calculateSalePriceHT(100, 20, 'HT')).toBe(100);

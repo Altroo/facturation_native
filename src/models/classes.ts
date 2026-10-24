@@ -229,6 +229,42 @@ export class DeviClass {
 	) {}
 }
 
+export class FactureAvoirClass {
+	constructor(
+		public readonly id: number,
+		public numero_avoir: string,
+		public company: number,
+		public client: number | null,
+		public readonly client_name: string | null,
+		public date_avoir: string,
+		public facture_origine: number | null,
+		public readonly facture_origine_numero: string | null,
+		public readonly facture_origine_date: string | null,
+		public motif_avoir: string,
+		public readonly motif_avoir_label: string | null,
+		public numero_bon_commande_client: string | null,
+		public mode_paiement: number | null,
+		public readonly mode_paiement_name: string | null,
+		public remarque: string | null,
+		public statut: TypeFactureLivraisonDevisStatus,
+		public readonly date_created: string,
+		public readonly date_updated: string,
+		public readonly created_by_user_id: number,
+		public readonly created_by_user_name: string | null,
+		public readonly lignes_count: number,
+		public remise_type: TypeRemiseType,
+		public remise: number,
+		public readonly total_ht: number,
+		public readonly total_tva: number,
+		public readonly total_ttc: number,
+		public readonly total_ttc_apres_remise: number,
+		public readonly devise: string,
+		public lignes: Array<DeviFactureLivraisonLineClass>,
+		public fournisseur?: string | null,
+		public fournisseur_email?: string | null,
+	) {}
+}
+
 export class ModePaiementClass {
 	constructor(
 		public readonly id: number,

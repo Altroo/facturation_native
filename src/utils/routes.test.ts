@@ -1,6 +1,13 @@
 import * as routes from './routes';
 
 describe('routes constants', () => {
+	it('exports credit-note list, form and detail routes without backend PDF endpoints', () => {
+		expect(routes.FACTURE_AVOIR_LIST).toBe('/facture-avoir');
+		expect(routes.FACTURE_AVOIR_ADD).toBe('/facture-avoir/form');
+		expect(routes.FACTURE_AVOIR_VIEW(7)).toEqual({ pathname: '/facture-avoir/[id]', params: { id: '7' } });
+		expect(routes.FACTURE_AVOIR_EDIT(7)).toEqual({ pathname: '/facture-avoir/form', params: { id: '7' } });
+		expect(routes).not.toHaveProperty('FACTURE_AVOIR_PDF');
+	});
 	it('exports auth routes', () => {
 		expect(routes.AUTH_LOGIN).toBe('/login');
 		expect(routes.AUTH_RESET_PASSWORD).toBe('/reset-password');

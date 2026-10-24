@@ -89,6 +89,18 @@ export const FACTURE_CLIENT_EDIT = (id: number) => ({
 	params: { id: String(id) },
 });
 
+// Factures d'avoir
+export const FACTURE_AVOIR_LIST = '/facture-avoir' as const;
+export const FACTURE_AVOIR_ADD = '/facture-avoir/form' as const;
+export const FACTURE_AVOIR_VIEW = (id: number) => ({
+	pathname: '/facture-avoir/[id]' as const,
+	params: { id: String(id) },
+});
+export const FACTURE_AVOIR_EDIT = (id: number) => ({
+	pathname: '/facture-avoir/form' as const,
+	params: { id: String(id) },
+});
+
 // Règlements
 export const REGLEMENTS_ADD = (company_id: number, facture_client_id?: number) => ({
 	pathname: '/reglements/form' as const,

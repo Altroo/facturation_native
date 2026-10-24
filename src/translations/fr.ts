@@ -695,7 +695,7 @@ export const fr: TranslationDictionary = {
 		onlyDraftEditable: 'Seuls les avoirs en brouillon peuvent être modifiés.',
 		selectOrigin: "Sélectionner une facture d'origine",
 		selectClient: 'Sélectionner un client',
-		originRequired: "Sélectionnez une facture d'origine ou activez l'avoir libre.",
+		originRequired: "Sélectionnez une facture d'origine.",
 		motifRequired: "Le motif de l'avoir est obligatoire.",
 		clientRequired: 'Le client est obligatoire pour un avoir libre.',
 		linesRequired: 'Ajoutez au moins une ligne à créditer.',

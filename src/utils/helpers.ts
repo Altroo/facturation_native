@@ -27,6 +27,10 @@ import {
 	FACTURE_CLIENT_ADD,
 	FACTURE_CLIENT_VIEW,
 	FACTURE_CLIENT_EDIT,
+	FACTURE_AVOIR_LIST,
+	FACTURE_AVOIR_ADD,
+	FACTURE_AVOIR_VIEW,
+	FACTURE_AVOIR_EDIT,
 	DASHBOARD_EDIT_PROFILE,
 	DASHBOARD_NOTIFICATIONS,
 	DASHBOARD_PASSWORD,
@@ -526,6 +530,16 @@ export const getNotificationDestination = (target?: string) => {
 		return { ...route, params: { ...route.params, company_id: String(companyId) } };
 	}
 	if (path === '/dashboard/clients/archived') return CLIENTS_ARCHIVED;
+	if (path === '/dashboard/facture-avoir') return FACTURE_AVOIR_LIST;
+	if (path === '/dashboard/facture-avoir/new' || /^\/dashboard\/facture-avoir\/[1-9]\d*(?:\/edit)?$/.test(path)) {
+		const companyId = parseEntityId(new URLSearchParams(target.split('?')[1] ?? '').get('company_id') ?? undefined);
+		if (companyId === null) return FACTURE_AVOIR_LIST;
+		if (path.endsWith('/new')) return { pathname: FACTURE_AVOIR_ADD, params: { company_id: String(companyId) } };
+		const id = parseEntityId(path.split('/')[3]);
+		if (id === null) return null;
+		const route = path.endsWith('/edit') ? FACTURE_AVOIR_EDIT(id) : FACTURE_AVOIR_VIEW(id);
+		return { ...route, params: { ...route.params, company_id: String(companyId) } };
+	}
 	if (path === '/dashboard/users') return USERS_LIST;
 	if (path === '/dashboard/users/new') return USERS_ADD;
 	if (path === '/dashboard/settings/edit-profile') return DASHBOARD_EDIT_PROFILE;

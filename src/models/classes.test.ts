@@ -4,6 +4,7 @@ import {
 	DeviFactureLivraisonLineClass,
 	DeviClass,
 	FactureClass,
+	FactureAvoirClass,
 	ReglementClass,
 	GroupClass,
 	CompanyClass,
@@ -13,6 +14,62 @@ import {
 	UniteClass,
 	EmplacementClass,
 } from './classes';
+
+describe('FactureAvoirClass', () => {
+	it('keeps credit-note origin, reason, supplier snapshot and financial fields in the web model order', () => {
+		const credit = new FactureAvoirClass(
+			7,
+			'001/26',
+			5,
+			3,
+			'Client Atlas',
+			'2026-10-24',
+			12,
+			'FAC12/26',
+			'2026-10-22',
+			'remise',
+			'Remise',
+			'BC12',
+			2,
+			'Virement',
+			'Credit remark',
+			'Brouillon',
+			'2026-10-24',
+			'2026-10-24',
+			1,
+			'Test User',
+			1,
+			'Fixe',
+			5,
+			100,
+			20,
+			120,
+			114,
+			'EUR',
+			[],
+			'Supplier',
+			'supplier@example.invalid',
+		);
+		expect(credit.id).toBe(7);
+		expect(credit.company).toBe(5);
+		expect(credit.client).toBe(3);
+		expect(credit.numero_avoir).toBe('001/26');
+		expect(credit.facture_origine).toBe(12);
+		expect(credit.facture_origine_numero).toBe('FAC12/26');
+		expect(credit.facture_origine_date).toBe('2026-10-22');
+		expect(credit.motif_avoir).toBe('remise');
+		expect(credit.motif_avoir_label).toBe('Remise');
+		expect(credit.fournisseur).toBe('Supplier');
+		expect(credit.fournisseur_email).toBe('supplier@example.invalid');
+		expect(credit.mode_paiement_name).toBe('Virement');
+		expect(credit.total_ht).toBe(100);
+		expect(credit.total_tva).toBe(20);
+		expect(credit.total_ttc).toBe(120);
+		expect(credit.total_ttc_apres_remise).toBe(114);
+		expect(credit.devise).toBe('EUR');
+		expect(credit.lignes).toEqual([]);
+	});
+});
 
 describe('UserClass', () => {
 	it('creates a user instance with given properties', () => {

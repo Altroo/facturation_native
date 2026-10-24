@@ -37,6 +37,9 @@ import {
 	FACTURE_CLIENT_EDIT,
 	CLIENTS_VIEW,
 	FACTURE_CLIENT_VIEW,
+	FACTURE_AVOIR_ADD,
+	FACTURE_AVOIR_EDIT,
+	FACTURE_AVOIR_VIEW,
 } from '@/utils/routes';
 import { colors } from '@/utils/themes';
 import type { DocumentData, DocumentType } from '@/types/companyDocumentsTypes';
@@ -90,33 +93,60 @@ const CompanyDocumentsListContent = (props: Props) => {
 	const { t } = useLanguage();
 	const isDevis = props.documentType === 'devis';
 	const isInvoice = props.documentType === 'facture-client';
-	const labels = isDevis ? t.devis : isInvoice ? t.facturesClient : t.facturesProforma;
+	const isCredit = props.documentType === 'facture-avoir';
+	const labels = isCredit ? t.facturesAvoir : isDevis ? t.devis : isInvoice ? t.facturesClient : t.facturesProforma;
 	const documentName = isDevis
 		? t.navigation.devis
 		: isInvoice
 			? t.navigation.facturesClient
-			: t.navigation.facturesProforma;
-	const addRoute = isDevis ? DEVIS_ADD : isInvoice ? FACTURE_CLIENT_ADD : FACTURE_PRO_FORMA_ADD;
-	const editRoute = isDevis ? DEVIS_EDIT : isInvoice ? FACTURE_CLIENT_EDIT : FACTURE_PRO_FORMA_EDIT;
-	const viewRoute = isDevis ? DEVIS_VIEW : isInvoice ? FACTURE_CLIENT_VIEW : FACTURE_PRO_FORMA_VIEW;
-	const numberField = isDevis ? 'numero_devis' : 'numero_facture';
-	const dateField = isDevis ? 'date_devis' : 'date_facture';
-	const extraField = isDevis ? 'numero_demande_prix_client' : 'numero_bon_commande_client';
-	const numberLabel = isDevis
-		? t.devis.colNumeroDevis
-		: isInvoice
-			? t.facturesClient.colNumeroFacture
-			: t.facturesProforma.colNumeroFacture;
-	const dateLabel = isDevis
-		? t.devis.colDateDevis
-		: isInvoice
-			? t.facturesClient.colDateFacture
-			: t.facturesProforma.colDateFacture;
-	const extraLabel = isDevis
-		? t.devis.colNumeroDemandePrix
-		: isInvoice
-			? t.facturesClient.colNumeroBonCommande
-			: t.facturesProforma.colNumeroBonCommande;
+			: isCredit
+				? t.navigation.facturesAvoir
+				: t.navigation.facturesProforma;
+	const addRoute = isCredit
+		? FACTURE_AVOIR_ADD
+		: isDevis
+			? DEVIS_ADD
+			: isInvoice
+				? FACTURE_CLIENT_ADD
+				: FACTURE_PRO_FORMA_ADD;
+	const editRoute = isCredit
+		? FACTURE_AVOIR_EDIT
+		: isDevis
+			? DEVIS_EDIT
+			: isInvoice
+				? FACTURE_CLIENT_EDIT
+				: FACTURE_PRO_FORMA_EDIT;
+	const viewRoute = isCredit
+		? FACTURE_AVOIR_VIEW
+		: isDevis
+			? DEVIS_VIEW
+			: isInvoice
+				? FACTURE_CLIENT_VIEW
+				: FACTURE_PRO_FORMA_VIEW;
+	const numberField = isCredit ? 'numero_avoir' : isDevis ? 'numero_devis' : 'numero_facture';
+	const dateField = isCredit ? 'date_avoir' : isDevis ? 'date_devis' : 'date_facture';
+	const extraField = isCredit ? 'motif_avoir' : isDevis ? 'numero_demande_prix_client' : 'numero_bon_commande_client';
+	const numberLabel = isCredit
+		? t.facturesAvoir.colNumeroAvoir
+		: isDevis
+			? t.devis.colNumeroDevis
+			: isInvoice
+				? t.facturesClient.colNumeroFacture
+				: t.facturesProforma.colNumeroFacture;
+	const dateLabel = isCredit
+		? t.facturesAvoir.colDateAvoir
+		: isDevis
+			? t.devis.colDateDevis
+			: isInvoice
+				? t.facturesClient.colDateFacture
+				: t.facturesProforma.colDateFacture;
+	const extraLabel = isCredit
+		? t.facturesAvoir.colMotif
+		: isDevis
+			? t.devis.colNumeroDemandePrix
+			: isInvoice
+				? t.facturesClient.colNumeroBonCommande
+				: t.facturesProforma.colNumeroBonCommande;
 	const {
 		searchTerm,
 		setSearchTerm,
@@ -258,12 +288,29 @@ const CompanyDocumentsListContent = (props: Props) => {
 					),
 				].map((name) => ({ value: name, label: name })),
 			},
-			{ field: extraField, headerName: extraLabel },
+			{
+				field: extraField,
+				headerName: extraLabel,
+				...(isCredit
+					? {
+							filterSelectOptions: [
+								{ value: 'retour_marchandise', label: t.facturesAvoir.motifRetour },
+								{ value: 'erreur_facturation', label: t.facturesAvoir.motifErreur },
+								{ value: 'remise', label: t.facturesAvoir.motifRemise },
+								{ value: 'annulation', label: t.facturesAvoir.motifAnnulation },
+								{ value: 'autre', label: t.facturesAvoir.motifAutre },
+							],
+							filterForceOperator: 'equals',
+							filterHideOperator: true,
+						}
+					: {}),
+			},
+			...(isCredit ? [{ field: 'facture_origine_numero', headerName: t.facturesAvoir.colFactureOrigine }] : []),
 			{
 				field: 'statut',
 				headerName: t.documentList.colStatut,
 				filterSelectOptions: devisFactureStatusItemsList
-					.filter((item) => item.value)
+					.filter((item) => item.value && (!isCredit || item.value !== 'Facturé'))
 					.map((item) => ({ value: item.value, label: getStatutLabel(item.value, t) })),
 				filterForceOperator: 'equals',
 				filterHideOperator: true,
@@ -273,7 +320,7 @@ const CompanyDocumentsListContent = (props: Props) => {
 			{ field: dateField, headerName: dateLabel, type: 'date' },
 			{
 				field: 'mode_paiement_ids',
-				headerName: labels.filterModePaiement,
+				headerName: t.documentView.modePaiementLabel,
 				sortable: false,
 				filterSelectOptions: (modesQuery.currentData ?? []).map((mode) => ({
 					value: String(mode.id),
@@ -332,11 +379,13 @@ const CompanyDocumentsListContent = (props: Props) => {
 				createAction={
 					canEdit
 						? {
-								label: isDevis
-									? t.devis.newDevis
-									: isInvoice
-										? t.facturesClient.newFacture
-										: t.facturesProforma.newFacture,
+								label: isCredit
+									? t.facturesAvoir.newFactureAvoir
+									: isDevis
+										? t.devis.newDevis
+										: isInvoice
+											? t.facturesClient.newFacture
+											: t.facturesProforma.newFacture,
 								onPress: () =>
 									router.push({
 										pathname: addRoute,
@@ -431,7 +480,7 @@ const CompanyDocumentsListContent = (props: Props) => {
 						actions={
 							<ListCardActions
 								disabled={disabled}
-								onEdit={canEdit ? () => navigate(row, true) : undefined}
+								onEdit={canEdit && (!isCredit || row.statut === 'Brouillon') ? () => navigate(row, true) : undefined}
 								onDelete={canDelete ? () => setConfirmation({ ids: [row.id], bulk: false }) : undefined}
 								extraActions={[
 									...(canPrint
@@ -447,7 +496,7 @@ const CompanyDocumentsListContent = (props: Props) => {
 												},
 											]
 										: []),
-									...(canEdit
+									...(canEdit && !isCredit
 										? [
 												...(isDevis
 													? [
@@ -517,7 +566,29 @@ const CompanyDocumentsListContent = (props: Props) => {
 									dense
 									icon={<MaterialIcons name="tag" size={18} color={colors.slate[400]} />}
 									label={extraLabel}
-									value={row[extraField]}
+									value={isCredit ? row.motif_avoir_label : row[extraField]}
+								/>
+							)}
+							{isCredit && (
+								<InfoRow
+									dense
+									icon={<MaterialIcons name="receipt-long" size={18} color={colors.slate[400]} />}
+									label={t.facturesAvoir.colFactureOrigine}
+									value={
+										row.facture_origine && row.facture_origine_numero ? (
+											<TextButton
+												buttonText={row.facture_origine_numero}
+												disabled={disabled}
+												onClick={(event) => {
+													event.stopPropagation();
+													const route = FACTURE_CLIENT_VIEW(row.facture_origine!);
+													router.push({ ...route, params: { ...route.params, company_id: String(props.company_id) } });
+												}}
+											/>
+										) : (
+											t.facturesAvoir.freeOriginLabel
+										)
+									}
 								/>
 							)}
 							<InfoRow

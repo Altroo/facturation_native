@@ -692,7 +692,7 @@ export const en: TranslationDictionary = {
 		onlyDraftEditable: 'Only draft credit notes can be edited.',
 		selectOrigin: 'Select an original invoice',
 		selectClient: 'Select a client',
-		originRequired: 'Select an original invoice or enable free credit note mode.',
+		originRequired: 'Select an original invoice.',
 		motifRequired: 'Credit note reason is required.',
 		clientRequired: 'Client is required for a free credit note.',
 		linesRequired: 'Add at least one line to credit.',

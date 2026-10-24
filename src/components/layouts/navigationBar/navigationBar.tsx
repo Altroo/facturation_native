@@ -8,6 +8,7 @@ import {
 	FACTURE_PRO_FORMA_LIST,
 	FACTURE_CLIENT_LIST,
 	FACTURE_CLIENT_UNPAID,
+	FACTURE_AVOIR_LIST,
 	COMPANIES_LIST,
 	COMPANIES_ADD,
 	USERS_LIST,
@@ -108,7 +109,9 @@ const getNavigationMenu = (isStaff: boolean, t: TranslationDictionary) => {
 		facturesAvoir: {
 			title: t.navigation.facturesAvoir,
 			icon: <MaterialIcons name="credit-score" size={21} color={colors.slate[500]} />,
-			items: [{ title: t.navigation.facturesAvoirList, label: t.navigation.facturesAvoirList, path: undefined }],
+			items: [
+				{ title: t.navigation.facturesAvoirList, label: t.navigation.facturesAvoirList, path: FACTURE_AVOIR_LIST },
+			],
 		},
 		bonsLivraison: {
 			title: t.navigation.bonsLivraison,

@@ -146,6 +146,7 @@ export const factureClientApi = createApi({
 });
 
 export const {
+	useGetFactureClientListQuery,
 	useLazyGetFactureClientListQuery,
 	useGetFactureClientInfiniteListInfiniteQuery,
 	useGetFactureClientUnpaidInfiniteListInfiniteQuery,

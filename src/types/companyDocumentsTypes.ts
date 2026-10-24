@@ -1,11 +1,27 @@
-import type { DeviClass, FactureClass } from '@/models/classes';
-import type { DevisFormSchema, DeviFactureLineFormValues } from '@/types/devisTypes';
+import type { DeviClass, FactureClass, FactureAvoirClass } from '@/models/classes';
+import type {
+	DevisFormSchema,
+	DeviFactureLineFormValues,
+	TypeFactureLivraisonDevisStatus,
+	TypeRemiseType,
+} from '@/types/devisTypes';
 import type { PaginationResponseType } from '@/types/_initTypes';
 
-// These contracts are shared by quotes, pro-formas and client invoices. Component-only props
+// These contracts are shared by quotes, pro-formas, client invoices and credit notes. Component-only props
 // remain beside their component, as in the other native modules.
-export type DocumentType = 'devis' | 'facture-pro-forma' | 'facture-client';
-export type DocumentData = Omit<DeviClass, 'numero_devis' | 'date_devis' | 'numero_demande_prix_client'> & {
+export type DocumentType = 'devis' | 'facture-pro-forma' | 'facture-client' | 'facture-avoir';
+export type DocumentData = Omit<
+	DeviClass,
+	'numero_devis' | 'date_devis' | 'numero_demande_prix_client' | 'date_echeance'
+> & {
+	date_echeance?: string | null;
+	numero_avoir?: string;
+	date_avoir?: string;
+	facture_origine?: number | null;
+	facture_origine_numero?: string | null;
+	facture_origine_date?: string | null;
+	motif_avoir?: string;
+	motif_avoir_label?: string | null;
 	numero_devis?: string;
 	date_devis?: string;
 	numero_demande_prix_client?: string | null;
@@ -47,6 +63,40 @@ export interface FactureClientListResponseType extends PaginationResponseType<Fa
 }
 
 export type FactureClientUnpaginatedResponseType = Pick<FactureClientListResponseType, 'results' | 'stats_by_currency'>;
+
+export interface FactureAvoirListResponseType extends PaginationResponseType<FactureAvoirClass> {
+	stats_by_currency: Record<'MAD' | 'EUR' | 'USD', { total_avoirs: string; total_tva: string }>;
+}
+
+export type FactureAvoirMotif = 'retour_marchandise' | 'erreur_facturation' | 'remise' | 'annulation' | 'autre';
+export type FactureAvoirFormValues = {
+	numero_part: string;
+	year_part: string;
+	date_avoir: string;
+	facture_origine: number | null;
+	client: number | null;
+	mode_paiement: number | null;
+	motif_avoir: FactureAvoirMotif | '';
+	numero_bon_commande_client: string;
+	remarque: string;
+	fournisseur: string;
+	fournisseur_email: string;
+	statut: TypeFactureLivraisonDevisStatus;
+	remise_type: TypeRemiseType;
+	remise: number;
+	devise: string;
+	lignes: DeviFactureLineFormValues[];
+	globalError?: string;
+};
+
+export type FactureAvoirFromFactureResponse = Partial<FactureAvoirClass> & {
+	facture_total?: string;
+	already_credited_total?: string;
+};
+
+export type FactureAvoirWriteData = Omit<Partial<FactureAvoirClass>, 'lignes'> & {
+	lignes?: DeviFactureLineFormValues[];
+};
 
 export interface FactureForPayment {
 	id: number;

@@ -15,7 +15,32 @@ import {
 	deviSchema,
 	devisLivraisonFactureLineSchema,
 	reglementSchema,
+	factureAvoirSchema,
 } from './formValidationSchemas';
+
+describe('factureAvoirSchema', () => {
+	const credit = {
+		date_avoir: '2026-10-24',
+		facture_origine: 12,
+		client: 3,
+		motif_avoir: 'remise',
+		remise: 0,
+		lignes: [{ article: 4, prix_achat: 80, prix_vente: '55,50', quantity: '1,5', remise: '2,50', remise_type: 'Fixe' }],
+	};
+	it('allows refunds below cost and parses decimal commas without changing the web credit fields', () => {
+		expect(factureAvoirSchema.parse(credit).lignes).toEqual([
+			expect.objectContaining({ article: 4, prix_vente: 55.5, quantity: 1.5, remise: 2.5 }),
+		]);
+	});
+	it.each([0, -1, 'invalid', Infinity])('rejects invalid credit quantities %s', (quantity) => {
+		expect(factureAvoirSchema.safeParse({ ...credit, lignes: [{ ...credit.lignes[0], quantity }] }).success).toBe(
+			false,
+		);
+	});
+	it.each(['', '2026-02-30', 'not a date'])('requires a valid credit date %s', (date_avoir) => {
+		expect(factureAvoirSchema.safeParse({ ...credit, date_avoir }).success).toBe(false);
+	});
+});
 
 describe('reglementSchema', () => {
 	const payment = {

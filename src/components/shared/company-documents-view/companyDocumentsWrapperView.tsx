@@ -20,7 +20,11 @@ import {
 	FACTURE_PRO_FORMA_LIST,
 	FACTURE_CLIENT_EDIT,
 	FACTURE_CLIENT_LIST,
+	FACTURE_AVOIR_EDIT,
+	FACTURE_AVOIR_LIST,
+	FACTURE_CLIENT_VIEW,
 } from '@/utils/routes';
+import TextButton from '@/components/nativeElements/buttons/textButton/textButton';
 import InvoicePaymentSummary from '@/components/shared/facture-client/invoicePaymentSummary';
 import { colors } from '@/utils/themes';
 import type { DeviFactureLineFormValues } from '@/types/devisTypes';
@@ -57,17 +61,32 @@ const CompanyDocumentViewContent = (props: Props) => {
 	const { t } = useLanguage();
 	const isDevis = props.documentType === 'devis';
 	const isInvoice = props.documentType === 'facture-client';
-	const labels = isDevis ? t.devis : isInvoice ? t.facturesClient : t.facturesProforma;
-	const listRoute = isDevis ? DEVIS_LIST : isInvoice ? FACTURE_CLIENT_LIST : FACTURE_PRO_FORMA_LIST;
-	const editRoute = isDevis ? DEVIS_EDIT : isInvoice ? FACTURE_CLIENT_EDIT : FACTURE_PRO_FORMA_EDIT;
-	const numberField = isDevis ? 'numero_devis' : 'numero_facture';
-	const dateField = isDevis ? 'date_devis' : 'date_facture';
+	const isCredit = props.documentType === 'facture-avoir';
+	const labels = isCredit ? t.facturesAvoir : isDevis ? t.devis : isInvoice ? t.facturesClient : t.facturesProforma;
+	const listRoute = isCredit
+		? FACTURE_AVOIR_LIST
+		: isDevis
+			? DEVIS_LIST
+			: isInvoice
+				? FACTURE_CLIENT_LIST
+				: FACTURE_PRO_FORMA_LIST;
+	const editRoute = isCredit
+		? FACTURE_AVOIR_EDIT
+		: isDevis
+			? DEVIS_EDIT
+			: isInvoice
+				? FACTURE_CLIENT_EDIT
+				: FACTURE_PRO_FORMA_EDIT;
+	const numberField = isCredit ? 'numero_avoir' : isDevis ? 'numero_devis' : 'numero_facture';
+	const dateField = isCredit ? 'date_avoir' : isDevis ? 'date_devis' : 'date_facture';
 	const { onSuccess, onError } = useToast();
 	const token = useInitAccessToken();
 	const companies = useAppSelector(getUserCompaniesState);
 	const company = companies.find((item) => item.id === props.company_id);
 	const canView = !!token && !!company && ['Caissier', 'Lecture', 'Comptable', 'Commercial'].includes(company.role);
-	const canEdit = company?.role === 'Caissier' || company?.role === 'Commercial';
+	const canEdit =
+		(company?.role === 'Caissier' || company?.role === 'Commercial') &&
+		(!isCredit || props.query.currentData?.statut === 'Brouillon');
 	const canDelete = company?.role === 'Caissier';
 	const canPrint = canView && company?.role !== 'Lecture';
 	const query = props.query;
@@ -90,7 +109,7 @@ const CompanyDocumentViewContent = (props: Props) => {
 	const [showPdf, setShowPdf] = useState(false);
 	const pending = useRef(false);
 	const validating = useRef(false);
-	const isNectar = isNectarRaisonSociale(company?.raison_sociale);
+	const isNectar = !isCredit && isNectarRaisonSociale(company?.raison_sociale);
 	const icon = (name: ComponentProps<typeof MaterialIcons>['name']) => (
 		<MaterialIcons name={name} size={20} color={colors.slate[400]} />
 	);
@@ -182,6 +201,28 @@ const CompanyDocumentViewContent = (props: Props) => {
 				<SectionCard title={t.documentView.documentInfoSection} icon="description">
 					<DocumentStatus statut={quote.statut} />
 					<InfoRow icon={icon('tag')} label={labels.documentNumberLabel} value={quote[numberField]} />
+					{isCredit && (
+						<>
+							<InfoRow
+								icon={icon('receipt-long')}
+								label={t.facturesAvoir.originLabel}
+								value={
+									quote.facture_origine && quote.facture_origine_numero ? (
+										<TextButton
+											buttonText={quote.facture_origine_numero}
+											onClick={() => {
+												const route = FACTURE_CLIENT_VIEW(quote.facture_origine!);
+												router.push({ ...route, params: { ...route.params, company_id: String(props.company_id) } });
+											}}
+										/>
+									) : (
+										t.facturesAvoir.freeOriginLabel
+									)
+								}
+							/>
+							<InfoRow icon={icon('description')} label={t.facturesAvoir.motifLabel} value={quote.motif_avoir_label} />
+						</>
+					)}
 					<InfoRow
 						icon={icon('event')}
 						label={labels.documentDateLabel}
@@ -197,7 +238,7 @@ const CompanyDocumentViewContent = (props: Props) => {
 						<InfoRow
 							icon={icon('event-available')}
 							label={t.documentForm.fieldDateEcheanceLabel}
-							value={formatDate(quote.date_echeance, false)}
+							value={formatDate(quote.date_echeance ?? null, false)}
 						/>
 					)}
 					{canPrint && (
@@ -233,11 +274,13 @@ const CompanyDocumentViewContent = (props: Props) => {
 								? t.devis.fieldNumeroDemandePrix
 								: isInvoice
 									? t.facturesClient.termsSecondLabel
-									: t.facturesProforma.termsSecondLabel
+									: isCredit
+										? t.facturesAvoir.termsSecondLabel
+										: t.facturesProforma.termsSecondLabel
 						}
 						value={isDevis ? quote.numero_demande_prix_client : quote.numero_bon_commande_client}
 					/>
-					{!isDevis && (
+					{!isDevis && !isCredit && (
 						<InfoRow
 							icon={icon('notes')}
 							label={t.documentForm.fieldTermesPaiementLabel}
