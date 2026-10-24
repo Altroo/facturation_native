@@ -10,6 +10,7 @@ import {
 } from 'expo-flash-datagrid';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import SectionCard from '@/components/shared/sectionCard/sectionCard';
+import EmptyState from '@/components/shared/emptyState/emptyState';
 import ListCard from '@/components/shared/listCard/listCard';
 import InfoRow from '@/components/shared/infoRow/infoRow';
 import EntityImage from '@/components/shared/entityImage/entityImage';
@@ -138,9 +139,7 @@ const LinesGrid = (props: Props) => {
 				/>
 			</SectionCard>
 			{!visibleRows.length && (
-				<Text className="py-4 text-center font-sans text-slate-500 dark:text-slate-400">
-					{props.rows.length ? t.common.noResults : t.common.noData}
-				</Text>
+				<EmptyState message={props.rows.length ? t.common.noResults : t.common.noData} />
 			)}
 			{visibleRows.map(({ line, index }) => {
 				const article = props.articles.find((item) => item.id === line.article);

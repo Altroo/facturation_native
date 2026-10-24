@@ -33,8 +33,8 @@ const DetailsPageActions = (props: Props) => {
 					active={!props.disabled && !props.loading}
 					inverted={action.danger}
 					danger={action.danger}
-					iconOnly={action.danger}
-					cssClass={action.danger ? undefined : 'flex-1'}
+					iconOnly={action.danger && !!props.onEdit}
+					cssClass={action.danger && props.onEdit ? undefined : 'flex-1'}
 					onClick={action.onClick}
 					startIcon={
 						<MaterialIcons name={action.icon} size={20} color={action.danger ? colors.danger : colors.brand} />

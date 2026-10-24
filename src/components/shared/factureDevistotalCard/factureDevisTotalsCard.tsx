@@ -18,7 +18,7 @@ const FactureDevisTotalsCard = (props: Props) => {
 	const { t } = useLanguage();
 	const money = (amount: number, currency = props.devise ?? 'MAD') =>
 		`${formatNumberWithSpaces(amount, 2)} ${currency}`;
-	const discounted = props.showDiscountTotal !== false && props.totals.totalTTCApresRemise !== props.totals.totalTTC;
+	const showDiscountTotal = props.showDiscountTotal !== false;
 	return (
 		<SectionCard title={t.totalsCard.title} icon="receipt-long">
 			<InfoRow
@@ -48,7 +48,7 @@ const FactureDevisTotalsCard = (props: Props) => {
 				label={t.totalsCard.totalTVA}
 				value={money(props.totals.totalTVA)}
 			/>
-			{discounted && (
+			{showDiscountTotal && (
 				<InfoRow
 					dense
 					inline
@@ -60,10 +60,10 @@ const FactureDevisTotalsCard = (props: Props) => {
 			{props.children}
 			<View className="flex-row flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-3 dark:border-slate-700">
 				<Text className="min-w-0 flex-1 font-poppins-medium text-xs text-ink dark:text-slate-100">
-					{discounted ? t.totalsCard.totalTTCApresRemise : t.totalsCard.totalTTC}
+					{showDiscountTotal ? t.totalsCard.totalTTCApresRemise : t.totalsCard.totalTTC}
 				</Text>
 				<Text selectable className="shrink font-poppins-semibold text-xl text-brand dark:text-blue-300">
-					{money(props.showDiscountTotal === false ? props.totals.totalTTC : props.totals.totalTTCApresRemise)}
+					{money(showDiscountTotal ? props.totals.totalTTCApresRemise : props.totals.totalTTC)}
 				</Text>
 			</View>
 		</SectionCard>

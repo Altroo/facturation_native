@@ -29,10 +29,11 @@ it('hides purchase and discount summaries for Nectar without leaving empty rows'
 	expect(screen.getByText(t.totalsCard.totalTTC)).toBeOnTheScreen();
 });
 
-it('shows one final amount when no global discount changes the total', async () => {
+it('keeps TTC and TTC after discount visible even when both amounts are equal, like the web', async () => {
 	await render(<FactureDevisTotalsCard totals={{ ...totals, totalTTCApresRemise: totals.totalTTC }} />);
-	expect(screen.getAllByText('120,00 MAD')).toHaveLength(1);
-	expect(screen.queryByText(t.totalsCard.totalTTCApresRemise)).toBeNull();
+	expect(screen.getAllByText('120,00 MAD')).toHaveLength(2);
+	expect(screen.getByText(t.totalsCard.totalTTCApresRemise)).toBeOnTheScreen();
+	expect(screen.getByText(t.totalsCard.totalTTC)).toBeOnTheScreen();
 	expect(screen.getByText(t.totalsCard.totalHT)).toBeOnTheScreen();
 	expect(screen.getByText(t.totalsCard.totalTVA)).toBeOnTheScreen();
 });
