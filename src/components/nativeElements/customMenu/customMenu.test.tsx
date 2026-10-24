@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
-import { Platform } from 'react-native';
+import { Platform, Text } from 'react-native';
 import CustomMenu from './customMenu';
 
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
@@ -15,6 +15,19 @@ beforeEach(() => {
 	nativeMethods.measureInWindow.mockImplementation((callback) => callback(280, 180, 44, 44));
 });
 afterEach(() => jest.restoreAllMocks());
+
+it('allows the shared writing assistant to supply its action icon', async () => {
+	await render(
+		<CustomMenu
+			label="Assistant"
+			icon={<Text>Assistant icon</Text>}
+			actions={[{ label: 'Translate', onClick: jest.fn() }]}
+		/>,
+	);
+	expect(screen.getByText('Assistant icon')).toBeOnTheScreen();
+	await fireEvent.press(screen.getByRole('button', { name: 'Assistant' }));
+	expect(screen.getByRole('menuitem', { name: 'Translate' })).toBeOnTheScreen();
+});
 
 it('shows an anchored menu and waits for iOS dismissal before executing its action once', async () => {
 	jest.replaceProperty(Platform, 'OS', 'ios');

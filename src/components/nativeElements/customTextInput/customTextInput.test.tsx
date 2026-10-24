@@ -3,8 +3,46 @@ import type { TextInputInstance } from 'react-native';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { Text } from 'react-native';
 import CustomTextInput from './customTextInput';
+import AiAssistantControl from '@/components/shared/aiAssistantControl/aiAssistantControl';
 
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
+jest.mock('@/components/shared/aiAssistantControl/aiAssistantControl', () => ({
+	__esModule: true,
+	default: jest.fn(() => null),
+}));
+
+it('connects eligible native field identifiers to the same assistant without bypassing Formik', async () => {
+	jest.mocked(AiAssistantControl).mockClear();
+	const onChangeText = jest.fn();
+	await render(
+		<CustomTextInput
+			nativeID="designation"
+			label="Designation"
+			value="Source"
+			maxLength={120}
+			aiContext="article"
+			onChangeText={onChangeText}
+		/>,
+	);
+	expect(AiAssistantControl).toHaveBeenCalled();
+	const props = jest.mocked(AiAssistantControl).mock.calls[0][0];
+	expect(props).toMatchObject({ value: 'Source', context: 'article', maxLength: 120 });
+	props.onApply('Suggestion');
+	expect(onChangeText).toHaveBeenCalledWith('Suggestion');
+});
+
+it.each([
+	{ nativeID: 'email', keyboardType: 'email-address' as const },
+	{ nativeID: 'designation', disabled: true },
+	{ nativeID: 'designation', readOnly: true },
+	{ nativeID: 'designation', secureTextEntry: true },
+	{ nativeID: 'designation', ai: false },
+	{ nativeID: 'designation', keyboardType: 'numeric' as const },
+])('excludes identifiers, locked fields, passwords and explicit opt-outs: %j', async (props) => {
+	jest.mocked(AiAssistantControl).mockClear();
+	await render(<CustomTextInput {...props} value="Source" onChangeText={jest.fn()} />);
+	expect(AiAssistantControl).not.toHaveBeenCalled();
+});
 it('shows the original required marker without changing the input accessible name', async () => {
 	await render(<CustomTextInput label="Email" required value="" />);
 	expect(screen.getByText('Email *')).toBeOnTheScreen();

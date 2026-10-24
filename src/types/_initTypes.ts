@@ -2,6 +2,7 @@ import type { WSMaintenanceBootstrap } from '@/types/wsTypes';
 
 export type ApiErrorResponseType = {
 	status_code: number;
+	code?: string;
 	message: string;
 	details?: Record<string, Array<string> | string>;
 };

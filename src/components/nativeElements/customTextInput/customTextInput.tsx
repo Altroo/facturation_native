@@ -11,6 +11,8 @@ import {
 } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { colors, inputTextStyle } from '@/utils/themes';
+import AiAssistantControl from '@/components/shared/aiAssistantControl/aiAssistantControl';
+import { isAiTextField } from '@/utils/helpers';
 
 export type CustomTextInputProps = Omit<TextInputProps, 'editable'> & {
 	ref?: Ref<TextInputInstance>;
@@ -24,6 +26,8 @@ export type CustomTextInputProps = Omit<TextInputProps, 'editable'> & {
 	cssClass?: string;
 	compact?: boolean;
 	hideLockIcon?: boolean;
+	ai?: boolean;
+	aiContext?: string;
 };
 
 const CustomTextInput = (props: CustomTextInputProps) => {
@@ -38,6 +42,8 @@ const CustomTextInput = (props: CustomTextInputProps) => {
 		cssClass,
 		compact,
 		hideLockIcon,
+		ai,
+		aiContext,
 		style,
 		...restOfProps
 	} = props;
@@ -50,6 +56,14 @@ const CustomTextInput = (props: CustomTextInputProps) => {
 		? { textAlignVertical: 'top' as const, lineHeight: 24, height: Math.ceil(lines * 24 * fontScale + 24) }
 		: undefined;
 	const scrollableValue = disabled && !props.multiline;
+	const showAssistant =
+		ai !== false &&
+		!disabled &&
+		!props.readOnly &&
+		!props.secureTextEntry &&
+		!!props.onChangeText &&
+		(!props.keyboardType || props.keyboardType === 'default') &&
+		isAiTextField(props.id ?? props.nativeID ?? '', props.multiline ? 'textarea' : 'text');
 	// Clip native text at the input bounds so long values cannot cover icons or
 	// neighbouring fields. Keep the complete value and native scrolling intact.
 	const input = (
@@ -120,6 +134,14 @@ const CustomTextInput = (props: CustomTextInputProps) => {
 				>
 					{helperText}
 				</Text>
+			)}
+			{showAssistant && (
+				<AiAssistantControl
+					value={props.value ?? ''}
+					context={aiContext ?? 'form'}
+					maxLength={props.maxLength}
+					onApply={(value) => props.onChangeText?.(value)}
+				/>
 			)}
 		</View>
 	);

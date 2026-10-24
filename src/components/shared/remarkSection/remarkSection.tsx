@@ -15,6 +15,7 @@ const RemarkSection = (props: Props) => {
 		<SectionCard title={title ?? label} icon="notes">
 			<CustomTextInput
 				{...inputProps}
+				nativeID={props.nativeID ?? 'remarque'}
 				label={undefined}
 				accessibilityLabel={props.accessibilityLabel ?? label}
 				placeholder={props.placeholder ?? label}

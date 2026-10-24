@@ -12,6 +12,7 @@ import { deviApi } from '@/store/services/devi';
 import { factureProFormaApi } from '@/store/services/factureProForma';
 import { factureClientApi } from '@/store/services/factureClient';
 import { reglementApi } from '@/store/services/reglement';
+import { aiAssistantApi } from '@/store/services/aiAssistant';
 import {
 	citiesApi,
 	marqueApi,
@@ -40,6 +41,7 @@ const rootReducer = combineReducers({
 	[factureProFormaApi.reducerPath]: factureProFormaApi.reducer,
 	[factureClientApi.reducerPath]: factureClientApi.reducer,
 	[reglementApi.reducerPath]: reglementApi.reducer,
+	[aiAssistantApi.reducerPath]: aiAssistantApi.reducer,
 	[modePaiementApi.reducerPath]: modePaiementApi.reducer,
 	[marqueApi.reducerPath]: marqueApi.reducer,
 	[categorieApi.reducerPath]: categorieApi.reducer,
@@ -77,6 +79,7 @@ export const makeStore = (): SagaStore => {
 					factureProFormaApi.middleware,
 					factureClientApi.middleware,
 					reglementApi.middleware,
+					aiAssistantApi.middleware,
 					modePaiementApi.middleware,
 					marqueApi.middleware,
 					categorieApi.middleware,

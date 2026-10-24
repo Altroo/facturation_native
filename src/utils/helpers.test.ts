@@ -26,6 +26,7 @@ import { AxiosError, AxiosHeaders, type AxiosResponse, type InternalAxiosRequest
 import {
 	calculateDocumentTotals,
 	getStatutLabel,
+	isAiTextField,
 	calculateSalePriceHT,
 	calculateSalePriceTTC,
 	runWithCleanup,
@@ -237,6 +238,20 @@ it('keeps raw transport errors available to refresh while normalizing outward ne
 	});
 });
 
+it('preserves structured assistant failures like the web instead of masking them as network outages', async () => {
+	const data = {
+		status_code: 503,
+		error: { code: 'ai_assistant_disabled' },
+		message: "L'assistant IA n'est pas disponible.",
+		details: {},
+	};
+	privateAdapter.mockImplementation(async (config) => {
+		throw rejected(config, 503, data);
+	});
+	await expect(isAuthenticatedInstance().post('/ai/assist/', {})).rejects.toEqual({
+		error: { status_code: 503, code: 'ai_assistant_disabled', message: data.message, details: {} },
+	});
+});
 it('keeps a new login independent of an old outward request waiting for refresh', async () => {
 	let finish!: (value: AxiosResponse) => void;
 	publicAdapter.mockImplementationOnce(
@@ -942,4 +957,24 @@ it('maps invoice notification URLs while retaining company scope', () => {
 	});
 	expect(getNotificationDestination('/dashboard/facture-client/unpaid')).toBe('/facture-client/unpaid');
 	expect(getNotificationDestination('/dashboard/facture-client/7')).toBe('/facture-client');
+});
+
+describe('writing field eligibility', () => {
+	it.each(['designation', 'remarque', 'description', 'libelle', 'observations', 'termes_paiement'])(
+		'includes the reviewed web field %s',
+		(name) => {
+			expect(isAiTextField(name, 'text')).toBe(true);
+			expect(isAiTextField(name, 'textarea')).toBe(true);
+		},
+	);
+	it.each(['email', 'password', 'ICE', 'reference', 'raison_sociale', 'nom', 'prenom', 'unknown'])(
+		'excludes %s',
+		(name) => {
+			expect(isAiTextField(name, 'text')).toBe(false);
+		},
+	);
+	it('does not enable assistance for numeric or password fields', () => {
+		expect(isAiTextField('designation', 'number')).toBe(false);
+		expect(isAiTextField('remarque', 'password')).toBe(false);
+	});
 });

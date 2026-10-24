@@ -7,6 +7,7 @@ import { cardShadows, colors, surfaceStyles } from '@/utils/themes';
 
 type Props = {
 	label: string;
+	icon?: ReactNode;
 	disabled?: boolean;
 	actions: Array<{
 		label: string;
@@ -82,7 +83,9 @@ const CustomMenu = (props: Props) => {
 						(props.disabled ? 'opacity-50' : '')
 					}
 				>
-					<MaterialIcons name="more-vert" size={25} color={mode === 'dark' ? colors.slate[300] : colors.slate[600]} />
+					{props.icon ?? (
+						<MaterialIcons name="more-vert" size={25} color={mode === 'dark' ? colors.slate[300] : colors.slate[600]} />
+					)}
 				</Pressable>
 			</View>
 			<Modal

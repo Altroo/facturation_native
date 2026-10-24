@@ -1,5 +1,7 @@
 declare namespace NodeJS {
 	interface ProcessEnv {
+		EXPO_PUBLIC_AI_ASSISTANT_ENABLED: string;
+		EXPO_PUBLIC_AI_ASSISTANT: string;
 		EXPO_PUBLIC_DEVIS_ROOT: string;
 		EXPO_PUBLIC_DEVIS_LIST: string;
 		EXPO_PUBLIC_DEVIS_GENERATE_NUM_DEVIS: string;

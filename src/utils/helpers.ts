@@ -40,7 +40,7 @@ import type { TranslationDictionary } from '@/types/languageTypes';
 import type { ArticleClass } from '@/models/classes';
 import type { SalePriceBasis } from '@/types/articleTypes';
 import { reloadAppAsync } from 'expo';
-import { NECTAR_RAISON_SOCIALE } from '@/utils/rawData';
+import { aiWritingFields, NECTAR_RAISON_SOCIALE } from '@/utils/rawData';
 import axios, { type AxiosInstance, type AxiosResponse } from 'axios';
 import type { APIContentTypeInterface, ApiErrorResponseType } from '@/types/_initTypes';
 import { auth, publicInstance, InvalidSessionError } from '@/auth';
@@ -51,11 +51,21 @@ const apiFailure = (failure: unknown, authenticated: boolean) => {
 	const error = failure as {
 		error?: ApiErrorResponseType;
 		message?: string;
-		response?: { status?: number; data?: ApiErrorResponseType & { detail?: string } };
+		response?: { status?: number; data?: ApiErrorResponseType & { detail?: string; error?: { code?: string } } };
 	} | null;
 	if (error?.error) return failure;
 	const status = error?.response?.status ?? 0;
 	const data = error?.response?.data;
+	// Preserve the web's structured service failures before the generic outage fallback.
+	if (typeof data?.error?.code === 'string')
+		return {
+			error: {
+				status_code: status,
+				code: data.error.code,
+				message: data.message || error?.message || 'Erreur serveur.',
+				details: data.details || {},
+			},
+		};
 	if (authenticated && status >= 500)
 		return {
 			error: {
@@ -278,6 +288,9 @@ export const formatNumberWithSpaces = (value: string | number | null | undefined
 		})
 		.replace(/[\u00a0\u202f]/g, '\u00a0');
 };
+
+export const isAiTextField = (name: string, type: string) =>
+	(type === 'text' || type === 'textarea') && aiWritingFields.has(name);
 
 // Consolidated validation helper
 export const ValidatePricesHelper = {
