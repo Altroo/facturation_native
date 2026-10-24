@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { Platform } from 'react-native';
 import { translations } from '@/translations';
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
 jest.mock('expo-image', () => ({ Image: jest.requireActual('react-native').Image }));
@@ -17,7 +18,9 @@ jest.mock('@/utils/hooks', () => ({
 	useLanguage: () => ({ t: jest.requireActual('@/translations').translations.fr }),
 	useToast: () => ({ onError: mockError }),
 }));
+afterEach(() => jest.restoreAllMocks());
 beforeEach(() => {
+	jest.replaceProperty(Platform, 'OS', 'ios');
 	jest.clearAllMocks();
 	mockOpen.mockResolvedValue(true);
 });
@@ -73,4 +76,28 @@ it('offers only languages for delivery notes and waits for sheet dismissal befor
 	await waitFor(() => expect(mockOpen).toHaveBeenCalledWith('normal', 'nl'));
 	await act(() => onDismiss());
 	expect(mockOpen).toHaveBeenCalledTimes(1);
+});
+
+it('uses the just-tapped delivery language immediately on Android without waiting for onDismiss', async () => {
+	jest.replaceProperty(Platform, 'OS', 'android');
+	await render(<DocumentPdfModal normal onClose={mockClose} onOpen={mockOpen} />);
+	await fireEvent.press(screen.getByRole('radio', { name: t.pdf.dutch }));
+	await waitFor(() => expect(mockOpen).toHaveBeenCalledWith('normal', 'nl'));
+	expect(mockClose).toHaveBeenCalledTimes(1);
+});
+it('keeps immediate French delivery printing available even though French is initially selected', async () => {
+	await render(<DocumentPdfModal normal onClose={mockClose} onOpen={mockOpen} />);
+	const onDismiss = screen.getByTestId('document-pdf-modal').props.onDismiss;
+	await fireEvent.press(screen.getByRole('radio', { name: t.pdf.french }));
+	await act(() => onDismiss());
+	expect(mockOpen).toHaveBeenCalledWith('normal', 'fr');
+});
+it('handles a rejected delivery preview through the same error toast and close path', async () => {
+	mockOpen.mockRejectedValue(new Error('Viewer unavailable'));
+	await render(<DocumentPdfModal normal onClose={mockClose} onOpen={mockOpen} />);
+	const onDismiss = screen.getByTestId('document-pdf-modal').props.onDismiss;
+	await fireEvent.press(screen.getByRole('radio', { name: t.pdf.english }));
+	await act(() => onDismiss());
+	await waitFor(() => expect(mockError).toHaveBeenCalledWith(t.errors.documentOpenError));
+	expect(mockClose).toHaveBeenCalledTimes(1);
 });

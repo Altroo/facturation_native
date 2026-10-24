@@ -2,6 +2,15 @@ import { jest } from '@jest/globals';
 import type { Middleware } from '@reduxjs/toolkit';
 import { makeStore, type SagaStore, type RootState, type AppDispatch } from './store';
 import { rootSaga } from '@/store/sagas';
+import { auth } from '@/auth';
+import { bonDeLivraisonApi } from '@/store/services/bonDeLivraison';
+import { livreParApi } from '@/store/services/parameter';
+import type { AxiosResponse, InternalAxiosRequestConfig } from 'axios';
+
+jest.mock('@/auth', () => {
+	const { create } = jest.requireActual<typeof import('axios')>('axios');
+	return { ...jest.requireActual<typeof import('@/auth')>('@/auth'), auth: { instance: create() } };
+});
 
 // --- Mocks for reducers and RTK Query services ---
 jest.mock('@/store/slices/_initSlice', () => ({
@@ -121,4 +130,42 @@ describe('Redux Saga Store', () => {
 		const result = store.dispatch(action);
 		expect(result).toEqual(action);
 	});
+});
+
+it('runs delivery-note and delivery-person requests through the middleware registered in makeStore', async () => {
+	jest.useFakeTimers();
+	const previousAdapter = auth.instance.defaults.adapter;
+	const requests: InternalAxiosRequestConfig[] = [];
+	auth.instance.defaults.adapter = async (config): Promise<AxiosResponse> => {
+		requests.push(config);
+		return {
+			config,
+			headers: {},
+			status: 200,
+			statusText: 'OK',
+			data:
+				config.url === process.env.EXPO_PUBLIC_BON_DE_LIVRAISON_LIST
+					? [{ id: 7, numero_bon_livraison: 'BL7/26' }]
+					: [{ id: 6, nom: 'Livreur Atlas', company: 5 }],
+		};
+	};
+	try {
+		await store.dispatch(bonDeLivraisonApi.endpoints.getBonDeLivraisonList.initiate({ company_id: 5 })).unwrap();
+		await store.dispatch(livreParApi.endpoints.getLivreParList.initiate({ company_id: 5 })).unwrap();
+		expect(store.getState().bonDeLivraisonApi.config.middlewareRegistered).toBe(true);
+		expect(store.getState().livreParApi.config.middlewareRegistered).toBe(true);
+		expect(bonDeLivraisonApi.endpoints.getBonDeLivraisonList.select({ company_id: 5 })(store.getState()).data).toEqual([
+			{ id: 7, numero_bon_livraison: 'BL7/26' },
+		]);
+		expect(livreParApi.endpoints.getLivreParList.select({ company_id: 5 })(store.getState()).data).toEqual([
+			{ id: 6, nom: 'Livreur Atlas', company: 5 },
+		]);
+		expect(requests.map((config) => config.params.company_id)).toEqual([5, 5]);
+	} finally {
+		store.dispatch(bonDeLivraisonApi.util.resetApiState());
+		store.dispatch(livreParApi.util.resetApiState());
+		await jest.runOnlyPendingTimersAsync();
+		jest.useRealTimers();
+		auth.instance.defaults.adapter = previousAdapter;
+	}
 });

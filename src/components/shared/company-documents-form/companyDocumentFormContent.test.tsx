@@ -38,6 +38,10 @@ jest.mock('@/store/services/parameter', () => ({
 	useAddModePaiementMutation: () => [jest.fn(), {}],
 	useEditModePaiementMutation: () => [jest.fn(), {}],
 	useDeleteModePaiementMutation: () => [jest.fn(), {}],
+	useGetLivreParListQuery: () => ({ currentData: [{ id: 6, nom: 'Livreur Atlas' }] }),
+	useAddLivreParMutation: () => [jest.fn(), {}],
+	useEditLivreParMutation: () => [jest.fn(), {}],
+	useDeleteLivreParMutation: () => [jest.fn(), {}],
 	useGetCategorieListQuery: () => ({ currentData: [] }),
 	useGetEmplacementListQuery: () => ({ currentData: [] }),
 	useGetMarqueListQuery: () => ({ currentData: [] }),
@@ -96,7 +100,9 @@ const props = (): Props => ({
 	patchStatut: jest.fn(({ data }) => ({ unwrap: async () => data })),
 	numberQuery: {
 		isError: false,
-		refetch: jest.fn(() => ({ unwrap: async () => ({ numero_devis: '002/26', numero_facture: '002/26' }) })),
+		refetch: jest.fn(() => ({
+			unwrap: async () => ({ numero_devis: '002/26', numero_facture: '002/26', numero_bon_livraison: '002/26' }),
+		})),
 	},
 });
 const setup = (data: Props) =>
@@ -107,7 +113,7 @@ const selectClient = async () => {
 };
 beforeEach(() => jest.clearAllMocks());
 
-it.each(['devis', 'facture-pro-forma', 'facture-client'] as const)(
+it.each(['devis', 'facture-pro-forma', 'facture-client', 'bon-de-livraison'] as const)(
 	'creates %s with the correct API fields and destination',
 	async (documentType) => {
 		const data = { ...props(), documentType };
@@ -117,7 +123,11 @@ it.each(['devis', 'facture-pro-forma', 'facture-client'] as const)(
 		await waitFor(() => expect(data.addData).toHaveBeenCalledTimes(1));
 		expect(data.addData).toHaveBeenCalledWith({
 			data: expect.objectContaining({
-				[documentType === 'devis' ? 'numero_devis' : 'numero_facture']: '001/26',
+				[documentType === 'devis'
+					? 'numero_devis'
+					: documentType === 'bon-de-livraison'
+						? 'numero_bon_livraison'
+						: 'numero_facture']: '001/26',
 				client: 3,
 				devise: 'MAD',
 			}),
@@ -213,4 +223,112 @@ it('updates an existing article from the picker without duplicating it or resett
 			],
 		}),
 	});
+});
+
+const delivery: DocumentData = {
+	...document,
+	numero_bon_livraison: '001/26',
+	date_bon_livraison: '2026-10-24',
+	livre_par: 6,
+	fournisseur: 'Fournisseur Atlas',
+	fournisseur_email: 'supplier@example.invalid',
+	lignes: [
+		{
+			id: 9,
+			article: 4,
+			article_designation: 'Desk',
+			designation: 'Desk',
+			prix_achat: 40,
+			devise_prix_achat: 'MAD',
+			prix_vente: 100,
+			devise_prix_vente: 'MAD',
+			quantity: 2,
+			remise_type: '',
+			remise: 0,
+		},
+	],
+};
+it('resets a delivery number using its own response field without losing the purchase-order reference', async () => {
+	const data = { ...props(), documentType: 'bon-de-livraison' as const };
+	await setup(data);
+	await fireEvent.changeText(screen.getByLabelText(t.bonsLivraison.fieldNumeroBonCommande), 'BC-DRAFT');
+	await fireEvent.press(screen.getByRole('button', { name: t.documentForm.resetNumero }));
+	await waitFor(() => expect(screen.getByLabelText(t.documentForm.fieldNumeroLabel)).toHaveProp('value', '002'));
+	expect(screen.getByLabelText(t.bonsLivraison.fieldNumeroBonCommande)).toHaveProp('value', 'BC-DRAFT');
+});
+it.each([undefined, 12])(
+	'locks the delivery supplier only when linked to an invoice: %s',
+	async (source_facture_client) => {
+		await setup({
+			...props(),
+			documentType: 'bon-de-livraison',
+			id: 7,
+			rawData: { ...delivery, source_facture_client },
+		});
+		expect(screen.getByLabelText(t.logistique.fieldFournisseur)).toHaveProp(
+			'editable',
+			source_facture_client === undefined,
+		);
+		expect(screen.getByLabelText(t.logistique.fieldSupplierEmail)).toHaveProp(
+			'editable',
+			source_facture_client === undefined,
+		);
+		expect(screen.queryByLabelText(t.documentForm.fieldTermesPaiementLabel)).toBeNull();
+		expect(screen.getByDisplayValue('Livreur Atlas')).toBeOnTheScreen();
+	},
+);
+it.each(['Accepté', 'Facturé'] as const)(
+	'keeps stock-booked %s delivery lines read-only while saving its header',
+	async (statut) => {
+		const data = props();
+		await setup({ ...data, documentType: 'bon-de-livraison', id: 7, rawData: { ...delivery, statut } });
+		expect(screen.getByText(t.bonsLivraison.stockPostedLinesHint)).toBeOnTheScreen();
+		expect(screen.queryByLabelText(t.documentForm.colQuantite)).toBeNull();
+		expect(screen.queryByRole('button', { name: t.documentForm.addArticlesBtn })).toBeNull();
+		await fireEvent.changeText(screen.getByLabelText(t.bonsLivraison.fieldNumeroBonCommande), 'BC-UPDATED');
+		await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
+		await waitFor(() => expect(data.updateData).toHaveBeenCalledTimes(1));
+		const payload = jest.mocked(data.updateData).mock.calls[0]![0].data;
+		expect(payload).toMatchObject({
+			numero_bon_livraison: '001/26',
+			numero_bon_commande_client: 'BC-UPDATED',
+			livre_par: 6,
+		});
+		expect(payload).not.toHaveProperty('lignes');
+		expect(payload).not.toHaveProperty('termes_paiement');
+	},
+);
+it('blocks stock posting until changed lines are saved, then permits the same status change', async () => {
+	const data = props();
+	await setup({ ...data, documentType: 'bon-de-livraison', id: 7, rawData: delivery });
+	await fireEvent.changeText(screen.getByLabelText(t.documentForm.colQuantite), '3');
+	await fireEvent.press(screen.getByRole('button', { name: t.bonsLivraison.fieldStatut }));
+	await fireEvent.press(screen.getByRole('radio', { name: 'Accepté' }));
+	expect(data.patchStatut).not.toHaveBeenCalled();
+	expect(mockError).toHaveBeenCalledWith(t.bonsLivraison.saveLinesBeforePosting);
+	await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
+	await waitFor(() => expect(data.updateData).toHaveBeenCalledTimes(1));
+	expect(jest.mocked(data.updateData).mock.calls[0]![0].data.lignes).toEqual([
+		expect.objectContaining({ article: 4, quantity: 3 }),
+	]);
+	await fireEvent.press(screen.getByRole('button', { name: t.bonsLivraison.fieldStatut }));
+	await fireEvent.press(screen.getByRole('radio', { name: 'Accepté' }));
+	await waitFor(() => expect(data.patchStatut).toHaveBeenCalledWith({ id: 7, data: { statut: 'Accepté' } }));
+	expect(screen.queryByLabelText(t.documentForm.colQuantite)).toBeNull();
+});
+it('keeps delivery lines editable after the backend rejects stock posting', async () => {
+	const data = props();
+	data.patchStatut = jest.fn(() => ({
+		unwrap: async () =>
+			Promise.reject({
+				status: 400,
+				data: { status_code: 400, message: 'Requête invalide', details: { lignes: ['Stock insuffisant'] } },
+			}),
+	}));
+	await setup({ ...data, documentType: 'bon-de-livraison', id: 7, rawData: delivery });
+	await fireEvent.press(screen.getByRole('button', { name: t.bonsLivraison.fieldStatut }));
+	await fireEvent.press(screen.getByRole('radio', { name: 'Accepté' }));
+	await waitFor(() => expect(mockError).toHaveBeenCalledWith('Stock insuffisant'));
+	expect(screen.getByLabelText(t.documentForm.colQuantite)).toBeOnTheScreen();
+	expect(screen.queryByText(t.bonsLivraison.stockPostedLinesHint)).toBeNull();
 });

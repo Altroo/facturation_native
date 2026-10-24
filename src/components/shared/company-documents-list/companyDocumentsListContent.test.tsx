@@ -1,6 +1,6 @@
 import type { ComponentProps } from 'react';
 import { Text } from 'react-native';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import CompanyDocumentsListContent from './companyDocumentsListContent';
 import { translations } from '@/translations';
@@ -31,6 +31,9 @@ const row = {
 	company: 5,
 	numero_devis: 'DEV7/26',
 	numero_facture: 'PRO7/26',
+	numero_avoir: 'AVO7/26',
+	numero_bon_livraison: 'BL7/26',
+	date_bon_livraison: '2026-10-24',
 	client_name: 'Atlas Client',
 	statut: 'Envoyé',
 	total_ttc_apres_remise: 120,
@@ -69,13 +72,26 @@ const props = (): Props => ({
 	busy: false,
 	openPdf: jest.fn(async () => true),
 });
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => {
+	jest.clearAllMocks();
+	const nativeMethods = jest.requireActual<{ default: { measureInWindow: jest.Mock } }>(
+		'@react-native/jest-preset/jest/MockNativeMethods',
+	).default;
+	nativeMethods.measureInWindow.mockImplementation((callback) => callback(280, 180, 44, 44));
+});
 
-it.each(['devis', 'facture-pro-forma', 'facture-client'] as const)(
+it.each(['devis', 'facture-pro-forma', 'facture-client', 'facture-avoir', 'bon-de-livraison'] as const)(
 	'shares cards while preserving the %s destination',
 	async (documentType) => {
 		await render(<CompanyDocumentsListContent {...props()} documentType={documentType} />);
-		const number = documentType === 'devis' ? 'DEV7/26' : 'PRO7/26';
+		const number =
+			documentType === 'devis'
+				? 'DEV7/26'
+				: documentType === 'facture-avoir'
+					? 'AVO7/26'
+					: documentType === 'bon-de-livraison'
+						? 'BL7/26'
+						: 'PRO7/26';
 		expect(screen.getByText(number)).toBeOnTheScreen();
 		expect(screen.getByText('Atlas companies')).toBeOnTheScreen();
 		await fireEvent.press(screen.getByRole('button', { name: `${t.common.view} ${number}` }));
@@ -154,4 +170,82 @@ it('disables conversion of a pro-forma that already has a client invoice', async
 	expect(screen.getByRole('menuitem', { name: t.facturesProforma.alreadyConverted })).toBeDisabled();
 	await fireEvent.press(screen.getByRole('menuitem', { name: t.facturesProforma.alreadyConverted }));
 	expect(convertToInvoice).not.toHaveBeenCalled();
+});
+
+const cardAction = async (name: string) => {
+	await fireEvent.press(screen.getByRole('button', { name: t.common.moreActions }));
+	const menu = screen.getByTestId('custom-menu');
+	await fireEvent.press(screen.getByRole('menuitem', { name }));
+	await act(() => menu.props.onDismiss());
+};
+it('prints delivery notes with language choices only and passes the normal format to the API helper', async () => {
+	const data = props();
+	await render(<CompanyDocumentsListContent {...data} documentType="bon-de-livraison" />);
+	await cardAction(t.common.print);
+	expect(screen.queryByText(t.pdf.format)).toBeNull();
+	const onDismiss = screen.getByTestId('document-pdf-modal').props.onDismiss;
+	await fireEvent.press(screen.getByRole('radio', { name: t.pdf.english }));
+	expect(data.openPdf).not.toHaveBeenCalled();
+	await act(() => onDismiss());
+	await waitFor(() => expect(data.openPdf).toHaveBeenCalledWith(7, 'normal', 'en'));
+});
+it('keeps uninvoiced delivery lists free of bulk deletion, printing and conversion actions', async () => {
+	await render(
+		<CompanyDocumentsListContent
+			{...props()}
+			documentType="bon-de-livraison"
+			bulkDeleteEnabled={false}
+			printingEnabled={false}
+		/>,
+	);
+	expect(screen.queryByRole('checkbox')).toBeNull();
+	await fireEvent.press(screen.getByRole('button', { name: t.common.moreActions }));
+	expect(screen.getAllByRole('menuitem').map((item) => item.props.accessibilityLabel)).toEqual([
+		t.common.edit,
+		t.common.delete,
+	]);
+});
+it.each(['devis', 'bon-de-livraison'] as const)(
+	'offers the invoiced status filter only for delivery notes: %s',
+	async (documentType) => {
+		await render(<CompanyDocumentsListContent {...props()} documentType={documentType} />);
+		await fireEvent.press(screen.getByRole('button', { name: t.dataGrid.toolbarFilters }));
+		await fireEvent.press(screen.getByRole('button', { name: t.dataGrid.fieldLabel }));
+		await fireEvent.press(screen.getByRole('radio', { name: t.documentList.colStatut }));
+		await fireEvent.press(screen.getByRole('button', { name: t.common.value }));
+		expect(!!screen.queryByRole('radio', { name: 'Facturé' })).toBe(documentType === 'bon-de-livraison');
+	},
+);
+it('confirms invoice conversion and opens the new delivery note with its company', async () => {
+	const data = props();
+	const convertToDelivery = jest.fn(() => ({ unwrap: async () => ({ id: 31 }) }));
+	await render(
+		<CompanyDocumentsListContent {...data} documentType="facture-client" convertToDelivery={convertToDelivery} />,
+	);
+	await cardAction(t.facturesClient.labelBonLivraison);
+	expect(screen.getByText(t.facturesClient.convertToBLTitle)).toBeOnTheScreen();
+	expect(convertToDelivery).not.toHaveBeenCalled();
+	await fireEvent.press(within(screen.getByTestId('action-modal')).getByRole('button', { name: t.common.convert }));
+	await waitFor(() => expect(convertToDelivery).toHaveBeenCalledWith({ id: 7 }));
+	expect(router.push).toHaveBeenCalledWith({
+		pathname: '/bon-de-livraison/form',
+		params: { id: '31', company_id: '5' },
+	});
+});
+it('reports rejected delivery conversion while preserving the invoice list', async () => {
+	const convertToDelivery = jest.fn(() => ({
+		unwrap: async () =>
+			Promise.reject({
+				status: 400,
+				data: { status_code: 400, message: 'Requête invalide', details: { detail: ['Conversion refusée'] } },
+			}),
+	}));
+	await render(
+		<CompanyDocumentsListContent {...props()} documentType="facture-client" convertToDelivery={convertToDelivery} />,
+	);
+	await cardAction(t.facturesClient.labelBonLivraison);
+	await fireEvent.press(within(screen.getByTestId('action-modal')).getByRole('button', { name: t.common.convert }));
+	await waitFor(() => expect(mockError).toHaveBeenCalledWith('Conversion refusée'));
+	expect(router.push).not.toHaveBeenCalled();
+	expect(screen.getByText('PRO7/26')).toBeOnTheScreen();
 });

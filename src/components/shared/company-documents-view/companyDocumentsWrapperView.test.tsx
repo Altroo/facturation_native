@@ -1,5 +1,5 @@
 import type { ComponentProps } from 'react';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import CompanyDocumentViewContent from './companyDocumentsWrapperView';
 import { useGetArticlesListQuery } from '@/store/services/article';
@@ -32,6 +32,10 @@ const document: DocumentData = {
 	company: 5,
 	numero_devis: 'DEV7/26',
 	numero_facture: 'PRO7/26',
+	numero_avoir: 'AVO7/26',
+	numero_bon_livraison: 'BL7/26',
+	date_bon_livraison: '2026-10-24',
+	livre_par_name: 'Livreur Atlas',
 	date_devis: '2026-10-22',
 	date_facture: '2026-10-22',
 	statut: 'Envoyé',
@@ -73,11 +77,31 @@ beforeEach(() => {
 	mockRole = 'Caissier';
 });
 
-it.each(['devis', 'facture-pro-forma', 'facture-client'] as const)(
+it.each(['devis', 'facture-pro-forma', 'facture-client', 'facture-avoir', 'bon-de-livraison'] as const)(
 	'renders and edits %s using the matching route and fields',
 	async (documentType) => {
-		await render(<CompanyDocumentViewContent {...props()} documentType={documentType} />);
-		expect(screen.getByText(documentType === 'devis' ? 'DEV7/26' : 'PRO7/26')).toBeOnTheScreen();
+		const data = props();
+		await render(
+			<CompanyDocumentViewContent
+				{...data}
+				documentType={documentType}
+				query={{
+					...data.query,
+					currentData: { ...document, statut: documentType === 'facture-avoir' ? 'Brouillon' : 'Envoyé' },
+				}}
+			/>,
+		);
+		expect(
+			screen.getByText(
+				documentType === 'devis'
+					? 'DEV7/26'
+					: documentType === 'facture-avoir'
+						? 'AVO7/26'
+						: documentType === 'bon-de-livraison'
+							? 'BL7/26'
+							: 'PRO7/26',
+			),
+		).toBeOnTheScreen();
 		expect(screen.getByText(documentType === 'devis' ? 'REQ-7' : 'ORDER-7')).toBeOnTheScreen();
 		expect(screen.getByText('Atlas Client')).toBeOnTheScreen();
 		expect(screen.getByText('Deliver Monday')).toBeOnTheScreen();
@@ -132,4 +156,42 @@ it('offers retry when the document query fails', async () => {
 	);
 	await fireEvent.press(screen.getByRole('button', { name: t.common.retry }));
 	expect(data.query.refetch).toHaveBeenCalledTimes(1);
+});
+
+it('shows the delivery person and purchase-order reference without invoice payment terms', async () => {
+	const data = props();
+	await render(
+		<CompanyDocumentViewContent
+			{...data}
+			documentType="bon-de-livraison"
+			query={{ ...data.query, currentData: { ...document, termes_paiement: 'Invoice-only terms' } }}
+		/>,
+	);
+	expect(screen.getByText(t.documentView.livreParLabel)).toBeOnTheScreen();
+	expect(screen.getByText('Livreur Atlas')).toBeOnTheScreen();
+	expect(screen.getByText('ORDER-7')).toBeOnTheScreen();
+	expect(screen.queryByText('Invoice-only terms')).toBeNull();
+});
+it('uses the same language-only PDF flow on delivery details as on the list', async () => {
+	const data = props();
+	await render(<CompanyDocumentViewContent {...data} documentType="bon-de-livraison" />);
+	await fireEvent.press(screen.getByRole('button', { name: t.common.print }));
+	expect(screen.queryByText(t.pdf.format)).toBeNull();
+	const onDismiss = screen.getByTestId('document-pdf-modal').props.onDismiss;
+	await fireEvent.press(screen.getByRole('radio', { name: t.pdf.dutch }));
+	expect(data.openPdf).not.toHaveBeenCalled();
+	await act(() => onDismiss());
+	await waitFor(() => expect(data.openPdf).toHaveBeenCalledWith('normal', 'nl'));
+});
+it('returns to the delivery-note list after confirmed deletion', async () => {
+	const data = props();
+	await render(<CompanyDocumentViewContent {...data} documentType="bon-de-livraison" />);
+	await fireEvent.press(screen.getByRole('button', { name: t.common.delete }));
+	await fireEvent.press(within(screen.getByTestId('action-modal')).getByRole('button', { name: t.common.delete }));
+	await waitFor(() => expect(router.dismissTo).toHaveBeenCalledWith('/bon-de-livraison'));
+});
+it('keeps non-draft credit notes read-only while still permitting authorized deletion', async () => {
+	await render(<CompanyDocumentViewContent {...props()} documentType="facture-avoir" />);
+	expect(screen.queryByRole('button', { name: t.common.edit })).toBeNull();
+	expect(screen.getByRole('button', { name: t.common.delete })).toBeEnabled();
 });

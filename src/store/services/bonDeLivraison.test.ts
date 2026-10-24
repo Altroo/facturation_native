@@ -220,3 +220,51 @@ it.each([true, false])('refreshes article stock only when a delivery status writ
 	await jest.runOnlyPendingTimersAsync();
 	expect(adapter.mock.calls.filter(([config]) => config.method === 'get')).toHaveLength(success ? 2 : 1);
 });
+
+it('uses the dedicated uninvoiced endpoint for unpaginated requests and keeps filters', async () => {
+	adapter.mockImplementation(async (config) => response(config, [{ id: 7 }]));
+	await store
+		.dispatch(
+			bonDeLivraisonApi.endpoints.getBonDeLivraisonUninvoicedList.initiate({
+				company_id: 5,
+				with_pagination: false,
+				search: 'Atlas',
+				livre_par_ids: '6',
+			}),
+		)
+		.unwrap();
+	expect(adapter.mock.calls[0]![0]).toMatchObject({
+		url: '/bon_de_livraison/uninvoiced/',
+		params: { company_id: 5, pagination: false, search: 'Atlas', livre_par_ids: '6' },
+	});
+});
+
+it.each([
+	['edit', true],
+	['edit', false],
+	['delete', true],
+	['delete', false],
+	['bulkDelete', true],
+	['bulkDelete', false],
+] as const)('refreshes cached stock only after a successful delivery %s: %s', async (operation, success) => {
+	adapter.mockImplementation(async (config) => {
+		if (config.method === 'get') return response(config, [{ id: 4, available_quantity: 10 }]);
+		if (!success)
+			throw new AxiosError('Denied', 'ERR_BAD_REQUEST', config, undefined, response(config, { detail: 'Denied' }, 403));
+		return response(config, operation === 'edit' ? { id: 7 } : undefined, operation === 'edit' ? 200 : 204);
+	});
+	await store.dispatch(articleApi.endpoints.getArticlesList.initiate({ company_id: 5 })).unwrap();
+	await jest.runOnlyPendingTimersAsync();
+	const result =
+		operation === 'edit'
+			? store
+					.dispatch(bonDeLivraisonApi.endpoints.editBonDeLivraison.initiate({ id: 7, data: { remarque: 'Updated' } }))
+					.unwrap()
+			: operation === 'delete'
+				? store.dispatch(bonDeLivraisonApi.endpoints.deleteBonDeLivraison.initiate({ id: 7 })).unwrap()
+				: store.dispatch(bonDeLivraisonApi.endpoints.bulkDeleteBonDeLivraison.initiate({ ids: [7, 8] })).unwrap();
+	if (success) await result;
+	else await expect(result).rejects.toMatchObject({ status: 403 });
+	await jest.runOnlyPendingTimersAsync();
+	expect(adapter.mock.calls.filter(([config]) => config.method === 'get')).toHaveLength(success ? 2 : 1);
+});

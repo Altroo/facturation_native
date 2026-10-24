@@ -1,4 +1,11 @@
-import { APP_VERSION, genderItemsList, nbrEmployeItemsList, civiliteItemsList } from './rawData';
+import {
+	APP_VERSION,
+	genderItemsList,
+	nbrEmployeItemsList,
+	civiliteItemsList,
+	devisFactureStatusItemsList,
+	bonDeLivraisonStatusItemsList,
+} from './rawData';
 import { version } from '../../package.json';
 import { expo } from '../../app.json';
 
@@ -69,4 +76,21 @@ describe('items lists', () => {
 it('uses the bundled package version in JavaScript and Expo config', () => {
 	expect(APP_VERSION).toBe(version);
 	expect(expo.version).toBe(version);
+});
+
+it('includes the invoiced state for delivery notes without exposing it to quotes or invoices', () => {
+	expect(bonDeLivraisonStatusItemsList.map((item) => item.value)).toEqual([
+		'',
+		'Brouillon',
+		'Envoyé',
+		'Accepté',
+		'Refusé',
+		'Annulé',
+		'Expiré',
+		'Facturé',
+	]);
+	expect(devisFactureStatusItemsList.map((item) => item.value)).not.toContain('Facturé');
+	expect(new Set(bonDeLivraisonStatusItemsList.map((item) => item.value)).size).toBe(
+		bonDeLivraisonStatusItemsList.length,
+	);
 });
