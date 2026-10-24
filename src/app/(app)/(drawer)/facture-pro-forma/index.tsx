@@ -9,6 +9,7 @@ import {
 	useLazyGetFactureProFormaListQuery,
 	useDeleteFactureProFormaMutation,
 	useBulkDeleteFactureProFormaMutation,
+	useConvertFactureProFormaToFactureMutation,
 } from '@/store/services/factureProForma';
 import { useInitAccessToken } from '@/contexts/InitContext';
 import { openFactureProFormaPdf } from '@/utils/apiHelpers';
@@ -46,6 +47,7 @@ const FactureProFormaListContent = (props: Props) => {
 	const [fetchAllIds] = useLazyGetFactureProFormaListQuery();
 	const [deleteRecord, deleting] = useDeleteFactureProFormaMutation();
 	const [bulkDeleteRecords, bulkDeleting] = useBulkDeleteFactureProFormaMutation();
+	const [convertToInvoice, converting] = useConvertFactureProFormaToFactureMutation();
 	return (
 		<CompanyDocumentsListContent
 			{...props}
@@ -55,7 +57,8 @@ const FactureProFormaListContent = (props: Props) => {
 			fetchAllIds={fetchAllIds}
 			deleteRecord={deleteRecord}
 			bulkDeleteRecords={bulkDeleteRecords}
-			busy={deleting.isLoading || bulkDeleting.isLoading}
+			convertToInvoice={convertToInvoice}
+			busy={deleting.isLoading || bulkDeleting.isLoading || converting.isLoading}
 			searchTerm={searchTerm}
 			setSearchTerm={setSearchTerm}
 			sortModel={sortModel}

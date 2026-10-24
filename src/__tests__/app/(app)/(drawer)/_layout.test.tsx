@@ -55,6 +55,10 @@ beforeEach(() => {
 it.each([
 	['facture-pro-forma/index', translations.fr.facturesProforma.listTitle],
 	['facture-pro-forma/[id]/index', translations.fr.facturesProforma.detailsTitle],
+	['facture-client/index', translations.fr.facturesClient.listTitle],
+	['facture-client/unpaid', translations.fr.facturesClient.unpaidListTitle],
+	['facture-client/[id]/index', translations.fr.facturesClient.detailsTitle],
+	['reglements/form', translations.fr.reglements.addTitle],
 ])('keeps both theme and language actions usable on %s', async (route, title) => {
 	mockRouteName = route;
 	await setup();

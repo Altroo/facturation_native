@@ -27,17 +27,38 @@ jest.mock('@/store/services/client', () => ({
 		currentData: [{ id: 3, company: 5, raison_sociale: 'Atlas Client', archived: false }],
 	}),
 }));
-jest.mock('@/store/services/article', () => ({ useGetArticlesListQuery: () => ({ data: [] }) }));
+jest.mock('@/store/services/article', () => ({
+	useGetArticlesListQuery: () => ({ data: mockArticles }),
+	useGetArticlesInfiniteListInfiniteQuery: () => ({
+		currentData: { pages: [{ count: 1, results: mockArticles, next: null }] },
+	}),
+}));
 jest.mock('@/store/services/parameter', () => ({
 	useGetModePaiementListQuery: () => ({ currentData: [] }),
 	useAddModePaiementMutation: () => [jest.fn(), {}],
 	useEditModePaiementMutation: () => [jest.fn(), {}],
 	useDeleteModePaiementMutation: () => [jest.fn(), {}],
+	useGetCategorieListQuery: () => ({ currentData: [] }),
+	useGetEmplacementListQuery: () => ({ currentData: [] }),
+	useGetMarqueListQuery: () => ({ currentData: [] }),
+	useGetUniteListQuery: () => ({ currentData: [] }),
 }));
 type Props = ComponentProps<typeof CompanyDocumentFormContent>;
 const t = translations.fr;
 const mockSuccess = jest.fn();
 const mockError = jest.fn();
+const mockArticles = [
+	{
+		id: 4,
+		reference: 'ART4',
+		designation: 'Desk',
+		prix_achat: 40,
+		prix_vente: 100,
+		devise_prix_achat: 'MAD',
+		devise_prix_vente: 'MAD',
+		tva: 20,
+	},
+];
 const document: DocumentData = {
 	id: 7,
 	company: 5,
@@ -86,13 +107,13 @@ const selectClient = async () => {
 };
 beforeEach(() => jest.clearAllMocks());
 
-it.each(['devis', 'facture-pro-forma'] as const)(
+it.each(['devis', 'facture-pro-forma', 'facture-client'] as const)(
 	'creates %s with the correct API fields and destination',
 	async (documentType) => {
 		const data = { ...props(), documentType };
 		await setup(data);
 		await selectClient();
-		await fireEvent.press(screen.getByRole('button', { name: t.common.add }));
+		await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
 		await waitFor(() => expect(data.addData).toHaveBeenCalledTimes(1));
 		expect(data.addData).toHaveBeenCalledWith({
 			data: expect.objectContaining({
@@ -138,7 +159,7 @@ it('requires article lines before updating an existing document', async () => {
 		id: 7,
 		rawData: document,
 	});
-	await fireEvent.press(screen.getByRole('button', { name: t.common.update }));
+	await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
 	await screen.findByText(t.documentForm.noArticlesError);
 	expect(data.updateData).not.toHaveBeenCalled();
 });
@@ -147,8 +168,49 @@ it('reports a failed creation and preserves the form without navigating', async 
 	data.addData = jest.fn(() => ({ unwrap: async () => Promise.reject({ details: 'Cannot create' }) }));
 	await setup(data);
 	await selectClient();
-	await fireEvent.press(screen.getByRole('button', { name: t.common.add }));
+	await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
 	await waitFor(() => expect(mockError).toHaveBeenCalled());
 	expect(router.replace).not.toHaveBeenCalled();
 	expect(screen.getByLabelText(t.documentForm.fieldNumeroLabel)).toHaveProp('value', '001');
+});
+
+it('updates an existing article from the picker without duplicating it or resetting its negotiated price', async () => {
+	const data = props();
+	await setup({
+		...data,
+		id: 7,
+		rawData: {
+			...document,
+			lignes: [
+				{
+					id: 1,
+					article: 4,
+					designation: 'Desk',
+					article_designation: 'Desk',
+					quantity: 2,
+					prix_achat: 40,
+					prix_vente: 125,
+					devise_prix_achat: 'MAD',
+					devise_prix_vente: 'MAD',
+					remise_type: 'Pourcentage',
+					remise: 5,
+				},
+			],
+		} as DocumentData,
+	});
+	await fireEvent.press(screen.getByRole('button', { name: t.documentForm.addArticlesBtn }));
+	await fireEvent.press(screen.getByRole('checkbox', { name: 'ART4' }));
+	await fireEvent.changeText(screen.getByLabelText(`${t.addArticleModal.colQuantite} ART4`), '5');
+	await fireEvent.changeText(screen.getByLabelText(`${t.addArticleModal.colRemise} ART4`), '10');
+	await fireEvent.press(screen.getByRole('button', { name: t.addArticleModal.addBtn(1) }));
+	await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
+	await waitFor(() => expect(data.updateData).toHaveBeenCalledTimes(1));
+	expect(data.updateData).toHaveBeenCalledWith({
+		id: 7,
+		data: expect.objectContaining({
+			lignes: [
+				expect.objectContaining({ article: 4, quantity: 5, prix_vente: 125, remise_type: 'Pourcentage', remise: 10 }),
+			],
+		}),
+	});
 });

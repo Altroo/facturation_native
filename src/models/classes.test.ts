@@ -4,6 +4,7 @@ import {
 	DeviFactureLivraisonLineClass,
 	DeviClass,
 	FactureClass,
+	ReglementClass,
 	GroupClass,
 	CompanyClass,
 	ArticleClass,
@@ -358,5 +359,43 @@ describe('FactureClass', () => {
 		expect(facture.lignes.length).toBe(2);
 		expect(facture.lignes[0].id).toBe(1);
 		expect(facture.lignes[1].id).toBe(2);
+	});
+});
+
+describe('ReglementClass', () => {
+	it('keeps the invoice reference and server financial snapshot used by payment history', () => {
+		const payment = new ReglementClass(
+			1,
+			7,
+			'INV7/26',
+			3,
+			'Atlas Client',
+			2,
+			'Virement',
+			'Acompte',
+			500,
+			'MAD',
+			'2026-10-23',
+			'2026-10-30',
+			'Valide',
+			'2026-10-23',
+			'2026-10-23',
+			1200,
+			500,
+			700,
+			'Bank transfer',
+		);
+		expect(payment).toMatchObject({
+			facture_client: 7,
+			facture_client_numero: 'INV7/26',
+			mode_reglement_name: 'Virement',
+			montant: 500,
+			devise: 'MAD',
+			statut: 'Valide',
+			montant_facture: 1200,
+			total_reglements_facture: 500,
+			reste_a_payer: 700,
+			observations: 'Bank transfer',
+		});
 	});
 });

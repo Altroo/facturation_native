@@ -42,3 +42,12 @@ it('exports Pro-forma routes without treating PDF endpoints as app routes', () =
 	expect(routes.FACTURE_PRO_FORMA_EDIT(7)).toEqual({ pathname: '/facture-pro-forma/form', params: { id: '7' } });
 	expect(routes).not.toHaveProperty('FACTURE_PRO_FORMA_PDF');
 });
+
+it('exports client invoice and unpaid routes while keeping PDF endpoints outside navigation', () => {
+	expect(routes.FACTURE_CLIENT_LIST).toBe('/facture-client');
+	expect(routes.FACTURE_CLIENT_UNPAID).toBe('/facture-client/unpaid');
+	expect(routes.FACTURE_CLIENT_ADD).toBe('/facture-client/form');
+	expect(routes.FACTURE_CLIENT_VIEW(7)).toEqual({ pathname: '/facture-client/[id]', params: { id: '7' } });
+	expect(routes.FACTURE_CLIENT_EDIT(7)).toEqual({ pathname: '/facture-client/form', params: { id: '7' } });
+	expect(routes).not.toHaveProperty('FACTURE_CLIENT_PDF');
+});

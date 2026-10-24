@@ -15,8 +15,10 @@ import ConfirmationModal from '@/components/shared/confirmationModal/confirmatio
 import DocumentStatus from '@/components/shared/documentStatus/documentStatus';
 import DocumentPdfModal from '@/components/shared/documentPdfModal/documentPdfModal';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
+import TextButton from '@/components/nativeElements/buttons/textButton/textButton';
 import QueryError from '@/components/shared/queryError/queryError';
 import NoPermission from '@/components/shared/noPermission/noPermission';
+import InvoicePaymentSummary from '@/components/shared/facture-client/invoicePaymentSummary';
 
 import { useGetClientsListQuery } from '@/store/services/client';
 import { useGetModePaiementListQuery } from '@/store/services/parameter';
@@ -31,6 +33,10 @@ import {
 	FACTURE_PRO_FORMA_ADD,
 	FACTURE_PRO_FORMA_EDIT,
 	FACTURE_PRO_FORMA_VIEW,
+	FACTURE_CLIENT_ADD,
+	FACTURE_CLIENT_EDIT,
+	CLIENTS_VIEW,
+	FACTURE_CLIENT_VIEW,
 } from '@/utils/routes';
 import { colors } from '@/utils/themes';
 import type { DocumentData, DocumentType } from '@/types/companyDocumentsTypes';
@@ -65,13 +71,17 @@ type Props = {
 		args: DevisQueryParams,
 		preferCacheValue?: boolean,
 	) => {
-		unwrap: () => Promise<Array<Partial<DocumentData>> | PaginationResponseType<DocumentData>>;
+		unwrap: () => Promise<Array<Partial<DocumentData>> | { results: Array<Partial<DocumentData>> }>;
 		abort: () => void;
 		unsubscribe: () => void;
 	};
 	deleteRecord: (args: { id: number }) => { unwrap: () => Promise<unknown> };
 	bulkDeleteRecords: (args: { ids: number[] }) => { unwrap: () => Promise<unknown> };
 	convertToProforma?: (args: { id: number }) => { unwrap: () => Promise<{ id: number }> };
+	convertToInvoice?: (args: { id: number }) => { unwrap: () => Promise<{ id: number }> };
+	header?: ReactNode;
+	bulkDeleteEnabled?: boolean;
+	printingEnabled?: boolean;
 	busy: boolean;
 	openPdf: (id: number, type: DocumentPdfType, language: 'fr' | 'en' | 'nl') => Promise<boolean>;
 };
@@ -79,13 +89,34 @@ type Props = {
 const CompanyDocumentsListContent = (props: Props) => {
 	const { t } = useLanguage();
 	const isDevis = props.documentType === 'devis';
-	const labels = isDevis ? t.devis : t.facturesProforma;
+	const isInvoice = props.documentType === 'facture-client';
+	const labels = isDevis ? t.devis : isInvoice ? t.facturesClient : t.facturesProforma;
+	const documentName = isDevis
+		? t.navigation.devis
+		: isInvoice
+			? t.navigation.facturesClient
+			: t.navigation.facturesProforma;
+	const addRoute = isDevis ? DEVIS_ADD : isInvoice ? FACTURE_CLIENT_ADD : FACTURE_PRO_FORMA_ADD;
+	const editRoute = isDevis ? DEVIS_EDIT : isInvoice ? FACTURE_CLIENT_EDIT : FACTURE_PRO_FORMA_EDIT;
+	const viewRoute = isDevis ? DEVIS_VIEW : isInvoice ? FACTURE_CLIENT_VIEW : FACTURE_PRO_FORMA_VIEW;
 	const numberField = isDevis ? 'numero_devis' : 'numero_facture';
 	const dateField = isDevis ? 'date_devis' : 'date_facture';
 	const extraField = isDevis ? 'numero_demande_prix_client' : 'numero_bon_commande_client';
-	const numberLabel = isDevis ? t.devis.colNumeroDevis : t.facturesProforma.colNumeroFacture;
-	const dateLabel = isDevis ? t.devis.colDateDevis : t.facturesProforma.colDateFacture;
-	const extraLabel = isDevis ? t.devis.colNumeroDemandePrix : t.facturesProforma.colNumeroBonCommande;
+	const numberLabel = isDevis
+		? t.devis.colNumeroDevis
+		: isInvoice
+			? t.facturesClient.colNumeroFacture
+			: t.facturesProforma.colNumeroFacture;
+	const dateLabel = isDevis
+		? t.devis.colDateDevis
+		: isInvoice
+			? t.facturesClient.colDateFacture
+			: t.facturesProforma.colDateFacture;
+	const extraLabel = isDevis
+		? t.devis.colNumeroDemandePrix
+		: isInvoice
+			? t.facturesClient.colNumeroBonCommande
+			: t.facturesProforma.colNumeroBonCommande;
 	const {
 		searchTerm,
 		setSearchTerm,
@@ -104,12 +135,13 @@ const CompanyDocumentsListContent = (props: Props) => {
 	const canView = ['Caissier', 'Lecture', 'Comptable', 'Commercial'].includes(props.role);
 	const canEdit = props.role === 'Caissier' || props.role === 'Commercial';
 	const canDelete = props.role === 'Caissier';
-	const canPrint = canView && props.role !== 'Lecture';
+	const canSelect = canDelete && props.bulkDeleteEnabled !== false;
+	const canPrint = canView && props.role !== 'Lecture' && props.printingEnabled !== false;
 	const [selectedIds, setSelectedIds] = useState<number[]>([]);
 	const [loadingIds, setLoadingIds] = useState(false);
 	const [confirmation, setConfirmation] = useState<{ ids: number[]; bulk: boolean } | null>(null);
 	const [pdfId, setPdfId] = useState<number | null>(null);
-	const [conversionId, setConversionId] = useState<number | null>(null);
+	const [conversion, setConversion] = useState<{ id: number; target: 'proforma' | 'invoice' } | null>(null);
 	const pendingConversion = useRef(false);
 	const pendingSelection = useRef<ReturnType<typeof fetchAllIds> | null>(null);
 	const selectionRequest = useRef(0);
@@ -146,7 +178,7 @@ const CompanyDocumentsListContent = (props: Props) => {
 		setConfirmation(null);
 	};
 	const selectAll = async () => {
-		if (!canDelete || pendingSelection.current || busy || query.isFetching) return;
+		if (!canSelect || pendingSelection.current || busy || query.isFetching) return;
 		const requestId = ++selectionRequest.current;
 		setLoadingIds(true);
 		const request = fetchAllIds({ ...queryArgs, with_pagination: false }, false);
@@ -154,11 +186,12 @@ const CompanyDocumentsListContent = (props: Props) => {
 		try {
 			const result = await request.unwrap();
 			if (requestId !== selectionRequest.current) return;
-			if (!Array.isArray(result) || result.some((item) => !Number.isSafeInteger(item.id) || Number(item.id) <= 0)) {
+			const records = Array.isArray(result) ? result : result?.results;
+			if (!Array.isArray(records) || records.some((item) => !Number.isSafeInteger(item.id) || Number(item.id) <= 0)) {
 				onError(t.common.genericError);
 				return;
 			}
-			setSelectedIds([...new Set(result.map((item) => item.id!))]);
+			setSelectedIds([...new Set(records.map((item) => item.id!))]);
 		} catch (error) {
 			if (requestId === selectionRequest.current) onError(extractApiErrorMessage(error, t.common.genericError));
 		} finally {
@@ -175,12 +208,7 @@ const CompanyDocumentsListContent = (props: Props) => {
 		try {
 			if (confirmation.bulk) {
 				await props.bulkDeleteRecords({ ids: confirmation.ids }).unwrap();
-				onSuccess(
-					t.documentList.bulkDeleteSuccess(
-						confirmation.ids.length,
-						isDevis ? t.navigation.devis : t.navigation.facturesProforma,
-					),
-				);
+				onSuccess(t.documentList.bulkDeleteSuccess(confirmation.ids.length, documentName));
 			} else {
 				await props.deleteRecord({ id: confirmation.ids[0] }).unwrap();
 				onSuccess(labels.deleteSuccess);
@@ -194,27 +222,23 @@ const CompanyDocumentsListContent = (props: Props) => {
 		}
 	};
 	const confirmConversion = async () => {
-		const record = rows.find((row) => row.id === conversionId);
-		if (
-			!isDevis ||
-			!canEdit ||
-			!record ||
-			!['Envoyé', 'Accepté'].includes(record.statut) ||
-			!props.convertToProforma ||
-			pendingConversion.current
-		)
+		const record = rows.find((row) => row.id === conversion?.id);
+		const convert = conversion?.target === 'proforma' ? props.convertToProforma : props.convertToInvoice;
+		if (!isDevis && !isInvoice && record?.converted_facture_client) return;
+		if (!canEdit || !record || !['Envoyé', 'Accepté'].includes(record.statut) || !convert || pendingConversion.current)
 			return;
 		pendingConversion.current = true;
 		try {
-			const result = await props.convertToProforma({ id: record.id }).unwrap();
-			onSuccess(t.documentList.convertSuccess(t.navigation.devis));
-			const route = FACTURE_PRO_FORMA_EDIT(result.id);
+			const result = await convert({ id: record.id }).unwrap();
+			onSuccess(t.documentList.convertSuccess(documentName));
+			const route =
+				conversion?.target === 'proforma' ? FACTURE_PRO_FORMA_EDIT(result.id) : FACTURE_CLIENT_EDIT(result.id);
 			router.push({ ...route, params: { ...route.params, company_id: String(props.company_id) } });
 		} catch (error) {
-			onError(extractApiErrorMessage(error, t.documentList.convertError(t.navigation.devis)));
+			onError(extractApiErrorMessage(error, t.documentList.convertError(documentName)));
 		} finally {
 			pendingConversion.current = false;
-			setConversionId(null);
+			setConversion(null);
 		}
 	};
 	const columns: ColumnDef<DocumentData>[] = (
@@ -267,13 +291,7 @@ const CompanyDocumentsListContent = (props: Props) => {
 			],
 	}));
 	const navigate = (row: DocumentData, editing = false) => {
-		const route = isDevis
-			? editing
-				? DEVIS_EDIT(row.id)
-				: DEVIS_VIEW(row.id)
-			: editing
-				? FACTURE_PRO_FORMA_EDIT(row.id)
-				: FACTURE_PRO_FORMA_VIEW(row.id);
+		const route = editing ? editRoute(row.id) : viewRoute(row.id);
 		router.push({ ...route, params: { ...route.params, company_id: String(props.company_id) } });
 	};
 	const refresh = () => {
@@ -300,6 +318,7 @@ const CompanyDocumentsListContent = (props: Props) => {
 				header={
 					<>
 						{props.tabs}
+						{props.header}
 						{[clientsQuery, modesQuery].map((item, index) =>
 							item.isError ? (
 								<QueryError key={index} variant="banner" error={item.error} onRetry={() => void item.refetch()} />
@@ -313,17 +332,21 @@ const CompanyDocumentsListContent = (props: Props) => {
 				createAction={
 					canEdit
 						? {
-								label: isDevis ? t.devis.newDevis : t.facturesProforma.newFacture,
+								label: isDevis
+									? t.devis.newDevis
+									: isInvoice
+										? t.facturesClient.newFacture
+										: t.facturesProforma.newFacture,
 								onPress: () =>
 									router.push({
-										pathname: isDevis ? DEVIS_ADD : FACTURE_PRO_FORMA_ADD,
+										pathname: addRoute,
 										params: { company_id: String(props.company_id) },
 									}),
 							}
 						: undefined
 				}
 				selectionControl={
-					canDelete &&
+					canSelect &&
 					count > 0 && (
 						<SelectAllControl
 							compact
@@ -338,7 +361,7 @@ const CompanyDocumentsListContent = (props: Props) => {
 					)
 				}
 				selectionActions={
-					canDelete && (
+					canSelect && (
 						<PrimaryLoadingButton
 							buttonText={t.documentList.bulkDeleteBtn(selectedIds.length)}
 							active={!disabled && !query.isFetching}
@@ -388,7 +411,7 @@ const CompanyDocumentsListContent = (props: Props) => {
 						onPress={() => navigate(row)}
 						accessibilityLabel={`${t.common.view} ${row[numberField]}`}
 						selection={
-							canDelete
+							canSelect
 								? {
 										label: `${t.shared.selectAll}: ${row[numberField]}`,
 										checked: selectedIds.includes(row.id),
@@ -414,7 +437,11 @@ const CompanyDocumentsListContent = (props: Props) => {
 									...(canPrint
 										? [
 												{
-													label: t.common.print,
+													label:
+														isInvoice && !['Brouillon', 'Accepté'].includes(row.statut)
+															? t.facturesClient.printRequiresValidation
+															: t.common.print,
+													disabled: isInvoice && !['Brouillon', 'Accepté'].includes(row.statut),
 													onClick: () => setPdfId(row.id),
 													icon: <MaterialIcons name="picture-as-pdf" size={22} color={colors.brand} />,
 												},
@@ -427,17 +454,36 @@ const CompanyDocumentsListContent = (props: Props) => {
 															{
 																label: t.devis.labelFactureProforma,
 																disabled: !props.convertToProforma || !['Envoyé', 'Accepté'].includes(row.statut),
-																onClick: () => setConversionId(row.id),
+																onClick: () => setConversion({ id: row.id, target: 'proforma' }),
 																icon: <MaterialIcons name="receipt-long" size={22} color={colors.conversion} />,
 															},
 														]
 													: []),
-												{
-													label: labels.labelFactureClient,
-													disabled: true,
-													onClick: () => undefined,
-													icon: <MaterialIcons name="receipt" size={22} color={colors.slate[400]} />,
-												},
+												...(isInvoice
+													? [
+															{
+																label: t.facturesClient.labelBonLivraison,
+																disabled: true,
+																onClick: () => undefined,
+																icon: <MaterialIcons name="local-shipping" size={22} color={colors.slate[400]} />,
+															},
+														]
+													: [
+															{
+																label:
+																	!isDevis && row.converted_facture_client
+																		? t.facturesProforma.alreadyConverted
+																		: isDevis
+																			? t.devis.labelFactureClient
+																			: t.facturesProforma.labelFactureClient,
+																disabled:
+																	(!isDevis && !!row.converted_facture_client) ||
+																	!props.convertToInvoice ||
+																	!['Envoyé', 'Accepté'].includes(row.statut),
+																onClick: () => setConversion({ id: row.id, target: 'invoice' }),
+																icon: <MaterialIcons name="receipt" size={22} color={colors.conversion} />,
+															},
+														]),
 											]
 										: []),
 								]}
@@ -450,8 +496,30 @@ const CompanyDocumentsListContent = (props: Props) => {
 								dense
 								icon={<MaterialIcons name="person-outline" size={18} color={colors.slate[400]} />}
 								label={t.documentList.colClient}
-								value={row.client_name}
+								value={
+									row.client !== null && Number.isSafeInteger(row.client) && row.client > 0 && row.client_name ? (
+										<TextButton
+											buttonText={row.client_name}
+											disabled={disabled}
+											onClick={(event) => {
+												event.stopPropagation();
+												const route = CLIENTS_VIEW(Number(row.client));
+												router.push({ ...route, params: { ...route.params, company_id: String(props.company_id) } });
+											}}
+										/>
+									) : (
+										row.client_name
+									)
+								}
 							/>
+							{!!row[extraField] && (
+								<InfoRow
+									dense
+									icon={<MaterialIcons name="tag" size={18} color={colors.slate[400]} />}
+									label={extraLabel}
+									value={row[extraField]}
+								/>
+							)}
 							<InfoRow
 								dense
 								icon={<MaterialIcons name="event" size={18} color={colors.slate[400]} />}
@@ -470,6 +538,7 @@ const CompanyDocumentsListContent = (props: Props) => {
 								label={t.documentList.colNombreArticles}
 								value={row.lignes_count}
 							/>
+							{isInvoice && <InvoicePaymentSummary document={row} dense />}
 						</View>
 					</ListCard>
 				)}
@@ -488,17 +557,29 @@ const CompanyDocumentsListContent = (props: Props) => {
 					onConfirm={() => void confirmDelete()}
 				/>
 			)}
-			{conversionId !== null && (
+			{conversion !== null && (
 				<ConfirmationModal
-					title={t.devis.convertToProformaTitle}
-					body={t.devis.convertToProformaBody}
-					recordName={rows.find((row) => row.id === conversionId)?.numero_devis}
+					title={
+						conversion.target === 'proforma'
+							? t.devis.convertToProformaTitle
+							: isDevis
+								? t.devis.convertToFactureTitle
+								: t.facturesProforma.convertToFactureTitle
+					}
+					body={
+						conversion.target === 'proforma'
+							? t.devis.convertToProformaBody
+							: isDevis
+								? t.devis.convertToFactureBody
+								: t.facturesProforma.convertToFactureBody
+					}
+					recordName={rows.find((row) => row.id === conversion.id)?.[numberField]}
 					action="convert"
 					confirmText={t.common.convert}
 					loading={busy}
 					onConfirm={() => void confirmConversion()}
 					onClose={() => {
-						if (!pendingConversion.current) setConversionId(null);
+						if (!pendingConversion.current) setConversion(null);
 					}}
 				/>
 			)}

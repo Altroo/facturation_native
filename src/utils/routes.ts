@@ -75,3 +75,25 @@ export const FACTURE_PRO_FORMA_EDIT = (id: number) => ({
 	pathname: '/facture-pro-forma/form' as const,
 	params: { id: String(id) },
 });
+
+// Factures clients
+export const FACTURE_CLIENT_LIST = '/facture-client' as const;
+export const FACTURE_CLIENT_UNPAID = '/facture-client/unpaid' as const;
+export const FACTURE_CLIENT_ADD = '/facture-client/form' as const;
+export const FACTURE_CLIENT_VIEW = (id: number) => ({
+	pathname: '/facture-client/[id]' as const,
+	params: { id: String(id) },
+});
+export const FACTURE_CLIENT_EDIT = (id: number) => ({
+	pathname: '/facture-client/form' as const,
+	params: { id: String(id) },
+});
+
+// Règlements
+export const REGLEMENTS_ADD = (company_id: number, facture_client_id?: number) => ({
+	pathname: '/reglements/form' as const,
+	params: {
+		company_id: String(company_id),
+		...(facture_client_id !== undefined ? { facture_client_id: String(facture_client_id) } : {}),
+	},
+});

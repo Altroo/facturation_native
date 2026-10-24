@@ -56,6 +56,7 @@ jest.mock('@/store/services/devi', () => ({
 	useLazyGetDevisListQuery: () => [mockFetchAll],
 	useDeleteDeviMutation: () => [mockRemove, {}],
 	useBulkDeleteDevisMutation: () => [mockBulk, {}],
+	useConvertDeviToFactureClientMutation: () => [mockConvertInvoice, {}],
 	useConvertDeviToFactureProFormaMutation: () => [mockConvert, {}],
 }));
 jest.mock('@/store/services/client', () => ({
@@ -91,6 +92,7 @@ const initialQuery = {
 const mockQuery = createQueryMock(initialQuery);
 const mockRemove = jest.fn();
 const mockBulk = jest.fn();
+const mockConvertInvoice = jest.fn();
 const mockConvert = jest.fn();
 const mockFetchAll = jest.fn();
 const mockSuccess = jest.fn();
@@ -108,6 +110,7 @@ const cardAction = async (name: string) => {
 };
 beforeEach(async () => {
 	jest.clearAllMocks();
+	mockConvertInvoice.mockReturnValue({ unwrap: () => Promise.resolve({ id: 31 }) });
 	mockRole = 'Caissier';
 	mockConvert.mockReturnValue({ unwrap: () => Promise.resolve({ id: 21 }) });
 	await mockQuery.setResult(initialQuery);
@@ -161,7 +164,7 @@ it('bulk-deletes all matching records after confirmation, not only loaded cards'
 	await fireEvent.press(within(screen.getByTestId('action-modal')).getByRole('button', { name: t.common.delete }));
 	await waitFor(() => expect(mockBulk).toHaveBeenCalledWith({ ids: [7, 8, 9] }));
 });
-it('allows Commercial pro-forma conversion but no deletion or invoice conversion', async () => {
+it('allows Commercial document conversion but no deletion', async () => {
 	mockRole = 'Commercial';
 	await render(<DevisListPage />);
 	expect(screen.queryByRole('checkbox')).toBeNull();
@@ -175,11 +178,19 @@ it('allows Commercial pro-forma conversion but no deletion or invoice conversion
 	]);
 	for (const label of [t.devis.labelFactureClient]) {
 		const action = screen.getByRole('menuitem', { name: label });
-		expect(action).toBeDisabled();
-		await fireEvent.press(action);
+		expect(action).toBeEnabled();
 	}
 	expect(screen.getByRole('menuitem', { name: t.devis.labelFactureProforma })).toBeEnabled();
 	expect(router.push).not.toHaveBeenCalled();
+});
+
+it('converts a quote into a client invoice after confirmation', async () => {
+	await render(<DevisListPage />);
+	await cardAction(t.devis.labelFactureClient);
+	expect(mockConvertInvoice).not.toHaveBeenCalled();
+	await fireEvent.press(within(screen.getByTestId('action-modal')).getByRole('button', { name: t.common.convert }));
+	await waitFor(() => expect(mockConvertInvoice).toHaveBeenCalledWith({ id: 7 }));
+	expect(router.push).toHaveBeenCalledWith({ pathname: '/facture-client/form', params: { id: '31', company_id: '5' } });
 });
 it('Lecture can view without printing or editing', async () => {
 	mockRole = 'Lecture';

@@ -1,4 +1,4 @@
-import { useRef, useState, type ComponentProps } from 'react';
+import { useRef, useState, type ComponentProps, type ReactNode } from 'react';
 import { View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router } from 'expo-router';
@@ -13,7 +13,15 @@ import {
 	formatNumberWithSpaces,
 	isNectarRaisonSociale,
 } from '@/utils/helpers';
-import { DEVIS_EDIT, DEVIS_LIST, FACTURE_PRO_FORMA_EDIT, FACTURE_PRO_FORMA_LIST } from '@/utils/routes';
+import {
+	DEVIS_EDIT,
+	DEVIS_LIST,
+	FACTURE_PRO_FORMA_EDIT,
+	FACTURE_PRO_FORMA_LIST,
+	FACTURE_CLIENT_EDIT,
+	FACTURE_CLIENT_LIST,
+} from '@/utils/routes';
+import InvoicePaymentSummary from '@/components/shared/facture-client/invoicePaymentSummary';
 import { colors } from '@/utils/themes';
 import type { DeviFactureLineFormValues } from '@/types/devisTypes';
 import DetailsPage from '@/components/shared/detailsPage/detailsPage';
@@ -40,12 +48,18 @@ type Props = {
 	deleteRecord: (args: { id: number }) => { unwrap: () => Promise<unknown> };
 	deleting: boolean;
 	openPdf: (type: DocumentPdfType, language: 'fr' | 'en' | 'nl') => Promise<boolean>;
+	validateRecord?: () => Promise<unknown>;
+	validating?: boolean;
+	extraSections?: ReactNode;
 };
 
 const CompanyDocumentViewContent = (props: Props) => {
 	const { t } = useLanguage();
 	const isDevis = props.documentType === 'devis';
-	const labels = isDevis ? t.devis : t.facturesProforma;
+	const isInvoice = props.documentType === 'facture-client';
+	const labels = isDevis ? t.devis : isInvoice ? t.facturesClient : t.facturesProforma;
+	const listRoute = isDevis ? DEVIS_LIST : isInvoice ? FACTURE_CLIENT_LIST : FACTURE_PRO_FORMA_LIST;
+	const editRoute = isDevis ? DEVIS_EDIT : isInvoice ? FACTURE_CLIENT_EDIT : FACTURE_PRO_FORMA_EDIT;
 	const numberField = isDevis ? 'numero_devis' : 'numero_facture';
 	const dateField = isDevis ? 'date_devis' : 'date_facture';
 	const { onSuccess, onError } = useToast();
@@ -58,6 +72,13 @@ const CompanyDocumentViewContent = (props: Props) => {
 	const canPrint = canView && company?.role !== 'Lecture';
 	const query = props.query;
 	const quote = query.currentData;
+	const canOpenPdf = canPrint && (!isInvoice || quote?.statut === 'Brouillon' || quote?.statut === 'Accepté');
+	const canValidate =
+		isInvoice &&
+		!!props.validateRecord &&
+		company?.can_validate_factures === true &&
+		company?.can_change_document_status === true &&
+		quote?.statut !== 'Accepté';
 	const belongsToCompany = quote?.company === props.company_id;
 	const articleIds = [...new Set((quote?.lignes ?? []).map((line) => line.article))];
 	const articlesQuery = useGetArticlesListQuery(
@@ -68,6 +89,7 @@ const CompanyDocumentViewContent = (props: Props) => {
 	const [showDelete, setShowDelete] = useState(false);
 	const [showPdf, setShowPdf] = useState(false);
 	const pending = useRef(false);
+	const validating = useRef(false);
 	const isNectar = isNectarRaisonSociale(company?.raison_sociale);
 	const icon = (name: ComponentProps<typeof MaterialIcons>['name']) => (
 		<MaterialIcons name={name} size={20} color={colors.slate[400]} />
@@ -78,12 +100,24 @@ const CompanyDocumentViewContent = (props: Props) => {
 		try {
 			await props.deleteRecord({ id: props.id }).unwrap();
 			onSuccess(labels.deleteSuccess);
-			router.dismissTo(isDevis ? DEVIS_LIST : FACTURE_PRO_FORMA_LIST);
+			router.dismissTo(listRoute);
 		} catch (error) {
 			onError(extractApiErrorMessage(error, labels.deleteError));
 		} finally {
 			pending.current = false;
 			setShowDelete(false);
+		}
+	};
+	const handleValidate = async () => {
+		if (!canValidate || !belongsToCompany || validating.current || props.deleting || !props.validateRecord) return;
+		validating.current = true;
+		try {
+			await props.validateRecord();
+			onSuccess(t.facturesClient.validateSuccess);
+		} catch (error) {
+			onError(extractApiErrorMessage(error, t.facturesClient.validateError));
+		} finally {
+			validating.current = false;
 		}
 	};
 	if (!canView) return <NoPermission />;
@@ -123,12 +157,12 @@ const CompanyDocumentViewContent = (props: Props) => {
 				actions={
 					canEdit || canDelete ? (
 						<DetailsPageActions
-							disabled={props.deleting}
+							disabled={props.deleting || props.validating}
 							loading={props.deleting}
 							onEdit={
 								canEdit
 									? () => {
-											const route = isDevis ? DEVIS_EDIT(props.id) : FACTURE_PRO_FORMA_EDIT(props.id);
+											const route = editRoute(props.id);
 											router.push({ ...route, params: { ...route.params, company_id: String(props.company_id) } });
 										}
 									: undefined
@@ -168,12 +202,22 @@ const CompanyDocumentViewContent = (props: Props) => {
 					)}
 					{canPrint && (
 						<PrimaryLoadingButton
-							buttonText={t.common.print}
+							buttonText={canOpenPdf ? t.common.print : t.facturesClient.printRequiresValidation}
 							loading={false}
-							active={!props.deleting}
+							active={canOpenPdf && !props.deleting && !props.validating}
 							inverted
 							startIcon={icon('picture-as-pdf')}
 							onClick={() => setShowPdf(true)}
+						/>
+					)}
+					{canValidate && (
+						<PrimaryLoadingButton
+							buttonText={t.facturesClient.validateInvoice}
+							active={!props.deleting}
+							loading={!!props.validating}
+							color={colors.conversion}
+							startIcon={icon('check-circle')}
+							onClick={() => void handleValidate()}
 						/>
 					)}
 				</SectionCard>
@@ -184,7 +228,13 @@ const CompanyDocumentViewContent = (props: Props) => {
 					<InfoRow icon={icon('payments')} label={t.documentView.modePaiementLabel} value={quote.mode_paiement_name} />
 					<InfoRow
 						icon={icon('receipt')}
-						label={isDevis ? t.devis.fieldNumeroDemandePrix : t.facturesProforma.termsSecondLabel}
+						label={
+							isDevis
+								? t.devis.fieldNumeroDemandePrix
+								: isInvoice
+									? t.facturesClient.termsSecondLabel
+									: t.facturesProforma.termsSecondLabel
+						}
 						value={isDevis ? quote.numero_demande_prix_client : quote.numero_bon_commande_client}
 					/>
 					{!isDevis && (
@@ -194,6 +244,7 @@ const CompanyDocumentViewContent = (props: Props) => {
 							value={quote.termes_paiement}
 						/>
 					)}
+					{isInvoice && <InvoicePaymentSummary document={quote} />}
 				</SectionCard>
 				{articlesQuery.isError && (
 					<QueryError variant="banner" error={articlesQuery.error} onRetry={() => void articlesQuery.refetch()} />
@@ -216,9 +267,10 @@ const CompanyDocumentViewContent = (props: Props) => {
 				)}
 				{!isNectar && (
 					<SectionCard title={t.documentView.remarqueSection} icon="notes">
-						<InfoRow label={t.documentView.remarqueLabel} value={quote.remarque} />
+						<InfoRow label="" value={quote.remarque} />
 					</SectionCard>
 				)}
+				{props.extraSections}
 				<SectionCard title={t.documentView.systemInfoSection} icon="info-outline">
 					<InfoRow icon={icon('event')} label={t.common.dateCreation} value={formatDate(quote.date_created)} />
 					<InfoRow icon={icon('update')} label={t.common.dateMaj} value={formatDate(quote.date_updated)} />

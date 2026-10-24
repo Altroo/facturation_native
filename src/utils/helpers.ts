@@ -5,7 +5,10 @@ import {
 	ARTICLES_LIST,
 	ARTICLES_VIEW,
 	CLIENTS_ARCHIVED,
+	CLIENTS_ADD,
+	CLIENTS_EDIT,
 	CLIENTS_LIST,
+	CLIENTS_VIEW,
 	COMPANIES_ADD,
 	COMPANIES_EDIT,
 	COMPANIES_LIST,
@@ -19,6 +22,11 @@ import {
 	FACTURE_PRO_FORMA_ADD,
 	FACTURE_PRO_FORMA_VIEW,
 	FACTURE_PRO_FORMA_EDIT,
+	FACTURE_CLIENT_LIST,
+	FACTURE_CLIENT_UNPAID,
+	FACTURE_CLIENT_ADD,
+	FACTURE_CLIENT_VIEW,
+	FACTURE_CLIENT_EDIT,
 	DASHBOARD_EDIT_PROFILE,
 	DASHBOARD_NOTIFICATIONS,
 	DASHBOARD_PASSWORD,
@@ -227,10 +235,7 @@ export const formatLocalDate = (date: Date): string => {
 };
 
 export const formatNumber = (value: string | number | null | undefined): string => {
-	if (value === null || value === undefined) return '0,00';
-	const num = typeof value === 'string' ? parseFloat(value) : value;
-	if (Number.isNaN(num)) return '0,00';
-	return num.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+	return formatNumberWithSpaces(value, 2) || '0,00';
 };
 
 export const parseNumber = (value: string | number): number | null => {
@@ -263,35 +268,15 @@ export const formatNumberWithSpaces = (value: string | number | null | undefined
 	const num = typeof value === 'string' ? parseFloat(value) : value;
 	if (Number.isNaN(num)) return '';
 
-	// Use toLocaleString with French locale for space-separated thousands
-	return num.toLocaleString('fr-FR', {
-		minimumFractionDigits: decimals,
-		maximumFractionDigits: decimals,
-		useGrouping: true,
-	});
-};
-
-/**
- * Parses a formatted number string (with spaces as a thousand separators) back to a number.
- * Example: "50 000 000.00" → 50000000.00
- * @param value - The formatted string to parse
- * @returns Parsed number or null if invalid
- */
-export const parseFormattedNumber = (value: string | number): number | null => {
-	if (typeof value === 'number') return Number.isFinite(value) ? value : null;
-	const trimmed = value.trim();
-	if (trimmed === '') return null;
-
-	// Remove all spaces (thousand separators)
-	let normalized = trimmed.replace(/\s/g, '');
-	// Replace comma with dot for decimal parsing
-	normalized = normalized.replace(',', '.');
-
-	// Return null for intermediate typing states (trailing decimal point or comma)
-	if (normalized.endsWith('.')) return null;
-
-	const n = Number(normalized);
-	return Number.isFinite(n) ? n : null;
+	// French Intl output uses narrow spaces, which can look like missing separators
+	// in our mobile font. Use regular-width nonbreaking spaces for every group.
+	return num
+		.toLocaleString('fr-FR', {
+			minimumFractionDigits: decimals,
+			maximumFractionDigits: decimals,
+			useGrouping: true,
+		})
+		.replace(/[\u00a0\u202f]/g, '\u00a0');
 };
 
 // Consolidated validation helper
@@ -494,6 +479,15 @@ export const getNotificationDestination = (target?: string) => {
 		return { ...route, params: { ...route.params, company_id: String(companyId) } };
 	}
 	if (path === '/dashboard/clients') return CLIENTS_LIST;
+	if (path === '/dashboard/clients/new' || /^\/dashboard\/clients\/[1-9]\d*(?:\/edit)?$/.test(path)) {
+		const companyId = parseEntityId(new URLSearchParams(target.split('?')[1] ?? '').get('company_id') ?? undefined);
+		if (companyId === null) return CLIENTS_LIST;
+		if (path.endsWith('/new')) return { pathname: CLIENTS_ADD, params: { company_id: String(companyId) } };
+		const id = parseEntityId(path.split('/')[3]);
+		if (id === null) return null;
+		const route = path.endsWith('/edit') ? CLIENTS_EDIT(id) : CLIENTS_VIEW(id);
+		return { ...route, params: { ...route.params, company_id: String(companyId) } };
+	}
 	if (path === '/dashboard/facture-pro-forma') return FACTURE_PRO_FORMA_LIST;
 	if (
 		path === '/dashboard/facture-pro-forma/new' ||
@@ -505,6 +499,17 @@ export const getNotificationDestination = (target?: string) => {
 		const id = parseEntityId(path.split('/')[3]);
 		if (id === null) return null;
 		const route = path.endsWith('/edit') ? FACTURE_PRO_FORMA_EDIT(id) : FACTURE_PRO_FORMA_VIEW(id);
+		return { ...route, params: { ...route.params, company_id: String(companyId) } };
+	}
+	if (path === '/dashboard/facture-client/unpaid') return FACTURE_CLIENT_UNPAID;
+	if (path === '/dashboard/facture-client') return FACTURE_CLIENT_LIST;
+	if (path === '/dashboard/facture-client/new' || /^\/dashboard\/facture-client\/[1-9]\d*(?:\/edit)?$/.test(path)) {
+		const companyId = parseEntityId(new URLSearchParams(target.split('?')[1] ?? '').get('company_id') ?? undefined);
+		if (companyId === null) return FACTURE_CLIENT_LIST;
+		if (path.endsWith('/new')) return { pathname: FACTURE_CLIENT_ADD, params: { company_id: String(companyId) } };
+		const id = parseEntityId(path.split('/')[3]);
+		if (id === null) return null;
+		const route = path.endsWith('/edit') ? FACTURE_CLIENT_EDIT(id) : FACTURE_CLIENT_VIEW(id);
 		return { ...route, params: { ...route.params, company_id: String(companyId) } };
 	}
 	if (path === '/dashboard/clients/archived') return CLIENTS_ARCHIVED;

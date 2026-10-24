@@ -625,7 +625,7 @@ export const fr: TranslationDictionary = {
 		documentNumberLabel: 'Numéro de facture',
 		documentDateLabel: 'Date de facture',
 		termsSecondLabel: 'Numéro bon commande client',
-		statsCA: "Chiffre d'affaire total",
+		statsCA: "Chiffre d'affaire",
 		statsReglements: 'Total règlements',
 		statsImpayes: 'Total impayés',
 		colNombrePaiements: 'Nb. paiements',
@@ -653,7 +653,7 @@ export const fr: TranslationDictionary = {
 		deleteModalBody: 'Êtes-vous sûr de vouloir supprimer cette facture client ? Cette action est irréversible.',
 		convertToBLTitle: 'Convertir en bon de livraison ?',
 		convertToBLBody: 'Êtes-vous sûr de vouloir convertir cette facture client en bon de livraison ?',
-		labelBonLivraison: 'Bon de livraison',
+		labelBonLivraison: 'Convertir en bon de livraison',
 	},
 	facturesAvoir: {
 		listTitle: "Liste des Factures d'Avoir",

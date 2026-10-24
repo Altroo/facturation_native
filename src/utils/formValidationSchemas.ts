@@ -580,3 +580,16 @@ export const factureClientProformaAddSchema = z.object({
 export const factureProformaSchema = factureClientProformaSchema;
 
 export const factureProformaAddSchema = factureClientProformaAddSchema;
+
+export const reglementSchema = z.object({
+	facture_client: requiredNumberField(1).refine(Number.isSafeInteger, { error: INPUT_REQUIRED }),
+	mode_reglement: optionalNumberField(1).nullable(),
+	libelle: optionalTextField(1, 255).nullable(),
+	observations: optionalTextField(1, 2000).nullable(),
+	montant: z.preprocess(
+		(value) => (typeof value === 'string' ? Number(value.replace(',', '.')) : value),
+		z.number({ error: INPUT_REQUIRED }).min(0.01, { error: INPUT_MIN(0.01) }),
+	),
+	date_reglement: z.iso.date({ error: INPUT_REQUIRED }),
+	globalError: optionalTextField(1, 500),
+});

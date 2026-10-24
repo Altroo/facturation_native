@@ -23,6 +23,8 @@ import {
 	deviSchema,
 	factureProformaSchema,
 	factureProformaAddSchema,
+	factureClientProformaSchema,
+	factureClientProformaAddSchema,
 } from '@/utils/formValidationSchemas';
 import {
 	calculateDocumentTotals,
@@ -36,7 +38,7 @@ import {
 	ValidatePricesHelper,
 } from '@/utils/helpers';
 import { devisFactureStatusItemsList } from '@/utils/rawData';
-import { CLIENTS_ADD, DEVIS_EDIT, FACTURE_PRO_FORMA_EDIT } from '@/utils/routes';
+import { CLIENTS_ADD, DEVIS_EDIT, FACTURE_PRO_FORMA_EDIT, FACTURE_CLIENT_EDIT } from '@/utils/routes';
 import { colors } from '@/utils/themes';
 import ApiAlert from '@/components/nativeElements/apiLoading/apiAlert/apiAlert';
 import CustomTextInput from '@/components/nativeElements/customTextInput/customTextInput';
@@ -44,6 +46,7 @@ import CustomDropDownSelect from '@/components/nativeElements/customDropDownSele
 import CustomAutoCompleteSelect from '@/components/nativeElements/customAutoCompleteSelect/customAutoCompleteSelect';
 import CustomDateInput from '@/components/nativeElements/customDateInput/customDateInput';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
+import SaveButton from '@/components/nativeElements/buttons/saveButton/saveButton';
 import SectionCard from '@/components/shared/sectionCard/sectionCard';
 import RemarkSection from '@/components/shared/remarkSection/remarkSection';
 import PageActionBar from '@/components/shared/pageActionBar/pageActionBar';
@@ -57,6 +60,7 @@ import ConfirmationModal from '@/components/shared/confirmationModal/confirmatio
 import QueryError from '@/components/shared/queryError/queryError';
 
 import type { DocumentData, DocumentFormSchema, DocumentType, DocumentWriteData } from '@/types/companyDocumentsTypes';
+import type { SelectedArticlePopupValues } from '@/types/articleTypes';
 
 type Props = {
 	documentType: DocumentType;
@@ -79,21 +83,32 @@ type Props = {
 	};
 	companySelect?: (disabled: boolean) => ReactNode;
 	scrollToLines: boolean;
+	extraSections?: (statut: TypeFactureLivraisonDevisStatus) => ReactNode;
 };
 
 const CompanyDocumentFormContent = (props: Props) => {
 	const { t } = useLanguage();
 	const isDevis = props.documentType === 'devis';
-	const labels = isDevis ? t.devis : t.facturesProforma;
+	const isInvoice = props.documentType === 'facture-client';
+	const labels = isDevis ? t.devis : isInvoice ? t.facturesClient : t.facturesProforma;
+	const editRoute = isDevis ? DEVIS_EDIT : isInvoice ? FACTURE_CLIENT_EDIT : FACTURE_PRO_FORMA_EDIT;
 	const numberField = isDevis ? 'numero_devis' : 'numero_facture';
 	const dateField = isDevis ? 'date_devis' : 'date_facture';
 	const extraField = isDevis ? 'numero_demande_prix_client' : 'numero_bon_commande_client';
-	const extraLabel = isDevis ? t.devis.fieldNumeroDemandePrix : t.facturesProforma.fieldNumeroBonCommande;
+	const extraLabel = isDevis
+		? t.devis.fieldNumeroDemandePrix
+		: isInvoice
+			? t.facturesClient.fieldNumeroBonCommande
+			: t.facturesProforma.fieldNumeroBonCommande;
 	const { onSuccess, onError } = useToast();
 	const token = useInitAccessToken();
 	const isEdit = props.id !== undefined;
 	const isNectar = isNectarRaisonSociale(props.company.raison_sociale);
-	const supplierNameLocked = !isDevis && !!props.rawData?.has_logistics_dossier && !!props.rawData.fournisseur?.trim();
+	const inheritedSupplierSnapshotLocked =
+		isInvoice && isEdit && !!(props.rawData?.source_proforma || props.rawData?.source_devis);
+	const supplierNameLocked =
+		inheritedSupplierSnapshotLocked ||
+		(!isDevis && !isInvoice && !!props.rawData?.has_logistics_dossier && !!props.rawData.fournisseur?.trim());
 	const scrollRef = useRef<KeyboardAwareScrollViewRef>(null);
 	const scrollToLinesPending = useRef(props.scrollToLines);
 	const pending = useRef(false);
@@ -104,7 +119,7 @@ const CompanyDocumentFormContent = (props: Props) => {
 	const [showArticles, setShowArticles] = useState(false);
 	const [showRemise, setShowRemise] = useState(false);
 	const [deleteIndex, setDeleteIndex] = useState<number | null>(null);
-	const [selectedArticles, setSelectedArticles] = useState<ArticleClass[]>([]);
+	const [selectedArticles, setSelectedArticles] = useState<Partial<ArticleClass>[]>([]);
 	const [statut, setStatut] = useState<TypeFactureLivraisonDevisStatus>(props.rawData?.statut ?? 'Brouillon');
 	const clientsQuery = useGetClientsListQuery(
 		{ company_id: props.company.id, with_pagination: false },
@@ -147,7 +162,9 @@ const CompanyDocumentFormContent = (props: Props) => {
 		})),
 		globalError: '',
 	}));
-	const editSchema = (isDevis ? deviSchema : factureProformaSchema).superRefine((data, ctx) => {
+	const editSchema = (
+		isDevis ? deviSchema : isInvoice ? factureClientProformaSchema : factureProformaSchema
+	).superRefine((data, ctx) => {
 		const lines = data.lignes ?? [];
 		if (!lines.length) ctx.addIssue({ code: 'custom', path: ['lignes'], message: t.documentForm.noArticlesError });
 		for (const [index, line] of lines.entries()) {
@@ -162,7 +179,13 @@ const CompanyDocumentFormContent = (props: Props) => {
 	const formik = useFormik<DocumentFormSchema>({
 		initialValues,
 		validationSchema: toFormikValidationSchema<unknown>(
-			isEdit ? editSchema : isDevis ? deviAddSchema : factureProformaAddSchema,
+			isEdit
+				? editSchema
+				: isDevis
+					? deviAddSchema
+					: isInvoice
+						? factureClientProformaAddSchema
+						: factureProformaAddSchema,
 		),
 		validateOnMount: true,
 		onSubmit: async (data, { setFieldError }) => {
@@ -219,7 +242,7 @@ const CompanyDocumentFormContent = (props: Props) => {
 					onSuccess(labels.addSuccess);
 					// The web uses sessionStorage to scroll to articles after creation.
 					// A transient route parameter does the same in Expo Router.
-					const route = isDevis ? DEVIS_EDIT(result.id) : FACTURE_PRO_FORMA_EDIT(result.id);
+					const route = editRoute(result.id);
 					router.replace({
 						...route,
 						params: { ...route.params, company_id: String(props.company.id), scrollToLines: 'true' },
@@ -321,27 +344,36 @@ const CompanyDocumentFormContent = (props: Props) => {
 			statusPending.current = false;
 		}
 	};
-	const addArticles = (chosen: ArticleClass[]) => {
+	const addArticles = (chosen: SelectedArticlePopupValues[]) => {
+		const chosenArticles = chosen.map((item) => item.articleData);
 		setSelectedArticles((previous) => [
-			...previous.filter((article) => !chosen.some((item) => item.id === article.id)),
-			...chosen,
+			...previous.filter((article) => !chosen.some((item) => item.articleId === article.id)),
+			...chosenArticles,
 		]);
 		const lines = [...formik.values.lignes];
-		for (const article of chosen) {
-			// Selecting an existing article does not duplicate it or replace its
-			// negotiated price. Quantities/discounts remain editable in its card.
-			if (lines.some((line) => line.article === article.id)) continue;
+		for (const selection of chosen) {
+			const article = selection.articleData;
+			const quantity = Math.max(0.01, parseNumber(selection.quantity) ?? 1);
+			const remise_type = isNectar ? '' : selection.remise_type;
+			const remise = isNectar ? 0 : Math.max(0, parseNumber(selection.remise) ?? 0);
+			const existingIndex = lines.findIndex((line) => line.article === selection.articleId);
+			// Update the chosen quantity and discount without replacing an existing
+			// line's negotiated price or duplicating the article.
+			if (existingIndex >= 0) {
+				lines[existingIndex] = { ...lines[existingIndex]!, quantity, remise_type, remise };
+				continue;
+			}
 			lines.push({
-				article: article.id,
-				reference: article.reference,
+				article: selection.articleId,
+				reference: article.reference ?? '',
 				designation: article.designation ?? '',
 				prix_achat: Number(article.prix_achat ?? 0),
-				devise_prix_achat: article.devise_prix_achat,
+				devise_prix_achat: article.devise_prix_achat ?? 'MAD',
 				prix_vente: Number(article.prix_vente ?? 0),
-				devise_prix_vente: article.devise_prix_vente,
-				quantity: 1,
-				remise_type: '',
-				remise: 0,
+				devise_prix_vente: article.devise_prix_vente ?? formik.values.devise,
+				quantity,
+				remise_type,
+				remise,
 			});
 		}
 		void formik.setFieldValue('lignes', lines);
@@ -467,6 +499,7 @@ const CompanyDocumentFormContent = (props: Props) => {
 					/>
 					<CustomTextInput
 						{...field('fournisseur_email', t.logistique.fieldSupplierEmail, 'mail-outline')}
+						disabled={disabled || inheritedSupplierSnapshotLocked}
 						keyboardType="email-address"
 						autoCapitalize="none"
 					/>
@@ -475,7 +508,7 @@ const CompanyDocumentFormContent = (props: Props) => {
 					<SectionCard title={t.documentForm.deviseSection} icon="currency-exchange">
 						<CustomDropDownSelect
 							label={t.documentForm.deviseLabel}
-						startIcon={icon('currency-exchange')}
+							startIcon={icon('currency-exchange')}
 							items={[
 								{ code: t.documentForm.deviseMAD, value: 'MAD' },
 								{ code: t.documentForm.deviseEUR, value: 'EUR' },
@@ -614,10 +647,10 @@ const CompanyDocumentFormContent = (props: Props) => {
 						title={t.documentForm.remarqueSection}
 					/>
 				)}
+				{props.extraSections?.(statut)}
 			</KeyboardAwareScrollView>
 			<PageActionBar>
-				<PrimaryLoadingButton
-					buttonText={isEdit ? t.common.update : t.common.add}
+				<SaveButton
 					loading={disabled}
 					active={
 						!disabled &&
@@ -625,7 +658,6 @@ const CompanyDocumentFormContent = (props: Props) => {
 						!resettingNumber &&
 						(!isEdit || (!missingArticles && !articlesQuery.isError))
 					}
-					startIcon={icon('save')}
 					onClick={() => {
 						setAttempted(true);
 						void formik.submitForm();
@@ -641,6 +673,16 @@ const CompanyDocumentFormContent = (props: Props) => {
 					companyId={props.company.id}
 					documentDevise={formik.values.devise}
 					existingArticleIds={new Set(articleIds)}
+					existingArticleLineValues={Object.fromEntries(
+						formik.values.lignes.map((line) => [
+							line.article,
+							{
+								quantity: line.quantity,
+								remise_type: line.remise_type ?? '',
+								remise: line.remise ?? 0,
+							},
+						]),
+					)}
 					disableRemise={isNectar}
 					onAdd={addArticles}
 					onClose={() => setShowArticles(false)}

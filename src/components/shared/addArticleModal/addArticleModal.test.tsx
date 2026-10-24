@@ -87,8 +87,60 @@ it('uses server search and currency, appends on scroll, and retains selections a
 	);
 	await fireEvent.press(screen.getByRole('checkbox', { name: 'ART8' }));
 	await fireEvent.press(screen.getByRole('button', { name: t.addArticleModal.addBtn(2) }));
-	expect(onAdd).toHaveBeenCalledWith([article(4), article(8)]);
+	expect(onAdd).toHaveBeenCalledWith(
+		[4, 8].map((articleId) => ({
+			articleId,
+			articleData: article(articleId),
+			quantity: 1,
+			remise_type: '',
+			remise: 0,
+		})),
+	);
 	expect(onClose).toHaveBeenCalledTimes(1);
+});
+
+it('starts from existing line quantities and discounts and returns the edits for selected articles', async () => {
+	const onAdd = jest.fn();
+	await render(
+		<AddArticleModal
+			companyId={5}
+			documentDevise="EUR"
+			existingArticleIds={new Set([4])}
+			existingArticleLineValues={{ 4: { quantity: 3, remise_type: 'Pourcentage', remise: 10 } }}
+			onAdd={onAdd}
+			onClose={jest.fn()}
+		/>,
+	);
+	await fireEvent.press(screen.getByRole('checkbox', { name: 'ART4' }));
+	expect(screen.getByLabelText(`${t.addArticleModal.colQuantite} ART4`)).toHaveProp('value', '3');
+	expect(screen.getByLabelText(`${t.addArticleModal.colRemise} ART4`)).toHaveProp('value', '10');
+	await fireEvent.changeText(screen.getByLabelText(`${t.addArticleModal.colQuantite} ART4`), '4,5');
+	await fireEvent.changeText(screen.getByLabelText(`${t.addArticleModal.colRemise} ART4`), '15');
+	await fireEvent.press(screen.getByRole('button', { name: t.addArticleModal.addBtn(1) }));
+	expect(onAdd).toHaveBeenCalledWith([
+		{ articleId: 4, articleData: article(4), quantity: '4,5', remise_type: 'Pourcentage', remise: '15' },
+	]);
+});
+
+it('omits discount controls and clears inherited discounts for Nectar documents', async () => {
+	const onAdd = jest.fn();
+	await render(
+		<AddArticleModal
+			companyId={5}
+			documentDevise="EUR"
+			existingArticleIds={new Set([4])}
+			existingArticleLineValues={{ 4: { quantity: 2, remise_type: 'Fixe', remise: 25 } }}
+			disableRemise
+			onAdd={onAdd}
+			onClose={jest.fn()}
+		/>,
+	);
+	await fireEvent.press(screen.getByRole('checkbox', { name: 'ART4' }));
+	expect(screen.queryByText(t.addArticleModal.colTypeRemise)).toBeNull();
+	await fireEvent.press(screen.getByRole('button', { name: t.addArticleModal.addBtn(1) }));
+	expect(onAdd).toHaveBeenCalledWith([
+		{ articleId: 4, articleData: article(4), quantity: 2, remise_type: '', remise: 0 },
+	]);
 });
 
 it.each([

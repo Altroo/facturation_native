@@ -14,7 +14,31 @@ import {
 	deviAddSchema,
 	deviSchema,
 	devisLivraisonFactureLineSchema,
+	reglementSchema,
 } from './formValidationSchemas';
+
+describe('reglementSchema', () => {
+	const payment = {
+		facture_client: 7,
+		mode_reglement: null,
+		montant: '100,50',
+		date_reglement: '2026-10-23',
+		libelle: '',
+		observations: '',
+	};
+	it('normalizes decimal amounts and accepts the web payment fields', () => {
+		expect(reglementSchema.parse(payment)).toMatchObject({ montant: 100.5, facture_client: 7, mode_reglement: null });
+	});
+	it.each([0, -1, Infinity, NaN, '', 'invalid'])('rejects invalid payment amount %s', (montant) => {
+		expect(reglementSchema.safeParse({ ...payment, montant }).success).toBe(false);
+	});
+	it.each(['', '2026-02-30', 'not a date'])('requires a valid calendar date %s', (date_reglement) => {
+		expect(reglementSchema.safeParse({ ...payment, date_reglement }).success).toBe(false);
+	});
+	it.each([0, -1, 1.5])('rejects invalid invoice identifier %s', (facture_client) => {
+		expect(reglementSchema.safeParse({ ...payment, facture_client }).success).toBe(false);
+	});
+});
 
 describe('clientSchema', () => {
 	const pm = {

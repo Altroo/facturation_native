@@ -1,4 +1,4 @@
-import { isHiddenFromAccessibility } from '@testing-library/react-native';
+import { isHiddenFromAccessibility, within } from '@testing-library/react-native';
 import { configureStore } from '@reduxjs/toolkit';
 import type { ReactNode } from 'react';
 import _initReducer, { setAuthenticated, initToken } from '@/store/slices/_initSlice';
@@ -561,7 +561,9 @@ describe.each(['users', 'companies'] as const)('%s form route', (entity) => {
 			await fireEvent.press(screen.getByRole('button', { name: t.companies.fieldNbrEmploye + ' *' }));
 			await fireEvent.press(screen.getByRole('radio', { name: '1 à 5' }));
 		}
-		await fireEvent.press(screen.getByRole('button', { name: addTitle, disabled: false }));
+		await fireEvent.press(
+			within(screen.getByTestId('page-action-bar')).getByRole('button', { name: t.common.save, disabled: false }),
+		);
 		await waitFor(() => expect(result.getPathname()).toBe('/' + entity));
 		expect(entity === 'users' ? addUser : addCompany).toHaveBeenCalledTimes(1);
 		expect(screen.queryByLabelText(label)).toBeNull();

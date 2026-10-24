@@ -8,6 +8,8 @@ type Props<T extends string> = {
 	onChange: (value: T) => void;
 	columns?: 2 | 3;
 	disabled?: boolean;
+	compact?: boolean;
+	hideLabel?: boolean;
 };
 
 // Keep small sets of choices visible. A supplied value makes the buttons a
@@ -23,9 +25,14 @@ const CustomChoiceButtons = <T extends string>(props: Props<T>) => {
 			accessibilityLabel={props.label}
 			className="gap-2"
 		>
-			<Text className="font-poppins-medium text-sm text-ink dark:text-slate-100">{props.label}</Text>
+			{!props.hideLabel && (
+				<Text className="font-poppins-medium text-sm text-ink dark:text-slate-100">{props.label}</Text>
+			)}
 			{rows.map((row) => (
-				<View key={row[0].value} className="flex-row gap-2">
+				<View
+					key={row[0].value}
+					className={props.compact ? 'flex-row gap-1 rounded-2xl bg-slate-100 p-1 dark:bg-slate-800' : 'flex-row gap-2'}
+				>
 					{row.map((item) => {
 						const selected = props.value === item.value;
 						return (
@@ -33,6 +40,7 @@ const CustomChoiceButtons = <T extends string>(props: Props<T>) => {
 								key={item.value}
 								accessibilityRole={props.value === undefined ? 'button' : 'radio'}
 								accessibilityLabel={item.label}
+								accessibilityHint={props.hideLabel ? props.label : undefined}
 								accessibilityState={{
 									...(props.value === undefined ? {} : { checked: selected }),
 									disabled: !!props.disabled,
@@ -40,10 +48,13 @@ const CustomChoiceButtons = <T extends string>(props: Props<T>) => {
 								disabled={props.disabled}
 								onPress={() => props.onChange(item.value)}
 								className={
-									'min-h-16 min-w-0 flex-1 items-center justify-center gap-2 rounded-2xl border p-3 ' +
-									(selected
-										? 'border-brand bg-blue-50 dark:border-blue-300 dark:bg-blue-950 '
-										: 'border-slate-200 bg-white dark:border-slate-600 dark:bg-panel ') +
+									(props.compact
+										? 'min-h-11 min-w-0 flex-1 flex-row items-center justify-center gap-1 rounded-xl px-3 py-2 ' +
+											(selected ? 'bg-white dark:bg-panel ' : '')
+										: 'min-h-16 min-w-0 flex-1 items-center justify-center gap-2 rounded-2xl border p-3 ' +
+											(selected
+												? 'border-brand bg-blue-50 dark:border-blue-300 dark:bg-blue-950 '
+												: 'border-slate-200 bg-white dark:border-slate-600 dark:bg-panel ')) +
 									(props.disabled ? 'opacity-50' : 'active:opacity-70')
 								}
 							>

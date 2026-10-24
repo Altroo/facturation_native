@@ -1,3 +1,4 @@
+import { factureClientApi } from '@/store/services/factureClient';
 import { createApi } from '@reduxjs/toolkit/query/react';
 import { axiosBaseQuery } from '@/utils/axiosBaseQuery';
 import { getDjangoNextPageParam, isAuthenticatedInstance } from '@/utils/helpers';
@@ -70,6 +71,19 @@ export const deviApi = createApi({
 			query: ({ id }) => ({ url: `${process.env.EXPO_PUBLIC_DEVIS_ROOT}/${id}/`, method: 'DELETE' }),
 			invalidatesTags: (_result, error) => (error ? [] : ['Devi']),
 		}),
+
+		convertDeviToFactureClient: builder.mutation<{ id: number }, { id: number }>({
+			query: ({ id }) => ({ url: `${process.env.EXPO_PUBLIC_DEVIS_CONVERT_TO_FACTURE_CLIENT}${id}/`, method: 'POST' }),
+			invalidatesTags: (_result, error) => (error ? [] : ['Devi']),
+			async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+				try {
+					await queryFulfilled;
+					dispatch(factureClientApi.util.invalidateTags(['FactureClient']));
+				} catch {
+					// The caller reports rejected conversions without invalidating the destination.
+				}
+			},
+		}),
 		patchStatut: builder.mutation<
 			Pick<DeviClass, 'statut'>,
 			{ id: number; data: { statut: TypeFactureLivraisonDevisStatus } }
@@ -114,4 +128,5 @@ export const {
 	usePatchStatutMutation,
 	useBulkDeleteDevisMutation,
 	useConvertDeviToFactureProFormaMutation,
+	useConvertDeviToFactureClientMutation,
 } = deviApi;

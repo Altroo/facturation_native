@@ -3,6 +3,7 @@ import type { NbrEmployeType, CiviliteType, ManagedByWriteOnlyType } from '@/typ
 import { type ManagedByType } from '@/components/shared/addManagedByTable/addManagedByTable';
 import type { TypeArticleType, CurrencyType, SalePriceBasis } from '@/types/articleTypes';
 import type { TypeClientType } from '@/types/clientTypes';
+import type { ReglementStatutType } from '@/types/reglementTypes';
 
 export class UserClass {
 	constructor(
@@ -278,5 +279,30 @@ export class FactureClass {
 		public readonly converted_facture_client?: number | null,
 		public readonly converted_facture_client_numero?: string | null,
 		public readonly company?: number,
+	) {}
+}
+
+export class ReglementClass {
+	constructor(
+		public readonly id: number,
+		public facture_client: number,
+		public readonly facture_client_numero: string | null,
+		public readonly client: number | null,
+		public readonly client_name: string | null,
+		public mode_reglement: number | null,
+		public readonly mode_reglement_name: string | null,
+		public libelle: string,
+		public montant: number,
+		public readonly devise: string,
+		public date_reglement: string,
+		public date_echeance: string,
+		public statut: ReglementStatutType,
+		public readonly date_created: string,
+		public readonly date_updated: string,
+		// Financial fields (detail/update)
+		public readonly montant_facture?: number,
+		public readonly total_reglements_facture?: number,
+		public readonly reste_a_payer?: number,
+		public readonly observations?: string,
 	) {}
 }

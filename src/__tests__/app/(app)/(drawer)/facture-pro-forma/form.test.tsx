@@ -110,7 +110,7 @@ it('creates only the header, omits frontend-only fields, then opens editing for 
 	await setup();
 	await toggleAutocomplete(t.documentForm.fieldClientLabel);
 	await fireEvent.press(screen.getByRole('radio', { name: 'Client Atlas' }));
-	await fireEvent.press(screen.getByRole('button', { name: t.common.add }));
+	await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
 	await waitFor(() => expect(mockAdd).toHaveBeenCalledTimes(1));
 	const data = mockAdd.mock.calls[0][0].data;
 	expect(data).toMatchObject({ numero_facture: '001/26', client: 3, devise: 'MAD' });
@@ -127,7 +127,7 @@ it('edits and normalizes line decimal commas through the mutation hook', async (
 	await mockQuoteQuery.setResult({ currentData: quote } as never);
 	await setup();
 	await fireEvent.changeText(screen.getByLabelText(t.documentForm.colQuantite), '1,5');
-	await fireEvent.press(screen.getByRole('button', { name: t.common.update }));
+	await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
 	await waitFor(() => expect(mockEdit).toHaveBeenCalled());
 	expect(mockEdit).toHaveBeenCalledWith({
 		id: 7,
@@ -144,7 +144,7 @@ it('saves payment terms and the purchase-order number without Devis-only fields'
 	await fireEvent.press(screen.getByRole('radio', { name: 'Client Atlas' }));
 	await fireEvent.changeText(screen.getByLabelText(t.documentForm.fieldTermesPaiementLabel), '30 jours');
 	await fireEvent.changeText(screen.getByLabelText(t.facturesProforma.fieldNumeroBonCommande), 'BC-2026');
-	await fireEvent.press(screen.getByRole('button', { name: t.common.add }));
+	await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
 	await waitFor(() => expect(mockAdd).toHaveBeenCalledTimes(1));
 	expect(mockAdd.mock.calls[0][0].data).toMatchObject({
 		termes_paiement: '30 jours',
@@ -183,7 +183,7 @@ it('requires article lines in edit mode and never sends an empty edit', async ()
 	mockParams.id = '7';
 	await mockQuoteQuery.setResult({ currentData: { ...quote, lignes: [] } } as never);
 	await setup();
-	await fireEvent.press(screen.getByRole('button', { name: t.common.update }));
+	await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
 	await waitFor(() => expect(screen.getByText(t.documentForm.noArticlesError)).toBeOnTheScreen());
 	expect(mockEdit).not.toHaveBeenCalled();
 });
@@ -213,7 +213,7 @@ it('preserves Nectar fields, hides discounts and clears unsupported values in th
 	expect(screen.queryByText(t.documentForm.remarqueSection)).toBeNull();
 	expect(screen.queryByText(t.documentForm.remiseGlobaleSection)).toBeNull();
 	expect(screen.getByRole('button', { name: t.documentForm.fieldDateEcheanceLabel })).toBeOnTheScreen();
-	await fireEvent.press(screen.getByRole('button', { name: t.common.update }));
+	await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
 	await waitFor(() =>
 		expect(mockEdit).toHaveBeenCalledWith({
 			id: 7,

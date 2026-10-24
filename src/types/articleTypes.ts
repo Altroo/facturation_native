@@ -1,4 +1,17 @@
 import type { DocumentPickerAsset } from 'expo-document-picker';
+import type { ArticleClass } from '@/models/classes';
+import type { TypeRemiseType } from '@/types/devisTypes';
+
+export type ArticlePopupValues = {
+	quantity: string | number;
+	remise_type: TypeRemiseType;
+	remise: string | number;
+};
+
+export interface SelectedArticlePopupValues extends ArticlePopupValues {
+	articleId: number;
+	articleData: Partial<ArticleClass>;
+}
 
 export type TypeArticleType = 'Produit' | 'Service';
 export type CurrencyType = 'MAD' | 'EUR' | 'USD';

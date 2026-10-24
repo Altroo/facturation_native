@@ -28,6 +28,23 @@ beforeEach(() => {
 	auth.instance.defaults.adapter = adapter;
 	store = createStore();
 });
+
+it('preserves quote data when invoice conversion is rejected', async () => {
+	adapter.mockImplementation(async (config) =>
+		config.method === 'get'
+			? response(config, [{ id: 7 }])
+			: Promise.reject(
+					new AxiosError('Denied', 'ERR_BAD_REQUEST', config, undefined, response(config, { detail: 'Denied' }, 403)),
+				),
+	);
+	const args = { company_id: 5 };
+	await store.dispatch(deviApi.endpoints.getDevisList.initiate(args)).unwrap();
+	await expect(
+		store.dispatch(deviApi.endpoints.convertDeviToFactureClient.initiate({ id: 7 })).unwrap(),
+	).rejects.toMatchObject({ status: 403 });
+	expect(deviApi.endpoints.getDevisList.select(args)(store.getState()).data).toEqual([{ id: 7 }]);
+	expect(adapter.mock.calls.filter(([config]) => config.method === 'get')).toHaveLength(1);
+});
 afterEach(async () => {
 	store.dispatch(deviApi.util.resetApiState());
 	store.dispatch(factureProFormaApi.util.resetApiState());

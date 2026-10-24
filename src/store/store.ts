@@ -10,6 +10,8 @@ import { clientApi } from '@/store/services/client';
 import { articleApi } from '@/store/services/article';
 import { deviApi } from '@/store/services/devi';
 import { factureProFormaApi } from '@/store/services/factureProForma';
+import { factureClientApi } from '@/store/services/factureClient';
+import { reglementApi } from '@/store/services/reglement';
 import {
 	citiesApi,
 	marqueApi,
@@ -36,6 +38,8 @@ const rootReducer = combineReducers({
 	[articleApi.reducerPath]: articleApi.reducer,
 	[deviApi.reducerPath]: deviApi.reducer,
 	[factureProFormaApi.reducerPath]: factureProFormaApi.reducer,
+	[factureClientApi.reducerPath]: factureClientApi.reducer,
+	[reglementApi.reducerPath]: reglementApi.reducer,
 	[modePaiementApi.reducerPath]: modePaiementApi.reducer,
 	[marqueApi.reducerPath]: marqueApi.reducer,
 	[categorieApi.reducerPath]: categorieApi.reducer,
@@ -60,15 +64,7 @@ export const makeStore = (): SagaStore => {
 	const s = configureStore({
 		reducer: reducers,
 		middleware: (getDefaultMiddleware) =>
-			getDefaultMiddleware({
-				serializableCheck: {
-					// RTK Query uses some non-serializable values in its internal actions
-					ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
-					// Ignore RTK Query cache metadata paths
-					ignoredPaths: ['meta.arg', 'meta.baseQueryMeta', 'payload.timestamp'],
-				},
-				thunk: true,
-			})
+			getDefaultMiddleware()
 				.prepend(sagaMw)
 				.concat(
 					accountApi.middleware,
@@ -79,6 +75,8 @@ export const makeStore = (): SagaStore => {
 					articleApi.middleware,
 					deviApi.middleware,
 					factureProFormaApi.middleware,
+					factureClientApi.middleware,
+					reglementApi.middleware,
 					modePaiementApi.middleware,
 					marqueApi.middleware,
 					categorieApi.middleware,

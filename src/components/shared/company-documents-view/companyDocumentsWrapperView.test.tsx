@@ -73,7 +73,7 @@ beforeEach(() => {
 	mockRole = 'Caissier';
 });
 
-it.each(['devis', 'facture-pro-forma'] as const)(
+it.each(['devis', 'facture-pro-forma', 'facture-client'] as const)(
 	'renders and edits %s using the matching route and fields',
 	async (documentType) => {
 		await render(<CompanyDocumentViewContent {...props()} documentType={documentType} />);

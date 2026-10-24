@@ -25,13 +25,19 @@ import { useLanguage } from '@/utils/hooks';
 import { MODULES_PAGE_SIZE } from '@/utils/rawData';
 import { colors } from '@/utils/themes';
 import type { ArticleClass } from '@/models/classes';
+import type { ArticlePopupValues, SelectedArticlePopupValues } from '@/types/articleTypes';
+import type { TypeRemiseType } from '@/types/devisTypes';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import CustomNumberInput from '@/components/nativeElements/customNumberInput/customNumberInput';
+import CustomDropDownSelect from '@/components/nativeElements/customDropDownSelect/customDropDownSelect';
 
 type Props = {
 	companyId: number;
 	documentDevise: string;
 	existingArticleIds: Set<number>;
+	existingArticleLineValues?: Record<number, ArticlePopupValues>;
 	disableRemise?: boolean;
-	onAdd: (articles: ArticleClass[]) => void;
+	onAdd: (articles: SelectedArticlePopupValues[]) => void;
 	onClose: () => void;
 };
 
@@ -110,6 +116,23 @@ const AddArticleModal = (props: Props) => {
 	// Store selected records, not only visible IDs: server search changes the
 	// loaded pages, but must not lose articles selected in a previous search.
 	const [selected, setSelected] = useState<Record<number, ArticleClass>>({});
+	const [articlePopupValues, setArticlePopupValues] = useState<Record<number, ArticlePopupValues>>({});
+	const getRowPopupValues = (id: number): ArticlePopupValues =>
+		articlePopupValues[id] ?? props.existingArticleLineValues?.[id] ?? { quantity: 1, remise_type: '', remise: 0 };
+	const setRowPopupValues = (id: number, values: Partial<ArticlePopupValues>) => {
+		setArticlePopupValues((previous) => ({
+			...previous,
+			[id]: {
+				...(previous[id] ?? props.existingArticleLineValues?.[id] ?? { quantity: 1, remise_type: '', remise: 0 }),
+				...values,
+			},
+		}));
+	};
+	const remiseItems = [
+		{ code: t.globalRemiseModal.typeNone, value: '' },
+		{ code: t.rawData.remiseTypes.percentage, value: 'Pourcentage' },
+		{ code: t.rawData.remiseTypes.fixed, value: 'Fixe' },
+	];
 	const query = useGetArticlesInfiniteListInfiniteQuery({
 		...serializeFilters(filterModel).params,
 		company_id: props.companyId,
@@ -213,6 +236,48 @@ const AddArticleModal = (props: Props) => {
 							}
 							tone={props.existingArticleIds.has(item.id) ? 'info' : 'success'}
 						/>
+						{!!selected[item.id] && (
+							<View className="gap-3 border-t border-slate-200 pt-3 dark:border-slate-600">
+								<CustomNumberInput
+									compact
+									label={t.addArticleModal.colQuantite}
+									accessibilityLabel={`${t.addArticleModal.colQuantite} ${item.reference}`}
+									startIcon={<MaterialIcons name="inventory-2" size={20} color={colors.slate[400]} />}
+									value={String(getRowPopupValues(item.id).quantity)}
+									min={0.01}
+									onChangeText={(quantity) => setRowPopupValues(item.id, { quantity })}
+								/>
+								{!props.disableRemise && (
+									<>
+										<CustomDropDownSelect
+											compact
+											label={t.addArticleModal.colTypeRemise}
+											startIcon={<MaterialIcons name="sell" size={20} color={colors.slate[400]} />}
+											items={remiseItems}
+											value={getRowPopupValues(item.id).remise_type}
+											getOptionLabel={(value) => remiseItems.find((option) => option.value === value)?.code ?? value}
+											onChange={(value) =>
+												setRowPopupValues(item.id, {
+													remise_type: value as TypeRemiseType,
+													remise: value ? getRowPopupValues(item.id).remise : 0,
+												})
+											}
+										/>
+										{!!getRowPopupValues(item.id).remise_type && (
+											<CustomNumberInput
+												compact
+												label={`${t.addArticleModal.colRemise} (${getRowPopupValues(item.id).remise_type === 'Pourcentage' ? '%' : props.documentDevise})`}
+												accessibilityLabel={`${t.addArticleModal.colRemise} ${item.reference}`}
+												startIcon={<MaterialIcons name="sell" size={20} color={colors.slate[400]} />}
+												value={String(getRowPopupValues(item.id).remise)}
+												max={getRowPopupValues(item.id).remise_type === 'Pourcentage' ? 100 : undefined}
+												onChangeText={(remise) => setRowPopupValues(item.id, { remise })}
+											/>
+										)}
+									</>
+								)}
+							</View>
+						)}
 					</View>
 				)}
 			/>
@@ -221,7 +286,14 @@ const AddArticleModal = (props: Props) => {
 				loading={false}
 				active={count > 0}
 				onClick={() => {
-					props.onAdd(Object.values(selected));
+					props.onAdd(
+						Object.values(selected).map((articleData) => ({
+							...getRowPopupValues(articleData.id),
+							articleId: articleData.id,
+							articleData,
+							...(props.disableRemise ? { remise_type: '', remise: 0 } : {}),
+						})),
+					);
 					props.onClose();
 				}}
 			/>

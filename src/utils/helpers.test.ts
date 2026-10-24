@@ -42,6 +42,8 @@ import {
 	setFormikAutoErrors,
 	hexToRGB,
 	formatDate,
+	formatNumber,
+	formatNumberWithSpaces,
 	parseNumber,
 	safeParseForInput,
 	ValidatePricesHelper,
@@ -234,6 +236,7 @@ it('keeps raw transport errors available to refresh while normalizing outward ne
 		error: { status_code: 503, message: 'Erreur serveur.' },
 	});
 });
+
 it('keeps a new login independent of an old outward request waiting for refresh', async () => {
 	let finish!: (value: AxiosResponse) => void;
 	publicAdapter.mockImplementationOnce(
@@ -322,6 +325,30 @@ describe('API Utilities', () => {
 
 		it('returns placeholder for invalid date', () => {
 			expect(formatDate('invalid')).toBe('-');
+		});
+	});
+
+	describe('price formatting', () => {
+		it.each([
+			[0, '0,00'],
+			[999.5, '999,50'],
+			[1000, '1\u00a0000,00'],
+			[1149560, '1\u00a0149\u00a0560,00'],
+			['2540390.00', '2\u00a0540\u00a0390,00'],
+			[1000000000, '1\u00a0000\u00a0000\u00a0000,00'],
+			[-1149560.5, '-1\u00a0149\u00a0560,50'],
+		])('shows every three-digit group with readable nonbreaking spaces for %s', (value, expected) => {
+			expect(formatNumberWithSpaces(value)).toBe(expected);
+			expect(formatNumber(value)).toBe(expected);
+		});
+
+		it('preserves the requested precision for existing non-price callers', () => {
+			expect(formatNumberWithSpaces(1234.125, 3)).toBe('1\u00a0234,125');
+		});
+
+		it.each([null, undefined, '', 'invalid'])('preserves empty-value fallbacks for %s', (value) => {
+			expect(formatNumberWithSpaces(value)).toBe('');
+			expect(formatNumber(value)).toBe('0,00');
 		});
 	});
 
@@ -541,7 +568,7 @@ describe('API Utilities', () => {
 
 			it('rejects fixed global remise larger than totalHTBeforeGlobal', () => {
 				expect(ValidatePricesHelper.validateGlobalRemise(1100, 'Fixe', 1000)).toBe(
-					'La remise fixe globale (1\u202f100,00 MAD) ne peut pas dépasser le total HT du devis (1\u202f000,00 MAD)',
+					'La remise fixe globale (1\u00a0100,00 MAD) ne peut pas dépasser le total HT du devis (1\u00a0000,00 MAD)',
 				);
 			});
 
@@ -769,7 +796,6 @@ it.each([
 	'',
 	'https://example.invalid/dashboard/users/1',
 	'//example.invalid/dashboard/users/1',
-	'/dashboard/clients/4',
 	'/dashboard/stock',
 	'/dashboard/users/0',
 	'/dashboard/users/01',
@@ -881,4 +907,39 @@ it('maps implemented Pro-forma notification links while retaining company scope'
 		params: { company_id: '5' },
 	});
 	expect(getNotificationDestination('/dashboard/facture-pro-forma/7')).toBe('/facture-pro-forma');
+});
+
+it('maps client notification screens only with a valid company scope', () => {
+	expect(getNotificationDestination('/dashboard/clients/new?company_id=5')).toEqual({
+		pathname: '/clients/form',
+		params: { company_id: '5' },
+	});
+	expect(getNotificationDestination('/dashboard/clients/7?company_id=5')).toEqual({
+		pathname: '/clients/[id]',
+		params: { id: '7', company_id: '5' },
+	});
+	expect(getNotificationDestination('/dashboard/clients/7/edit?company_id=5')).toEqual({
+		pathname: '/clients/form',
+		params: { id: '7', company_id: '5' },
+	});
+	expect(getNotificationDestination('/dashboard/clients/7')).toBe('/clients');
+	expect(getNotificationDestination('/dashboard/clients/7?company_id=-5')).toBe('/clients');
+	expect(getNotificationDestination('/dashboard/clients/0?company_id=5')).toBeNull();
+});
+
+it('maps invoice notification URLs while retaining company scope', () => {
+	expect(getNotificationDestination('/dashboard/facture-client/7?company_id=5')).toEqual({
+		pathname: '/facture-client/[id]',
+		params: { id: '7', company_id: '5' },
+	});
+	expect(getNotificationDestination('/dashboard/facture-client/7/edit?company_id=5')).toEqual({
+		pathname: '/facture-client/form',
+		params: { id: '7', company_id: '5' },
+	});
+	expect(getNotificationDestination('/dashboard/facture-client/new?company_id=5')).toEqual({
+		pathname: '/facture-client/form',
+		params: { company_id: '5' },
+	});
+	expect(getNotificationDestination('/dashboard/facture-client/unpaid')).toBe('/facture-client/unpaid');
+	expect(getNotificationDestination('/dashboard/facture-client/7')).toBe('/facture-client');
 });

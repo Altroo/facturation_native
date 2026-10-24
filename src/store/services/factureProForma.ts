@@ -1,3 +1,4 @@
+import { factureClientApi } from '@/store/services/factureClient';
 import { createApi } from '@reduxjs/toolkit/query/react';
 import { axiosBaseQuery } from '@/utils/axiosBaseQuery';
 import { getDjangoNextPageParam, isAuthenticatedInstance } from '@/utils/helpers';
@@ -91,6 +92,21 @@ export const factureProFormaApi = createApi({
 			}),
 			invalidatesTags: (_result, error) => (error ? [] : ['FactureProForma', 'Dashboard']),
 		}),
+		convertFactureProFormaToFacture: builder.mutation<{ id: number }, { id: number }>({
+			query: ({ id }) => ({
+				url: `${process.env.EXPO_PUBLIC_FACTURE_PROFORMAT_CONVERT_TO_FACTURE_CLIENT}${id}/`,
+				method: 'POST',
+			}),
+			invalidatesTags: (_result, error) => (error ? [] : ['FactureProForma', 'Dashboard']),
+			async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+				try {
+					await queryFulfilled;
+					dispatch(factureClientApi.util.invalidateTags(['FactureClient']));
+				} catch {
+					// The caller reports rejected conversions without invalidating the destination.
+				}
+			},
+		}),
 		bulkDeleteFactureProForma: builder.mutation<void, { ids: number[] }>({
 			query: ({ ids }) => ({
 				url: `${process.env.EXPO_PUBLIC_FACTURE_PROFORMA_ROOT}/bulk_delete/`,
@@ -112,4 +128,5 @@ export const {
 	useDeleteFactureProFormaMutation,
 	usePatchStatutMutation,
 	useBulkDeleteFactureProFormaMutation,
+	useConvertFactureProFormaToFactureMutation,
 } = factureProFormaApi;

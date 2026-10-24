@@ -71,7 +71,7 @@ const props = (): Props => ({
 });
 beforeEach(() => jest.clearAllMocks());
 
-it.each(['devis', 'facture-pro-forma'] as const)(
+it.each(['devis', 'facture-pro-forma', 'facture-client'] as const)(
 	'shares cards while preserving the %s destination',
 	async (documentType) => {
 		await render(<CompanyDocumentsListContent {...props()} documentType={documentType} />);
@@ -125,4 +125,33 @@ it('rejects malformed server IDs without selecting rows', async () => {
 	await fireEvent.press(screen.getByRole('checkbox', { name: t.shared.selectAllMatching(2) }));
 	await waitFor(() => expect(mockError).toHaveBeenCalledWith(t.common.genericError));
 	expect(data.bulkDeleteRecords).not.toHaveBeenCalled();
+});
+
+it('shows the customer order reference and opens the tenant-scoped client without opening the document', async () => {
+	const data = props();
+	data.query.currentData!.pages[0]!.results = [{ ...row, client: 3, numero_demande_prix_client: 'REQ-ATLAS' }];
+	await render(<CompanyDocumentsListContent {...data} />);
+	expect(screen.getByText('REQ-ATLAS')).toBeOnTheScreen();
+	const stopPropagation = jest.fn();
+	await fireEvent.press(screen.getByRole('link', { name: 'Atlas Client' }), { stopPropagation });
+	expect(stopPropagation).toHaveBeenCalledTimes(1);
+	expect(router.push).toHaveBeenCalledTimes(1);
+	expect(router.push).toHaveBeenCalledWith({ pathname: '/clients/[id]', params: { id: '3', company_id: '5' } });
+});
+
+it('disables conversion of a pro-forma that already has a client invoice', async () => {
+	const nativeMethods = jest.requireActual<{ default: { measureInWindow: jest.Mock } }>(
+		'@react-native/jest-preset/jest/MockNativeMethods',
+	).default;
+	nativeMethods.measureInWindow.mockImplementation((callback) => callback(280, 180, 44, 44));
+	const data = props();
+	data.query.currentData!.pages[0]!.results = [{ ...row, converted_facture_client: 12 }];
+	const convertToInvoice = jest.fn();
+	await render(
+		<CompanyDocumentsListContent {...data} documentType="facture-pro-forma" convertToInvoice={convertToInvoice} />,
+	);
+	await fireEvent.press(screen.getByRole('button', { name: t.common.moreActions }));
+	expect(screen.getByRole('menuitem', { name: t.facturesProforma.alreadyConverted })).toBeDisabled();
+	await fireEvent.press(screen.getByRole('menuitem', { name: t.facturesProforma.alreadyConverted }));
+	expect(convertToInvoice).not.toHaveBeenCalled();
 });

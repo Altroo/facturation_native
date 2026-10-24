@@ -622,7 +622,7 @@ export const en: TranslationDictionary = {
 		documentNumberLabel: 'Invoice number',
 		documentDateLabel: 'Invoice date',
 		termsSecondLabel: 'Client PO number',
-		statsCA: 'Total revenue',
+		statsCA: 'Revenue',
 		statsReglements: 'Total payments',
 		statsImpayes: 'Total unpaid',
 		colNombrePaiements: 'Payments',
@@ -650,7 +650,7 @@ export const en: TranslationDictionary = {
 		deleteModalBody: 'Are you sure you want to delete this client invoice? This action is irreversible.',
 		convertToBLTitle: 'Convert to delivery note?',
 		convertToBLBody: 'Are you sure you want to convert this client invoice to a delivery note?',
-		labelBonLivraison: 'Delivery note',
+		labelBonLivraison: 'Convert to delivery note',
 	},
 	facturesAvoir: {
 		listTitle: 'Credit Notes List',

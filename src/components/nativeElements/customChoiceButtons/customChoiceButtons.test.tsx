@@ -31,6 +31,18 @@ it('prevents selection while disabled', async () => {
 	expect(onChange).not.toHaveBeenCalled();
 });
 
+it('keeps the selection accessible when its visible label is hidden', async () => {
+	const onChange = jest.fn();
+	await render(
+		<CustomChoiceButtons label="Language" items={items} value="fr" onChange={onChange} columns={3} compact hideLabel />,
+	);
+	expect(screen.queryByText('Language')).not.toBeOnTheScreen();
+	expect(screen.getByRole('radio', { name: 'Français' })).toBeChecked();
+	expect(screen.getByRole('radio', { name: 'Français' })).toHaveProp('accessibilityHint', 'Language');
+	await fireEvent.press(screen.getByRole('radio', { name: 'English' }));
+	expect(onChange).toHaveBeenCalledWith('en');
+});
+
 it('supports the existing language-only modal immediate actions without a selected value', async () => {
 	const onChange = jest.fn();
 	await render(<CustomChoiceButtons label="Language" items={items} onChange={onChange} columns={3} />);

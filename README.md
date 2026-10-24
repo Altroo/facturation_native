@@ -20,7 +20,8 @@ The project follows the web application's folder structure, API contracts and Re
 - Clients: active and archived lists, creation, editing, details, account statements and document history.
 - Articles: active and archived lists, creation, editing, photos, HT/TTC pricing, classification and stock snapshots. CSV/Excel import and the import guide use the same Django endpoints as the web.
 - Quotes (Devis): company-scoped list, header creation followed by article lines, editing, details, discounts, totals, status permissions, deletion and four PDF formats in French, English or Dutch. Quotes with status Sent or Accepted can be converted to a pro-forma after confirmation.
-- Pro-formas: company-scoped list, creation, editing, details, payment terms, purchase-order reference, article lines, discounts, status controls and PDF generation. Conversion to a client invoice remains disabled until that mobile module exists.
+- Pro-formas: company-scoped list, creation, editing, details, payment terms, purchase-order reference, article lines, discounts, status controls, PDF generation and conversion to a client invoice.
+- Client invoices: regular and unpaid lists, company statistics by currency, creation, editing, details, payment creation and history, balances, validation permissions and PDF generation. Quotes and pro-formas can create client invoices. Payments use the invoice currency and remaining balance, and refresh the invoice after saving. Delivery-note conversion is still pending.
 - Profile editing, avatar upload, password changes and logout.
 - Compact drawer navigation and stack navigation that returns to the previous screen.
 - French/English translations, flag controls and saved light/dark appearance.
@@ -29,7 +30,7 @@ The project follows the web application's folder structure, API contracts and Re
 - A logo splash screen while local resources and preferences load.
 - Backend-controlled maintenance and local development version checks.
 
-The dashboard is still a foundation screen. Business modules beyond users, companies, clients, articles, quotes and pro-formas are not fully migrated; their menu destinations remain placeholders. Django controls maintenance and version data. Background push delivery and app-store distribution are not configured.
+The dashboard is still a foundation screen. Business modules beyond users, companies, clients, articles, quotes, pro-formas and client invoices are not fully migrated; their menu destinations remain placeholders. Django controls maintenance and version data. Background push delivery and app-store distribution are not configured.
 
 ## Stack
 
@@ -59,7 +60,7 @@ Mobile screenshots are not included yet. The interface and available modules con
 
 ### Requirements
 
-- Bun 1.4.3 or newer and a Node.js version matching `package.json` (`^22.18.0`, `^24.3.0` or `>=26.0.0`).
+- Bun 1.4.4 or newer and a Node.js version matching `package.json` (`^22.18.0`, `^24.3.0` or `>=26.0.0`).
 - Xcode for the iOS Simulator, or Android Studio with an SDK, JDK and emulator/device for Android.
 - The Django backend and an existing account with the appropriate permissions.
 

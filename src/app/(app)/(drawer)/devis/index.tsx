@@ -10,6 +10,7 @@ import {
 	useDeleteDeviMutation,
 	useBulkDeleteDevisMutation,
 	useConvertDeviToFactureProFormaMutation,
+	useConvertDeviToFactureClientMutation,
 } from '@/store/services/devi';
 import { useInitAccessToken } from '@/contexts/InitContext';
 import { openDevisPdf } from '@/utils/apiHelpers';
@@ -48,6 +49,7 @@ const DevisListContent = (props: Props) => {
 	const [deleteRecord, deleting] = useDeleteDeviMutation();
 	const [bulkDeleteRecords, bulkDeleting] = useBulkDeleteDevisMutation();
 	const [convertToProforma, converting] = useConvertDeviToFactureProFormaMutation();
+	const [convertToInvoice, convertingInvoice] = useConvertDeviToFactureClientMutation();
 	return (
 		<CompanyDocumentsListContent
 			{...props}
@@ -58,7 +60,8 @@ const DevisListContent = (props: Props) => {
 			deleteRecord={deleteRecord}
 			bulkDeleteRecords={bulkDeleteRecords}
 			convertToProforma={convertToProforma}
-			busy={deleting.isLoading || bulkDeleting.isLoading || converting.isLoading}
+			convertToInvoice={convertToInvoice}
+			busy={deleting.isLoading || bulkDeleting.isLoading || converting.isLoading || convertingInvoice.isLoading}
 			searchTerm={searchTerm}
 			setSearchTerm={setSearchTerm}
 			sortModel={sortModel}

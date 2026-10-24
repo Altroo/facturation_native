@@ -6,6 +6,8 @@ import {
 	DASHBOARD,
 	DEVIS_LIST,
 	FACTURE_PRO_FORMA_LIST,
+	FACTURE_CLIENT_LIST,
+	FACTURE_CLIENT_UNPAID,
 	COMPANIES_LIST,
 	COMPANIES_ADD,
 	USERS_LIST,
@@ -99,8 +101,8 @@ const getNavigationMenu = (isStaff: boolean, t: TranslationDictionary) => {
 			title: t.navigation.facturesClient,
 			icon: <MaterialIcons name="receipt-long" size={21} color={colors.slate[500]} />,
 			items: [
-				{ title: t.navigation.facturesClientList, label: t.navigation.facturesClientList, path: undefined },
-				{ title: t.navigation.facturesImpayees, label: t.navigation.facturesImpayees, path: undefined },
+				{ title: t.navigation.facturesClientList, label: t.navigation.facturesClientList, path: FACTURE_CLIENT_LIST },
+				{ title: t.navigation.facturesImpayees, label: t.navigation.facturesImpayees, path: FACTURE_CLIENT_UNPAID },
 			],
 		},
 		facturesAvoir: {

@@ -14,6 +14,7 @@ import {
 	openClientStatementPdf,
 	openDevisPdf,
 	openFactureProFormaPdf,
+	openFactureClientPdf,
 	openPdf,
 	postApi,
 } from '@/utils/apiHelpers';
@@ -111,6 +112,22 @@ describe('openPdf', () => {
 			expect([...url.searchParams.entries()]).toEqual([
 				['company_id', '5'],
 				['type', type],
+			]);
+			expect(mockPreviewPdf).toHaveBeenCalledWith({ mimeType: 'application/pdf' });
+		},
+	);
+
+	it.each(['ios', 'android'] as const)(
+		'previews client invoice PDFs through the configured endpoint on %s',
+		async (platform) => {
+			jest.replaceProperty(Platform, 'OS', platform);
+			jest.replaceProperty(process.env, 'EXPO_PUBLIC_FACTURE_CLIENT_PDF', '/custom-invoice/pdf');
+			await expect(openFactureClientPdf(12, 5, 'avec_unite_avec_remise', 'nl')).resolves.toBe(true);
+			const url = new URL(adapter.mock.calls[0][0].url!);
+			expect(url.pathname).toBe('/api/custom-invoice/pdf/nl/12/');
+			expect([...url.searchParams.entries()]).toEqual([
+				['company_id', '5'],
+				['type', 'avec_unite_avec_remise'],
 			]);
 			expect(mockPreviewPdf).toHaveBeenCalledWith({ mimeType: 'application/pdf' });
 		},
