@@ -707,6 +707,8 @@ export type TranslationDictionary = {
 		motifAutre: string;
 	};
 	bonsLivraison: {
+		saveLinesBeforePosting: string;
+		stockPostedLinesHint: string;
 		listTitle: string;
 		uninvoicedTitle: string;
 		detailsTitle: string;

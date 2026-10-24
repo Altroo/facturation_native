@@ -109,3 +109,15 @@ export const REGLEMENTS_ADD = (company_id: number, facture_client_id?: number) =
 		...(facture_client_id !== undefined ? { facture_client_id: String(facture_client_id) } : {}),
 	},
 });
+
+export const BON_DE_LIVRAISON_LIST = '/bon-de-livraison' as const;
+export const BON_DE_LIVRAISON_UNINVOICED = '/bon-de-livraison/uninvoiced' as const;
+export const BON_DE_LIVRAISON_ADD = '/bon-de-livraison/form' as const;
+export const BON_DE_LIVRAISON_VIEW = (id: number) => ({
+	pathname: '/bon-de-livraison/[id]' as const,
+	params: { id: String(id) },
+});
+export const BON_DE_LIVRAISON_EDIT = (id: number) => ({
+	pathname: '/bon-de-livraison/form' as const,
+	params: { id: String(id) },
+});

@@ -4,6 +4,8 @@ import {
 	DeviFactureLivraisonLineClass,
 	DeviClass,
 	FactureClass,
+	BonDeLivraisonClass,
+	LivreParClass,
 	FactureAvoirClass,
 	ReglementClass,
 	GroupClass,
@@ -454,5 +456,58 @@ describe('ReglementClass', () => {
 			reste_a_payer: 700,
 			observations: 'Bank transfer',
 		});
+	});
+});
+
+describe('BonDeLivraisonClass', () => {
+	it('keeps the web delivery-note field order, delivery person and invoice origin', () => {
+		const delivery = new BonDeLivraisonClass(
+			7,
+			'0001/26',
+			3,
+			'Atlas Client',
+			'2026-10-24',
+			null,
+			'BC-1',
+			6,
+			'Livreur Atlas',
+			2,
+			'Virement',
+			'Livrer lundi',
+			'Brouillon',
+			'2026-10-24',
+			'2026-10-24',
+			1,
+			'User',
+			1,
+			'Fixe',
+			5,
+			100,
+			20,
+			120,
+			114,
+			'MAD',
+			[],
+			'Supplier',
+			'supplier@example.invalid',
+			12,
+			'FAC12/26',
+		);
+		expect(delivery.numero_bon_livraison).toBe('0001/26');
+		expect(delivery.date_bon_livraison).toBe('2026-10-24');
+		expect(delivery.livre_par).toBe(6);
+		expect(delivery.livre_par_name).toBe('Livreur Atlas');
+		expect(delivery.source_facture_client).toBe(12);
+		expect(delivery.source_facture_client_numero).toBe('FAC12/26');
+		expect(delivery.total_ttc_apres_remise).toBe(114);
+		expect(delivery.lignes).toEqual([]);
+	});
+});
+describe('LivreParClass', () => {
+	it('keeps the delivery-person parameter scoped to a company', () => {
+		const person = new LivreParClass(6, 'Livreur Atlas', 5);
+		expect(person.id).toBe(6);
+		expect(person.nom).toBe('Livreur Atlas');
+		expect(person.company).toBe(5);
 	});
 });

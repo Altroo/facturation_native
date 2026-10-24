@@ -26,6 +26,7 @@ import { deviApi } from '@/store/services/devi';
 import { factureProFormaApi } from '@/store/services/factureProForma';
 import { factureClientApi } from '@/store/services/factureClient';
 import { factureAvoirApi } from '@/store/services/factureAvoir';
+import { bonDeLivraisonApi } from '@/store/services/bonDeLivraison';
 import { reglementApi } from '@/store/services/reglement';
 import { aiAssistantApi } from '@/store/services/aiAssistant';
 import {
@@ -35,6 +36,7 @@ import {
 	uniteApi,
 	emplacementApi,
 	modePaiementApi,
+	livreParApi,
 } from '@/store/services/parameter';
 import { notificationApi } from '@/store/services/notification';
 import { setWSMaintenance, setWSServerVersion } from '@/store/slices/wsSlice';
@@ -205,9 +207,11 @@ export function* resetApiState(): SagaIterator {
 	yield put(factureProFormaApi.util.resetApiState());
 	yield put(factureClientApi.util.resetApiState());
 	yield put(factureAvoirApi.util.resetApiState());
+	yield put(bonDeLivraisonApi.util.resetApiState());
 	yield put(reglementApi.util.resetApiState());
 	yield put(aiAssistantApi.util.resetApiState());
 	yield put(modePaiementApi.util.resetApiState());
+	yield put(livreParApi.util.resetApiState());
 	yield put(marqueApi.util.resetApiState());
 	yield put(categorieApi.util.resetApiState());
 	yield put(uniteApi.util.resetApiState());

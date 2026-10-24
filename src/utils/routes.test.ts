@@ -58,3 +58,12 @@ it('exports client invoice and unpaid routes while keeping PDF endpoints outside
 	expect(routes.FACTURE_CLIENT_EDIT(7)).toEqual({ pathname: '/facture-client/form', params: { id: '7' } });
 	expect(routes).not.toHaveProperty('FACTURE_CLIENT_PDF');
 });
+
+it('keeps delivery-note list, uninvoiced, form and detail routes together', () => {
+	expect(routes.BON_DE_LIVRAISON_LIST).toBe('/bon-de-livraison');
+	expect(routes.BON_DE_LIVRAISON_UNINVOICED).toBe('/bon-de-livraison/uninvoiced');
+	expect(routes.BON_DE_LIVRAISON_ADD).toBe('/bon-de-livraison/form');
+	expect(routes.BON_DE_LIVRAISON_EDIT(7)).toEqual({ pathname: '/bon-de-livraison/form', params: { id: '7' } });
+	expect(routes.BON_DE_LIVRAISON_VIEW(7)).toEqual({ pathname: '/bon-de-livraison/[id]', params: { id: '7' } });
+	expect(routes).not.toHaveProperty('BON_DE_LIVRAISON_PDF');
+});

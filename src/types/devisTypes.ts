@@ -61,7 +61,8 @@ export interface DevisFormSchema {
 	globalError?: string;
 }
 
-export type DocumentPdfType = 'avec_remise' | 'sans_remise' | 'avec_unite_sans_remise' | 'avec_unite_avec_remise';
+export type DocumentPdfType =
+	'normal' | 'avec_remise' | 'sans_remise' | 'avec_unite_sans_remise' | 'avec_unite_avec_remise';
 
 export type Totals = {
 	totalHT: number;

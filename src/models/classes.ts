@@ -173,6 +173,14 @@ export class EmplacementClass {
 	) {}
 }
 
+export class LivreParClass {
+	constructor(
+		public readonly id: number,
+		public nom: string,
+		public company: number,
+	) {}
+}
+
 export class DeviFactureLivraisonLineClass {
 	constructor(
 		public readonly id: number,
@@ -315,6 +323,43 @@ export class FactureClass {
 		public readonly converted_facture_client?: number | null,
 		public readonly converted_facture_client_numero?: string | null,
 		public readonly company?: number,
+	) {}
+}
+
+export class BonDeLivraisonClass {
+	// The API returns company for native route ownership checks.
+	public readonly company?: number;
+	constructor(
+		public readonly id: number,
+		public numero_bon_livraison: string,
+		public client: number | null,
+		public readonly client_name: string | null,
+		public date_bon_livraison: string,
+		public date_echeance: string | null,
+		public numero_bon_commande_client: string | null,
+		public livre_par: number | null,
+		public readonly livre_par_name: string | null,
+		public mode_paiement: number | null,
+		public readonly mode_paiement_name: string | null,
+		public remarque: string | null,
+		public statut: TypeFactureLivraisonDevisStatus,
+		public readonly date_created: string,
+		public readonly date_updated: string,
+		public readonly created_by_user_id: number,
+		public readonly created_by_user_name: string | null,
+		public readonly lignes_count: number,
+		public remise_type: TypeRemiseType,
+		public remise: number,
+		public readonly total_ht: number,
+		public readonly total_tva: number,
+		public readonly total_ttc: number,
+		public readonly total_ttc_apres_remise: number,
+		public readonly devise: string,
+		public lignes: Array<DeviFactureLivraisonLineClass>,
+		public fournisseur?: string | null,
+		public fournisseur_email?: string | null,
+		public readonly source_facture_client?: number | null,
+		public readonly source_facture_client_numero?: string | null,
 	) {}
 }
 

@@ -706,6 +706,8 @@ export const fr: TranslationDictionary = {
 		motifAutre: 'Autre',
 	},
 	bonsLivraison: {
+		saveLinesBeforePosting: 'Enregistrez les lignes modifiées avant de comptabiliser le bon de livraison.',
+		stockPostedLinesHint: 'Repassez le bon à un statut non comptabilisé avant de modifier ses lignes.',
 		listTitle: 'Liste des Bons de Livraison',
 		uninvoicedTitle: 'BLs Non Facturés',
 		detailsTitle: 'Détails du bon de livraison',

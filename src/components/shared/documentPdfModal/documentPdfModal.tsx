@@ -10,6 +10,7 @@ import type { DocumentPdfType } from '@/types/devisTypes';
 import { LanguageFlag } from '@/components/shared/languageSwitcher/languageSwitcher';
 
 type Props = {
+	normal?: boolean;
 	onClose: () => void;
 	onOpen: (type: DocumentPdfType, language: 'fr' | 'en' | 'nl') => Promise<boolean>;
 };
@@ -23,6 +24,10 @@ const DocumentPdfModal = (props: Props) => {
 	const [loading, setLoading] = useState(false);
 	const [visible, setVisible] = useState(true);
 	const pending = useRef(false);
+	const selection = useRef<{ type: DocumentPdfType; language: 'fr' | 'en' | 'nl' }>({
+		type: 'avec_remise',
+		language: 'fr',
+	});
 	const previewStarted = useRef(false);
 	const formats = [
 		{ label: t.common.pdfWithDiscount, value: 'avec_remise' },
@@ -39,7 +44,8 @@ const DocumentPdfModal = (props: Props) => {
 		if (!pending.current || previewStarted.current) return;
 		previewStarted.current = true;
 		try {
-			if (!(await props.onOpen(type, language))) onError(t.errors.documentOpenError);
+			if (!(await props.onOpen(selection.current.type, selection.current.language)))
+				onError(t.errors.documentOpenError);
 		} catch {
 			onError(t.errors.documentOpenError);
 		} finally {
@@ -47,8 +53,9 @@ const DocumentPdfModal = (props: Props) => {
 			props.onClose();
 		}
 	};
-	const open = () => {
+	const open = (chosenLanguage = language) => {
 		if (pending.current) return;
+		selection.current = { type: props.normal ? 'normal' : type, language: chosenLanguage };
 		pending.current = true;
 		setLoading(true);
 		setVisible(false);
@@ -70,23 +77,33 @@ const DocumentPdfModal = (props: Props) => {
 			titleIcon={<MaterialIcons name="picture-as-pdf" size={24} color={colors.brand} />}
 		>
 			<ScrollView style={{ flexShrink: 1 }} contentContainerStyle={{ gap: 16 }} keyboardShouldPersistTaps="handled">
-				<CustomChoiceButtons label={t.pdf.format} items={formats} value={type} disabled={loading} onChange={setType} />
+				{!props.normal && (
+					<CustomChoiceButtons
+						label={t.pdf.format}
+						items={formats}
+						value={type}
+						disabled={loading}
+						onChange={setType}
+					/>
+				)}
 				<CustomChoiceButtons
 					label={t.pdf.language}
 					items={languages}
 					value={language}
 					columns={3}
 					disabled={loading}
-					onChange={setLanguage}
+					onChange={(value) => (props.normal ? open(value) : setLanguage(value))}
 				/>
 			</ScrollView>
-			<PrimaryLoadingButton
-				buttonText={t.pdf.generatePdf}
-				loading={loading}
-				active={!loading}
-				startIcon={<MaterialIcons name="picture-as-pdf" size={20} color={colors.brand} />}
-				onClick={() => void open()}
-			/>
+			{!props.normal && (
+				<PrimaryLoadingButton
+					buttonText={t.pdf.generatePdf}
+					loading={loading}
+					active={!loading}
+					startIcon={<MaterialIcons name="picture-as-pdf" size={20} color={colors.brand} />}
+					onClick={() => void open()}
+				/>
+			)}
 		</BottomSheet>
 	);
 };

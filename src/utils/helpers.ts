@@ -14,6 +14,11 @@ import {
 	COMPANIES_LIST,
 	COMPANIES_VIEW,
 	DASHBOARD,
+	BON_DE_LIVRAISON_LIST,
+	BON_DE_LIVRAISON_UNINVOICED,
+	BON_DE_LIVRAISON_ADD,
+	BON_DE_LIVRAISON_VIEW,
+	BON_DE_LIVRAISON_EDIT,
 	DEVIS_LIST,
 	DEVIS_ADD,
 	DEVIS_VIEW,
@@ -538,6 +543,17 @@ export const getNotificationDestination = (target?: string) => {
 		const id = parseEntityId(path.split('/')[3]);
 		if (id === null) return null;
 		const route = path.endsWith('/edit') ? FACTURE_AVOIR_EDIT(id) : FACTURE_AVOIR_VIEW(id);
+		return { ...route, params: { ...route.params, company_id: String(companyId) } };
+	}
+	if (path === '/dashboard/bon-de-livraison/uninvoiced') return BON_DE_LIVRAISON_UNINVOICED;
+	if (path === '/dashboard/bon-de-livraison') return BON_DE_LIVRAISON_LIST;
+	if (path === '/dashboard/bon-de-livraison/new' || /^\/dashboard\/bon-de-livraison\/[1-9]\d*(?:\/edit)?$/.test(path)) {
+		const companyId = parseEntityId(new URLSearchParams(target.split('?')[1] ?? '').get('company_id') ?? undefined);
+		if (companyId === null) return BON_DE_LIVRAISON_LIST;
+		if (path.endsWith('/new')) return { pathname: BON_DE_LIVRAISON_ADD, params: { company_id: String(companyId) } };
+		const id = parseEntityId(path.split('/')[3]);
+		if (id === null) return null;
+		const route = path.endsWith('/edit') ? BON_DE_LIVRAISON_EDIT(id) : BON_DE_LIVRAISON_VIEW(id);
 		return { ...route, params: { ...route.params, company_id: String(companyId) } };
 	}
 	if (path === '/dashboard/users') return USERS_LIST;

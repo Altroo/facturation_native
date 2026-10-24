@@ -14,6 +14,8 @@ import {
 	isNectarRaisonSociale,
 } from '@/utils/helpers';
 import {
+	BON_DE_LIVRAISON_EDIT,
+	BON_DE_LIVRAISON_LIST,
 	DEVIS_EDIT,
 	DEVIS_LIST,
 	FACTURE_PRO_FORMA_EDIT,
@@ -61,24 +63,49 @@ const CompanyDocumentViewContent = (props: Props) => {
 	const { t } = useLanguage();
 	const isDevis = props.documentType === 'devis';
 	const isInvoice = props.documentType === 'facture-client';
+	const isDelivery = props.documentType === 'bon-de-livraison';
 	const isCredit = props.documentType === 'facture-avoir';
-	const labels = isCredit ? t.facturesAvoir : isDevis ? t.devis : isInvoice ? t.facturesClient : t.facturesProforma;
+	const labels = isCredit
+		? t.facturesAvoir
+		: isDevis
+			? t.devis
+			: isInvoice
+				? t.facturesClient
+				: isDelivery
+					? t.bonsLivraison
+					: t.facturesProforma;
 	const listRoute = isCredit
 		? FACTURE_AVOIR_LIST
 		: isDevis
 			? DEVIS_LIST
 			: isInvoice
 				? FACTURE_CLIENT_LIST
-				: FACTURE_PRO_FORMA_LIST;
+				: isDelivery
+					? BON_DE_LIVRAISON_LIST
+					: FACTURE_PRO_FORMA_LIST;
 	const editRoute = isCredit
 		? FACTURE_AVOIR_EDIT
 		: isDevis
 			? DEVIS_EDIT
 			: isInvoice
 				? FACTURE_CLIENT_EDIT
-				: FACTURE_PRO_FORMA_EDIT;
-	const numberField = isCredit ? 'numero_avoir' : isDevis ? 'numero_devis' : 'numero_facture';
-	const dateField = isCredit ? 'date_avoir' : isDevis ? 'date_devis' : 'date_facture';
+				: isDelivery
+					? BON_DE_LIVRAISON_EDIT
+					: FACTURE_PRO_FORMA_EDIT;
+	const numberField = isCredit
+		? 'numero_avoir'
+		: isDevis
+			? 'numero_devis'
+			: isDelivery
+				? 'numero_bon_livraison'
+				: 'numero_facture';
+	const dateField = isCredit
+		? 'date_avoir'
+		: isDevis
+			? 'date_devis'
+			: isDelivery
+				? 'date_bon_livraison'
+				: 'date_facture';
 	const { onSuccess, onError } = useToast();
 	const token = useInitAccessToken();
 	const companies = useAppSelector(getUserCompaniesState);
@@ -276,16 +303,21 @@ const CompanyDocumentViewContent = (props: Props) => {
 									? t.facturesClient.termsSecondLabel
 									: isCredit
 										? t.facturesAvoir.termsSecondLabel
-										: t.facturesProforma.termsSecondLabel
+										: isDelivery
+											? t.bonsLivraison.termsSecondLabel
+											: t.facturesProforma.termsSecondLabel
 						}
 						value={isDevis ? quote.numero_demande_prix_client : quote.numero_bon_commande_client}
 					/>
-					{!isDevis && !isCredit && (
+					{!isDevis && !isCredit && !isDelivery && (
 						<InfoRow
 							icon={icon('notes')}
 							label={t.documentForm.fieldTermesPaiementLabel}
 							value={quote.termes_paiement}
 						/>
+					)}
+					{isDelivery && (
+						<InfoRow icon={icon('local-shipping')} label={t.documentView.livreParLabel} value={quote.livre_par_name} />
 					)}
 					{isInvoice && <InvoicePaymentSummary document={quote} />}
 				</SectionCard>
@@ -324,7 +356,7 @@ const CompanyDocumentViewContent = (props: Props) => {
 					/>
 				</SectionCard>
 			</DetailsPage>
-			{showPdf && <DocumentPdfModal onClose={() => setShowPdf(false)} onOpen={props.openPdf} />}
+			{showPdf && <DocumentPdfModal normal={isDelivery} onClose={() => setShowPdf(false)} onOpen={props.openPdf} />}
 			{showDelete && (
 				<ConfirmationModal
 					title={labels.deleteModalTitle}

@@ -12,6 +12,7 @@ import { deviApi } from '@/store/services/devi';
 import { factureProFormaApi } from '@/store/services/factureProForma';
 import { factureClientApi } from '@/store/services/factureClient';
 import { factureAvoirApi } from '@/store/services/factureAvoir';
+import { bonDeLivraisonApi } from '@/store/services/bonDeLivraison';
 import { reglementApi } from '@/store/services/reglement';
 import { aiAssistantApi } from '@/store/services/aiAssistant';
 import {
@@ -21,6 +22,7 @@ import {
 	uniteApi,
 	emplacementApi,
 	modePaiementApi,
+	livreParApi,
 } from '@/store/services/parameter';
 import { notificationApi } from '@/store/services/notification';
 import notificationReducer from '@/store/slices/notificationSlice';
@@ -42,9 +44,11 @@ const rootReducer = combineReducers({
 	[factureProFormaApi.reducerPath]: factureProFormaApi.reducer,
 	[factureClientApi.reducerPath]: factureClientApi.reducer,
 	[factureAvoirApi.reducerPath]: factureAvoirApi.reducer,
+	[bonDeLivraisonApi.reducerPath]: bonDeLivraisonApi.reducer,
 	[reglementApi.reducerPath]: reglementApi.reducer,
 	[aiAssistantApi.reducerPath]: aiAssistantApi.reducer,
 	[modePaiementApi.reducerPath]: modePaiementApi.reducer,
+	[livreParApi.reducerPath]: livreParApi.reducer,
 	[marqueApi.reducerPath]: marqueApi.reducer,
 	[categorieApi.reducerPath]: categorieApi.reducer,
 	[uniteApi.reducerPath]: uniteApi.reducer,
@@ -81,9 +85,11 @@ export const makeStore = (): SagaStore => {
 					factureProFormaApi.middleware,
 					factureClientApi.middleware,
 					factureAvoirApi.middleware,
+					bonDeLivraisonApi.middleware,
 					reglementApi.middleware,
 					aiAssistantApi.middleware,
 					modePaiementApi.middleware,
+					livreParApi.middleware,
 					marqueApi.middleware,
 					categorieApi.middleware,
 					uniteApi.middleware,

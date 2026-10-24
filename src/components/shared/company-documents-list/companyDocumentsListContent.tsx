@@ -25,8 +25,11 @@ import { useGetModePaiementListQuery } from '@/store/services/parameter';
 import { useInitAccessToken } from '@/contexts/InitContext';
 import { useLanguage, useToast } from '@/utils/hooks';
 import { extractApiErrorMessage, formatDate, formatNumberWithSpaces, getStatutLabel } from '@/utils/helpers';
-import { devisFactureStatusItemsList } from '@/utils/rawData';
+import { devisFactureStatusItemsList, bonDeLivraisonStatusItemsList } from '@/utils/rawData';
 import {
+	BON_DE_LIVRAISON_ADD,
+	BON_DE_LIVRAISON_EDIT,
+	BON_DE_LIVRAISON_VIEW,
 	DEVIS_ADD,
 	DEVIS_EDIT,
 	DEVIS_VIEW,
@@ -42,6 +45,7 @@ import {
 	FACTURE_AVOIR_VIEW,
 } from '@/utils/routes';
 import { colors } from '@/utils/themes';
+import type { LivreParClass } from '@/models/classes';
 import type { DocumentData, DocumentType } from '@/types/companyDocumentsTypes';
 import type { PaginationResponseType } from '@/types/_initTypes';
 import type { DocumentPdfType } from '@/types/devisTypes';
@@ -80,6 +84,8 @@ type Props = {
 	};
 	deleteRecord: (args: { id: number }) => { unwrap: () => Promise<unknown> };
 	bulkDeleteRecords: (args: { ids: number[] }) => { unwrap: () => Promise<unknown> };
+	deliveryPeople?: LivreParClass[];
+	convertToDelivery?: (args: { id: number }) => { unwrap: () => Promise<{ id: number }> };
 	convertToProforma?: (args: { id: number }) => { unwrap: () => Promise<{ id: number }> };
 	convertToInvoice?: (args: { id: number }) => { unwrap: () => Promise<{ id: number }> };
 	header?: ReactNode;
@@ -93,38 +99,67 @@ const CompanyDocumentsListContent = (props: Props) => {
 	const { t } = useLanguage();
 	const isDevis = props.documentType === 'devis';
 	const isInvoice = props.documentType === 'facture-client';
+	const isDelivery = props.documentType === 'bon-de-livraison';
 	const isCredit = props.documentType === 'facture-avoir';
-	const labels = isCredit ? t.facturesAvoir : isDevis ? t.devis : isInvoice ? t.facturesClient : t.facturesProforma;
+	const labels = isCredit
+		? t.facturesAvoir
+		: isDevis
+			? t.devis
+			: isInvoice
+				? t.facturesClient
+				: isDelivery
+					? t.bonsLivraison
+					: t.facturesProforma;
 	const documentName = isDevis
 		? t.navigation.devis
 		: isInvoice
 			? t.navigation.facturesClient
 			: isCredit
 				? t.navigation.facturesAvoir
-				: t.navigation.facturesProforma;
+				: isDelivery
+					? t.navigation.bonsLivraison
+					: t.navigation.facturesProforma;
 	const addRoute = isCredit
 		? FACTURE_AVOIR_ADD
 		: isDevis
 			? DEVIS_ADD
 			: isInvoice
 				? FACTURE_CLIENT_ADD
-				: FACTURE_PRO_FORMA_ADD;
+				: isDelivery
+					? BON_DE_LIVRAISON_ADD
+					: FACTURE_PRO_FORMA_ADD;
 	const editRoute = isCredit
 		? FACTURE_AVOIR_EDIT
 		: isDevis
 			? DEVIS_EDIT
 			: isInvoice
 				? FACTURE_CLIENT_EDIT
-				: FACTURE_PRO_FORMA_EDIT;
+				: isDelivery
+					? BON_DE_LIVRAISON_EDIT
+					: FACTURE_PRO_FORMA_EDIT;
 	const viewRoute = isCredit
 		? FACTURE_AVOIR_VIEW
 		: isDevis
 			? DEVIS_VIEW
 			: isInvoice
 				? FACTURE_CLIENT_VIEW
-				: FACTURE_PRO_FORMA_VIEW;
-	const numberField = isCredit ? 'numero_avoir' : isDevis ? 'numero_devis' : 'numero_facture';
-	const dateField = isCredit ? 'date_avoir' : isDevis ? 'date_devis' : 'date_facture';
+				: isDelivery
+					? BON_DE_LIVRAISON_VIEW
+					: FACTURE_PRO_FORMA_VIEW;
+	const numberField = isCredit
+		? 'numero_avoir'
+		: isDevis
+			? 'numero_devis'
+			: isDelivery
+				? 'numero_bon_livraison'
+				: 'numero_facture';
+	const dateField = isCredit
+		? 'date_avoir'
+		: isDevis
+			? 'date_devis'
+			: isDelivery
+				? 'date_bon_livraison'
+				: 'date_facture';
 	const extraField = isCredit ? 'motif_avoir' : isDevis ? 'numero_demande_prix_client' : 'numero_bon_commande_client';
 	const numberLabel = isCredit
 		? t.facturesAvoir.colNumeroAvoir
@@ -132,21 +167,27 @@ const CompanyDocumentsListContent = (props: Props) => {
 			? t.devis.colNumeroDevis
 			: isInvoice
 				? t.facturesClient.colNumeroFacture
-				: t.facturesProforma.colNumeroFacture;
+				: isDelivery
+					? t.bonsLivraison.colNumeroBL
+					: t.facturesProforma.colNumeroFacture;
 	const dateLabel = isCredit
 		? t.facturesAvoir.colDateAvoir
 		: isDevis
 			? t.devis.colDateDevis
 			: isInvoice
 				? t.facturesClient.colDateFacture
-				: t.facturesProforma.colDateFacture;
+				: isDelivery
+					? t.bonsLivraison.colDateBL
+					: t.facturesProforma.colDateFacture;
 	const extraLabel = isCredit
 		? t.facturesAvoir.colMotif
 		: isDevis
 			? t.devis.colNumeroDemandePrix
 			: isInvoice
 				? t.facturesClient.colNumeroBonCommande
-				: t.facturesProforma.colNumeroBonCommande;
+				: isDelivery
+					? t.bonsLivraison.colNumeroBonCommande
+					: t.facturesProforma.colNumeroBonCommande;
 	const {
 		searchTerm,
 		setSearchTerm,
@@ -171,7 +212,9 @@ const CompanyDocumentsListContent = (props: Props) => {
 	const [loadingIds, setLoadingIds] = useState(false);
 	const [confirmation, setConfirmation] = useState<{ ids: number[]; bulk: boolean } | null>(null);
 	const [pdfId, setPdfId] = useState<number | null>(null);
-	const [conversion, setConversion] = useState<{ id: number; target: 'proforma' | 'invoice' } | null>(null);
+	const [conversion, setConversion] = useState<{ id: number; target: 'proforma' | 'invoice' | 'delivery' } | null>(
+		null,
+	);
 	const pendingConversion = useRef(false);
 	const pendingSelection = useRef<ReturnType<typeof fetchAllIds> | null>(null);
 	const selectionRequest = useRef(0);
@@ -253,7 +296,12 @@ const CompanyDocumentsListContent = (props: Props) => {
 	};
 	const confirmConversion = async () => {
 		const record = rows.find((row) => row.id === conversion?.id);
-		const convert = conversion?.target === 'proforma' ? props.convertToProforma : props.convertToInvoice;
+		const convert =
+			conversion?.target === 'proforma'
+				? props.convertToProforma
+				: conversion?.target === 'delivery'
+					? props.convertToDelivery
+					: props.convertToInvoice;
 		if (!isDevis && !isInvoice && record?.converted_facture_client) return;
 		if (!canEdit || !record || !['Envoyé', 'Accepté'].includes(record.statut) || !convert || pendingConversion.current)
 			return;
@@ -262,7 +310,11 @@ const CompanyDocumentsListContent = (props: Props) => {
 			const result = await convert({ id: record.id }).unwrap();
 			onSuccess(t.documentList.convertSuccess(documentName));
 			const route =
-				conversion?.target === 'proforma' ? FACTURE_PRO_FORMA_EDIT(result.id) : FACTURE_CLIENT_EDIT(result.id);
+				conversion?.target === 'proforma'
+					? FACTURE_PRO_FORMA_EDIT(result.id)
+					: conversion?.target === 'delivery'
+						? BON_DE_LIVRAISON_EDIT(result.id)
+						: FACTURE_CLIENT_EDIT(result.id);
 			router.push({ ...route, params: { ...route.params, company_id: String(props.company_id) } });
 		} catch (error) {
 			onError(extractApiErrorMessage(error, t.documentList.convertError(documentName)));
@@ -309,12 +361,27 @@ const CompanyDocumentsListContent = (props: Props) => {
 			{
 				field: 'statut',
 				headerName: t.documentList.colStatut,
-				filterSelectOptions: devisFactureStatusItemsList
+				filterSelectOptions: (isDelivery ? bonDeLivraisonStatusItemsList : devisFactureStatusItemsList)
 					.filter((item) => item.value && (!isCredit || item.value !== 'Facturé'))
 					.map((item) => ({ value: item.value, label: getStatutLabel(item.value, t) })),
 				filterForceOperator: 'equals',
 				filterHideOperator: true,
 			},
+			...(isDelivery
+				? [
+						{
+							field: 'livre_par_ids',
+							headerName: t.bonsLivraison.filterLivrePar,
+							sortable: false,
+							filterSelectOptions: (props.deliveryPeople ?? []).map((person) => ({
+								value: String(person.id),
+								label: person.nom,
+							})),
+							filterForceOperator: 'equals',
+							filterHideOperator: true,
+						},
+					]
+				: []),
 			{ field: 'total_ttc_apres_remise', headerName: t.documentList.colTotalTTC, type: 'number' },
 			{ field: 'lignes_count', headerName: t.documentList.colNombreArticles, type: 'number' },
 			{ field: dateField, headerName: dateLabel, type: 'date' },
@@ -385,7 +452,9 @@ const CompanyDocumentsListContent = (props: Props) => {
 										? t.devis.newDevis
 										: isInvoice
 											? t.facturesClient.newFacture
-											: t.facturesProforma.newFacture,
+											: isDelivery
+												? t.bonsLivraison.newBL
+												: t.facturesProforma.newFacture,
 								onPress: () =>
 									router.push({
 										pathname: addRoute,
@@ -496,7 +565,7 @@ const CompanyDocumentsListContent = (props: Props) => {
 												},
 											]
 										: []),
-									...(canEdit && !isCredit
+									...(canEdit && !isCredit && !isDelivery
 										? [
 												...(isDevis
 													? [
@@ -512,9 +581,9 @@ const CompanyDocumentsListContent = (props: Props) => {
 													? [
 															{
 																label: t.facturesClient.labelBonLivraison,
-																disabled: true,
-																onClick: () => undefined,
-																icon: <MaterialIcons name="local-shipping" size={22} color={colors.slate[400]} />,
+																disabled: !props.convertToDelivery || !['Envoyé', 'Accepté'].includes(row.statut),
+																onClick: () => setConversion({ id: row.id, target: 'delivery' }),
+																icon: <MaterialIcons name="local-shipping" size={22} color={colors.conversion} />,
 															},
 														]
 													: [
@@ -633,16 +702,20 @@ const CompanyDocumentsListContent = (props: Props) => {
 					title={
 						conversion.target === 'proforma'
 							? t.devis.convertToProformaTitle
-							: isDevis
-								? t.devis.convertToFactureTitle
-								: t.facturesProforma.convertToFactureTitle
+							: conversion.target === 'delivery'
+								? t.facturesClient.convertToBLTitle
+								: isDevis
+									? t.devis.convertToFactureTitle
+									: t.facturesProforma.convertToFactureTitle
 					}
 					body={
 						conversion.target === 'proforma'
 							? t.devis.convertToProformaBody
-							: isDevis
-								? t.devis.convertToFactureBody
-								: t.facturesProforma.convertToFactureBody
+							: conversion.target === 'delivery'
+								? t.facturesClient.convertToBLBody
+								: isDevis
+									? t.devis.convertToFactureBody
+									: t.facturesProforma.convertToFactureBody
 					}
 					recordName={rows.find((row) => row.id === conversion.id)?.[numberField]}
 					action="convert"
@@ -656,6 +729,7 @@ const CompanyDocumentsListContent = (props: Props) => {
 			)}
 			{pdfId !== null && (
 				<DocumentPdfModal
+					normal={isDelivery}
 					onClose={() => setPdfId(null)}
 					onOpen={(type, language) => props.openPdf(pdfId, type, language)}
 				/>

@@ -82,3 +82,8 @@ export const remiseTypeItemsList: Array<DropDownType> = [
 	{ code: 'Pourcentage', value: 'Pourcentage' },
 	{ code: 'Fixe', value: 'Fixe' },
 ];
+
+export const bonDeLivraisonStatusItemsList: Array<DropDownType> = [
+	...devisFactureStatusItemsList,
+	{ code: 'Facturé', value: 'Facturé' },
+];

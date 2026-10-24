@@ -703,6 +703,8 @@ export const en: TranslationDictionary = {
 		motifAutre: 'Other',
 	},
 	bonsLivraison: {
+		saveLinesBeforePosting: 'Save the changed lines before posting the delivery note.',
+		stockPostedLinesHint: 'Switch the delivery note to a non-posted status before editing its lines.',
 		listTitle: 'Delivery Notes List',
 		uninvoicedTitle: 'Uninvoiced Delivery Notes',
 		detailsTitle: 'Delivery Note Details',

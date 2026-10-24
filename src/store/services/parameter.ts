@@ -8,6 +8,7 @@ import type {
 	UniteClass,
 	EmplacementClass,
 	ModePaiementClass,
+	LivreParClass,
 } from '@/models/classes';
 
 export const citiesApi = createApi({
@@ -216,3 +217,45 @@ export const {
 	useEditModePaiementMutation,
 	useAddModePaiementMutation,
 } = modePaiementApi;
+
+export const livreParApi = createApi({
+	reducerPath: 'livreParApi',
+	tagTypes: ['LivrePar'],
+	baseQuery: axiosBaseQuery(() => isAuthenticatedInstance()),
+	endpoints: (builder) => ({
+		getLivreParList: builder.query<Array<LivreParClass>, { company_id: number }>({
+			query: ({ company_id }) => ({
+				url: process.env.EXPO_PUBLIC_PARAMETER_LIVRE_PAR,
+				method: 'GET',
+				params: { company_id },
+			}),
+			providesTags: ['LivrePar'],
+		}),
+		deleteLivrePar: builder.mutation<void, { id: number }>({
+			query: ({ id }) => ({
+				url: `${process.env.EXPO_PUBLIC_PARAMETER_LIVRE_PAR}${id}/`,
+				method: 'DELETE',
+			}),
+			invalidatesTags: (_result, error) => (error ? [] : ['LivrePar']),
+		}),
+		editLivrePar: builder.mutation<LivreParClass, { id: number; data: Partial<LivreParClass> }>({
+			query: ({ id, data }) => ({
+				url: `${process.env.EXPO_PUBLIC_PARAMETER_LIVRE_PAR}${id}/`,
+				method: 'PUT',
+				data,
+			}),
+			invalidatesTags: (_result, error) => (error ? [] : ['LivrePar']),
+		}),
+		addLivrePar: builder.mutation<LivreParClass, { data: Partial<LivreParClass> }>({
+			query: ({ data }) => ({
+				url: process.env.EXPO_PUBLIC_PARAMETER_LIVRE_PAR,
+				method: 'POST',
+				data,
+			}),
+			invalidatesTags: (_result, error) => (error ? [] : ['LivrePar']),
+		}),
+	}),
+});
+
+export const { useGetLivreParListQuery, useDeleteLivreParMutation, useEditLivreParMutation, useAddLivreParMutation } =
+	livreParApi;

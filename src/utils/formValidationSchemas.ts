@@ -612,6 +612,25 @@ export const factureProformaSchema = factureClientProformaSchema;
 
 export const factureProformaAddSchema = factureClientProformaAddSchema;
 
+export const bonDeLivraisonAddSchema = factureClientProformaAddSchema
+	.omit({ date_facture: true, termes_paiement: true })
+	.extend({
+		date_bon_livraison: requiredTextField(1, 100),
+		numero_bon_commande_client: optionalTextField(1, 50).nullable(),
+		livre_par: optionalNumberField(1).nullable(),
+	});
+
+export const bonDeLivraisonSchema = bonDeLivraisonAddSchema
+	.safeExtend({
+		remise_type: factureClientProformaSchema.shape.remise_type,
+		remise: factureClientProformaSchema.shape.remise,
+		lignes: factureClientProformaSchema.shape.lignes,
+	})
+	.superRefine((data, ctx) => {
+		if (data.remise_type === 'Pourcentage' && (data.remise ?? 0) > 100)
+			ctx.addIssue({ code: 'custom', path: ['remise'], message: INPUT_REMISE_POURCENTAGE });
+	});
+
 export const reglementSchema = z.object({
 	facture_client: requiredNumberField(1).refine(Number.isSafeInteger, { error: INPUT_REQUIRED }),
 	mode_reglement: optionalNumberField(1).nullable(),

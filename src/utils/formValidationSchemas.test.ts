@@ -12,6 +12,8 @@ import {
 	clientSchema,
 	articleSchema,
 	deviAddSchema,
+	bonDeLivraisonAddSchema,
+	bonDeLivraisonSchema,
 	deviSchema,
 	devisLivraisonFactureLineSchema,
 	reglementSchema,
@@ -645,5 +647,31 @@ describe('Pro-forma validation', () => {
 	it('accepts no discount and rejects percentage discounts above 100', () => {
 		expect(factureProformaSchema.safeParse({ ...header, lignes: [], remise_type: '', remise: 0 }).success).toBe(true);
 		expect(factureProformaSchema.safeParse({ ...header, remise_type: 'Pourcentage', remise: 101 }).success).toBe(false);
+	});
+});
+
+describe('bonDeLivraison schemas', () => {
+	const header = {
+		numero_part: '0001',
+		year_part: '26',
+		client: 3,
+		date_bon_livraison: '2026-10-24',
+		livre_par: 6,
+		numero_bon_commande_client: 'BC-1',
+	};
+	it('creates headers with a delivery person and no required invoice payment terms', () => {
+		expect(bonDeLivraisonAddSchema.parse(header)).toMatchObject({ livre_par: 6, date_bon_livraison: '2026-10-24' });
+		expect(bonDeLivraisonAddSchema.parse(header)).not.toHaveProperty('termes_paiement');
+	});
+	it('accepts decimal-comma quantities and rejects excessive percentage discounts', () => {
+		const data = {
+			...header,
+			remise_type: 'Pourcentage',
+			remise: 10,
+			lignes: [{ article: 4, prix_achat: 50, prix_vente: 100, quantity: '1,5', remise_type: '', remise: 0 }],
+		};
+		expect(bonDeLivraisonSchema.parse(data).lignes?.[0]?.quantity).toBe(1.5);
+		expect(bonDeLivraisonSchema.safeParse({ ...data, remise: 101 }).success).toBe(false);
+		expect(bonDeLivraisonSchema.safeParse({ ...data, livre_par: -1 }).success).toBe(false);
 	});
 });

@@ -2,7 +2,15 @@ import { setupApiStore } from '@/store/setupApiStore';
 import { configureStore } from '@reduxjs/toolkit';
 import { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
 import { auth } from '@/auth';
-import { citiesApi, marqueApi, categorieApi, uniteApi, emplacementApi, modePaiementApi } from './parameter';
+import {
+	citiesApi,
+	marqueApi,
+	categorieApi,
+	uniteApi,
+	emplacementApi,
+	modePaiementApi,
+	livreParApi,
+} from './parameter';
 
 jest.mock('@/auth', () => {
 	const { create } = jest.requireActual<typeof import('axios')>('axios');
@@ -83,6 +91,7 @@ it.each([
 		'editModePaiement',
 		'deleteModePaiement',
 	],
+	['livre_par', livreParApi, 'getLivreParList', 'addLivrePar', 'editLivrePar', 'deleteLivrePar'],
 	['marque', marqueApi, 'getMarqueList', 'addMarque', 'editMarque', 'deleteMarque'],
 	['categorie', categorieApi, 'getCategorieList', 'addCategorie', 'editCategorie', 'deleteCategorie'],
 	['unite', uniteApi, 'getUniteList', 'addUnite', 'editUnite', 'deleteUnite'],

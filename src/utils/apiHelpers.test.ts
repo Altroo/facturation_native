@@ -16,6 +16,7 @@ import {
 	openFactureProFormaPdf,
 	openFactureClientPdf,
 	openFactureAvoirPdf,
+	openBonDeLivraisonPdf,
 	openPdf,
 	postApi,
 } from '@/utils/apiHelpers';
@@ -78,6 +79,17 @@ describe('openPdf', () => {
 		},
 	);
 
+	it('opens a language-only delivery PDF through the configured authenticated endpoint', async () => {
+		jest.replaceProperty(process.env, 'EXPO_PUBLIC_BON_DE_LIVRAISON_PDF', '/custom-delivery/pdf');
+		await expect(openBonDeLivraisonPdf(7, 5, 'normal', 'en')).resolves.toBe(true);
+		const url = new URL(adapter.mock.calls[0][0].url!);
+		expect(url.pathname).toBe('/api/custom-delivery/pdf/en/7/');
+		expect([...url.searchParams.entries()]).toEqual([
+			['company_id', '5'],
+			['type', 'normal'],
+		]);
+		expect(mockPreviewPdf).toHaveBeenCalledWith({ mimeType: 'application/pdf' });
+	});
 	it.each(['fr', 'en', 'nl'] as const)(
 		'opens a %s client statement using configured backend endpoints and filters',
 		async (language) => {

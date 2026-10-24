@@ -997,3 +997,23 @@ describe('writing field eligibility', () => {
 		expect(isAiTextField('remarque', 'password')).toBe(false);
 	});
 });
+
+it('maps delivery notifications to tenant-scoped native screens', () => {
+	expect(getNotificationDestination('/dashboard/bon-de-livraison')).toBe('/bon-de-livraison');
+	expect(getNotificationDestination('/dashboard/bon-de-livraison/uninvoiced')).toBe('/bon-de-livraison/uninvoiced');
+	expect(getNotificationDestination('/dashboard/bon-de-livraison/new?company_id=5')).toEqual({
+		pathname: '/bon-de-livraison/form',
+		params: { company_id: '5' },
+	});
+	expect(getNotificationDestination('/dashboard/bon-de-livraison/7?company_id=5')).toEqual({
+		pathname: '/bon-de-livraison/[id]',
+		params: { id: '7', company_id: '5' },
+	});
+	expect(getNotificationDestination('/dashboard/bon-de-livraison/7/edit?company_id=5')).toEqual({
+		pathname: '/bon-de-livraison/form',
+		params: { id: '7', company_id: '5' },
+	});
+	expect(getNotificationDestination('/dashboard/bon-de-livraison/7')).toBe('/bon-de-livraison');
+	expect(getNotificationDestination('/dashboard/bon-de-livraison/7?company_id=-1')).toBe('/bon-de-livraison');
+	expect(getNotificationDestination('/dashboard/bon-de-livraison/0?company_id=5')).toBeNull();
+});

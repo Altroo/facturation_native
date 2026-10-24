@@ -5,6 +5,8 @@ import { colors, fonts } from '@/utils/themes';
 import {
 	DASHBOARD,
 	DEVIS_LIST,
+	BON_DE_LIVRAISON_LIST,
+	BON_DE_LIVRAISON_UNINVOICED,
 	FACTURE_PRO_FORMA_LIST,
 	FACTURE_CLIENT_LIST,
 	FACTURE_CLIENT_UNPAID,
@@ -117,11 +119,11 @@ const getNavigationMenu = (isStaff: boolean, t: TranslationDictionary) => {
 			title: t.navigation.bonsLivraison,
 			icon: <MaterialIcons name="local-shipping" size={21} color={colors.slate[500]} />,
 			items: [
-				{ title: t.navigation.bonsLivraisonList, label: t.navigation.bonsLivraisonList, path: undefined },
+				{ title: t.navigation.bonsLivraisonList, label: t.navigation.bonsLivraisonList, path: BON_DE_LIVRAISON_LIST },
 				{
 					title: t.navigation.bonsLivraisonUninvoiced,
 					label: t.navigation.bonsLivraisonUninvoiced,
-					path: undefined,
+					path: BON_DE_LIVRAISON_UNINVOICED,
 				},
 			],
 		},

@@ -53,6 +53,10 @@ beforeEach(() => {
 });
 
 it.each([
+	['bon-de-livraison/index', translations.fr.bonsLivraison.listTitle],
+	['bon-de-livraison/uninvoiced', translations.fr.bonsLivraison.uninvoicedTitle],
+	['bon-de-livraison/form', translations.fr.bonsLivraison.addTitle],
+	['bon-de-livraison/[id]/index', translations.fr.bonsLivraison.detailsTitle],
 	['facture-avoir/index', translations.fr.facturesAvoir.listTitle],
 	['facture-avoir/form', translations.fr.facturesAvoir.addTitle],
 	['facture-avoir/[id]/index', translations.fr.facturesAvoir.detailsTitle],

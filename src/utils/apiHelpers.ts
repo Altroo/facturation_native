@@ -169,3 +169,16 @@ export const openFactureAvoirPdf = (
 		`facture-avoir-${id}`,
 	);
 };
+
+export const openBonDeLivraisonPdf = (
+	id: number,
+	company_id: number,
+	type: DocumentPdfType,
+	language: 'fr' | 'en' | 'nl' = 'fr',
+): Promise<boolean> => {
+	const params = new URLSearchParams({ company_id: String(company_id), type });
+	return openPdf(
+		`${process.env.EXPO_PUBLIC_ROOT_API_URL}${process.env.EXPO_PUBLIC_BON_DE_LIVRAISON_PDF}/${language}/${id}/?${params}`,
+		`bon-de-livraison-${id}`,
+	);
+};

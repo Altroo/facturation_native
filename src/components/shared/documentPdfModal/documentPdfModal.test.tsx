@@ -60,3 +60,17 @@ it('shows a recoverable toast when preview fails', async () => {
 	await waitFor(() => expect(mockError).toHaveBeenCalledWith(t.errors.documentOpenError));
 	expect(mockClose).toHaveBeenCalledTimes(1);
 });
+
+it('offers only languages for delivery notes and waits for sheet dismissal before preview', async () => {
+	await render(<DocumentPdfModal normal onClose={mockClose} onOpen={mockOpen} />);
+	expect(screen.getAllByRole('radio')).toHaveLength(3);
+	expect(screen.queryByText(t.pdf.format)).toBeNull();
+	expect(screen.queryByRole('button', { name: t.pdf.generatePdf })).toBeNull();
+	const onDismiss = screen.getByTestId('document-pdf-modal').props.onDismiss;
+	await fireEvent.press(screen.getByRole('radio', { name: t.pdf.dutch }));
+	expect(mockOpen).not.toHaveBeenCalled();
+	await act(() => onDismiss());
+	await waitFor(() => expect(mockOpen).toHaveBeenCalledWith('normal', 'nl'));
+	await act(() => onDismiss());
+	expect(mockOpen).toHaveBeenCalledTimes(1);
+});
