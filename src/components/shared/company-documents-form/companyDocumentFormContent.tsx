@@ -30,7 +30,6 @@ import {
 	calculateDocumentTotals,
 	extractApiErrorMessage,
 	formatLocalDate,
-	formatNumberWithSpaces,
 	getStatutLabel,
 	isNectarRaisonSociale,
 	parseNumber,
@@ -45,9 +44,10 @@ import CustomTextInput from '@/components/nativeElements/customTextInput/customT
 import CustomDropDownSelect from '@/components/nativeElements/customDropDownSelect/customDropDownSelect';
 import CustomAutoCompleteSelect from '@/components/nativeElements/customAutoCompleteSelect/customAutoCompleteSelect';
 import CustomDateInput from '@/components/nativeElements/customDateInput/customDateInput';
-import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import SaveButton from '@/components/nativeElements/buttons/saveButton/saveButton';
 import SectionCard from '@/components/shared/sectionCard/sectionCard';
+import CompanyDocumentNumberFields from './companyDocumentNumberFields';
+import CompanyDocumentRemiseControls from './companyDocumentRemiseControls';
 import RemarkSection from '@/components/shared/remarkSection/remarkSection';
 import PageActionBar from '@/components/shared/pageActionBar/pageActionBar';
 import KeyboardAwareScrollView from '@/components/shared/keyboardAwareScrollView/keyboardAwareScrollView';
@@ -63,7 +63,7 @@ import type { DocumentData, DocumentFormSchema, DocumentType, DocumentWriteData 
 import type { SelectedArticlePopupValues } from '@/types/articleTypes';
 
 type Props = {
-	documentType: DocumentType;
+	documentType: Exclude<DocumentType, 'facture-avoir'>;
 	addData: (args: { data: DocumentWriteData }) => { unwrap: () => Promise<{ id: number }> };
 	updateData: (args: { id: number; data: DocumentWriteData }) => { unwrap: () => Promise<unknown> };
 	patchStatut: (args: { id: number; data: { statut: TypeFactureLivraisonDevisStatus } }) => {
@@ -396,51 +396,37 @@ const CompanyDocumentFormContent = (props: Props) => {
 				)}
 				{!!formik.errors.globalError && <ApiAlert variant="banner" errorDetails={formik.errors.globalError} />}
 				<SectionCard title={t.documentForm.documentInfoSection} icon="description">
-					<View className="flex-row items-start gap-3">
-						<View className="min-w-0 flex-1">
-							<CustomTextInput
-								{...field('numero_part', t.documentForm.fieldNumeroLabel, 'tag')}
-								compact
-								required
-								onChangeText={(value) => {
-									if (/^[A-Za-z0-9]*$/.test(value)) void formik.setFieldValue('numero_part', value.toUpperCase());
-								}}
-							/>
-						</View>
-						{!(isNectar && !isEdit) && (
-							<View className="w-20">
-								<CustomTextInput
-									{...field('year_part', t.documentForm.fieldAnneeLabel, 'event')}
-									compact
-									required
-									keyboardType="number-pad"
-									maxLength={2}
-									onChangeText={(value) => {
-										if (/^\d{0,2}$/.test(value)) void formik.setFieldValue('year_part', value);
-									}}
-								/>
-							</View>
-						)}
-					</View>
-					{!isEdit && (
-						<PrimaryLoadingButton
-							buttonText={t.documentForm.resetNumero}
-							loading={resettingNumber}
-							active={!disabled && !resettingNumber}
-							inverted
-							startIcon={icon('refresh')}
-							onClick={() => void resetNumber()}
-						/>
-					)}
+					<CompanyDocumentNumberFields
+						numberInput={{
+							...field('numero_part', t.documentForm.fieldNumeroLabel, 'tag'),
+							required: true,
+							onChangeText: (value) => {
+								if (/^[A-Za-z0-9]*$/.test(value)) void formik.setFieldValue('numero_part', value.toUpperCase());
+							},
+						}}
+						yearInput={
+							!(isNectar && !isEdit)
+								? {
+										...field('year_part', t.documentForm.fieldAnneeLabel, 'event'),
+										required: true,
+										keyboardType: 'number-pad',
+										maxLength: 2,
+										onChangeText: (value) => {
+											if (/^\d{0,2}$/.test(value)) void formik.setFieldValue('year_part', value);
+										},
+									}
+								: undefined
+						}
+						reset={!isEdit ? { loading: resettingNumber, disabled, onPress: () => void resetNumber() } : undefined}
+					/>
 					<CustomDateInput
 						label={labels.fieldDate}
 						value={formik.values[dateField] ?? ''}
 						disabled={disabled}
 						onChange={(value) => void formik.setFieldValue(dateField, value)}
+						error={!!fieldError(dateField)}
+						helperText={fieldError(dateField)}
 					/>
-					{!!fieldError(dateField) && (
-						<Text className="font-sans text-xs text-red-600 dark:text-red-300">{fieldError(dateField)}</Text>
-					)}
 					{isNectar && (
 						<CustomDateInput
 							label={t.documentForm.fieldDateEcheanceLabel}
@@ -596,48 +582,18 @@ const CompanyDocumentFormContent = (props: Props) => {
 						showPurchaseTotal={!isNectar}
 					>
 						{!isNectar && (
-							<>
-								<View className="flex-row items-center gap-3 border-t border-slate-200 pt-3 dark:border-slate-700">
-									<MaterialIcons name="sell" size={20} color={colors.brand} />
-									<View className="min-w-0 flex-1 gap-1">
-										<Text className="font-poppins-medium text-sm text-ink dark:text-slate-100">
-											{t.documentForm.remiseGlobaleSection}
-										</Text>
-										<Text className="font-sans text-xs text-slate-500 dark:text-slate-400">
-											{formik.values.remise_type
-												? `${formatNumberWithSpaces(formik.values.remise, 2)} ${formik.values.remise_type === 'Pourcentage' ? '%' : formik.values.devise}`
-												: t.globalRemiseModal.typeNone}
-										</Text>
-									</View>
-									<PrimaryLoadingButton
-										buttonText={t.documentForm.applyGlobalRemise}
-										loading={false}
-										active={!disabled}
-										iconOnly
-										inverted
-										startIcon={icon(formik.values.remise_type ? 'edit' : 'add')}
-										onClick={() => setShowRemise(true)}
-									/>
-									{!!formik.values.remise_type && (
-										<PrimaryLoadingButton
-											buttonText={t.documentForm.removeGlobalRemise}
-											loading={false}
-											active={!disabled}
-											iconOnly
-											inverted
-											danger
-											startIcon={icon('close')}
-											onClick={() => {
-												void formik.setFieldValue('remise_type', '');
-												void formik.setFieldValue('remise', 0);
-											}}
-										/>
-									)}
-								</View>
-								{!!fieldError('remise') && (
-									<Text className="font-sans text-xs text-red-600 dark:text-red-300">{fieldError('remise')}</Text>
-								)}
-							</>
+							<CompanyDocumentRemiseControls
+								type={formik.values.remise_type}
+								value={formik.values.remise}
+								devise={formik.values.devise}
+								disabled={disabled}
+								error={fieldError('remise')}
+								onApply={() => setShowRemise(true)}
+								onRemove={() => {
+									void formik.setFieldValue('remise_type', '');
+									void formik.setFieldValue('remise', 0);
+								}}
+							/>
 						)}
 					</FactureDevisTotalsCard>
 				)}

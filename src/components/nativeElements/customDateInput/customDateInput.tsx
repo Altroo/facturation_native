@@ -15,6 +15,8 @@ type Props = {
 	value: string;
 	onChange: (value: string) => void;
 	disabled?: boolean;
+	error?: boolean;
+	helperText?: string;
 	minimumDate?: string;
 	maximumDate?: string;
 };
@@ -72,11 +74,18 @@ const CustomDateInput = (props: Props) => {
 					value={props.value}
 					onChangeText={props.onChange}
 					disabled={props.disabled}
+					error={props.error}
+					helperText={props.helperText}
 				/>
 			) : (
 				<>
 					<Text className="font-poppins-medium text-sm text-ink dark:text-slate-100">{props.label}</Text>
-					<View className="min-h-12 flex-row items-center rounded-xl border border-slate-300 bg-white dark:border-slate-600 dark:bg-panel">
+					<View
+						className={
+							'min-h-12 flex-row items-center rounded-xl border bg-white dark:bg-panel ' +
+							(props.error ? 'border-red-500' : 'border-slate-300 dark:border-slate-600')
+						}
+					>
 						<Pressable
 							accessibilityRole="button"
 							accessibilityLabel={props.label}
@@ -108,6 +117,17 @@ const CustomDateInput = (props: Props) => {
 							</Pressable>
 						)}
 					</View>
+					{!!props.helperText && (
+						<Text
+							className={
+								props.error
+									? 'font-sans text-xs text-red-600 dark:text-red-300'
+									: 'font-sans text-xs text-slate-500 dark:text-slate-400'
+							}
+						>
+							{props.helperText}
+						</Text>
+					)}
 				</>
 			)}
 			{open &&

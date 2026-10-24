@@ -28,6 +28,14 @@ jest.mock('@/components/nativeElements/modals/bottomSheet/bottomSheet', () => {
 	};
 });
 const change = jest.fn();
+
+it('shows a date validation error without committing a picker draft', async () => {
+	await render(<CustomDateInput label="Date" value="" onChange={change} error helperText="Date required" />);
+	expect(screen.getByText('Date required')).toBeOnTheScreen();
+	await fireEvent.press(screen.getByRole('button', { name: 'Date' }));
+	await fireEvent(screen.getByTestId('date-picker-Date'), 'valueChange', {}, new Date(2026, 0, 2, 12));
+	expect(change).not.toHaveBeenCalled();
+});
 const Field = (props: { initialValue?: string; minimumDate?: string; maximumDate?: string }) => {
 	const [value, setValue] = useState(props.initialValue ?? '');
 	return (
