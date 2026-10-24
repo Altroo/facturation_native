@@ -328,10 +328,11 @@ const ArticlesListContent = (
 				onError(t.articles.importInvalidFile);
 				return;
 			}
+			setImportErrors([]);
 			const result = await importArticles({ file, company_id: props.company_id }).unwrap();
 			handleClearAllMatching();
 			setImportErrors(result.errors);
-			onSuccess(t.articles.importSuccess(result.created));
+			if (result.created > 0) onSuccess(t.articles.importSuccess(result.created));
 		} catch (error) {
 			onError(extractApiErrorMessage(error, t.articles.importError));
 		} finally {

@@ -686,6 +686,15 @@ it('cancels file selection without making a request and reports import failures'
 	expect(screen.queryByText(t.articles.importSuccess(1))).toBeNull();
 });
 
+it('shows row failures without a success toast when no articles were imported, like the web', async () => {
+	jest.mocked(DocumentPicker.getDocumentAsync).mockResolvedValue({ canceled: false, assets: [{ uri: 'file:///cache/articles.csv', name: 'articles.csv', lastModified: 0 }] });
+	mockImport.mockReturnValue({ unwrap: () => Promise.resolve({ total: 1, created: 0, errors: [{ row: 2, message: 'Référence existe' }] }) });
+	await render(<ArticlesList archived={false} />);
+	await pressImportAction(t.articles.importTooltip);
+	expect(screen.getByRole('alert')).toHaveTextContent(/Ligne 2 : Référence existe/);
+	expect(mockSuccess).not.toHaveBeenCalled();
+});
+
 it('emails the import guide to the selected company and hides imports in the archive', async () => {
 	await render(<ArticlesList archived={false} />);
 	await fireEvent.press(screen.getByText('Switch company'));
