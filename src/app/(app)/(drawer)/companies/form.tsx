@@ -26,6 +26,7 @@ import CustomTextInput from '@/components/nativeElements/customTextInput/customT
 import CustomDropDownSelect from '@/components/nativeElements/customDropDownSelect/customDropDownSelect';
 import CustomSquareImageUploading from '@/components/nativeElements/customSquareImageUploading/customSquareImageUploading';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
+import SaveButton from '@/components/nativeElements/buttons/saveButton/saveButton';
 import PageActionBar from '@/components/shared/pageActionBar/pageActionBar';
 import ManagedByTableSection, { type ManagedByType } from '@/components/shared/addManagedByTable/addManagedByTable';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -708,8 +709,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 				</>
 			</KeyboardAwareScrollView>
 			<PageActionBar>
-				<PrimaryLoadingButton
-					buttonText={isEditMode ? t.common.update : t.companies.addTitle}
+				<SaveButton
 					loading={isPending || isAddLoading || isUpdateLoading}
 					onClick={() => {
 						setHasAttemptedSubmit(true);
@@ -720,7 +720,6 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 						}
 					}}
 					active
-					startIcon={<MaterialIcons name={isEditMode ? 'save' : 'add'} size={20} color={colors.white} />}
 				/>
 			</PageActionBar>
 		</View>

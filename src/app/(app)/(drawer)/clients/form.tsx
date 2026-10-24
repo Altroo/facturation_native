@@ -34,7 +34,7 @@ import CustomTextInput from '@/components/nativeElements/customTextInput/customT
 import CustomNumberInput from '@/components/nativeElements/customNumberInput/customNumberInput';
 import CustomDropDownSelect from '@/components/nativeElements/customDropDownSelect/customDropDownSelect';
 import CustomAutoCompleteSelect from '@/components/nativeElements/customAutoCompleteSelect/customAutoCompleteSelect';
-import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
+import SaveButton from '@/components/nativeElements/buttons/saveButton/saveButton';
 import PageActionBar from '@/components/shared/pageActionBar/pageActionBar';
 import KeyboardAwareScrollView from '@/components/shared/keyboardAwareScrollView/keyboardAwareScrollView';
 import SectionCard from '@/components/shared/sectionCard/sectionCard';
@@ -304,7 +304,7 @@ const FormikContent = (props: Props) => {
 						noOptionsText={t.clients.noVille}
 						onChange={(_event, value) => void formik.setFieldValue('ville', value ? Number(value.value) : null)}
 						// Selection already validates the new value. A blur immediately
-						// afterwards must not validate Formik's previous city again.
+						// afterward must not validate Formik's previous city again.
 						onBlur={() => void formik.setFieldTouched('ville', true, false)}
 						disabled={disabled || cityLoading || citiesQuery.isLoading}
 						startIcon={icon('location-city')}
@@ -336,11 +336,9 @@ const FormikContent = (props: Props) => {
 				<RemarkSection {...textFieldProps('remarque', 'notes')} title={t.clients.remarkSection} />
 			</KeyboardAwareScrollView>
 			<PageActionBar>
-				<PrimaryLoadingButton
-					buttonText={isEditMode ? t.common.update : t.common.add}
+				<SaveButton
 					active={!disabled && !cityLoading && !isResettingCode}
 					loading={disabled}
-					startIcon={icon('save')}
 					onClick={() => {
 						setHasAttemptedSubmit(true);
 						void formik.submitForm();

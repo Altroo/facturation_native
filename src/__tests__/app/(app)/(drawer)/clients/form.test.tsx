@@ -114,7 +114,7 @@ it('creates a company-scoped client, preserves the visible phone, and returns to
 	await fireEvent.changeText(screen.getByLabelText(delayLabel), '2.5');
 	expect(screen.getByLabelText(delayLabel)).toHaveProp('value', '0');
 	await fireEvent.press(screen.getByRole('button', { name: t.common.increaseValue(delayLabel) }));
-	await fireEvent.press(screen.getByRole('button', { name: t.common.add }));
+	await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
 	await waitFor(() => expect(mockAddClient).toHaveBeenCalledTimes(1));
 	expect(mockAddClient.mock.calls[0][0].data).toMatchObject({
 		company: 5,
@@ -134,7 +134,7 @@ it('creates a company-scoped client, preserves the visible phone, and returns to
 
 it('blocks an incomplete form and shows translated field labels', async () => {
 	await setup();
-	await fireEvent.press(screen.getByRole('button', { name: t.common.add }));
+	await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
 	await waitFor(() => expect(mockError).toHaveBeenCalledWith(t.common.correctErrors));
 	expect(mockAddClient).not.toHaveBeenCalled();
 	expect(screen.getAllByText(new RegExp(t.clients.fieldRegistreCommerce)).length).toBeGreaterThan(0);
@@ -170,7 +170,7 @@ it('changes the required fields for a physical person and clears hidden company 
 	await fireEvent.changeText(screen.getByLabelText(t.clients.fieldAdresse), 'Rue de Casablanca');
 	await toggleAutocomplete(t.clients.fieldVille);
 	await fireEvent.press(screen.getByRole('radio', { name: 'Casablanca' }));
-	await fireEvent.press(screen.getByRole('button', { name: t.common.add }));
+	await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
 	await waitFor(() => expect(mockAddClient).toHaveBeenCalledTimes(1));
 	expect(mockAddClient.mock.calls[0][0].data).toMatchObject({
 		client_type: 'PP',
@@ -230,7 +230,7 @@ it('loads an edit by its own company, updates with a mutation, and stays on the 
 	await fireEvent.changeText(screen.getByLabelText(t.clients.fieldRaisonSociale), longName);
 	expect(screen.getByLabelText(t.clients.fieldRaisonSociale)).toHaveProp('value', longName);
 	expect(screen.getByLabelText(t.clients.fieldRaisonSociale)).toHaveProp('scrollEnabled', true);
-	await fireEvent.press(screen.getByRole('button', { name: t.common.update }));
+	await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
 	await waitFor(() =>
 		expect(mockEditClient).toHaveBeenCalledWith(
 			expect.objectContaining({
@@ -251,7 +251,7 @@ it('keeps backend field errors and edited values visible after a failed save', a
 	});
 	await setup();
 	await fireEvent.changeText(screen.getByLabelText(t.clients.fieldRaisonSociale), 'Edited Client');
-	await fireEvent.press(screen.getByRole('button', { name: t.common.update }));
+	await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
 	await waitFor(() => expect(mockError).toHaveBeenCalledWith(t.clients.updateError));
 	expect(screen.getAllByText(/Code already used/).length).toBeGreaterThan(0);
 	expect(screen.getByLabelText(t.clients.fieldRaisonSociale)).toHaveProp('value', 'Edited Client');
@@ -269,11 +269,11 @@ it('disables fields and prevents a second save while a request is pending', asyn
 			}),
 	});
 	await setup();
-	await fireEvent.press(screen.getByRole('button', { name: t.common.update }));
+	await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
 	await waitFor(() => expect(mockEditClient).toHaveBeenCalledTimes(1));
 	expect(screen.getByLabelText(t.clients.fieldRaisonSociale)).toHaveProp('editable', false);
-	expect(screen.getByRole('button', { name: t.common.update })).toBeDisabled();
-	await fireEvent.press(screen.getByRole('button', { name: t.common.update }));
+	expect(screen.getByRole('button', { name: t.common.save })).toBeDisabled();
+	await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
 	expect(mockEditClient).toHaveBeenCalledTimes(1);
 	await act(async () => finish());
 });
@@ -329,7 +329,7 @@ it('adds a city in the selected company using the shared CRUD sheet', async () =
 	await setup();
 	await fireEvent.press(screen.getByRole('button', { name: `${t.common.add} ${t.clients.fieldVille}` }));
 	await fireEvent.changeText(screen.getByLabelText(t.addEntityModal.fieldLabel(t.clients.fieldVille)), 'Rabat');
-	await fireEvent.press(within(screen.getByTestId('entity-name-sheet')).getByRole('button', { name: t.common.add }));
+	await fireEvent.press(within(screen.getByTestId('entity-name-sheet')).getByRole('button', { name: t.common.save }));
 	await waitFor(() => expect(mockAddCity).toHaveBeenCalledWith({ data: { nom: 'Rabat', company: 5 } }));
 	await mockCitiesQuery.setResult({
 		currentData: [

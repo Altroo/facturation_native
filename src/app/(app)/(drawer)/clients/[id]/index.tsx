@@ -355,7 +355,7 @@ const ClientsViewPageContent = (props: Props) => {
 					<InfoRow icon={icon('schedule')} label={t.clients.fieldDelaiPaiement} value={client.delai_de_paiement} />
 				</SectionCard>
 				<SectionCard title={t.clients.remarkSection} icon="notes">
-					<InfoRow label={t.clients.fieldRemarque} value={client.remarque} />
+					<InfoRow label="" value={client.remarque} />
 				</SectionCard>
 				<SectionCard title={t.clients.accountStatement} icon="account-balance" variant="list">
 					<DateRangeFilterInput

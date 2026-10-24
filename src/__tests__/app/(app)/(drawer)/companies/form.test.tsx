@@ -3,7 +3,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import _initReducer, { setAuthenticated } from '@/store/slices/_initSlice';
 import accountReducer, { setProfil, setGroupes } from '@/store/slices/accountSlice';
 import companiesReducer, { setUserCompanies } from '@/store/slices/companiesSlice';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import { Provider } from 'react-redux';
 import { router } from 'expo-router';
 import CompaniesFormPage from '@/app/(app)/(drawer)/companies/form';
@@ -184,7 +184,7 @@ it('creates with the original creator role and locked permissions, strips global
 	await fireEvent.changeText(screen.getByLabelText(translations.fr.companies.fieldICE + ' *'), '123456789012345');
 	await fireEvent.press(screen.getByRole('button', { name: translations.fr.companies.fieldNbrEmploye + ' *' }));
 	await fireEvent.press(screen.getByRole('radio', { name: '1 à 5' }));
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.companies.addTitle, disabled: false }));
+	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.save, disabled: false }));
 	await waitFor(() => expect(mockSuccess).toHaveBeenCalledWith(translations.fr.companies.addSuccess));
 	expect(addCompany.mock.calls[0][0].data).toMatchObject({
 		raison_sociale: 'New Company',
@@ -210,7 +210,7 @@ it('preserves original administrative data, images and manager permissions on ed
 		screen.getByLabelText(translations.fr.companies.fieldRaisonSociale + ' *'),
 		'Updated Company',
 	);
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.update }));
+	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.save }));
 	await waitFor(() => expect(mockSuccess).toHaveBeenCalledWith(translations.fr.companies.updateSuccess));
 	expect(editCompany.mock.calls[0][0]).toMatchObject({
 		id: 4,
@@ -261,7 +261,7 @@ it('keeps edits and shows a backend field error without refreshing memberships o
 	});
 	await setup(true);
 	await fireEvent.changeText(screen.getByLabelText(translations.fr.companies.fieldICE + ' *'), '987654321012345');
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.update }));
+	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.save }));
 	await screen.findByText('ICE already exists');
 	expect(screen.getByLabelText(translations.fr.companies.fieldICE + ' *')).toHaveProp('value', '987654321012345');
 	expect(mockError).toHaveBeenCalledWith(translations.fr.companies.updateError);
@@ -280,11 +280,11 @@ it('keeps the company form visible and disabled while its save button is busy', 
 	await setup(true);
 	const label = translations.fr.companies.fieldRaisonSociale + ' *';
 	await fireEvent.changeText(screen.getByLabelText(label), 'Updated Company');
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.update }));
+	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.save }));
 	await waitFor(() => expect(editCompany).toHaveBeenCalledTimes(1));
 	expect(screen.getByLabelText(label)).toHaveProp('value', 'Updated Company');
 	expect(screen.getByLabelText(label)).toHaveProp('editable', false);
-	expect(screen.getByRole('button', { name: translations.fr.common.update })).toHaveProp('accessibilityState', {
+	expect(screen.getByRole('button', { name: translations.fr.common.save })).toHaveProp('accessibilityState', {
 		busy: true,
 		disabled: true,
 	});
@@ -298,7 +298,7 @@ it('uses the original validation toast and keeps invalid company fields without 
 		async () => await fireEvent.changeText(screen.getByLabelText(translations.fr.companies.fieldICE + ' *'), ''),
 	);
 	await waitFor(() => expect(screen.getByLabelText(translations.fr.companies.fieldICE + ' *')).toHaveProp('value', ''));
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.update }));
+	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.save }));
 	await waitFor(() => expect(mockError).toHaveBeenCalledWith(translations.fr.common.correctErrors));
 	expect(editCompany).not.toHaveBeenCalled();
 	expect(addCompany).not.toHaveBeenCalled();
@@ -325,7 +325,7 @@ it('replaces untouched cached company values and manager permissions after a sam
 			'Fresh Company',
 		),
 	);
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.update }));
+	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.save }));
 	await waitFor(() => expect(editCompany).toHaveBeenCalled());
 	expect(editCompany.mock.calls[0][0].data).toMatchObject({
 		raison_sociale: 'Fresh Company',
@@ -368,7 +368,7 @@ it('reinitializes company edits and managers after a same-ID refresh, matching t
 			'Server Company',
 		),
 	);
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.update }));
+	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.save }));
 	await waitFor(() => expect(editCompany).toHaveBeenCalled());
 	expect(editCompany.mock.calls[0][0].data).toMatchObject({ raison_sociale: 'Server Company', ICE: '987654321012345' });
 	expect(editCompany.mock.calls[0][0].data.managed_by).toHaveLength(1);
@@ -388,7 +388,7 @@ it('shows labeled manager and inventory errors after a rejected save', async () 
 			}),
 	});
 	await setup(true);
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.update }));
+	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.save }));
 	const summary =
 		translations.fr.companies.managersSection +
 		' : Manager is required\n' +
@@ -423,14 +423,14 @@ it.each([0, 503])('uses original form/error rendering after a background refresh
 	);
 	if (status === 503) {
 		expect(screen.getByRole('alert')).toBeOnTheScreen();
-		expect(screen.queryByRole('button', { name: translations.fr.common.update })).toBeNull();
+		expect(screen.queryByRole('button', { name: translations.fr.common.save })).toBeNull();
 		return;
 	}
 	expect(screen.getByLabelText(translations.fr.companies.fieldRaisonSociale + ' *')).toHaveProp(
 		'value',
 		'Unsaved Company',
 	);
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.update }));
+	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.save }));
 	await waitFor(() => expect(editCompany).toHaveBeenCalled());
 	expect(editCompany.mock.calls[0][0].data).toMatchObject({ raison_sociale: 'Unsaved Company', ICE: company.ICE });
 	expect(editCompany.mock.calls[0][0].data.managed_by).toHaveLength(2);
@@ -455,7 +455,7 @@ it.each([401, 403, 404])('blocks cached company editing after an authoritative %
 
 it('preserves an existing manager list without inserting the editing account', async () => {
 	await setup(true, { ...company, admins: [company.admins[1]], managed_by: [company.managed_by[1]], email: null });
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.update }));
+	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.save }));
 	await waitFor(() => expect(editCompany).toHaveBeenCalled());
 	expect(editCompany.mock.calls[0][0].data).toMatchObject({
 		email: '',
@@ -472,7 +472,7 @@ it.each([
 	'preserves original stock=%s and inventory=%s fields in the submitted payload (%s)',
 	async (stock, inventory, expected) => {
 		await setup(true, { ...company, stock_management_enabled: stock, inventory_management_enabled: inventory });
-		await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.update }));
+		await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.save }));
 		await waitFor(() => expect(editCompany).toHaveBeenCalled());
 		expect(editCompany.mock.calls[0][0].data).toMatchObject({
 			stock_management_enabled: stock,
@@ -491,7 +491,9 @@ it('renders compact sections and the submit button without repeating the navbar 
 		translations.fr.companies.adminSection,
 	])
 		expect(screen.getByText(section)).toBeOnTheScreen();
-	expect(screen.getByRole('button', { name: translations.fr.companies.addTitle })).toBeOnTheScreen();
+	expect(
+		within(screen.getByTestId('page-action-bar')).getByRole('button', { name: translations.fr.common.save }),
+	).toBeOnTheScreen();
 	expect(screen.queryByRole('button', { name: translations.fr.companies.backToList })).toBeNull();
 });
 it('shows the original relationship loading state until users are available', async () => {
@@ -503,5 +505,5 @@ it('shows the original relationship loading state until users are available', as
 		</Provider>,
 	);
 	expect(screen.getByRole('progressbar')).toBeOnTheScreen();
-	expect(screen.queryByRole('button', { name: translations.fr.companies.addTitle })).toBeNull();
+	expect(screen.queryByRole('button', { name: translations.fr.common.save })).toBeNull();
 });

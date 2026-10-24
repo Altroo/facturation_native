@@ -131,7 +131,7 @@ it('creates in the selected company, sends the crop, and converts a TTC input ba
 	await fireEvent.press(screen.getByText('Pick photo'));
 	await fireEvent.press(screen.getByRole('button', { name: t.articles.fieldPrixVenteBase }));
 	await fireEvent.press(screen.getByRole('radio', { name: 'TTC' }));
-	await fireEvent.press(screen.getByRole('button', { name: t.common.add }));
+	await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
 	await waitFor(() => expect(mockAdd).toHaveBeenCalledTimes(1));
 	expect(mockAdd).toHaveBeenCalledWith({
 		data: expect.objectContaining({
@@ -162,7 +162,7 @@ it('steps TVA in both directions, respects zero, and submits a decimal rate as a
 	await fireEvent.changeText(screen.getByLabelText(label), '7,5');
 	await fireEvent.press(screen.getByRole('button', { name: t.common.increaseValue(label) }));
 	expect(screen.getByLabelText(label)).toHaveProp('value', '8.5');
-	await fireEvent.press(screen.getByRole('button', { name: t.common.add }));
+	await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
 	await waitFor(() => expect(mockAdd).toHaveBeenCalledWith({ data: expect.objectContaining({ tva: 8.5 }) }));
 });
 
@@ -173,7 +173,7 @@ it('edits an article with its stored entry basis and leaves the user on the form
 	expect(screen.getByLabelText(t.articles.colPrixVente)).toHaveProp('value', '120');
 	expect(screen.queryByLabelText(t.articles.stockMinimum)).toBeNull();
 	expect(screen.queryByLabelText(t.articles.resetReference)).toBeNull();
-	await fireEvent.press(screen.getByRole('button', { name: t.common.update }));
+	await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
 	await waitFor(() =>
 		expect(mockEdit).toHaveBeenCalledWith({
 			id: 7,
@@ -201,7 +201,7 @@ it('keeps services free of stock fields and uses the selected category ID', asyn
 	expect(screen.queryByLabelText(t.articles.stockMinimum)).toBeNull();
 	await toggleAutocomplete(t.articles.fieldCategorie);
 	await fireEvent.press(screen.getByRole('radio', { name: 'Matériel' }));
-	await fireEvent.press(screen.getByRole('button', { name: t.common.add }));
+	await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
 	await waitFor(() =>
 		expect(mockAdd).toHaveBeenCalledWith({ data: expect.objectContaining({ type_article: 'Service', categorie: 2 }) }),
 	);
@@ -217,7 +217,7 @@ it('preserves Nectar pricing and synchronizes purchase currency with sale curren
 	await fireEvent.changeText(screen.getByLabelText(t.articles.colPrixHT), '100');
 	await fireEvent.press(screen.getByRole('button', { name: `${t.articles.currency} · ${t.articles.colPrixVente}` }));
 	await fireEvent.press(screen.getByRole('radio', { name: 'EUR' }));
-	await fireEvent.press(screen.getByRole('button', { name: t.common.add }));
+	await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
 	await waitFor(() =>
 		expect(mockAdd).toHaveBeenCalledWith({
 			data: expect.objectContaining({ prix_achat: 0, devise_prix_achat: 'EUR', devise_prix_vente: 'EUR' }),
@@ -235,7 +235,7 @@ it('shows backend field errors without navigating or losing the draft', async ()
 	});
 	await setup();
 	await fill();
-	await fireEvent.press(screen.getByRole('button', { name: t.common.add }));
+	await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
 	await waitFor(() => expect(mockError).toHaveBeenCalled());
 	expect(screen.getByLabelText(t.articles.colDesignation)).toHaveProp('value', 'Article Atlas');
 	expect(router.dismissTo).not.toHaveBeenCalled();
@@ -273,7 +273,7 @@ it('prevents duplicate submissions while a save is pending', async () => {
 	});
 	await setup();
 	await fill();
-	const add = screen.getByRole('button', { name: t.common.add });
+	const add = screen.getByRole('button', { name: t.common.save });
 	await fireEvent.press(add);
 	await fireEvent.press(add);
 	await waitFor(() => expect(mockAdd).toHaveBeenCalledTimes(1));
@@ -285,12 +285,12 @@ it('requires a location for stock-managed products, but not services', async () 
 	await setup();
 	await fill();
 	expect(screen.getByLabelText(t.articles.stockMinimum)).toHaveProp('value', '0');
-	await fireEvent.press(screen.getByRole('button', { name: t.common.add }));
+	await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
 	await waitFor(() => expect(mockError).toHaveBeenCalledWith(t.common.correctErrors));
 	expect(mockAdd).not.toHaveBeenCalled();
 	await fireEvent.press(screen.getByRole('button', { name: t.articles.colType }));
 	await fireEvent.press(screen.getByRole('radio', { name: t.articles.typeService }));
-	await fireEvent.press(screen.getByRole('button', { name: t.common.add }));
+	await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
 	await waitFor(() => expect(mockAdd).toHaveBeenCalledTimes(1));
 });
 
@@ -301,7 +301,7 @@ it('creates a stock-managed product with its location and minimum quantity', asy
 	await fireEvent.changeText(screen.getByLabelText(t.articles.stockMinimum), '2,5');
 	await toggleAutocomplete(t.articles.fieldEmplacement);
 	await fireEvent.press(screen.getByRole('radio', { name: 'Dépôt A' }));
-	await fireEvent.press(screen.getByRole('button', { name: t.common.add }));
+	await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
 	await waitFor(() =>
 		expect(mockAdd).toHaveBeenCalledWith({
 			data: expect.objectContaining({ type_article: 'Produit', emplacement: 4, stock_minimum: 2.5 }),

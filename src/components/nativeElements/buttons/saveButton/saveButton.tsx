@@ -10,7 +10,9 @@ const SaveButton = (props: Props) => {
 	const { t } = useLanguage();
 	return (
 		<PrimaryLoadingButton
-			{...props}
+			loading={props.loading}
+			onClick={props.onClick}
+			active={props.active}
 			buttonText={t.common.save}
 			startIcon={<MaterialIcons name="save" size={20} color={colors.white} />}
 		/>

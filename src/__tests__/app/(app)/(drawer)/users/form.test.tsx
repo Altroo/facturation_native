@@ -123,7 +123,7 @@ it('uses green for the active account control and keeps the submit action in the
 		colors.brand,
 	);
 	expect(
-		within(screen.getByTestId('page-action-bar')).getByRole('button', { name: translations.fr.users.addTitle }),
+		within(screen.getByTestId('page-action-bar')).getByRole('button', { name: translations.fr.common.save }),
 	).toBeOnTheScreen();
 });
 it.each(['', ['7'], '../7', '0'])('blocks malformed edit id %s without requesting a user', async (id) => {
@@ -162,7 +162,9 @@ it('accepts an empty successful create response, shows user-added feedback, and 
 	await fireEvent.changeText(screen.getByLabelText(translations.fr.users.fieldEmail), 'new@example.invalid');
 	await fireEvent.press(screen.getByRole('button', { name: translations.fr.users.fieldSexe }));
 	await fireEvent.press(screen.getByRole('radio', { name: 'Homme' }));
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.users.addTitle }));
+	await fireEvent.press(
+		within(screen.getByTestId('page-action-bar')).getByRole('button', { name: translations.fr.common.save }),
+	);
 	await waitFor(() => expect(addUser).toHaveBeenCalled());
 	expect(checkEmail).toHaveBeenCalledWith({ email: 'new@example.invalid' });
 	expect(addUser.mock.calls[0][0].data).toMatchObject({
@@ -181,7 +183,7 @@ it('uses the original validation toast and keeps invalid values on the form with
 	await setup(true);
 	await act(async () => await fireEvent.changeText(screen.getByLabelText(translations.fr.users.fieldNom), ''));
 	await waitFor(() => expect(screen.getByLabelText(translations.fr.users.fieldNom)).toHaveProp('value', ''));
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.update }));
+	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.save }));
 	await waitFor(() => expect(mockError).toHaveBeenCalledWith(translations.fr.common.correctErrors));
 	expect(editUser).not.toHaveBeenCalled();
 	expect(addUser).not.toHaveBeenCalled();
@@ -191,7 +193,7 @@ it('preserves existing images, memberships and flags on edit, keeps email disabl
 	await setup(true);
 	expect(screen.getByLabelText(translations.fr.users.fieldEmail)).toHaveProp('editable', false);
 	await fireEvent.changeText(screen.getByLabelText(translations.fr.users.fieldNom), 'Updated');
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.update }));
+	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.save }));
 	await waitFor(() => expect(editUser).toHaveBeenCalled());
 	expect(editUser.mock.calls[0][0]).toMatchObject({
 		id: 7,
@@ -214,7 +216,7 @@ it('shows backend field errors without navigating away or losing edited text', a
 	});
 	await setup(true);
 	await fireEvent.changeText(screen.getByLabelText(translations.fr.users.fieldNom), 'Updated');
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.update }));
+	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.save }));
 	await screen.findByText('Server validation');
 	expect(screen.getByLabelText(translations.fr.users.fieldNom)).toHaveProp('value', 'Updated');
 	expect(mockError).toHaveBeenCalledWith(translations.fr.users.updateError);
@@ -231,11 +233,11 @@ it('keeps the user form visible and disabled while its save button is busy', asy
 	});
 	await setup(true);
 	await fireEvent.changeText(screen.getByLabelText(translations.fr.users.fieldNom), 'Updated');
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.update }));
+	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.save }));
 	await waitFor(() => expect(editUser).toHaveBeenCalledTimes(1));
 	expect(screen.getByLabelText(translations.fr.users.fieldNom)).toHaveProp('value', 'Updated');
 	expect(screen.getByLabelText(translations.fr.users.fieldNom)).toHaveProp('editable', false);
-	expect(screen.getByRole('button', { name: translations.fr.common.update })).toHaveProp('accessibilityState', {
+	expect(screen.getByRole('button', { name: translations.fr.common.save })).toHaveProp('accessibilityState', {
 		busy: true,
 		disabled: true,
 	});
@@ -258,7 +260,7 @@ it('replaces untouched cached values and memberships when the same user is refre
 		</Provider>,
 	);
 	await waitFor(() => expect(screen.getByLabelText(translations.fr.users.fieldNom)).toHaveProp('value', 'Fresh name'));
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.update }));
+	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.save }));
 	await waitFor(() => expect(editUser).toHaveBeenCalled());
 	expect(editUser.mock.calls[0][0].data).toMatchObject({ first_name: 'Fresh name', companies: fresh.companies });
 });
@@ -279,7 +281,7 @@ it('reinitializes values and memberships after a same-user refresh, matching the
 		</Provider>,
 	);
 	await waitFor(() => expect(screen.getByLabelText(translations.fr.users.fieldNom)).toHaveProp('value', 'Server name'));
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.update }));
+	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.save }));
 	await waitFor(() => expect(editUser).toHaveBeenCalled());
 	expect(editUser.mock.calls[0][0].data).toMatchObject({ first_name: 'Server name', companies: [] });
 });
@@ -293,7 +295,7 @@ it('shows labeled membership and account-flag errors after a rejected save', asy
 			}),
 	});
 	await setup(true);
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.update }));
+	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.save }));
 	const summary =
 		translations.fr.users.companiesSection +
 		' : Membership is invalid\n' +
@@ -322,11 +324,11 @@ it.each([0, 503])('uses original form/error rendering after a background refresh
 	);
 	if (status === 503) {
 		expect(screen.getByRole('alert')).toBeOnTheScreen();
-		expect(screen.queryByRole('button', { name: translations.fr.common.update })).toBeNull();
+		expect(screen.queryByRole('button', { name: translations.fr.common.save })).toBeNull();
 		return;
 	}
 	expect(screen.getByLabelText(translations.fr.users.fieldNom)).toHaveProp('value', 'Unsaved name');
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.update }));
+	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.save }));
 	await waitFor(() => expect(editUser).toHaveBeenCalled());
 	expect(editUser.mock.calls[0][0].data).toMatchObject({ first_name: 'Unsaved name', companies: user.companies });
 });
@@ -364,7 +366,7 @@ it('adds companies by ID, excludes duplicates and clears both add selectors afte
 	await toggleAutocomplete(translations.fr.shared.selectCompany);
 	expect(screen.getAllByRole('radio', { name: 'Same Name' })).toHaveLength(1);
 	await toggleAutocomplete(translations.fr.shared.selectCompany);
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.update }));
+	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.save }));
 	await waitFor(() => expect(editUser).toHaveBeenCalled());
 	expect(editUser.mock.calls[0][0].data.companies).toEqual([
 		user.companies[0],
@@ -395,7 +397,9 @@ it('renders personal fields and compact sections without repeating the navbar ti
 		translations.fr.users.companiesSection,
 	])
 		expect(screen.getAllByText(section).length).toBeGreaterThan(0);
-	expect(screen.getByRole('button', { name: translations.fr.users.addTitle })).toBeOnTheScreen();
+	expect(
+		within(screen.getByTestId('page-action-bar')).getByRole('button', { name: translations.fr.common.save }),
+	).toBeOnTheScreen();
 	expect(screen.queryByRole('button', { name: translations.fr.users.backToList })).toBeNull();
 });
 it('shows the original relationship loading state until company choices are available', async () => {

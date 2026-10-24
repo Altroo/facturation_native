@@ -4,7 +4,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import type { DropDownType } from '@/types/accountTypes';
 import BottomSheet from '@/components/nativeElements/modals/bottomSheet/bottomSheet';
 import CustomTextInput from '@/components/nativeElements/customTextInput/customTextInput';
-import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
+import SaveButton from '@/components/nativeElements/buttons/saveButton/saveButton';
 import ConfirmationModal from '@/components/shared/confirmationModal/confirmationModal';
 import { extractApiErrorMessage } from '@/utils/helpers';
 import { useLanguage, useToast } from '@/utils/hooks';
@@ -146,8 +146,7 @@ const EntityCrudControls = (props: Props) => {
 						autoCorrect={false}
 						disabled={loading}
 					/>
-					<PrimaryLoadingButton
-						buttonText={action === 'add' ? t.common.add : t.common.update}
+					<SaveButton
 						loading={loading}
 						active
 						onClick={() => void submit()}

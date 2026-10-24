@@ -56,7 +56,7 @@ import CustomNumberInput from '@/components/nativeElements/customNumberInput/cus
 import CustomDropDownSelect from '@/components/nativeElements/customDropDownSelect/customDropDownSelect';
 import CustomAutoCompleteSelect from '@/components/nativeElements/customAutoCompleteSelect/customAutoCompleteSelect';
 import CustomSquareImageUploading from '@/components/nativeElements/customSquareImageUploading/customSquareImageUploading';
-import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
+import SaveButton from '@/components/nativeElements/buttons/saveButton/saveButton';
 import PageActionBar from '@/components/shared/pageActionBar/pageActionBar';
 import KeyboardAwareScrollView from '@/components/shared/keyboardAwareScrollView/keyboardAwareScrollView';
 import SectionCard from '@/components/shared/sectionCard/sectionCard';
@@ -493,11 +493,9 @@ const FormikContent = (props: Props) => {
 				<RemarkSection {...field('remarque', 'notes')} title={t.articles.remarkSection} />
 			</KeyboardAwareScrollView>
 			<PageActionBar>
-				<PrimaryLoadingButton
-					buttonText={isEditMode ? t.common.update : t.common.add}
+				<SaveButton
 					active={!disabled && !parameterLoading && !isResettingReference}
 					loading={disabled}
-					startIcon={icon('save')}
 					onClick={() => {
 						setHasAttemptedSubmit(true);
 						void formik.submitForm();
