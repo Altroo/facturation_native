@@ -60,6 +60,7 @@ jest.mock('@/store/services/factureClient', () => ({
 	useLazyGetFactureClientListQuery: () => [mockFetchAll],
 	useDeleteFactureClientMutation: () => [mockRemove, {}],
 	useBulkDeleteFactureClientMutation: () => [mockBulk, {}],
+	useConvertFactureClientToBonDeLivraisonMutation: () => [mockConvert, {}],
 }));
 jest.mock('@/store/services/company', () => ({
 	useGetCompanyQuery: () => ({ currentData: { id: 5, uses_foreign_currency: true } }),
@@ -113,6 +114,7 @@ const initialQuery = {
 const mockQuery = createQueryMock(initialQuery);
 const mockRemove = jest.fn();
 const mockBulk = jest.fn();
+const mockConvert = jest.fn();
 const mockFetchAll = jest.fn();
 const mockSuccess = jest.fn();
 const mockError = jest.fn();
@@ -130,6 +132,7 @@ const cardAction = async (name: string) => {
 };
 beforeEach(async () => {
 	jest.clearAllMocks();
+	mockConvert.mockReturnValue({ unwrap: () => Promise.resolve({ id: 31 }) });
 	mockRole = 'Caissier';
 	await mockQuery.setResult(initialQuery);
 	mockRemove.mockReturnValue({ unwrap: () => Promise.resolve() });
@@ -216,7 +219,7 @@ it('requires confirmation before deleting selected invoices', async () => {
 it('leaves delivery-note conversion disabled until that mobile module exists', async () => {
 	await render(<FactureClientListPage />);
 	await fireEvent.press(screen.getAllByRole('button', { name: t.common.moreActions })[0]);
-	expect(screen.getByRole('menuitem', { name: t.facturesClient.labelBonLivraison })).toBeDisabled();
+	expect(screen.getByRole('menuitem', { name: t.facturesClient.labelBonLivraison })).toBeEnabled();
 });
 it('opens the shared PDF format and language choices', async () => {
 	await render(<FactureClientListPage />);
@@ -268,4 +271,30 @@ it('maps date ranges to Django date_after/before inside an OR group', async () =
 		]),
 	);
 	expect(JSON.stringify(groups)).not.toContain('date_facture_after');
+});
+
+it('converts an eligible invoice to a delivery note using the green confirmation flow', async () => {
+	await render(<FactureClientListPage />);
+	await cardAction(t.facturesClient.labelBonLivraison);
+	expect(screen.getByText(t.facturesClient.convertToBLTitle)).toBeOnTheScreen();
+	expect(screen.getByText(t.facturesClient.convertToBLBody)).toBeOnTheScreen();
+	expect(mockConvert).not.toHaveBeenCalled();
+	await fireEvent.press(within(screen.getByTestId('action-modal')).getByRole('button', { name: t.common.convert }));
+	await waitFor(() => expect(mockConvert).toHaveBeenCalledWith({ id: 7 }));
+	expect(router.push).toHaveBeenCalledWith({
+		pathname: '/bon-de-livraison/form',
+		params: { id: '31', company_id: '5' },
+	});
+});
+it('does not offer delivery conversion to a draft or read-only member', async () => {
+	await mockQuery.setResult({
+		...initialQuery,
+		currentData: {
+			...initialQuery.currentData,
+			pages: [{ ...initialQuery.currentData.pages[0]!, results: [{ ...row(7), statut: 'Brouillon' }] }],
+		},
+	});
+	await render(<FactureClientListPage />);
+	await fireEvent.press(screen.getAllByRole('button', { name: t.common.moreActions })[0]);
+	expect(screen.getByRole('menuitem', { name: t.facturesClient.labelBonLivraison })).toBeDisabled();
 });

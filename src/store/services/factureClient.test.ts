@@ -4,6 +4,7 @@ import { auth } from '@/auth';
 import { factureClientApi } from './factureClient';
 import { factureProFormaApi } from './factureProForma';
 import { deviApi } from './devi';
+import { bonDeLivraisonApi } from './bonDeLivraison';
 
 jest.mock('@/auth', () => {
 	const { create } = jest.requireActual<typeof import('axios')>('axios');
@@ -23,8 +24,15 @@ const createStore = () =>
 			[factureClientApi.reducerPath]: factureClientApi.reducer,
 			[factureProFormaApi.reducerPath]: factureProFormaApi.reducer,
 			[deviApi.reducerPath]: deviApi.reducer,
+			[bonDeLivraisonApi.reducerPath]: bonDeLivraisonApi.reducer,
 		},
-		middleware: (get) => get().concat(factureClientApi.middleware, factureProFormaApi.middleware, deviApi.middleware),
+		middleware: (get) =>
+			get().concat(
+				factureClientApi.middleware,
+				factureProFormaApi.middleware,
+				deviApi.middleware,
+				bonDeLivraisonApi.middleware,
+			),
 	});
 let store: ReturnType<typeof createStore>;
 beforeEach(() => {
@@ -96,6 +104,7 @@ afterEach(async () => {
 	store.dispatch(factureClientApi.util.resetApiState());
 	store.dispatch(factureProFormaApi.util.resetApiState());
 	store.dispatch(deviApi.util.resetApiState());
+	store.dispatch(bonDeLivraisonApi.util.resetApiState());
 	await jest.runOnlyPendingTimersAsync();
 	jest.useRealTimers();
 });
@@ -235,4 +244,25 @@ it('preserves cached lists after rejected writes and keeps company caches separa
 	expect(factureClientApi.endpoints.getFactureClientList.select({ company_id: 11 })(store.getState()).data).toEqual([
 		{ id: 11 },
 	]);
+});
+
+it.each([true, false])('refreshes delivery lists only when invoice conversion succeeds: %s', async (success) => {
+	adapter.mockImplementation(async (config) => {
+		if (config.method === 'get') return response(config, []);
+		if (!success)
+			throw new AxiosError('Denied', 'ERR_BAD_REQUEST', config, undefined, response(config, { detail: 'Denied' }, 403));
+		return response(config, { id: 31 });
+	});
+	await store.dispatch(bonDeLivraisonApi.endpoints.getBonDeLivraisonList.initiate({ company_id: 5 })).unwrap();
+	await jest.runOnlyPendingTimersAsync();
+	const conversion = store
+		.dispatch(factureClientApi.endpoints.convertFactureClientToBonDeLivraison.initiate({ id: 7 }))
+		.unwrap();
+	if (success) await expect(conversion).resolves.toEqual({ id: 31 });
+	else await expect(conversion).rejects.toMatchObject({ status: 403 });
+	await jest.runOnlyPendingTimersAsync();
+	expect(adapter.mock.calls.find(([config]) => config.method === 'post')?.[0].url).toBe(
+		'/facture_client/convert_to_bon_de_livraison/7/',
+	);
+	expect(adapter.mock.calls.filter(([config]) => config.method === 'get')).toHaveLength(success ? 2 : 1);
 });

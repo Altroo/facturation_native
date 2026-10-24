@@ -9,6 +9,7 @@ import {
 	useLazyGetFactureClientListQuery,
 	useDeleteFactureClientMutation,
 	useBulkDeleteFactureClientMutation,
+	useConvertFactureClientToBonDeLivraisonMutation,
 } from '@/store/services/factureClient';
 import { useGetCompanyQuery } from '@/store/services/company';
 import { useInitAccessToken } from '@/contexts/InitContext';
@@ -48,6 +49,7 @@ const UnpaidInvoices = (props: Props) => {
 	const [fetchAllIds] = useLazyGetFactureClientListQuery();
 	const [deleteRecord, deleting] = useDeleteFactureClientMutation();
 	const [bulkDeleteRecords, bulkDeleting] = useBulkDeleteFactureClientMutation();
+	const [convertToDelivery, converting] = useConvertFactureClientToBonDeLivraisonMutation();
 	return (
 		<FactureClientListContent
 			{...props}
@@ -56,7 +58,8 @@ const UnpaidInvoices = (props: Props) => {
 			fetchAllIds={fetchAllIds}
 			deleteRecord={deleteRecord}
 			bulkDeleteRecords={bulkDeleteRecords}
-			busy={deleting.isLoading || bulkDeleting.isLoading}
+			convertToDelivery={convertToDelivery}
+			busy={deleting.isLoading || bulkDeleting.isLoading || converting.isLoading}
 			searchTerm={searchTerm}
 			setSearchTerm={setSearchTerm}
 			sortModel={sortModel}

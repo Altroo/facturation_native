@@ -1,3 +1,4 @@
+import { bonDeLivraisonApi } from '@/store/services/bonDeLivraison';
 import { factureProFormaApi } from '@/store/services/factureProForma';
 import { createApi } from '@reduxjs/toolkit/query/react';
 import { axiosBaseQuery } from '@/utils/axiosBaseQuery';
@@ -91,6 +92,21 @@ export const factureClientApi = createApi({
 			}),
 			providesTags: ['FactureClient', 'Dashboard'],
 		}),
+		convertFactureClientToBonDeLivraison: builder.mutation<{ id: number }, { id: number }>({
+			query: ({ id }) => ({
+				url: `${process.env.EXPO_PUBLIC_FACTURE_CLIENT_CONVERT_TO_BON_DE_LIVRAISON}${id}/`,
+				method: 'POST',
+			}),
+			invalidatesTags: (_result, error) => (error ? [] : ['FactureClient', 'Dashboard']),
+			async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+				try {
+					await queryFulfilled;
+					dispatch(bonDeLivraisonApi.util.invalidateTags(['BonDeLivraison']));
+				} catch {
+					// The list handles the failure; rejected conversions leave caches intact.
+				}
+			},
+		}),
 		addFactureClient: builder.mutation<FactureClass, { data: WriteData }>({
 			query: ({ data }) => ({ url: `${process.env.EXPO_PUBLIC_FACTURE_CLIENT_ROOT}/`, method: 'POST', data }),
 			invalidatesTags: (_result, error) => (error ? [] : ['FactureClient', 'Dashboard']),
@@ -146,6 +162,7 @@ export const factureClientApi = createApi({
 });
 
 export const {
+	useConvertFactureClientToBonDeLivraisonMutation,
 	useGetFactureClientListQuery,
 	useLazyGetFactureClientListQuery,
 	useGetFactureClientInfiniteListInfiniteQuery,

@@ -58,6 +58,7 @@ jest.mock('@/store/services/factureClient', () => ({
 	useLazyGetFactureClientListQuery: () => [mockFetchAll],
 	useDeleteFactureClientMutation: () => [mockRemove, {}],
 	useBulkDeleteFactureClientMutation: () => [mockBulk, {}],
+	useConvertFactureClientToBonDeLivraisonMutation: () => [mockConvert, {}],
 }));
 jest.mock('@/store/services/company', () => ({
 	useGetCompanyQuery: () => ({ currentData: { id: 5, uses_foreign_currency: true } }),
@@ -111,6 +112,7 @@ const initialQuery = {
 const mockQuery = createQueryMock(initialQuery);
 const mockRemove = jest.fn();
 const mockBulk = jest.fn();
+const mockConvert = jest.fn();
 const mockFetchAll = jest.fn();
 const mockSuccess = jest.fn();
 const mockError = jest.fn();
@@ -120,6 +122,7 @@ let mockRole: string;
 const t = translations.fr;
 beforeEach(async () => {
 	jest.clearAllMocks();
+	mockConvert.mockReturnValue({ unwrap: () => Promise.resolve({ id: 31 }) });
 	mockRole = 'Caissier';
 	await mockQuery.setResult(initialQuery);
 	mockRemove.mockReturnValue({ unwrap: () => Promise.resolve() });
@@ -149,7 +152,7 @@ it('keeps unpaid-list actions aligned with the web without exposing bulk deletio
 	await render(<FactureClientListPage />);
 	await fireEvent.press(screen.getAllByRole('button', { name: t.common.moreActions })[0]);
 	expect(screen.queryByRole('menuitem', { name: t.common.print })).toBeNull();
-	expect(screen.getByRole('menuitem', { name: t.facturesClient.labelBonLivraison })).toBeDisabled();
+	expect(screen.getByRole('menuitem', { name: t.facturesClient.labelBonLivraison })).toBeEnabled();
 	expect(screen.getByRole('menuitem', { name: t.common.edit })).toBeOnTheScreen();
 });
 
