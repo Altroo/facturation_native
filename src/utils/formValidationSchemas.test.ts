@@ -21,7 +21,42 @@ import {
 	stockAdjustmentSchema,
 	stockReceiptSchema,
 	stockInventorySchema,
+	monthlyObjectivesSchema,
 } from './formValidationSchemas';
+
+describe('Monthly objectives schema', () => {
+	const valid = {
+		objectif_ca: '1000,50',
+		objectif_ca_eur: '',
+		objectif_ca_usd: null,
+		objectif_factures: '5',
+		objectif_conversion: '75',
+	};
+	it('accepts zero targets, decimal comma amounts and optional foreign targets like the web', () => {
+		expect(monthlyObjectivesSchema.parse(valid)).toMatchObject({
+			objectif_ca: 1000.5,
+			objectif_ca_eur: null,
+			objectif_factures: 5,
+			objectif_conversion: 75,
+		});
+		expect(
+			monthlyObjectivesSchema.safeParse({
+				...valid,
+				objectif_ca: '0',
+				objectif_factures: '0',
+				objectif_conversion: '0',
+			}).success,
+		).toBe(true);
+	});
+	it.each([
+		{ objectif_ca: '-1' },
+		{ objectif_factures: '1.5' },
+		{ objectif_conversion: '101' },
+		{ objectif_conversion: '' },
+	])('rejects invalid objectives: %p', (invalid) => {
+		expect(monthlyObjectivesSchema.safeParse({ ...valid, ...invalid }).success).toBe(false);
+	});
+});
 
 describe('Stock form schemas', () => {
 	const adjustment = {

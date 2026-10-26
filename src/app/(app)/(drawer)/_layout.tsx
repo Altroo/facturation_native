@@ -155,6 +155,7 @@ const DrawerStackLayout = () => {
 					'settings/edit-profile': { title: t.settings.profileTitle },
 					'settings/password': { title: t.settings.passwordTitle },
 					'settings/notifications': { title: t.settings.notificationPreferences },
+					'settings/monthly-objectives': { title: t.monthlyObjectives.title },
 				};
 				const options = screens[route.name] ?? {};
 				// The shared default also applies to future routes discovered by Expo Router.

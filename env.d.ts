@@ -1,5 +1,6 @@
 declare namespace NodeJS {
 	interface ProcessEnv {
+		EXPO_PUBLIC_DASHBOARD_ROOT: string;
 		EXPO_PUBLIC_STOCK_ROOT: string;
 		EXPO_PUBLIC_LOGISTIQUE_ROOT: string;
 		EXPO_PUBLIC_LOGISTIQUE_LIST: string;

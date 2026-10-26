@@ -16,6 +16,7 @@ import { bonDeLivraisonApi } from '@/store/services/bonDeLivraison';
 import { reglementApi } from '@/store/services/reglement';
 import { stockApi } from '@/store/services/stock';
 import { logistiqueApi } from '@/store/services/logistique';
+import { dashboardApi } from '@/store/services/dashboard';
 import { aiAssistantApi } from '@/store/services/aiAssistant';
 import {
 	citiesApi,
@@ -50,6 +51,7 @@ const rootReducer = combineReducers({
 	[reglementApi.reducerPath]: reglementApi.reducer,
 	[stockApi.reducerPath]: stockApi.reducer,
 	[logistiqueApi.reducerPath]: logistiqueApi.reducer,
+	[dashboardApi.reducerPath]: dashboardApi.reducer,
 	[aiAssistantApi.reducerPath]: aiAssistantApi.reducer,
 	[modePaiementApi.reducerPath]: modePaiementApi.reducer,
 	[livreParApi.reducerPath]: livreParApi.reducer,
@@ -93,6 +95,7 @@ export const makeStore = (): SagaStore => {
 					reglementApi.middleware,
 					stockApi.middleware,
 					logistiqueApi.middleware,
+					dashboardApi.middleware,
 					aiAssistantApi.middleware,
 					modePaiementApi.middleware,
 					livreParApi.middleware,

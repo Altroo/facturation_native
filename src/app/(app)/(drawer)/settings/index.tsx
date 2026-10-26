@@ -1,23 +1,33 @@
 import { type ComponentProps } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import BottomNavigation from '@/components/shared/bottomNavigation/bottomNavigation';
 import SectionCard from '@/components/shared/sectionCard/sectionCard';
-import { useLanguage } from '@/utils/hooks';
-import { DASHBOARD_EDIT_PROFILE, DASHBOARD_NOTIFICATIONS, DASHBOARD_PASSWORD } from '@/utils/routes';
+import { useAppSelector, useLanguage } from '@/utils/hooks';
+import { getProfilState } from '@/store/selectors';
+import {
+	DASHBOARD_EDIT_PROFILE,
+	DASHBOARD_NOTIFICATIONS,
+	DASHBOARD_PASSWORD,
+	DASHBOARD_OBJECTIFS_MENSUELS,
+} from '@/utils/routes';
 import { colors } from '@/utils/themes';
 
 const SettingsPage = () => {
 	const { t } = useLanguage();
+	const profil = useAppSelector(getProfilState);
 	const items: {
 		label: string;
 		icon: ComponentProps<typeof MaterialIcons>['name'];
-		path: typeof DASHBOARD_EDIT_PROFILE | typeof DASHBOARD_PASSWORD | typeof DASHBOARD_NOTIFICATIONS;
+		path: Href;
 	}[] = [
 		{ label: t.navigation.myProfile, icon: 'person-outline', path: DASHBOARD_EDIT_PROFILE },
 		{ label: t.navigation.changePassword, icon: 'lock-outline', path: DASHBOARD_PASSWORD },
 		{ label: t.navigation.notificationPreferences, icon: 'notifications-none', path: DASHBOARD_NOTIFICATIONS },
+		...(profil.is_staff
+			? [{ label: t.navigation.monthlyObjectives, icon: 'trending-up' as const, path: DASHBOARD_OBJECTIFS_MENSUELS() }]
+			: []),
 	];
 	return (
 		<View className="flex-1 bg-slate-50 dark:bg-night">
@@ -25,7 +35,7 @@ const SettingsPage = () => {
 				<SectionCard>
 					{items.map((item, index) => (
 						<Pressable
-							key={item.path}
+							key={item.label}
 							accessibilityRole="button"
 							accessibilityLabel={item.label}
 							onPress={() => router.push(item.path)}

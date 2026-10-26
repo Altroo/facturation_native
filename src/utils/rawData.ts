@@ -119,3 +119,29 @@ export const bonDeLivraisonStatusItemsList: Array<DropDownType> = [
 	...devisFactureStatusItemsList,
 	{ code: 'Facturé', value: 'Facturé' },
 ];
+
+export const dashboardChartColors = {
+	primary: 'rgba(25, 118, 210, 0.8)',
+	primaryLight: 'rgba(25, 118, 210, 0.2)',
+	secondary: 'rgba(156, 39, 176, 0.8)',
+	secondaryLight: 'rgba(156, 39, 176, 0.2)',
+	success: 'rgba(46, 125, 50, 0.8)',
+	successLight: 'rgba(46, 125, 50, 0.2)',
+	warning: 'rgba(237, 108, 2, 0.8)',
+	warningLight: 'rgba(237, 108, 2, 0.2)',
+	error: 'rgba(211, 47, 47, 0.8)',
+	errorLight: 'rgba(211, 47, 47, 0.2)',
+	info: 'rgba(2, 136, 209, 0.8)',
+	infoLight: 'rgba(2, 136, 209, 0.2)',
+};
+
+export const dashboardPieColors = [
+	'rgba(25, 118, 210, 0.8)',
+	'rgba(46, 125, 50, 0.8)',
+	'rgba(237, 108, 2, 0.8)',
+	'rgba(156, 39, 176, 0.8)',
+	'rgba(211, 47, 47, 0.8)',
+	'rgba(0, 188, 212, 0.8)',
+	'rgba(255, 193, 7, 0.8)',
+	'rgba(121, 85, 72, 0.8)',
+];

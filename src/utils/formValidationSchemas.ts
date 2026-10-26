@@ -13,6 +13,8 @@ import {
 	INPUT_YEAR_PART_INVALID,
 	MINI_INPUT_EMAIL,
 	SHORT_INPUT_REQUIRED,
+	INPUT_QUANTITY_INT,
+	POURCENTAGE_INPUT_INVALID,
 } from '@/utils/formValidationErrorMessages';
 
 const base64ImageField = z.url().or(z.string().startsWith('data:image/')).nullable().optional();
@@ -681,4 +683,69 @@ export const reglementSchema = z.object({
 	),
 	date_reglement: z.iso.date({ error: INPUT_REQUIRED }),
 	globalError: optionalTextField(1, 500),
+});
+
+export const monthlyObjectivesSchema = z.object({
+	objectif_ca: z.preprocess(
+		(val) => {
+			// accept empty string / undefined and convert to NaN so number validation fails with INPUT_REQUIRED
+			if (val === undefined || val === null || val === '') return NaN;
+			if (typeof val === 'string') return parseFloat(val.replace(',', '.'));
+			return val;
+		},
+		z
+			.number({ error: INPUT_REQUIRED })
+			.refine((v) => !Number.isNaN(v), { message: INPUT_REQUIRED })
+			.min(0, { message: INPUT_MIN(0) }),
+	),
+	objectif_ca_eur: z.preprocess(
+		(val) => {
+			// Allow null/undefined/empty string for optional foreign currency fields
+			if (val === undefined || val === null || val === '') return null;
+			if (typeof val === 'string') return parseFloat(val.replace(',', '.'));
+			return val;
+		},
+		z
+			.number()
+			.min(0, { message: INPUT_MIN(0) })
+			.nullable()
+			.optional(),
+	),
+	objectif_ca_usd: z.preprocess(
+		(val) => {
+			// Allow null/undefined/empty string for optional foreign currency fields
+			if (val === undefined || val === null || val === '') return null;
+			if (typeof val === 'string') return parseFloat(val.replace(',', '.'));
+			return val;
+		},
+		z
+			.number()
+			.min(0, { message: INPUT_MIN(0) })
+			.nullable()
+			.optional(),
+	),
+	objectif_factures: z.preprocess(
+		(val) => {
+			if (val === undefined || val === null || val === '') return NaN;
+			// allow numeric strings
+			return Number(val);
+		},
+		z
+			.number({ error: INPUT_REQUIRED })
+			.refine((v) => !Number.isNaN(v), { message: INPUT_REQUIRED })
+			.refine((v) => Number.isInteger(v), { message: INPUT_QUANTITY_INT })
+			.min(0, { message: INPUT_MIN(0) }),
+	),
+	objectif_conversion: z.preprocess(
+		(val) => {
+			if (val === undefined || val === null || val === '') return NaN;
+			if (typeof val === 'string') return parseFloat(val.replace(',', '.'));
+			return val;
+		},
+		z
+			.number({ error: INPUT_REQUIRED })
+			.refine((v) => !Number.isNaN(v), { message: INPUT_REQUIRED })
+			.min(0, { message: INPUT_MIN(0) })
+			.max(100, { message: POURCENTAGE_INPUT_INVALID }),
+	),
 });
