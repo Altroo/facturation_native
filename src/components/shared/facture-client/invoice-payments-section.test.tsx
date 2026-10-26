@@ -80,6 +80,12 @@ it('opens the payment form with the current invoice and company for authorized m
 	await fireEvent.press(button);
 	expect(router.push).toHaveBeenCalledWith(REGLEMENTS_ADD(5, 7));
 });
+
+it('opens a payment detail from invoice history with the same company context', async () => {
+	await render(<InvoicePaymentsSection companyId={5} factureClientId={7} token="access" canManagePayments={false} />);
+	await fireEvent.press(screen.getByRole('button', { name: `${t.reglements.detailsTitle}: Acompte` }));
+	expect(router.push).toHaveBeenCalledWith({ pathname: '/reglements/[id]', params: { id: '1', company_id: '5' } });
+});
 it('blocks payment navigation without a session even if an old permission flag remains', async () => {
 	await render(<InvoicePaymentsSection companyId={5} factureClientId={7} canManagePayments />);
 	const button = screen.getByRole('button', { name: t.facturesClient.addPayment });
