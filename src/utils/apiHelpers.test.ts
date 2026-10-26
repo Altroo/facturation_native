@@ -17,6 +17,7 @@ import {
 	openFactureClientPdf,
 	openFactureAvoirPdf,
 	openBonDeLivraisonPdf,
+	openReglementPdf,
 	openPdf,
 	postApi,
 } from '@/utils/apiHelpers';
@@ -62,6 +63,17 @@ describe('openPdf', () => {
 		mockPreviewPdf.mockReset().mockResolvedValue(undefined);
 		adapter.mockImplementation(async (config) => response(config, pdf.buffer));
 	});
+	it.each(['fr', 'en', 'nl'] as const)(
+		'previews a %s payment receipt through its configured endpoint without a format parameter',
+		async (language) => {
+			jest.replaceProperty(process.env, 'EXPO_PUBLIC_REGLEMENT_PDF', '/custom-payments/pdf');
+			await expect(openReglementPdf(7, 5, language)).resolves.toBe(true);
+			const url = new URL(adapter.mock.calls[0][0].url!);
+			expect(url.pathname).toBe(`/api/custom-payments/pdf/${language}/7/`);
+			expect([...url.searchParams.entries()]).toEqual([['company_id', '5']]);
+			expect(mockPreviewPdf).toHaveBeenCalledWith({ mimeType: 'application/pdf' });
+		},
+	);
 	afterEach(() => jest.restoreAllMocks());
 
 	it.each(['avec_remise', 'sans_remise', 'avec_unite_sans_remise', 'avec_unite_avec_remise'] as const)(

@@ -182,3 +182,15 @@ export const openBonDeLivraisonPdf = (
 		`bon-de-livraison-${id}`,
 	);
 };
+
+export const openReglementPdf = (
+	id: number,
+	company_id: number,
+	language: 'fr' | 'en' | 'nl' = 'fr',
+): Promise<boolean> => {
+	const params = new URLSearchParams({ company_id: String(company_id) });
+	return openPdf(
+		`${process.env.EXPO_PUBLIC_ROOT_API_URL}${process.env.EXPO_PUBLIC_REGLEMENT_PDF}/${language}/${id}/?${params}`,
+		`recu-reglement-${id}`,
+	);
+};

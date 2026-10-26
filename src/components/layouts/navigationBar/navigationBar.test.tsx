@@ -192,7 +192,10 @@ it('navigates to the implemented destination and leaves placeholders disabled', 
 	expect(router.navigate).toHaveBeenLastCalledWith('/bon-de-livraison');
 	await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.bonsLivraisonUninvoiced }));
 	expect(router.navigate).toHaveBeenLastCalledWith('/bon-de-livraison/uninvoiced');
-	expect(router.navigate).toHaveBeenCalledTimes(12);
+	await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.reglement }));
+	await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.reglementsList }));
+	expect(router.navigate).toHaveBeenLastCalledWith('/reglements');
+	expect(router.navigate).toHaveBeenCalledTimes(13);
 });
 it('hides staff-only sections for regular users and requests logout', async () => {
 	const store = await setup();

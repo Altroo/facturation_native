@@ -1017,3 +1017,22 @@ it('maps delivery notifications to tenant-scoped native screens', () => {
 	expect(getNotificationDestination('/dashboard/bon-de-livraison/7?company_id=-1')).toBe('/bon-de-livraison');
 	expect(getNotificationDestination('/dashboard/bon-de-livraison/0?company_id=5')).toBeNull();
 });
+
+it('maps payment notification targets while validating their company and optional invoice', () => {
+	expect(getNotificationDestination('/dashboard/reglements')).toBe('/reglements');
+	expect(getNotificationDestination('/dashboard/reglements/new?company_id=5&facture_client_id=7')).toEqual({
+		pathname: '/reglements/form',
+		params: { company_id: '5', facture_client_id: '7' },
+	});
+	expect(getNotificationDestination('/dashboard/reglements/9?company_id=5')).toEqual({
+		pathname: '/reglements/[id]',
+		params: { id: '9', company_id: '5' },
+	});
+	expect(getNotificationDestination('/dashboard/reglements/9/edit?company_id=5')).toEqual({
+		pathname: '/reglements/form',
+		params: { id: '9', company_id: '5' },
+	});
+	expect(getNotificationDestination('/dashboard/reglements/new?company_id=5&facture_client_id=-7')).toBe('/reglements');
+	expect(getNotificationDestination('/dashboard/reglements/9')).toBe('/reglements');
+	expect(getNotificationDestination('/dashboard/reglements/0?company_id=5')).toBeNull();
+});

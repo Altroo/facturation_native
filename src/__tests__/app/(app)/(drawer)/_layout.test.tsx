@@ -66,6 +66,8 @@ it.each([
 	['facture-client/unpaid', translations.fr.facturesClient.unpaidListTitle],
 	['facture-client/[id]/index', translations.fr.facturesClient.detailsTitle],
 	['reglements/form', translations.fr.reglements.addTitle],
+	['reglements/index', translations.fr.reglements.listTitle],
+	['reglements/[id]/index', translations.fr.reglements.detailsTitle],
 ])('keeps both theme and language actions usable on %s', async (route, title) => {
 	mockRouteName = route;
 	await setup();

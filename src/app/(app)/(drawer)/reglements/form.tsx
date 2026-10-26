@@ -5,14 +5,14 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useFormik, type FormikErrors } from 'formik';
 import { toFormikValidationSchema } from 'zod-formik-adapter';
 import type { KeyboardAwareScrollViewRef } from 'react-native-keyboard-controller';
-import type { FactureClass } from '@/models/classes';
+import type { FactureClass, ReglementClass } from '@/models/classes';
 import type { ReglementSchemaType } from '@/types/reglementTypes';
 import { useInitAccessToken } from '@/contexts/InitContext';
 import { useLanguage, useToast } from '@/utils/hooks';
 import { useGetUserCompaniesQuery } from '@/store/services/company';
 import { useGetClientsListQuery } from '@/store/services/client';
 import { useGetFactureClientForPaymentQuery, useGetFactureClientQuery } from '@/store/services/factureClient';
-import { useAddReglementMutation } from '@/store/services/reglement';
+import { useAddReglementMutation, useEditReglementMutation, useGetReglementQuery } from '@/store/services/reglement';
 import {
 	useGetModePaiementListQuery,
 	useAddModePaiementMutation,
@@ -43,20 +43,24 @@ import KeyboardAwareScrollView from '@/components/shared/keyboardAwareScrollView
 import PageActionBar from '@/components/shared/pageActionBar/pageActionBar';
 import QueryError from '@/components/shared/queryError/queryError';
 import NoPermission from '@/components/shared/noPermission/noPermission';
+import ReglementFinancialSummary from '@/components/shared/reglements/reglementFinancialSummary';
 
-type Props = { company_id: number; invoice?: FactureClass };
+type Props = { company_id: number; invoice?: FactureClass; rawData?: ReglementClass };
 
 const FormikContent = (props: Props) => {
 	const { t } = useLanguage();
 	const { onSuccess, onError } = useToast();
 	const token = useInitAccessToken();
+	const isEdit = !!props.rawData;
 	const pending = useRef(false);
 	const scrollRef = useRef<KeyboardAwareScrollViewRef>(null);
 	const [attempted, setAttempted] = useState(false);
-	const [selectedClientId, setSelectedClientId] = useState<number | null>(props.invoice?.client ?? null);
+	const [selectedClientId, setSelectedClientId] = useState<number | null>(
+		props.rawData?.client ?? props.invoice?.client ?? null,
+	);
 	const facturesQuery = useGetFactureClientForPaymentQuery(
 		{ company_id: props.company_id, client_id: selectedClientId ?? undefined },
-		{ skip: !token, refetchOnMountOrArgChange: true },
+		{ skip: !token || isEdit, refetchOnMountOrArgChange: true },
 	);
 	const clientsQuery = useGetClientsListQuery(
 		{ company_id: props.company_id, with_pagination: false },
@@ -64,19 +68,37 @@ const FormikContent = (props: Props) => {
 	);
 	const modesQuery = useGetModePaiementListQuery({ company_id: props.company_id }, { skip: !token });
 	const [addReglement, adding] = useAddReglementMutation();
+	const [editReglement, editing] = useEditReglementMutation();
 	const [addMode, addingMode] = useAddModePaiementMutation();
 	const [editMode, editingMode] = useEditModePaiementMutation();
 	const [deleteMode, deletingMode] = useDeleteModePaiementMutation();
 	const parameterLoading = addingMode.isLoading || editingMode.isLoading || deletingMode.isLoading;
-	const factures = facturesQuery.currentData ?? [];
+	// A fully paid invoice is absent from for_payment. Editing keeps its invoice
+	// fixed and adds this payment back to the balance, as the backend validator does.
+	const factures = props.rawData
+		? [
+				{
+					id: props.rawData.facture_client,
+					numero_facture: props.rawData.facture_client_numero,
+					client_name: props.rawData.client_name,
+					devise: props.rawData.devise,
+					remaining_amount:
+						Math.round(
+							(Number(props.rawData.reste_a_payer ?? 0) +
+								(props.rawData.statut === 'Valide' ? Number(props.rawData.montant) : 0)) *
+								100,
+						) / 100,
+				},
+			]
+		: (facturesQuery.currentData ?? []);
 	const formik = useFormik<ReglementSchemaType>({
 		initialValues: {
-			facture_client: props.invoice?.id ?? 0,
-			mode_reglement: null,
-			libelle: '',
-			observations: '',
-			montant: '',
-			date_reglement: formatLocalDate(new Date()),
+			facture_client: props.rawData?.facture_client ?? props.invoice?.id ?? 0,
+			mode_reglement: props.rawData?.mode_reglement ?? null,
+			libelle: props.rawData?.libelle ?? '',
+			observations: props.rawData?.observations ?? '',
+			montant: props.rawData?.montant ?? '',
+			date_reglement: props.rawData?.date_reglement ?? formatLocalDate(new Date()),
 			globalError: '',
 		},
 		validationSchema: toFormikValidationSchema<unknown>(reglementSchema),
@@ -92,23 +114,28 @@ const FormikContent = (props: Props) => {
 			return errors;
 		},
 		onSubmit: async (data, { setFieldError }) => {
-			if (pending.current || facturesQuery.isFetching || facturesQuery.isError || parameterLoading) return;
+			if (pending.current || (!isEdit && (facturesQuery.isFetching || facturesQuery.isError)) || parameterLoading)
+				return;
 			// The server supplies eligible invoices and their remaining balance. Do not
 			// trust a route parameter or a balance copied from the previous screen.
 			const invoice = factures.find((item) => item.id === data.facture_client);
 			if (!invoice) return;
 			pending.current = true;
 			try {
-				await addReglement({
-					data: {
-						facture_client: data.facture_client,
-						mode_reglement: data.mode_reglement,
-						libelle: data.libelle?.trim() ?? '',
-						observations: data.observations?.trim() ?? '',
-						montant: parseNumber(data.montant) ?? 0,
-						date_reglement: data.date_reglement,
-					},
-				}).unwrap();
+				const payload = {
+					facture_client: data.facture_client,
+					mode_reglement: data.mode_reglement,
+					libelle: data.libelle?.trim() ?? '',
+					observations: data.observations?.trim() ?? '',
+					montant: parseNumber(data.montant) ?? 0,
+					date_reglement: data.date_reglement,
+				};
+				if (props.rawData) {
+					await editReglement({ id: props.rawData.id, data: payload }).unwrap();
+					onSuccess(t.reglements.updateSuccess);
+					return;
+				}
+				await addReglement({ data: payload }).unwrap();
 				onSuccess(t.reglements.addSuccess);
 				// Return to the actual edit/detail activity. The mutation refreshes its
 				// payment history and invoice balance through RTK Query invalidation.
@@ -119,13 +146,13 @@ const FormikContent = (props: Props) => {
 				}
 			} catch (error) {
 				setFormikAutoErrors({ e: error, setFieldError });
-				onError(extractApiErrorMessage(error, t.reglements.addError));
+				onError(extractApiErrorMessage(error, isEdit ? t.reglements.updateError : t.reglements.addError));
 			} finally {
 				pending.current = false;
 			}
 		},
 	});
-	const disabled = adding.isLoading || formik.isSubmitting;
+	const disabled = adding.isLoading || editing.isLoading || formik.isSubmitting;
 	const selectedInvoice = factures.find((item) => item.id === formik.values.facture_client);
 	const clients = Array.isArray(clientsQuery.currentData) ? clientsQuery.currentData : [];
 	const clientItems = clients.map((client) => ({
@@ -136,6 +163,8 @@ const FormikContent = (props: Props) => {
 			t.common.noData,
 		value: String(client.id),
 	}));
+	if (props.rawData && !clientItems.some((item) => item.value === String(props.rawData!.client)))
+		clientItems.unshift({ code: props.rawData.client_name || t.common.noData, value: String(props.rawData.client) });
 	const invoiceItems = factures.map((invoice) => ({
 		code: `${invoice.numero_facture} · ${invoice.client_name}`,
 		value: String(invoice.id),
@@ -167,13 +196,14 @@ const FormikContent = (props: Props) => {
 				contentContainerStyle={{ padding: listSpacing, gap: listSpacing }}
 			>
 				{formik.errors.globalError && <ApiAlert variant="banner" errorDetails={formik.errors.globalError} />}
+				{props.rawData && <ReglementFinancialSummary payment={props.rawData} />}
 				<SectionCard title={t.reglements.labelFactureClient} icon="receipt-long">
 					<CustomAutoCompleteSelect
 						label={t.reglements.labelClient}
 						items={clientItems}
 						value={clientItems.find((client) => client.value === String(selectedClientId)) ?? null}
 						noOptionsText={t.documentForm.noClientFound}
-						disabled={disabled || clientsQuery.isFetching}
+						disabled={disabled || isEdit || clientsQuery.isFetching}
 						startIcon={icon('person-outline')}
 						onChange={(_event, value) => {
 							setSelectedClientId(value ? Number(value.value) : null);
@@ -189,29 +219,31 @@ const FormikContent = (props: Props) => {
 						items={invoiceItems}
 						value={invoiceItems.find((invoice) => invoice.value === String(formik.values.facture_client)) ?? null}
 						noOptionsText={t.reglements.noFacture}
-						disabled={disabled || facturesQuery.isFetching}
+						disabled={disabled || isEdit || facturesQuery.isFetching}
 						startIcon={icon('receipt-long')}
 						error={!!fieldError('facture_client')}
 						helperText={fieldError('facture_client')}
 						labelActions={
-							<Pressable
-								accessibilityRole="button"
-								accessibilityLabel={t.facturesClient.addTitle}
-								disabled={disabled}
-								onPress={() =>
-									router.push({ pathname: FACTURE_CLIENT_ADD, params: { company_id: String(props.company_id) } })
-								}
-								className="min-h-11 justify-center px-2"
-							>
-								<Text className="font-poppins-medium text-sm text-brand dark:text-blue-300">{t.common.add}</Text>
-							</Pressable>
+							!isEdit && (
+								<Pressable
+									accessibilityRole="button"
+									accessibilityLabel={t.facturesClient.addTitle}
+									disabled={disabled}
+									onPress={() =>
+										router.push({ pathname: FACTURE_CLIENT_ADD, params: { company_id: String(props.company_id) } })
+									}
+									className="min-h-11 justify-center px-2"
+								>
+									<Text className="font-poppins-medium text-sm text-brand dark:text-blue-300">{t.common.add}</Text>
+								</Pressable>
+							)
 						}
 						onChange={(_event, value) => {
 							void formik.setFieldValue('facture_client', value ? Number(value.value) : 0);
 							void formik.setFieldValue('montant', '');
 						}}
 					/>
-					{facturesQuery.isError && (
+					{!isEdit && facturesQuery.isError && (
 						<QueryError variant="banner" error={facturesQuery.error} onRetry={() => void facturesQuery.refetch()} />
 					)}
 				</SectionCard>
@@ -249,7 +281,7 @@ const FormikContent = (props: Props) => {
 						{...field('montant', `${t.reglements.colMontant} (${selectedInvoice?.devise ?? 'MAD'}) *`)}
 						keyboardType="decimal-pad"
 						startIcon={icon('attach-money')}
-						disabled={disabled || !selectedInvoice || facturesQuery.isFetching}
+						disabled={disabled || !selectedInvoice || (!isEdit && facturesQuery.isFetching)}
 						helperText={
 							fieldError('montant') ??
 							(selectedInvoice
@@ -272,7 +304,7 @@ const FormikContent = (props: Props) => {
 			</KeyboardAwareScrollView>
 			<PageActionBar>
 				<SaveButton
-					active={!disabled && !parameterLoading && !facturesQuery.isFetching && !facturesQuery.isError}
+					active={!disabled && !parameterLoading && (isEdit || (!facturesQuery.isFetching && !facturesQuery.isError))}
 					loading={disabled}
 					onClick={() => {
 						setAttempted(true);
@@ -289,10 +321,15 @@ const FormikContent = (props: Props) => {
 };
 
 const ReglementFormPage = () => {
-	const params = useLocalSearchParams<{ company_id?: string | string[]; facture_client_id?: string | string[] }>();
+	const params = useLocalSearchParams<{
+		id?: string | string[];
+		company_id?: string | string[];
+		facture_client_id?: string | string[];
+	}>();
+	const id = params.id === undefined ? undefined : parseEntityId(params.id);
 	const companyId = parseEntityId(params.company_id);
 	const invoiceId = params.facture_client_id === undefined ? undefined : parseEntityId(params.facture_client_id);
-	const invalid = companyId === null || invoiceId === null;
+	const invalid = id === null || companyId === null || invoiceId === null;
 	const token = useInitAccessToken();
 	const { t } = useLanguage();
 	const companiesQuery = useGetUserCompaniesQuery(undefined, {
@@ -303,14 +340,27 @@ const ReglementFormPage = () => {
 	const allowed = company?.role === 'Caissier' || company?.role === 'Commercial';
 	const invoiceQuery = useGetFactureClientQuery(
 		{ id: invoiceId ?? 0 },
-		{ skip: !token || invalid || !allowed || invoiceId === undefined, refetchOnMountOrArgChange: true },
+		{
+			skip: !token || invalid || !allowed || invoiceId === undefined || id !== undefined,
+			refetchOnMountOrArgChange: true,
+		},
+	);
+	const reglementQuery = useGetReglementQuery(
+		{ id: id ?? 0 },
+		{ skip: !token || invalid || !allowed || id === undefined, refetchOnMountOrArgChange: true },
 	);
 	if (invalid) return <ApiAlert errorDetails={t.notFound.message} />;
 	if (!token || companiesQuery.isLoading || companiesQuery.isUninitialized) return <ApiProgress />;
 	if (companiesQuery.isError)
 		return <QueryError error={companiesQuery.error} onRetry={() => void companiesQuery.refetch()} />;
 	if (!allowed || !company) return <NoPermission />;
-	if (invoiceId !== undefined) {
+	if (id !== undefined) {
+		if (reglementQuery.isError)
+			return <QueryError error={reglementQuery.error} onRetry={() => void reglementQuery.refetch()} />;
+		if (!reglementQuery.currentData) return <ApiProgress />;
+		if (reglementQuery.currentData.company !== company.id) return <NoPermission />;
+	}
+	if (id === undefined && invoiceId !== undefined) {
 		if (invoiceQuery.isError)
 			return <QueryError error={invoiceQuery.error} onRetry={() => void invoiceQuery.refetch()} />;
 		if (!invoiceQuery.currentData) return <ApiProgress />;
@@ -318,9 +368,10 @@ const ReglementFormPage = () => {
 	}
 	return (
 		<FormikContent
-			key={`${company.id}:${invoiceId ?? 'new'}`}
+			key={`${company.id}:${id ?? 'new'}:${invoiceId ?? 'all'}`}
 			company_id={company.id}
 			invoice={invoiceQuery.currentData}
+			rawData={id !== undefined ? reglementQuery.currentData : undefined}
 		/>
 	);
 };

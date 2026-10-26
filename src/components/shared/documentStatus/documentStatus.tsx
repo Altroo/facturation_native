@@ -8,7 +8,7 @@ type Props = { statut: string };
 
 const DocumentStatus = (props: Props) => {
 	const { t } = useLanguage();
-	const accepted = props.statut === 'Accepté' || props.statut === 'Facturé';
+	const accepted = props.statut === 'Accepté' || props.statut === 'Facturé' || props.statut === 'Valide';
 	const rejected = props.statut === 'Refusé' || props.statut === 'Annulé';
 	return (
 		<CustomBadge

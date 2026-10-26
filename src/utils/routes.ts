@@ -102,6 +102,9 @@ export const FACTURE_AVOIR_EDIT = (id: number) => ({
 });
 
 // Règlements
+export const REGLEMENTS_LIST = '/reglements' as const;
+export const REGLEMENTS_VIEW = (id: number) => ({ pathname: '/reglements/[id]' as const, params: { id: String(id) } });
+export const REGLEMENTS_EDIT = (id: number) => ({ pathname: '/reglements/form' as const, params: { id: String(id) } });
 export const REGLEMENTS_ADD = (company_id: number, facture_client_id?: number) => ({
 	pathname: '/reglements/form' as const,
 	params: {

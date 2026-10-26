@@ -1,6 +1,17 @@
 import * as routes from './routes';
 
 describe('routes constants', () => {
+	it('exports payment list, detail and create/edit routes with optional invoice context', () => {
+		expect(routes.REGLEMENTS_LIST).toBe('/reglements');
+		expect(routes.REGLEMENTS_VIEW(7)).toEqual({ pathname: '/reglements/[id]', params: { id: '7' } });
+		expect(routes.REGLEMENTS_EDIT(7)).toEqual({ pathname: '/reglements/form', params: { id: '7' } });
+		expect(routes.REGLEMENTS_ADD(5)).toEqual({ pathname: '/reglements/form', params: { company_id: '5' } });
+		expect(routes.REGLEMENTS_ADD(5, 7)).toEqual({
+			pathname: '/reglements/form',
+			params: { company_id: '5', facture_client_id: '7' },
+		});
+		expect(routes).not.toHaveProperty('REGLEMENTS_PDF');
+	});
 	it('exports credit-note list, form and detail routes without backend PDF endpoints', () => {
 		expect(routes.FACTURE_AVOIR_LIST).toBe('/facture-avoir');
 		expect(routes.FACTURE_AVOIR_ADD).toBe('/facture-avoir/form');

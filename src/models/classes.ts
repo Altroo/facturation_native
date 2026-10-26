@@ -364,6 +364,8 @@ export class BonDeLivraisonClass {
 }
 
 export class ReglementClass {
+	// Read-only tenant ownership supplied by the API for native screen guards.
+	public readonly company?: number;
 	constructor(
 		public readonly id: number,
 		public facture_client: number,

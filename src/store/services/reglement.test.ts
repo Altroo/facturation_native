@@ -122,3 +122,115 @@ it('keeps both caches intact if the server rejects the payment', async () => {
 	await jest.runOnlyPendingTimersAsync();
 	expect(adapter.mock.calls.filter(([config]) => config.method === 'get')).toHaveLength(2);
 });
+
+it('keeps server statistics, filters, ordering and company on successive infinite pages', async () => {
+	adapter.mockImplementation(async (config) => ({
+		config,
+		status: 200,
+		statusText: 'OK',
+		headers: {},
+		data: {
+			count: 2,
+			next: config.params.page === 1 ? 'https://example.invalid/reglement/?page=2' : null,
+			previous: null,
+			results: [{ id: config.params.page }],
+			stats_by_currency: { MAD: { chiffre_affaire_total: '1000', total_reglements: '500', total_impayes: '500' } },
+		},
+	}));
+	const args = {
+		company_id: 5,
+		search: 'Atlas',
+		mode_reglement_ids: '2',
+		ordering: '-date_reglement',
+		pageSize: 1,
+		date_reglement_after: '2026-10-01',
+	};
+	await store.dispatch(reglementApi.endpoints.getReglementsInfiniteList.initiate(args)).unwrap();
+	await store
+		.dispatch(reglementApi.endpoints.getReglementsInfiniteList.initiate(args, { direction: 'forward' }))
+		.unwrap();
+	expect(adapter.mock.calls.map(([config]) => config.params)).toEqual(
+		[1, 2].map((page) => ({
+			company_id: 5,
+			search: 'Atlas',
+			mode_reglement_ids: '2',
+			ordering: '-date_reglement',
+			date_reglement_after: '2026-10-01',
+			page_size: 1,
+			page,
+			pagination: true,
+		})),
+	);
+	expect(
+		reglementApi.endpoints.getReglementsInfiniteList.select(args)(store.getState()).data?.pages[0]?.stats_by_currency
+			.MAD.total_reglements,
+	).toBe('500');
+});
+it('uses the configured payment detail endpoint and preserves server ownership', async () => {
+	adapter.mockImplementation(async (config) => ({
+		config,
+		status: 200,
+		statusText: 'OK',
+		headers: {},
+		data: { id: 9, company: 5, montant: '100.00' },
+	}));
+	await expect(store.dispatch(reglementApi.endpoints.getReglement.initiate({ id: 9 })).unwrap()).resolves.toMatchObject(
+		{ id: 9, company: 5 },
+	);
+	expect(adapter.mock.calls[0]![0].url).toBe('/reglement/9/');
+});
+it.each([
+	['edit', true],
+	['edit', false],
+	['cancel', true],
+	['cancel', false],
+	['delete', true],
+	['delete', false],
+	['bulkDelete', true],
+	['bulkDelete', false],
+] as const)('refreshes payment and invoice caches only after successful %s: %s', async (operation, success) => {
+	adapter.mockImplementation(async (config) => {
+		const response = { config, status: 200, statusText: 'OK', headers: {}, data: { id: 9, statut: 'Annulé' } };
+		if (config.method !== 'get' && !success)
+			throw new AxiosError('Denied', 'ERR_BAD_REQUEST', config, undefined, {
+				...response,
+				status: 403,
+				data: { details: 'Denied' },
+			});
+		return response;
+	});
+	await store.dispatch(factureClientApi.endpoints.getFactureClient.initiate({ id: 7 })).unwrap();
+	await store.dispatch(reglementApi.endpoints.getReglementsList.initiate({ company_id: 5 })).unwrap();
+	await jest.runOnlyPendingTimersAsync();
+	const request =
+		operation === 'edit'
+			? store
+					.dispatch(
+						reglementApi.endpoints.editReglement.initiate({
+							id: 9,
+							data: { facture_client: 7, mode_reglement: null, montant: 100, date_reglement: '2026-10-24' },
+						}),
+					)
+					.unwrap()
+			: operation === 'cancel'
+				? store
+						.dispatch(reglementApi.endpoints.patchReglementStatut.initiate({ id: 9, data: { statut: 'Annulé' } }))
+						.unwrap()
+				: operation === 'delete'
+					? store.dispatch(reglementApi.endpoints.deleteReglement.initiate({ id: 9 })).unwrap()
+					: store.dispatch(reglementApi.endpoints.bulkDeleteReglements.initiate({ ids: [9, 10] })).unwrap();
+	if (success) await request;
+	else await expect(request).rejects.toMatchObject({ status: 403 });
+	await jest.runOnlyPendingTimersAsync();
+	expect(adapter.mock.calls.filter(([config]) => config.method === 'get')).toHaveLength(success ? 4 : 2);
+	const write = adapter.mock.calls.find(([config]) => config.method !== 'get')![0];
+	expect([write.method, write.url]).toEqual(
+		operation === 'edit'
+			? ['put', '/reglement/9/']
+			: operation === 'cancel'
+				? ['patch', '/reglement/switch_statut/9/']
+				: operation === 'delete'
+					? ['delete', '/reglement/9/']
+					: ['delete', '/reglement/bulk_delete/'],
+	);
+});

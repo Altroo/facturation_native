@@ -15,3 +15,12 @@ it.each(['Brouillon', 'Envoyé', 'Accepté', 'Refusé', 'Annulé', 'Expiré', 'F
 		expect(screen.container.queryAll((node) => node.type === 'Icon')).toHaveLength(1);
 	},
 );
+
+it('renders valid payment receipts with the shared green check instead of a pending icon', async () => {
+	await render(<DocumentStatus statut="Valide" />);
+	const t = jest.requireActual<typeof import('@/translations')>('@/translations').translations.fr;
+	expect(screen.getByText(t.common.validShort)).toHaveProp('className', expect.stringContaining('text-emerald'));
+	expect(screen.container.queryAll((node) => node.type === 'Icon' && node.props.name === 'check-circle')).toHaveLength(
+		1,
+	);
+});

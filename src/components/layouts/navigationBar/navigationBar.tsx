@@ -11,6 +11,7 @@ import {
 	FACTURE_CLIENT_LIST,
 	FACTURE_CLIENT_UNPAID,
 	FACTURE_AVOIR_LIST,
+	REGLEMENTS_LIST,
 	COMPANIES_LIST,
 	COMPANIES_ADD,
 	USERS_LIST,
@@ -157,7 +158,7 @@ const getNavigationMenu = (isStaff: boolean, t: TranslationDictionary) => {
 		reglement: {
 			title: t.navigation.reglement,
 			icon: <MaterialIcons name="payments" size={21} color={colors.slate[500]} />,
-			items: [{ title: t.navigation.reglementsList, label: t.navigation.reglementsList, path: undefined }],
+			items: [{ title: t.navigation.reglementsList, label: t.navigation.reglementsList, path: REGLEMENTS_LIST }],
 		},
 		...(isStaff && {
 			societe: {
