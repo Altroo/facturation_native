@@ -36,6 +36,38 @@ export const globalErrorKeys = new Set(['detail', 'error', 'globalError', 'messa
 export const SESSION_STORAGE_KEY = 'facturation-native-session';
 
 export const MODULES_PAGE_SIZE = 10;
+
+export const stockAdjustmentMovementItems: DropDownType[] = [
+	{ value: 'adjustment', code: 'Ajustement' },
+	{ value: 'opening', code: 'Stock initial' },
+];
+
+export const stockMovementOptions = [
+	{ id: 'opening', nom: 'Stock initial', value: 'opening', label: 'Stock initial' },
+	{ id: 'adjustment', nom: 'Ajustement', value: 'adjustment', label: 'Ajustement' },
+	{ id: 'receipt', nom: 'Réception', value: 'receipt', label: 'Réception' },
+	{ id: 'delivery', nom: 'Livraison', value: 'delivery', label: 'Livraison' },
+	{ id: 'inventory', nom: 'Inventaire', value: 'inventory', label: 'Inventaire' },
+	{ id: 'reversal', nom: 'Annulation', value: 'reversal', label: 'Annulation' },
+] as const;
+
+export const stockStateOptions = [
+	{ id: 'disponible', nom: 'Disponible' },
+	{ id: 'minimum', nom: 'Stock minimum' },
+	{ id: 'a_approvisionner', nom: 'À approvisionner' },
+] as const;
+
+export const stockInventoryStatusOptions = [
+	{ id: 'draft', nom: 'Brouillon', value: 'draft', label: 'Brouillon' },
+	{ id: 'validated', nom: 'Validé', value: 'validated', label: 'Validé' },
+	{ id: 'cancelled', nom: 'Annulé', value: 'cancelled', label: 'Annulé' },
+] as const;
+
+export const stockReceiptStatusOptions = [
+	{ id: 'draft', nom: 'Brouillon', value: 'draft', label: 'Brouillon' },
+	{ id: 'validated', nom: 'Validée', value: 'validated', label: 'Validée' },
+	{ id: 'cancelled', nom: 'Annulée', value: 'cancelled', label: 'Annulée' },
+] as const;
 // Request the next page when the remaining distance is 30% of the visible list height.
 export const INFINITE_SCROLL_THRESHOLD = 0.3;
 export const EMAIL_MAX_LENGTH = 254;

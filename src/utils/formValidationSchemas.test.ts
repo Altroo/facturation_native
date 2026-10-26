@@ -18,7 +18,44 @@ import {
 	devisLivraisonFactureLineSchema,
 	reglementSchema,
 	factureAvoirSchema,
+	stockAdjustmentSchema,
+	stockReceiptSchema,
+	stockInventorySchema,
 } from './formValidationSchemas';
+
+describe('Stock form schemas', () => {
+	const adjustment = {
+		movement_type: 'adjustment',
+		article: 7,
+		emplacement: 2,
+		quantity: '-1,250',
+		reason: 'Correction',
+		globalError: '',
+	};
+	const receipt = {
+		logistics_order: 41,
+		logistics_line: 61,
+		emplacement: 2,
+		quantity: '0,001',
+		reference: '',
+		note: '',
+	};
+	const inventory = { article: 7, emplacement: 2, counted_quantity: '0', reference: '', note: '' };
+	it('accepts signed nonzero adjustments and decimal-comma receipt quantities', () => {
+		expect(stockAdjustmentSchema.parse(adjustment).quantity).toBe(-1.25);
+		expect(stockReceiptSchema.parse(receipt).quantity).toBe(0.001);
+		expect(stockInventorySchema.parse(inventory).counted_quantity).toBe(0);
+	});
+	it.each(['', 'invalid', Infinity, NaN, 0])('rejects invalid or zero adjustment %s', (quantity) => {
+		expect(stockAdjustmentSchema.safeParse({ ...adjustment, quantity }).success).toBe(false);
+	});
+	it('requires a reason, positive identifiers and a positive receipt quantity', () => {
+		expect(stockAdjustmentSchema.safeParse({ ...adjustment, reason: '' }).success).toBe(false);
+		expect(stockReceiptSchema.safeParse({ ...receipt, quantity: 0 }).success).toBe(false);
+		expect(stockInventorySchema.safeParse({ ...inventory, counted_quantity: -1 }).success).toBe(false);
+		expect(stockInventorySchema.safeParse({ ...inventory, article: null }).success).toBe(false);
+	});
+});
 
 describe('factureAvoirSchema', () => {
 	const credit = {

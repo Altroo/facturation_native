@@ -1,0 +1,124 @@
+import type { PaginationResponseType } from '@/types/_initTypes';
+
+export type StockState = 'disponible' | 'minimum' | 'a_approvisionner';
+export type StockMovementType = 'opening' | 'adjustment' | 'receipt' | 'delivery' | 'inventory' | 'reversal';
+export type StockListFilters = Record<string, string>;
+export type StockListQueryParams = {
+	company_id: number;
+	page?: number;
+	pageSize?: number;
+	ordering?: string;
+	search?: string;
+	low_only?: boolean;
+	article_id?: number;
+	filters?: StockListFilters;
+};
+export type StockBalance = {
+	id: number;
+	company: number;
+	article: number;
+	article_reference: string;
+	article_designation: string;
+	emplacement: number;
+	emplacement_name: string;
+	physical_quantity: string;
+	reserved_quantity: string;
+	available_quantity: string;
+	incoming_quantity: string;
+	projected_quantity: string;
+	stock_minimum: string;
+	stock_state: StockState;
+	date_updated: string;
+};
+export type StockMovement = {
+	id: number;
+	balance: number;
+	article_reference: string;
+	article_designation: string;
+	emplacement_name: string;
+	movement_type: StockMovementType;
+	movement_type_display: string;
+	quantity: string;
+	balance_after: string;
+	source_type: string;
+	source_id: number | null;
+	note: string;
+	actor_name: string | null;
+	date_created: string;
+};
+export type StockReceiptLine = {
+	id: number;
+	logistics_line: number;
+	article: number;
+	article_reference: string;
+	article_designation: string;
+	emplacement: number;
+	emplacement_name: string;
+	quantity: string;
+};
+export type StockReceipt = {
+	id: number;
+	company: number;
+	logistics_order: number;
+	logistics_order_number: string;
+	status: 'draft' | 'validated' | 'cancelled';
+	reference: string;
+	note: string;
+	created_by_name: string;
+	validated_by_name: string | null;
+	date_created: string;
+	date_validated: string | null;
+	lines: StockReceiptLine[];
+};
+export type InventoryLine = {
+	id: number;
+	article: number;
+	article_reference: string;
+	article_designation: string;
+	expected_quantity: string;
+	counted_quantity: string;
+	difference: string;
+};
+export type InventorySession = {
+	id: number;
+	company: number;
+	emplacement: number;
+	emplacement_name: string;
+	status: 'draft' | 'validated' | 'cancelled';
+	reference: string;
+	note: string;
+	created_by_name: string;
+	validated_by_name: string | null;
+	date_created: string;
+	date_validated: string | null;
+	lines: InventoryLine[];
+};
+export type StockAdjustmentFormValues = {
+	movement_type: Extract<StockMovementType, 'opening' | 'adjustment'>;
+	article: number | null;
+	emplacement: number | null;
+	quantity: string | number;
+	reason: string;
+	globalError: string;
+};
+export type StockReceiptFormValues = {
+	logistics_order: number | null;
+	logistics_line: number | null;
+	emplacement: number | null;
+	quantity: string | number;
+	reference: string;
+	note: string;
+	globalError: string;
+};
+export type StockInventoryFormValues = {
+	article: number | null;
+	emplacement: number | null;
+	counted_quantity: string | number;
+	reference: string;
+	note: string;
+	globalError: string;
+};
+export type StockBalanceResponse = PaginationResponseType<StockBalance>;
+export type StockMovementResponse = PaginationResponseType<StockMovement>;
+export type StockReceiptResponse = PaginationResponseType<StockReceipt>;
+export type InventoryResponse = PaginationResponseType<InventorySession>;

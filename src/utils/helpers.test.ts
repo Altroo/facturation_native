@@ -841,6 +841,24 @@ it.each([
 	['/dashboard/settings/edit-profile', DASHBOARD_EDIT_PROFILE],
 	['/dashboard/settings/password', DASHBOARD_PASSWORD],
 	['/dashboard/settings/notifications', DASHBOARD_NOTIFICATIONS],
+	['/dashboard/stock', '/stock'],
+	['/dashboard/stock/movements', '/stock/movements'],
+	['/dashboard/stock/receipts', '/stock/receipts'],
+	['/dashboard/stock/inventories', '/stock/inventories'],
+	['/dashboard/stock/11?company_id=5', { pathname: '/stock/[id]', params: { id: '11', company_id: '5' } }],
+	[
+		'/dashboard/stock/new?company_id=5&balance_id=11',
+		{ pathname: '/stock/form', params: { company_id: '5', balance_id: '11' } },
+	],
+	[
+		'/dashboard/stock/receipts/31?company_id=5',
+		{ pathname: '/stock/receipts/[id]', params: { id: '31', company_id: '5' } },
+	],
+	[
+		'/dashboard/stock/inventories/new?company_id=5',
+		{ pathname: '/stock/inventories/form', params: { company_id: '5' } },
+	],
+	['/dashboard/stock/11', '/stock'],
 ])('maps the implemented original destination %s', (target, expected) => {
 	expect(getNotificationDestination(target as string)).toEqual(expected);
 });
@@ -849,7 +867,7 @@ it.each([
 	'',
 	'https://example.invalid/dashboard/users/1',
 	'//example.invalid/dashboard/users/1',
-	'/dashboard/stock',
+	'/dashboard/stock/movements/21/edit?company_id=5',
 	'/dashboard/users/0',
 	'/dashboard/users/01',
 	'/dashboard/users/1.5',

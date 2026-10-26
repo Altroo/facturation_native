@@ -101,6 +101,40 @@ export const FACTURE_AVOIR_EDIT = (id: number) => ({
 	params: { id: String(id) },
 });
 
+// Stock
+export const STOCK_LIST = '/stock' as const;
+export const STOCK_ADD = (company_id: number, balance_id?: number) => ({
+	pathname: '/stock/form' as const,
+	params: { company_id: String(company_id), ...(balance_id ? { balance_id: String(balance_id) } : {}) },
+});
+export const STOCK_VIEW = (id: number, company_id: number) => ({
+	pathname: '/stock/[id]' as const,
+	params: { id: String(id), company_id: String(company_id) },
+});
+export const STOCK_MOVEMENTS = '/stock/movements' as const;
+export const STOCK_MOVEMENT_VIEW = (id: number, company_id: number) => ({
+	pathname: '/stock/movements/[id]' as const,
+	params: { id: String(id), company_id: String(company_id) },
+});
+export const STOCK_RECEIPTS = '/stock/receipts' as const;
+export const STOCK_RECEIPTS_ADD = (company_id: number) => ({
+	pathname: '/stock/receipts/form' as const,
+	params: { company_id: String(company_id) },
+});
+export const STOCK_RECEIPT_VIEW = (id: number, company_id: number) => ({
+	pathname: '/stock/receipts/[id]' as const,
+	params: { id: String(id), company_id: String(company_id) },
+});
+export const STOCK_INVENTORIES = '/stock/inventories' as const;
+export const STOCK_INVENTORIES_ADD = (company_id: number) => ({
+	pathname: '/stock/inventories/form' as const,
+	params: { company_id: String(company_id) },
+});
+export const STOCK_INVENTORY_VIEW = (id: number, company_id: number) => ({
+	pathname: '/stock/inventories/[id]' as const,
+	params: { id: String(id), company_id: String(company_id) },
+});
+
 // Règlements
 export const REGLEMENTS_LIST = '/reglements' as const;
 export const REGLEMENTS_VIEW = (id: number) => ({ pathname: '/reglements/[id]' as const, params: { id: String(id) } });

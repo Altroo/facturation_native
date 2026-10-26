@@ -68,6 +68,17 @@ it.each([
 	['reglements/form', translations.fr.reglements.addTitle],
 	['reglements/index', translations.fr.reglements.listTitle],
 	['reglements/[id]/index', translations.fr.reglements.detailsTitle],
+	['stock/index', translations.fr.stock.listTitle],
+	['stock/form', translations.fr.stock.adjustTitle],
+	['stock/[id]/index', translations.fr.stock.detailTitle],
+	['stock/movements/index', translations.fr.stock.movementsTitle],
+	['stock/movements/[id]/index', translations.fr.stock.movementDetailTitle],
+	['stock/receipts/index', translations.fr.stock.receiptsTitle],
+	['stock/receipts/form', translations.fr.stock.receiptAddTitle],
+	['stock/receipts/[id]/index', translations.fr.stock.receiptDetailTitle],
+	['stock/inventories/index', translations.fr.stock.inventoriesTitle],
+	['stock/inventories/form', translations.fr.stock.inventoryAddTitle],
+	['stock/inventories/[id]/index', translations.fr.stock.inventoryDetailTitle],
 ])('keeps both theme and language actions usable on %s', async (route, title) => {
 	mockRouteName = route;
 	await setup();

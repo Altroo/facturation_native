@@ -28,6 +28,8 @@ import { factureClientApi } from '@/store/services/factureClient';
 import { factureAvoirApi } from '@/store/services/factureAvoir';
 import { bonDeLivraisonApi } from '@/store/services/bonDeLivraison';
 import { reglementApi } from '@/store/services/reglement';
+import { stockApi } from '@/store/services/stock';
+import { logistiqueApi } from '@/store/services/logistique';
 import { aiAssistantApi } from '@/store/services/aiAssistant';
 import {
 	citiesApi,
@@ -209,6 +211,8 @@ export function* resetApiState(): SagaIterator {
 	yield put(factureAvoirApi.util.resetApiState());
 	yield put(bonDeLivraisonApi.util.resetApiState());
 	yield put(reglementApi.util.resetApiState());
+	yield put(stockApi.util.resetApiState());
+	yield put(logistiqueApi.util.resetApiState());
 	yield put(aiAssistantApi.util.resetApiState());
 	yield put(modePaiementApi.util.resetApiState());
 	yield put(livreParApi.util.resetApiState());

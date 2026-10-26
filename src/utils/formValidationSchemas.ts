@@ -89,6 +89,45 @@ const optionalNumberField = (min: number = 1, max?: number) =>
 			.optional(),
 	);
 
+const stockDecimalField = (minimum?: number) =>
+	z.preprocess(
+		(value) => {
+			if (value === undefined || value === null || value === '') return NaN;
+			return typeof value === 'string' ? Number(value.replace(',', '.')) : value;
+		},
+		z.number({ error: INPUT_REQUIRED }).refine((value) => minimum === undefined || value >= minimum, {
+			error: INPUT_MIN(minimum ?? 0),
+		}),
+	);
+
+export const stockAdjustmentSchema = z.object({
+	movement_type: z.enum(['opening', 'adjustment']),
+	article: requiredNumberField(1),
+	emplacement: requiredNumberField(1),
+	quantity: stockDecimalField().refine((value) => value !== 0, { error: 'La quantité ne peut pas être nulle' }),
+	reason: requiredTextField(1, 1000),
+	globalError: optionalTextField(1, 500),
+});
+
+export const stockReceiptSchema = z.object({
+	logistics_order: requiredNumberField(1),
+	logistics_line: requiredNumberField(1),
+	emplacement: requiredNumberField(1),
+	quantity: stockDecimalField(0.001),
+	reference: optionalTextField(0, 255),
+	note: optionalTextField(0, 1000),
+	globalError: optionalTextField(1, 500),
+});
+
+export const stockInventorySchema = z.object({
+	article: requiredNumberField(1),
+	emplacement: requiredNumberField(1),
+	counted_quantity: stockDecimalField(0),
+	reference: optionalTextField(0, 255),
+	note: optionalTextField(0, 1000),
+	globalError: optionalTextField(1, 500),
+});
+
 // Credit notes may refund below the purchase price, so they intentionally do
 // not reuse the sales document's sale-price-greater-than-purchase rule.
 const decimalNumberField = (min: number) =>

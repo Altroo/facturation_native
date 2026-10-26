@@ -39,6 +39,17 @@ import {
 	REGLEMENTS_ADD,
 	REGLEMENTS_EDIT,
 	REGLEMENTS_VIEW,
+	STOCK_LIST,
+	STOCK_ADD,
+	STOCK_VIEW,
+	STOCK_MOVEMENTS,
+	STOCK_MOVEMENT_VIEW,
+	STOCK_RECEIPTS,
+	STOCK_RECEIPTS_ADD,
+	STOCK_RECEIPT_VIEW,
+	STOCK_INVENTORIES,
+	STOCK_INVENTORIES_ADD,
+	STOCK_INVENTORY_VIEW,
 	FACTURE_AVOIR_EDIT,
 	DASHBOARD_EDIT_PROFILE,
 	DASHBOARD_NOTIFICATIONS,
@@ -571,6 +582,41 @@ export const getNotificationDestination = (target?: string) => {
 		if (id === null) return null;
 		const route = path.endsWith('/edit') ? BON_DE_LIVRAISON_EDIT(id) : BON_DE_LIVRAISON_VIEW(id);
 		return { ...route, params: { ...route.params, company_id: String(companyId) } };
+	}
+	const stockMatch = path.match(/^\/dashboard\/stock(?:\/(movements|receipts|inventories))?(?:\/(new|[1-9]\d*))?$/);
+	if (stockMatch) {
+		const section = stockMatch[1];
+		const record = stockMatch[2];
+		const list =
+			section === 'movements'
+				? STOCK_MOVEMENTS
+				: section === 'receipts'
+					? STOCK_RECEIPTS
+					: section === 'inventories'
+						? STOCK_INVENTORIES
+						: STOCK_LIST;
+		const query = new URLSearchParams(target.split('?')[1] ?? '');
+		const companyId = parseEntityId(query.get('company_id') ?? undefined);
+		if (!record) return companyId ? { pathname: list, params: { company_id: String(companyId) } } : list;
+		if (companyId === null) return list;
+		if (record === 'new') {
+			if (section === 'movements') return list;
+			if (section === 'receipts') return STOCK_RECEIPTS_ADD(companyId);
+			if (section === 'inventories') return STOCK_INVENTORIES_ADD(companyId);
+			const balanceId = query.has('balance_id') ? parseEntityId(query.get('balance_id') ?? undefined) : undefined;
+			return balanceId === null ? STOCK_LIST : STOCK_ADD(companyId, balanceId);
+		}
+		const id = parseEntityId(record);
+		if (id === null) return null;
+		return (
+			section === 'movements'
+				? STOCK_MOVEMENT_VIEW
+				: section === 'receipts'
+					? STOCK_RECEIPT_VIEW
+					: section === 'inventories'
+						? STOCK_INVENTORY_VIEW
+						: STOCK_VIEW
+		)(id, companyId);
 	}
 	if (path === '/dashboard/reglements') return REGLEMENTS_LIST;
 	if (path === '/dashboard/reglements/new' || /^\/dashboard\/reglements\/[1-9]\d*(?:\/edit)?$/.test(path)) {
