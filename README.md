@@ -25,6 +25,8 @@ The project follows the web application's folder structure, API contracts and Re
 - Credit notes (Factures d’avoir): company-scoped list and currency statistics, original-invoice prefill, required reasons, article lines, discounts, draft-only editing, status permissions, detail views, deletion and PDF generation. Changes refresh invoice balances.
 - Delivery notes (Bons de livraison): regular and uninvoiced lists, creation, editing, details, delivery-person management, status permissions, article lines and stock-aware deletion. Accepted or invoiced notes keep their lines read-only. Price-free PDFs use a direct French, English or Dutch choice.
 - Payments (Règlements): company-scoped cards, server search and combined filters, sorting, infinite scrolling, bulk deletion, cancellation, edit/detail screens and receipts in French, English or Dutch. Invoice balances refresh after successful changes; invoice history reuses the same payment cards.
+- Stock: balances, immutable movement history, receipts and inventories, with server-side search, combined filters, sorting, infinite scrolling and pull to refresh. Cashiers can record signed adjustments and validate inventories; Logistics can receive incoming order lines and cancel validated receipts. Company settings control writes while historical records remain readable. If validation fails after creating a receipt or inventory, the saved draft opens for retry.
+- Dashboard: company-scoped KPIs, monthly objectives, financial, commercial, operational, cash-flow, client, discount and margin charts. Date, currency, client and project filters use the web dashboard's Django endpoints. Native charts support touch interaction and portrait layouts. Administrators configure monthly objectives from Paramètres.
 - Profile editing, avatar upload, password changes and logout.
 - Compact drawer navigation and stack navigation that returns to the previous screen.
 - French/English translations, flag controls and saved light/dark appearance.
@@ -32,8 +34,9 @@ The project follows the web application's folder structure, API contracts and Re
 - Camera/gallery selection, image preview and cropping for avatars, company logos, stamps and article photos.
 - A logo splash screen while local resources and preferences load.
 - Backend-controlled maintenance and local development version checks.
+- Nouveautés: bilingual release history from Django, limited to Mobile and shared Web/Mobile updates.
 
-The dashboard is still a foundation screen. Business modules beyond users, companies, clients, articles, quotes, pro-formas, client invoices, credit notes, delivery notes and payments are not fully migrated; their menu destinations remain placeholders. Django controls maintenance and version data. Background push delivery and app-store distribution are not configured.
+Business modules beyond the dashboard, users, companies, clients, articles, quotes, pro-formas, client invoices, credit notes, delivery notes, payments and stock are not fully migrated; their menu destinations remain placeholders. Logistics currently supplies the order lookups needed by Stock receipts; its full screens are deferred while the web module is in progress. Django controls maintenance and version data. Background push delivery and app-store distribution are not configured.
 
 ## Stack
 
@@ -141,7 +144,9 @@ Native sessions use SecureStore through `src/Storage/`, replacing NextAuth's bro
 
 Lists share `paginatedDataGrid`, inline search, filters, sorting sheets and selection controls. Its `rows` prop contains the records loaded so far, rendered as complete cards. Searches and filters are sent to Django; scrolling requests another page. Forms share keyboard-aware scrolling and image controls. Component-only `Props` live beside their component; shared domain contracts stay in `types`.
 
-The version endpoint reads this project's package version. Local update checks use Axios through `apiHelpers.ts`, with reload helpers in `helpers.ts`. Installed release builds do not offer a development reload as an application update.
+The version endpoint reads this project's package version. Local update checks use Axios through `apiHelpers.ts`, with reload helpers in `helpers.ts`. Installed release builds show a dismissible notice when a newer published Mobile or shared release is available, explaining that the latest app must be installed to get its features. They check on sign-in, on returning to the foreground and when the server announces a new version. Web-only release notes do not trigger this notice. Closing the notice does not install or reload anything; automatic downloads and store links are not configured.
+
+Release notes use the same Django changelog and version sequence as the web. In Django administration, choose **Web**, **Mobile** or **Web and Mobile** for each entry, complete both languages, then publish it. The mobile page requests `EXPO_PUBLIC_CHANGELOG` with `platform=mobile`; the web requests `platform=web`. Both include shared entries and exclude drafts and future dates. Existing history remains Web. Backend migrations `ws.0013` and `ws.0014` add targeting and seed seven days of mobile history from native commits without overwriting admin edits; `ws.0015` corrects the versions copied by the initial seed. Historical entries use the corresponding web version for their date, documented in the backend's `docs/mobile-changelog-history-sources.json`. Nearby dates can share a version when the web version did not change. Keep the current package version and Expo app version aligned with the shared release; do not replace historical entry versions when increasing it.
 
 When adding another module, follow the equivalent web service, actions, selectors and screen flow, reuse these native controls, and register any new API middleware, reducer and logout cache cleanup.
 
