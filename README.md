@@ -1,6 +1,6 @@
 # E.B.H Facturation Native
 
-Mobile version of the Facturation platform for iOS and Android. The application is under active development: authentication, users, companies, clients, articles, quotes, pro-formas, client invoices, credit notes, delivery notes and account settings provide the foundation for progressively bringing the web application's business modules to mobile.
+Mobile version of the Facturation platform for iOS and Android. The application is under active development: authentication, users, companies, clients, articles, quotes, pro-formas, client invoices, credit notes, delivery notes, payments and account settings provide the foundation for progressively bringing the web application's business modules to mobile.
 
 The project follows the web application's folder structure, API contracts and Redux conventions, adapting navigation, storage and interface components to native devices.
 
@@ -24,6 +24,7 @@ The project follows the web application's folder structure, API contracts and Re
 - Client invoices: regular and unpaid lists, company statistics by currency, creation, editing, details, payment creation and history, balances, validation permissions and PDF generation. Quotes and pro-formas can create client invoices. Payments use the invoice currency and remaining balance, and refresh the invoice after saving. Eligible client invoices can create a delivery note after confirmation.
 - Credit notes (Factures d’avoir): company-scoped list and currency statistics, original-invoice prefill, required reasons, article lines, discounts, draft-only editing, status permissions, detail views, deletion and PDF generation. Changes refresh invoice balances.
 - Delivery notes (Bons de livraison): regular and uninvoiced lists, creation, editing, details, delivery-person management, status permissions, article lines and stock-aware deletion. Accepted or invoiced notes keep their lines read-only. Price-free PDFs use a direct French, English or Dutch choice.
+- Payments (Règlements): company-scoped cards, server search and combined filters, sorting, infinite scrolling, bulk deletion, cancellation, edit/detail screens and receipts in French, English or Dutch. Invoice balances refresh after successful changes; invoice history reuses the same payment cards.
 - Profile editing, avatar upload, password changes and logout.
 - Compact drawer navigation and stack navigation that returns to the previous screen.
 - French/English translations, flag controls and saved light/dark appearance.
@@ -32,7 +33,7 @@ The project follows the web application's folder structure, API contracts and Re
 - A logo splash screen while local resources and preferences load.
 - Backend-controlled maintenance and local development version checks.
 
-The dashboard is still a foundation screen. Business modules beyond users, companies, clients, articles, quotes, pro-formas, client invoices, credit notes and delivery notes are not fully migrated; their menu destinations remain placeholders. Django controls maintenance and version data. Background push delivery and app-store distribution are not configured.
+The dashboard is still a foundation screen. Business modules beyond users, companies, clients, articles, quotes, pro-formas, client invoices, credit notes, delivery notes and payments are not fully migrated; their menu destinations remain placeholders. Django controls maintenance and version data. Background push delivery and app-store distribution are not configured.
 
 ## Stack
 
