@@ -321,6 +321,20 @@ export const passwordResetStorageSchema = z.object({
 	expiresAt: z.number(),
 });
 
+const optionalArticlePriceField = z.preprocess(
+	(value) => {
+		if (value === undefined || value === null || value === '') return value === null ? null : undefined;
+		return typeof value === 'string' ? Number(value.replace(/\s/g, '').replace(',', '.')) : value;
+	},
+	z
+		.number({ error: INPUT_REQUIRED })
+		.min(0, { error: 'Le prix ne peut pas être négatif.' })
+		.max(99_999_999.99, { error: 'Le prix ne peut pas dépasser 99 999 999,99.' })
+		.multipleOf(0.01, { error: "Assurez-vous qu'il n'y a pas plus de 2 chiffres après la virgule." })
+		.nullable()
+		.optional(),
+);
+
 export const articleSchema = z
 	.object({
 		type_article: z.enum(['Produit', 'Service']),
@@ -334,9 +348,9 @@ export const articleSchema = z
 		marque: optionalNumberField(1).nullable(),
 		categorie: optionalNumberField(1).nullable(),
 		unite: optionalNumberField(1).nullable(),
-		prix_achat: optionalNumberField(0).nullable(),
+		prix_achat: optionalArticlePriceField,
 		devise_prix_achat: z.enum(['MAD', 'EUR', 'USD']).default('MAD'),
-		prix_vente: optionalNumberField(0).nullable(),
+		prix_vente: optionalArticlePriceField,
 		prix_vente_base: z.enum(['HT', 'TTC']).default('HT'),
 		devise_prix_vente: z.enum(['MAD', 'EUR', 'USD']).default('MAD'),
 		tva: optionalNumberField(0).nullable(),
@@ -363,6 +377,15 @@ export const articleSchema = z
 			return vInMAD > aInMAD;
 		},
 		{ error: INPUT_PRICE_VENTE_ACHAT, path: ['prix_vente'] },
+	);
+
+export const getArticleSchema = (stockManagementEnabled = false) =>
+	articleSchema.refine(
+		(data) => !stockManagementEnabled || data.type_article !== 'Produit' || Boolean(data.emplacement),
+		{
+			error: 'Un emplacement est requis pour un produit géré en stock.',
+			path: ['emplacement'],
+		},
 	);
 
 export const devisLivraisonFactureLineSchema = z

@@ -34,8 +34,7 @@ import {
 import type { ArticleClass, CompanyClass } from '@/models/classes';
 import type { ArticleSchemaType } from '@/types/articleTypes';
 import { useLanguage, useToast } from '@/utils/hooks';
-import { INPUT_REQUIRED } from '@/utils/formValidationErrorMessages';
-import { articleSchema } from '@/utils/formValidationSchemas';
+import { getArticleSchema } from '@/utils/formValidationSchemas';
 import {
 	calculateSalePriceHT,
 	calculateSalePriceTTC,
@@ -53,6 +52,7 @@ import ApiAlert from '@/components/nativeElements/apiLoading/apiAlert/apiAlert';
 import ApiProgress from '@/components/nativeElements/apiLoading/apiProgress/apiProgress';
 import CustomTextInput from '@/components/nativeElements/customTextInput/customTextInput';
 import CustomNumberInput from '@/components/nativeElements/customNumberInput/customNumberInput';
+import FormattedNumberInput from '@/components/nativeElements/formattedNumberInput/formattedNumberInput';
 import CustomDropDownSelect from '@/components/nativeElements/customDropDownSelect/customDropDownSelect';
 import CustomAutoCompleteSelect from '@/components/nativeElements/customAutoCompleteSelect/customAutoCompleteSelect';
 import CustomSquareImageUploading from '@/components/nativeElements/customSquareImageUploading/customSquareImageUploading';
@@ -150,13 +150,7 @@ const FormikContent = (props: Props) => {
 	const formik = useFormik<ArticleSchemaType>({
 		initialValues,
 		validateOnMount: true,
-		validationSchema: toFormikValidationSchema(
-			articleSchema.superRefine((data, ctx) => {
-				// Django requires an emplacement for physical products in stock-enabled companies.
-				if (props.company.stock_management_enabled && data.type_article === 'Produit' && !data.emplacement)
-					ctx.addIssue({ code: 'custom', path: ['emplacement'], message: INPUT_REQUIRED });
-			}),
-		),
+		validationSchema: toFormikValidationSchema(getArticleSchema(props.company.stock_management_enabled)),
 		onSubmit: async (data, { setFieldError }) => {
 			if (pending.current) return;
 			pending.current = true;
@@ -369,6 +363,8 @@ const FormikContent = (props: Props) => {
 					<CustomTextInput {...field('designation', 'description')} multiline numberOfLines={3} />
 					{formik.values.type_article === 'Produit' && props.company.stock_management_enabled && (
 						<CustomNumberInput
+							formatted
+							decimals={3}
 							{...numericField('stock_minimum', 'inventory-2')}
 							helperText={
 								formik.errors.stock_minimum && (formik.touched.stock_minimum || hasAttemptedSubmit)
@@ -381,7 +377,7 @@ const FormikContent = (props: Props) => {
 				<SectionCard title={t.articles.pricesSection} icon="payments">
 					{!isNectar && (
 						<>
-							<CustomTextInput {...numericField('prix_achat', 'shopping-cart')} />
+							<FormattedNumberInput {...numericField('prix_achat', 'shopping-cart')} />
 							<CustomDropDownSelect
 								label={`${t.articles.currency} · ${t.articles.colPrixAchat}`}
 								items={['MAD', 'EUR', 'USD']}
@@ -392,7 +388,7 @@ const FormikContent = (props: Props) => {
 							/>
 						</>
 					)}
-					<CustomTextInput
+					<FormattedNumberInput
 						{...numericField('prix_vente', 'payments')}
 						label={
 							isNectar

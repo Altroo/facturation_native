@@ -170,7 +170,7 @@ it('edits an article with its stored entry basis and leaves the user on the form
 	mockParams.id = '7';
 	await mockArticleQuery.setResult({ currentData: article } as never);
 	await setup();
-	expect(screen.getByLabelText(t.articles.colPrixVente)).toHaveProp('value', '120');
+	expect(screen.getByLabelText(t.articles.colPrixVente)).toHaveProp('value', '120,00');
 	expect(screen.queryByLabelText(t.articles.stockMinimum)).toBeNull();
 	expect(screen.queryByLabelText(t.articles.resetReference)).toBeNull();
 	await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
@@ -181,6 +181,53 @@ it('edits an article with its stored entry basis and leaves the user on the form
 		}),
 	);
 	expect(router.dismissTo).not.toHaveBeenCalled();
+});
+
+it('submits comma-separated purchase and sale prices with two decimals', async () => {
+	await setup();
+	await fill();
+	await fireEvent.changeText(screen.getByLabelText(t.articles.colPrixAchat), '500,12');
+	await fireEvent.changeText(screen.getByLabelText(t.articles.colPrixVente), '833,33');
+	await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
+	await waitFor(() =>
+		expect(mockAdd).toHaveBeenCalledWith({ data: expect.objectContaining({ prix_achat: 500.12, prix_vente: 833.33 }) }),
+	);
+});
+
+it('uses zero in the payload when optional purchase and sale prices are cleared', async () => {
+	await setup();
+	await fill();
+	await fireEvent.changeText(screen.getByLabelText(t.articles.colPrixAchat), '');
+	await fireEvent.changeText(screen.getByLabelText(t.articles.colPrixVente), '');
+	await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
+	await waitFor(() =>
+		expect(mockAdd).toHaveBeenCalledWith({ data: expect.objectContaining({ prix_achat: 0, prix_vente: 0 }) }),
+	);
+});
+
+it('blocks prices with more than two decimal places before calling the API', async () => {
+	await setup();
+	await fill();
+	await fireEvent.changeText(screen.getByLabelText(t.articles.colPrixVente), '833,333');
+	await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
+	await waitFor(() => expect(mockError).toHaveBeenCalledWith(t.common.correctErrors));
+	expect(mockAdd).not.toHaveBeenCalled();
+	expect(screen.getAllByText(/2 chiffres après la virgule/).length).toBeGreaterThan(0);
+});
+
+it.each([
+	[true, 'Produit', true],
+	[true, 'Service', false],
+	[false, 'Produit', false],
+])('marks location required for stock %s and type %s', async (enabled, type, required) => {
+	mockCompany.stock_management_enabled = enabled as boolean;
+	await setup();
+	if (type === 'Service') {
+		await fireEvent.press(screen.getByRole('button', { name: t.articles.colType }));
+		await fireEvent.press(screen.getByRole('radio', { name: t.articles.typeService }));
+	}
+	if (required) expect(screen.getByText(`${t.articles.fieldEmplacement} *`)).toBeOnTheScreen();
+	else expect(screen.queryByText(`${t.articles.fieldEmplacement} *`)).toBeNull();
 });
 
 it('refreshes the reference without erasing an entered designation', async () => {
@@ -284,7 +331,7 @@ it('requires a location for stock-managed products, but not services', async () 
 	mockCompany.stock_management_enabled = true;
 	await setup();
 	await fill();
-	expect(screen.getByLabelText(t.articles.stockMinimum)).toHaveProp('value', '0');
+	expect(screen.getByLabelText(t.articles.stockMinimum)).toHaveProp('value', '0,000');
 	await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
 	await waitFor(() => expect(mockError).toHaveBeenCalledWith(t.common.correctErrors));
 	expect(mockAdd).not.toHaveBeenCalled();

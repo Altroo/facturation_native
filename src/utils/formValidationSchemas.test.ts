@@ -11,6 +11,7 @@ import {
 	passwordResetStorageSchema,
 	clientSchema,
 	articleSchema,
+	getArticleSchema,
 	deviAddSchema,
 	bonDeLivraisonAddSchema,
 	bonDeLivraisonSchema,
@@ -614,6 +615,57 @@ describe('articleSchema', () => {
 		tva: 20,
 		prix_vente_base: 'HT',
 	};
+	it.each([
+		[true, 'Produit', null, false],
+		[true, 'Produit', 4, true],
+		[true, 'Service', null, true],
+		[false, 'Produit', null, true],
+	])('requires a location only for stock-managed products (%s, %s, %s)', (enabled, type, location, valid) => {
+		const result = getArticleSchema(enabled as boolean).safeParse({
+			...article,
+			type_article: type,
+			emplacement: location,
+		});
+		expect(result.success).toBe(valid);
+		if (!result.success) expect(result.error.issues).toContainEqual(expect.objectContaining({ path: ['emplacement'] }));
+	});
+	it.each(['prix_achat', 'prix_vente'] as const)('accepts the web price formats for %s', (field) => {
+		for (const price of ['833,', '833,33', '833.33', '1 234,56', 833.33, 99_999_999.99]) {
+			const result = articleSchema.safeParse({
+				...article,
+				prix_achat: undefined,
+				prix_vente: undefined,
+				[field]: price,
+			});
+			expect(result.success).toBe(true);
+			if (result.success) expect(result.data[field]).toBe(Number(String(price).replace(/\s/g, '').replace(',', '.')));
+		}
+	});
+	it.each(['prix_achat', 'prix_vente'] as const)(
+		'preserves empty optional prices and rejects invalid %s values',
+		(field) => {
+			for (const price of ['', null, undefined]) {
+				const result = articleSchema.safeParse({
+					...article,
+					prix_achat: undefined,
+					prix_vente: undefined,
+					[field]: price,
+				});
+				expect(result.success).toBe(true);
+				if (result.success) expect(result.data[field]).toBe(price === null ? null : undefined);
+			}
+			for (const price of ['833,333', -1, 100_000_000, 'invalid', Infinity]) {
+				const result = articleSchema.safeParse({
+					...article,
+					prix_achat: undefined,
+					prix_vente: undefined,
+					[field]: price,
+				});
+				expect(result.success).toBe(false);
+				if (!result.success) expect(result.error.issues).toContainEqual(expect.objectContaining({ path: [field] }));
+			}
+		},
+	);
 	it('accepts an article without a photo and rejects missing required business fields', () => {
 		expect(articleSchema.safeParse({ ...article, photo: null }).success).toBe(true);
 		for (const field of ['reference', 'designation', 'company'] as const)
