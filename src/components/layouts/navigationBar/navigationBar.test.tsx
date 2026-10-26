@@ -78,6 +78,14 @@ beforeEach(() => {
 	jest.mocked(useGlobalSearchParams).mockReturnValue({});
 });
 describe('NavigationBar additional behaviors', () => {
+	it('opens Nouveautés for regular users and marks its drawer destination as selected', async () => {
+		jest.mocked(usePathname).mockReturnValue('/changelog');
+		await setup(false);
+		const destination = screen.getByRole('button', { name: translations.fr.navigation.changelog });
+		expect(destination).toHaveProp('accessibilityState', { selected: true });
+		await fireEvent.press(destination);
+		expect(router.navigate).toHaveBeenCalledWith('/changelog');
+	});
 	it.each([
 		['Homme', translations.fr.navigation.welcomeMale],
 		['Femme', translations.fr.navigation.welcomeFemale],

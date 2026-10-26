@@ -9,6 +9,7 @@ export const AUTH_RESET_PASSWORD_SET_PASSWORD = '/reset-password/set-password' a
 export const AUTH_RESET_PASSWORD_COMPLETE = '/reset-password/set-password-complete' as const;
 // dashboard
 export const DASHBOARD = '/' as const;
+export const CHANGELOG = '/changelog' as const;
 export const DASHBOARD_OBJECTIFS_MENSUELS = (company_id?: number) =>
 	company_id
 		? (`/settings/monthly-objectives?company_id=${company_id}` as const)

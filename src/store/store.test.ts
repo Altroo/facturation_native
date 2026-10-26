@@ -98,6 +98,7 @@ describe('Redux Saga Store', () => {
 		expect(state).toHaveProperty('stockApi');
 		expect(state).toHaveProperty('logistiqueApi');
 		expect(state).toHaveProperty('dashboardApi');
+		expect(state).toHaveProperty('changelogApi');
 		expect(state).toHaveProperty('aiAssistantApi');
 		expect(state).toHaveProperty('modePaiementApi');
 		expect(state).toHaveProperty('livreParApi');

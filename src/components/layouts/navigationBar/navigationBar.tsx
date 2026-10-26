@@ -4,6 +4,7 @@ import { useColorMode } from '@/providers/themeProvider';
 import { colors, fonts } from '@/utils/themes';
 import {
 	DASHBOARD,
+	CHANGELOG,
 	DEVIS_LIST,
 	BON_DE_LIVRAISON_LIST,
 	BON_DE_LIVRAISON_UNINVOICED,
@@ -380,10 +381,16 @@ export const NavigationDrawer = (props: DrawerContentComponentProps) => {
 					</View>
 				))}
 				<Pressable
-					disabled
 					accessibilityRole="button"
-					accessibilityState={{ disabled: true }}
-					className="min-h-12 flex-row items-center gap-3 px-3 opacity-40"
+					accessibilityState={{ selected: pathname === CHANGELOG }}
+					onPress={() => {
+						props.navigation.closeDrawer();
+						router.navigate(CHANGELOG);
+					}}
+					className={
+						'min-h-12 flex-row items-center gap-3 rounded-lg px-3 active:opacity-70 ' +
+						(pathname === CHANGELOG ? 'bg-blue-50 dark:bg-panel' : '')
+					}
 				>
 					<MaterialIcons name="new-releases" size={21} color={ink} />
 					<Text className="font-sans text-ink dark:text-slate-100 text-sm">{t.navigation.changelog}</Text>

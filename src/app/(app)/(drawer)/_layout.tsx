@@ -105,6 +105,7 @@ const DrawerStackLayout = () => {
 				const editing = route.params && 'id' in route.params && route.params.id !== undefined;
 				const screens: Record<string, NativeStackNavigationOptions> = {
 					index: { title: t.navigation.dashboard, ...drawerHeaderOptions },
+					'changelog/index': { title: t.navigation.changelog, ...drawerHeaderOptions },
 					'articles/index': { title: t.articles.listTitle, ...drawerHeaderOptions },
 					'articles/archived': { title: t.articles.archivedTitle, ...drawerHeaderOptions },
 					'articles/form': { title: editing ? t.articles.editTitle : t.articles.navAddTitle },

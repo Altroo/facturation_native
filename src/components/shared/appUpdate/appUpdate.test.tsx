@@ -1,13 +1,17 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { Platform } from 'react-native';
+import { AppState, Platform, type AppStateStatus } from 'react-native';
 import AppUpdate from './appUpdate';
 import { useAppSelector } from '@/utils/hooks';
 import { reloadApp } from '@/utils/helpers';
 import { checkAppUpdate } from '@/utils/apiHelpers';
 import { fr } from '@/translations/fr';
 import { APP_VERSION } from '@/utils/rawData';
+import { useGetChangelogQuery } from '@/store/services/changelog';
+import type { ChangelogEntry } from '@/types/changelogTypes';
+import { getAccessToken, getAppVersions } from '@/store/selectors';
 
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
+jest.mock('@/store/services/changelog', () => ({ useGetChangelogQuery: jest.fn() }));
 
 const mockOnError = jest.fn();
 jest.mock('@/utils/hooks', () => ({
@@ -30,11 +34,25 @@ const newerVersion = `${major}.${minor}.${patch + 2}`;
 const state = { localVersion: APP_VERSION, serverVersion: nextVersion, maintenance: false };
 const originalDev = __DEV__;
 const originalPlatform = Platform.OS;
+const refetch = jest.fn();
+const release = (version: string, platform: ChangelogEntry['platform'] = 'mobile'): ChangelogEntry => ({
+	id: 1,
+	date: '2026-10-26',
+	version,
+	platform,
+	title_fr: 'Mise à jour',
+	title_en: 'Update',
+	changes_fr: ['Amélioration'],
+	changes_en: ['Improvement'],
+});
 beforeEach(() => {
 	jest.clearAllMocks();
 	jest.mocked(useAppSelector).mockReturnValue(state);
 	jest.mocked(checkAppUpdate).mockResolvedValue(true);
 	jest.mocked(reloadApp).mockResolvedValue(undefined);
+	jest
+		.mocked(useGetChangelogQuery)
+		.mockReturnValue({ data: [], isUninitialized: false, refetch } as ReturnType<typeof useGetChangelogQuery>);
 });
 afterEach(() => {
 	Object.defineProperty(globalThis, '__DEV__', { configurable: true, value: originalDev });
@@ -45,15 +63,110 @@ it.each([null, APP_VERSION, '0.0.0', 'invalid'])('hides the prompt for version %
 	await render(<AppUpdate />);
 	expect(screen.queryByTestId('action-modal')).toBeNull();
 });
-it('does not compete with maintenance or offer Metro updates in a packaged mobile app', async () => {
+it('does not compete with maintenance', async () => {
 	jest.mocked(useAppSelector).mockReturnValue({ ...state, maintenance: true });
+	await render(<AppUpdate />);
+	expect(screen.queryByTestId('action-modal')).toBeNull();
+});
+
+it.each(['ios', 'android'] as const)(
+	'shows an installation notice for newer mobile releases on packaged %s',
+	async (platform) => {
+		Object.defineProperty(globalThis, '__DEV__', { configurable: true, value: false });
+		Object.defineProperty(Platform, 'OS', { configurable: true, value: platform });
+		jest
+			.mocked(useGetChangelogQuery)
+			.mockReturnValue({ data: [release(nextVersion)], refetch } as ReturnType<typeof useGetChangelogQuery>);
+		await render(<AppUpdate />);
+		expect(screen.getByText(fr.appUpdate.nativeBody)).toBeOnTheScreen();
+		expect(screen.getByText(`${fr.appUpdate.version} ${nextVersion}`)).toBeOnTheScreen();
+		expect(screen.queryByRole('button', { name: fr.appUpdate.update })).toBeNull();
+		await fireEvent.press(screen.getByRole('button', { name: fr.common.close }));
+		expect(screen.queryByTestId('action-modal')).toBeNull();
+		expect(checkAppUpdate).not.toHaveBeenCalled();
+		expect(reloadApp).not.toHaveBeenCalled();
+	},
+);
+
+it('ignores web-only releases and shows shared releases using the highest mobile version', async () => {
+	Object.defineProperty(globalThis, '__DEV__', { configurable: true, value: false });
+	jest
+		.mocked(useGetChangelogQuery)
+		.mockReturnValue({ data: [release(newerVersion, 'web')], refetch } as ReturnType<typeof useGetChangelogQuery>);
 	const view = await render(<AppUpdate />);
 	expect(screen.queryByTestId('action-modal')).toBeNull();
-	jest.mocked(useAppSelector).mockReturnValue(state);
-	Object.defineProperty(globalThis, '__DEV__', { configurable: true, value: false });
-	Object.defineProperty(Platform, 'OS', { configurable: true, value: 'ios' });
+	jest
+		.mocked(useGetChangelogQuery)
+		.mockReturnValue({
+			data: [release(newerVersion, 'both'), release(nextVersion), release('invalid')],
+			refetch,
+		} as ReturnType<typeof useGetChangelogQuery>);
 	await view.rerender(<AppUpdate />);
+	expect(screen.getByText(`${fr.appUpdate.version} ${newerVersion}`)).toBeOnTheScreen();
+	await fireEvent.press(screen.getByRole('button', { name: fr.common.close }));
+	jest
+		.mocked(useGetChangelogQuery)
+		.mockReturnValue({ data: [release(`${major}.${minor}.${patch + 3}`, 'both')], refetch } as ReturnType<
+			typeof useGetChangelogQuery
+		>);
+	await view.rerender(<AppUpdate />);
+	expect(screen.getByTestId('action-modal')).toBeOnTheScreen();
+});
+
+it('does not announce an installed or older mobile version even if the web announcement is newer', async () => {
+	Object.defineProperty(globalThis, '__DEV__', { configurable: true, value: false });
+	jest
+		.mocked(useGetChangelogQuery)
+		.mockReturnValue({ data: [release(APP_VERSION), release('0.0.0')], refetch } as ReturnType<
+			typeof useGetChangelogQuery
+		>);
+	await render(<AppUpdate />);
 	expect(screen.queryByTestId('action-modal')).toBeNull();
+});
+
+it('refreshes native releases on foreground and server announcements, then releases its listener', async () => {
+	Object.defineProperty(globalThis, '__DEV__', { configurable: true, value: false });
+	const listeners = new Set<(state: AppStateStatus) => void>();
+	const remove = jest.fn();
+	const subscription = jest.spyOn(AppState, 'addEventListener').mockImplementation((_type, listener) => {
+		listeners.add(listener);
+		return {
+			remove: () => {
+				listeners.delete(listener);
+				remove();
+			},
+		};
+	});
+	try {
+		const view = await render(<AppUpdate />);
+		await act(async () => {
+			for (const listener of listeners) listener('background');
+		});
+		expect(refetch).not.toHaveBeenCalled();
+		await act(async () => {
+			for (const listener of listeners) listener('active');
+		});
+		expect(refetch).toHaveBeenCalledTimes(1);
+		jest.mocked(useAppSelector).mockReturnValue({ ...state, serverVersion: newerVersion });
+		await view.rerender(<AppUpdate />);
+		expect(refetch).toHaveBeenCalledTimes(2);
+		await view.unmount();
+		expect(remove).toHaveBeenCalled();
+		expect(listeners.size).toBe(0);
+	} finally {
+		subscription.mockRestore();
+	}
+});
+
+it('waits for authentication before requesting installed mobile releases', async () => {
+	Object.defineProperty(globalThis, '__DEV__', { configurable: true, value: false });
+	jest
+		.mocked(useAppSelector)
+		.mockImplementation((selector) =>
+			selector === getAppVersions ? state : selector === getAccessToken ? null : undefined,
+		);
+	await render(<AppUpdate />);
+	expect(useGetChangelogQuery).toHaveBeenCalledWith(undefined, { skip: true, refetchOnMountOrArgChange: true });
 });
 it('defers this version but shows a newer announcement', async () => {
 	const view = await render(<AppUpdate />);

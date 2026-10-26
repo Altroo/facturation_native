@@ -151,6 +151,8 @@ export const fr: TranslationDictionary = {
 	},
 	appUpdate: {
 		title: 'Une mise à jour est disponible',
+		nativeBody:
+			'Installez la dernière version de l’application pour profiter des nouvelles fonctionnalités et des améliorations.',
 		body: 'Enregistrez votre travail avant de continuer. L’application se rechargera pour appliquer la mise à jour, sans réinstallation.',
 		later: 'Plus tard',
 		update: 'Mettre à jour',

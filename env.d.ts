@@ -31,6 +31,7 @@ declare namespace NodeJS {
 		// Base urls
 		EXPO_PUBLIC_API_URL: string;
 		EXPO_PUBLIC_ROOT_API_URL: string;
+		EXPO_PUBLIC_CHANGELOG: string;
 		EXPO_PUBLIC_ROOT_WS_URL: string;
 		EXPO_PUBLIC_WS_MAINTENANCE_ROOT: string;
 		// Account

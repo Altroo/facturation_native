@@ -148,6 +148,7 @@ export const en: TranslationDictionary = {
 	},
 	appUpdate: {
 		title: 'An update is available',
+		nativeBody: 'Install the latest version of the app to get new features and improvements.',
 		body: 'Save your work before continuing. The app will reload to apply the update, without reinstalling.',
 		later: 'Later',
 		update: 'Update now',

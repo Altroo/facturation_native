@@ -154,6 +154,7 @@ export type TranslationDictionary = {
 
 	appUpdate: {
 		title: string;
+		nativeBody: string;
 		body: string;
 		later: string;
 		update: string;
