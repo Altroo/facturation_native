@@ -20,7 +20,13 @@ const saveCompanyIndex = async (index: number) => {
 };
 
 type Props = {
-	children: (args: { company_id: number; role: string; raison_sociale: string; tabs: ReactNode }) => ReactNode;
+	requestedCompanyId?: number;
+	children: (args: {
+		company_id: number;
+		role: string;
+		raison_sociale: string;
+		tabs: ReactNode;
+	}) => ReactNode;
 };
 
 const CompanyDocumentsWrapperList: FC<Props> = (props: Props) => {
@@ -28,9 +34,11 @@ const CompanyDocumentsWrapperList: FC<Props> = (props: Props) => {
 	const { t } = useLanguage();
 	const query = useGetUserCompaniesQuery(undefined, { skip: !token });
 	const [selectedIndex, setSelectedIndex] = useState(0);
+	const [selectedCompanyId, setSelectedCompanyId] = useState(props.requestedCompanyId);
 	const [ready, setReady] = useState(false);
 	const companies = query.currentData ?? [];
-	const validIndex = selectedIndex < companies.length ? selectedIndex : 0;
+	const requestedIndex = companies.findIndex((company) => company.id === selectedCompanyId);
+	const validIndex = requestedIndex >= 0 ? requestedIndex : selectedIndex < companies.length ? selectedIndex : 0;
 	const selectedCompany = companies[validIndex] ?? null;
 
 	useEffect(() => {
@@ -55,6 +63,7 @@ const CompanyDocumentsWrapperList: FC<Props> = (props: Props) => {
 	const handleChange = (newValue: number) => {
 		if (!Number.isInteger(newValue) || !companies[newValue]) return;
 		setSelectedIndex(newValue);
+		setSelectedCompanyId(companies[newValue].id);
 		void saveCompanyIndex(newValue);
 	};
 

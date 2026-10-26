@@ -53,3 +53,24 @@ it('keeps the fixed actions outside the scroll containing the final section', as
 	expect(content.queryByText('Edit client')).toBeNull();
 	expect(within(screen.getByTestId('page-action-bar')).getByText('Edit client')).toBeOnTheScreen();
 });
+
+it('requests more history only near the end of the outer detail scroll', async () => {
+	const next = jest.fn();
+	await render(
+		<DetailsPage onEndReached={next}>
+			<Text>History</Text>
+		</DetailsPage>,
+	);
+	const scroll = (y: number) =>
+		fireEvent.scroll(screen.getByTestId('details-page'), {
+			nativeEvent: {
+				contentOffset: { x: 0, y },
+				contentSize: { height: 2000, width: 390 },
+				layoutMeasurement: { height: 600, width: 390 },
+			},
+		});
+	await scroll(100);
+	expect(next).not.toHaveBeenCalled();
+	await scroll(1250);
+	expect(next).toHaveBeenCalledTimes(1);
+});

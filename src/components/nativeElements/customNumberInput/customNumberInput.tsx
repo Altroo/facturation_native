@@ -1,9 +1,10 @@
-import { Pressable, View } from 'react-native';
+import { Platform, Pressable, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import CustomTextInput, {
 	type CustomTextInputProps,
 } from '@/components/nativeElements/customTextInput/customTextInput';
 import { useLanguage } from '@/utils/hooks';
+import FormattedNumberInput from '@/components/nativeElements/formattedNumberInput/formattedNumberInput';
 import { colors } from '@/utils/themes';
 
 type Props = Omit<CustomTextInputProps, 'endIcon' | 'multiline' | 'numberOfLines' | 'value' | 'onChangeText'> & {
@@ -11,16 +12,19 @@ type Props = Omit<CustomTextInputProps, 'endIcon' | 'multiline' | 'numberOfLines
 	onChangeText: (value: string) => void;
 	min?: number;
 	max?: number;
+	formatted?: boolean;
+	decimals?: number;
 };
 
 const CustomNumberInput = (props: Props) => {
-	const { min = 0, max, ...inputProps } = props;
+	const { min = 0, max, formatted, decimals, ...inputProps } = props;
+	const Input = formatted ? FormattedNumberInput : CustomTextInput;
 	const { t } = useLanguage();
 	const normalized = props.value.trim().replace(',', '.');
 	// A trailing separator is a valid typing draft, such as "1,". The buttons
 	// start from that number without forcing the keyboard draft to reformat.
 	const parsed = Number(normalized);
-	const current = Number.isFinite(parsed) ? parsed : min;
+	const current = Number.isFinite(parsed) ? parsed : Math.max(0, min);
 	const disabled = props.disabled || props.readOnly;
 	const decreaseDisabled = disabled || current <= min;
 	const increaseDisabled = disabled || (max !== undefined && current >= max);
@@ -28,17 +32,28 @@ const CustomNumberInput = (props: Props) => {
 		if (disabled) return;
 		const next = Math.min(max ?? Infinity, Math.max(min, current + direction));
 		// Preserve fractional quantities without introducing floating-point tails.
-		const precision = Math.min(15, (normalized.split('.')[1] ?? '').length);
+		const precision = Math.min(
+			15,
+			Math.max(
+				(normalized.split('.')[1] ?? '').length,
+				(String(min).split('.')[1] ?? '').length,
+				(String(max ?? '').split('.')[1] ?? '').length,
+			),
+		);
 		const value = String(Number(next.toFixed(Math.max(precision, 2))));
 		props.onChangeText(props.value.includes(',') ? value.replace('.', ',') : value);
 	};
 	const label = props.accessibilityLabel ?? props.label ?? '';
 	return (
-		<CustomTextInput
+		<Input
 			{...inputProps}
-			keyboardType={props.keyboardType ?? 'decimal-pad'}
+			{...(formatted ? { decimals } : {})}
+			keyboardType={
+				props.keyboardType ??
+				(min < 0 ? (Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric') : 'decimal-pad')
+			}
 			onChangeText={(value) => {
-				if (/^\d*([.,]\d*)?$/.test(value)) props.onChangeText(value);
+				if ((min < 0 ? /^-?\d*([.,]\d*)?$/ : /^\d*([.,]\d*)?$/).test(value)) props.onChangeText(value);
 			}}
 			endIcon={
 				<View className="flex-row self-stretch">

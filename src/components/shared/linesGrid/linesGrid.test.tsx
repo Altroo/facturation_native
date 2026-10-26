@@ -45,7 +45,7 @@ it('keeps commercial sale prices locked while forwarding quantity edits and line
 	);
 	expect(screen.getByLabelText(`${t.documentForm.colPrixUnitaire} (MAD)`)).toBeDisabled();
 	await fireEvent.changeText(screen.getByLabelText(t.documentForm.colQuantite), '1,5');
-	expect(onChange).toHaveBeenCalledWith(0, 'quantity', '1,5');
+	expect(onChange).toHaveBeenCalledWith(0, 'quantity', '1.5');
 	await fireEvent.press(screen.getByRole('button', { name: t.common.increaseValue(t.documentForm.colQuantite) }));
 	expect(onChange).toHaveBeenLastCalledWith(0, 'quantity', '3');
 	await fireEvent.press(
@@ -127,7 +127,7 @@ it('sorts the display without changing Formik indexes, validation paths or input
 	const second = within(screen.getByTestId('document-line-8'));
 	expect(second.getByText('Invalid second quantity')).toBeOnTheScreen();
 	await fireEvent.changeText(second.getByLabelText(t.documentForm.colQuantite), '4,5');
-	expect(onChange).toHaveBeenLastCalledWith(1, 'quantity', '4,5');
+	expect(onChange).toHaveBeenLastCalledWith(1, 'quantity', '4.5');
 	await fireEvent.press(second.getByRole('button', { name: t.common.increaseValue(t.documentForm.colQuantite) }));
 	expect(onChange).toHaveBeenLastCalledWith(1, 'quantity', '10');
 	await fireEvent.press(second.getByRole('button', { name: t.documentForm.deleteLineAriaLabel }));
@@ -163,6 +163,6 @@ it('filters the current unsaved line values and preserves hidden lines and callb
 	expect(screen.getAllByTestId(/document-line-/)).toHaveLength(2);
 	expect(within(screen.getByTestId('document-line-8')).getByLabelText(t.documentForm.colQuantite)).toHaveProp(
 		'value',
-		'4',
+		'4,00',
 	);
 });

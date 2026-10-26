@@ -5,7 +5,7 @@ import CustomDropDownSelect from '@/components/nativeElements/customDropDownSele
 import CustomNumberInput from '@/components/nativeElements/customNumberInput/customNumberInput';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import { useLanguage } from '@/utils/hooks';
-import { ValidatePricesHelper, parseNumber } from '@/utils/helpers';
+import { ValidatePricesHelper, getRemiseTypeItemsList, parseNumber } from '@/utils/helpers';
 import { colors } from '@/utils/themes';
 import type { TypeRemiseType } from '@/types/devisTypes';
 
@@ -23,11 +23,7 @@ const GlobalRemiseModal = (props: Props) => {
 	const [type, setType] = useState(props.currentType);
 	const [value, setValue] = useState(String(props.currentValue));
 	const [error, setError] = useState('');
-	const items = [
-		{ code: t.globalRemiseModal.typeNone, value: '' },
-		{ code: t.globalRemiseModal.typePercent, value: 'Pourcentage' },
-		{ code: t.globalRemiseModal.typeFixed(props.devise), value: 'Fixe' },
-	];
+	const items = getRemiseTypeItemsList(t, props.devise);
 	const apply = () => {
 		const amount = parseNumber(value);
 		const message = type

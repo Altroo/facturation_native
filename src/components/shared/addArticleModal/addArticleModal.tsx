@@ -20,7 +20,7 @@ import {
 	getServerFilterOperators,
 } from '@/components/shared/paginatedDataGrid/paginatedDataGrid';
 import DataGridToolbar from '@/components/shared/paginatedDataGrid/dataGridToolbar';
-import { formatNumberWithSpaces } from '@/utils/helpers';
+import { formatNumberWithSpaces, getRemiseTypeItemsList } from '@/utils/helpers';
 import { useLanguage } from '@/utils/hooks';
 import { MODULES_PAGE_SIZE } from '@/utils/rawData';
 import { colors } from '@/utils/themes';
@@ -128,11 +128,7 @@ const AddArticleModal = (props: Props) => {
 			},
 		}));
 	};
-	const remiseItems = [
-		{ code: t.globalRemiseModal.typeNone, value: '' },
-		{ code: t.rawData.remiseTypes.percentage, value: 'Pourcentage' },
-		{ code: t.rawData.remiseTypes.fixed, value: 'Fixe' },
-	];
+	const remiseItems = getRemiseTypeItemsList(t);
 	const query = useGetArticlesInfiniteListInfiniteQuery({
 		...serializeFilters(filterModel).params,
 		company_id: props.companyId,
@@ -239,6 +235,7 @@ const AddArticleModal = (props: Props) => {
 						{!!selected[item.id] && (
 							<View className="gap-3 border-t border-slate-200 pt-3 dark:border-slate-600">
 								<CustomNumberInput
+									formatted
 									compact
 									label={t.addArticleModal.colQuantite}
 									accessibilityLabel={`${t.addArticleModal.colQuantite} ${item.reference}`}
@@ -265,6 +262,7 @@ const AddArticleModal = (props: Props) => {
 										/>
 										{!!getRowPopupValues(item.id).remise_type && (
 											<CustomNumberInput
+												formatted
 												compact
 												label={`${t.addArticleModal.colRemise} (${getRowPopupValues(item.id).remise_type === 'Pourcentage' ? '%' : props.documentDevise})`}
 												accessibilityLabel={`${t.addArticleModal.colRemise} ${item.reference}`}

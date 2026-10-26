@@ -1,8 +1,9 @@
 import { useContext, useEffect, useRef, type FC, type ReactNode, type Dispatch, type SetStateAction } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { LanguageContext } from '@/contexts/languageContext';
-import { colors } from '@/utils/themes';
+import { bottomNavigationContentHeight, colors, listSpacing } from '@/utils/themes';
 
 export type CustomToastProps = {
 	message: string;
@@ -65,10 +66,21 @@ const CustomToast: FC<CustomToastProps> = (props: CustomToastProps) => {
 	} as const;
 	const appearance = severity[type];
 	return (
-		<View
+		<SafeAreaView
+			testID="toast-position"
+			edges={['bottom']}
 			pointerEvents="box-none"
-			className="absolute bottom-12 left-5 right-5 items-center"
-			style={{ zIndex: 1000, elevation: 20 }}
+			// Clear the shared bottom dock and shorter form action bars, including
+			// the system home indicator, so Save and navigation remain available.
+			style={{
+				position: 'absolute',
+				left: 20,
+				right: 20,
+				alignItems: 'center',
+				bottom: bottomNavigationContentHeight + listSpacing,
+				zIndex: 1000,
+				elevation: 20,
+			}}
 		>
 			<View
 				className={
@@ -108,7 +120,7 @@ const CustomToast: FC<CustomToastProps> = (props: CustomToastProps) => {
 					<MaterialIcons name="close" size={20} color={appearance.color} accessible={false} />
 				</Pressable>
 			</View>
-		</View>
+		</SafeAreaView>
 	);
 };
 

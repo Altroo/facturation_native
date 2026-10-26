@@ -8,6 +8,7 @@ type Props = {
 	onRefresh?: () => void;
 	refreshing?: boolean;
 	actions?: ReactNode;
+	onEndReached?: () => void;
 };
 
 // All view pages use this parent. Page spacing, background and scrolling are
@@ -18,6 +19,18 @@ const DetailsPage = (props: Props) => (
 			testID="details-page"
 			className="flex-1 bg-slate-50 dark:bg-night"
 			keyboardShouldPersistTaps="handled"
+			scrollEventThrottle={props.onEndReached ? 100 : undefined}
+			onScroll={
+				props.onEndReached
+					? ({ nativeEvent }) => {
+							if (
+								nativeEvent.layoutMeasurement.height + nativeEvent.contentOffset.y >=
+								nativeEvent.contentSize.height - 200
+							)
+								props.onEndReached?.();
+						}
+					: undefined
+			}
 			contentContainerStyle={{
 				padding: listSpacing,
 				paddingBottom: props.actions ? listSpacing : 48,

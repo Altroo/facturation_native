@@ -2,8 +2,29 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { Pressable, Text, View } from 'react-native';
 import CustomToast from './customToast';
 import { translations } from '@/translations';
+import { bottomNavigationContentHeight, listSpacing } from '@/utils/themes';
 
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
+jest.mock(
+	'react-native-safe-area-context',
+	() => jest.requireActual('react-native-safe-area-context/jest/mock').default,
+);
+
+it('clears the fixed bottom actions and includes the device safe area', async () => {
+	await render(<CustomToast type="success" message="Saved" show setShow={jest.fn()} />);
+	expect(screen.getByTestId('toast-position')).toHaveStyle({
+		position: 'absolute',
+		left: 20,
+		right: 20,
+		bottom: bottomNavigationContentHeight + listSpacing,
+	});
+	expect(screen.getByTestId('toast-position')).toHaveProp('edges', {
+		bottom: 'additive',
+		left: 'off',
+		right: 'off',
+		top: 'off',
+	});
+});
 
 beforeEach(() => jest.useFakeTimers());
 afterEach(() => jest.useRealTimers());

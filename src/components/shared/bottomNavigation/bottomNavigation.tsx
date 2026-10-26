@@ -7,7 +7,7 @@ import { useColorMode } from '@/providers/themeProvider';
 import { getUnreadNotificationCount } from '@/store/selectors';
 import { useAppSelector, useLanguage } from '@/utils/hooks';
 import { DASHBOARD_SETTINGS, NOTIFICATIONS_LIST } from '@/utils/routes';
-import { colors, navigationShadows } from '@/utils/themes';
+import { bottomNavigationContentHeight, colors, navigationShadows } from '@/utils/themes';
 
 type Props = {
 	createAction?: { label: string; onPress: () => void };
@@ -102,11 +102,19 @@ const BottomNavigation = (props: Props) => {
 				}}
 			/>
 			<SafeAreaView edges={['bottom', 'left', 'right']} pointerEvents="box-none">
-				<View className="h-22 flex-row items-end px-4" pointerEvents="box-none">
+				<View
+					style={{ height: bottomNavigationContentHeight }}
+					className="flex-row items-end px-4"
+					pointerEvents="box-none"
+				>
 					<View className="flex-1 pt-6" pointerEvents="box-none">
 						{renderDestination(destinations[0])}
 					</View>
-					<View className="h-22 w-22 items-center" pointerEvents="box-none">
+					<View
+						style={{ height: bottomNavigationContentHeight }}
+						className="w-22 items-center"
+						pointerEvents="box-none"
+					>
 						{/* Keep the shadow outside the clipped ripple surface. The full
 					    raised button stays inside this parent's native touch bounds. */}
 						<View
@@ -128,7 +136,7 @@ const BottomNavigation = (props: Props) => {
 							<Pressable
 								accessibilityRole="button"
 								accessibilityLabel={props.createAction?.label ?? t.common.add}
-								accessibilityState={{ disabled: !!addDisabled }}
+								accessibilityState={{ disabled: addDisabled }}
 								disabled={addDisabled}
 								onPress={props.createAction?.onPress}
 								android_ripple={{ color: colors.brandDisabled, borderless: false }}

@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react-native';
-import { Text } from 'react-native';
+import { Pressable, Text } from 'react-native';
 import SectionCard from './sectionCard';
 import { cardShadows, colors, surfaceStyles } from '@/utils/themes';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -10,6 +10,19 @@ jest.mock('@/providers/themeProvider', () => ({ useColorMode: () => ({ mode: moc
 
 beforeEach(() => {
 	mockMode = 'light';
+});
+
+it('places optional actions in the compact heading instead of a separate empty row', async () => {
+	await render(
+		<SectionCard
+			title="Revenue"
+			headerActions={<Pressable accessibilityRole="button" accessibilityLabel="Explain revenue" />}
+		>
+			<Text>Chart</Text>
+		</SectionCard>,
+	);
+	expect(screen.getByRole('button', { name: 'Explain revenue' })).toBeOnTheScreen();
+	expect(screen.getByText('Chart')).toBeOnTheScreen();
 });
 
 it('normalizes a supplied form section icon to the same compact heading as detail pages', async () => {

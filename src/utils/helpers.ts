@@ -53,7 +53,7 @@ import type { TranslationDictionary } from '@/types/languageTypes';
 import type { ArticleClass } from '@/models/classes';
 import type { SalePriceBasis } from '@/types/articleTypes';
 import { reloadAppAsync } from 'expo';
-import { aiWritingFields, NECTAR_RAISON_SOCIALE } from '@/utils/rawData';
+import { aiWritingFields, NECTAR_RAISON_SOCIALE, remiseTypeItemsList } from '@/utils/rawData';
 import axios, { type AxiosInstance, type AxiosResponse } from 'axios';
 import type { APIContentTypeInterface, ApiErrorResponseType } from '@/types/_initTypes';
 import { auth, publicInstance, InvalidSessionError } from '@/auth';
@@ -300,6 +300,18 @@ export const formatNumberWithSpaces = (value: string | number | null | undefined
 			useGrouping: true,
 		})
 		.replace(/[\u00a0\u202f]/g, '\u00a0');
+};
+
+// Same parser as the web's FormattedNumberInput: accept grouped pasted amounts
+// and preserve incomplete decimal drafts for the field's validation.
+export const parseFormattedNumber = (value: string | number): number | null => {
+	if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+	const trimmed = value.trim();
+	if (trimmed === '') return null;
+	const normalized = trimmed.replace(/\s/g, '').replace(',', '.');
+	if (normalized.endsWith('.')) return null;
+	const number = Number(normalized);
+	return Number.isFinite(number) ? number : null;
 };
 
 export const isAiTextField = (name: string, type: string) =>
@@ -638,6 +650,16 @@ export const calculateDocumentTotals = (
 		),
 		totalPrixAchatDevise: lignes[0]?.devise_prix_achat || null,
 	};
+};
+
+// Keep the web's stored discount values, with translated native option labels.
+export const getRemiseTypeItemsList = (t: TranslationDictionary, devise?: string) => {
+	const labels: Record<string, string> = {
+		'': t.globalRemiseModal.typeNone,
+		Pourcentage: devise ? t.globalRemiseModal.typePercent : t.rawData.remiseTypes.percentage,
+		Fixe: devise ? t.globalRemiseModal.typeFixed(devise) : t.rawData.remiseTypes.fixed,
+	};
+	return remiseTypeItemsList.map((item) => ({ ...item, code: labels[item.value] ?? item.code }));
 };
 
 export const getStatutLabel = (statut: string, t: TranslationDictionary): string => {

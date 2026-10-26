@@ -5,11 +5,19 @@ import {
 	civiliteItemsList,
 	devisFactureStatusItemsList,
 	bonDeLivraisonStatusItemsList,
+	remiseTypeItemsList,
 } from './rawData';
 import { version } from '../../package.json';
 import { expo } from '../../app.json';
 
 describe('items lists', () => {
+	it('keeps the same stored discount choices as the web', () => {
+		expect(remiseTypeItemsList).toEqual([
+			{ code: '', value: '' },
+			{ code: 'Pourcentage', value: 'Pourcentage' },
+			{ code: 'Fixe', value: 'Fixe' },
+		]);
+	});
 	describe('genderItemsList', () => {
 		it('has two entries with correct codes and values', () => {
 			expect(genderItemsList).toHaveLength(2);

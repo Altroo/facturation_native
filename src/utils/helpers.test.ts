@@ -1,7 +1,7 @@
 import type { DeviFactureLineFormValues } from '@/types/devisTypes';
 import { translations } from '@/translations';
 import { reloadAppAsync } from 'expo';
-import { APP_VERSION, NECTAR_RAISON_SOCIALE } from '@/utils/rawData';
+import { APP_VERSION, NECTAR_RAISON_SOCIALE, remiseTypeItemsList } from '@/utils/rawData';
 import {
 	COMPANIES_VIEW,
 	COMPANIES_EDIT,
@@ -26,6 +26,7 @@ import { AxiosError, AxiosHeaders, type AxiosResponse, type InternalAxiosRequest
 import {
 	calculateDocumentTotals,
 	getStatutLabel,
+	getRemiseTypeItemsList,
 	isAiTextField,
 	calculateSalePriceHT,
 	calculateSalePriceTTC,
@@ -45,6 +46,7 @@ import {
 	formatDate,
 	formatNumber,
 	formatNumberWithSpaces,
+	parseFormattedNumber,
 	parseNumber,
 	safeParseForInput,
 	ValidatePricesHelper,
@@ -364,6 +366,23 @@ describe('API Utilities', () => {
 		it.each([null, undefined, '', 'invalid'])('preserves empty-value fallbacks for %s', (value) => {
 			expect(formatNumberWithSpaces(value)).toBe('');
 			expect(formatNumber(value)).toBe('0,00');
+		});
+	});
+
+	describe('parseFormattedNumber', () => {
+		it.each([
+			['300 000 000,25', 300000000.25],
+			['1\u00a0234,125', 1234.125],
+			['1\u202f234.50', 1234.5],
+			['-1 234,5', -1234.5],
+			[0, 0],
+			['', null],
+			['12,', null],
+			['12.', null],
+			['invalid', null],
+			[Infinity, null],
+		])('parses grouped input %p as %p', (value, expected) => {
+			expect(parseFormattedNumber(value as string | number)).toBe(expected);
 		});
 	});
 
@@ -1036,3 +1055,23 @@ it('maps payment notification targets while validating their company and optiona
 	expect(getNotificationDestination('/dashboard/reglements/9')).toBe('/reglements');
 	expect(getNotificationDestination('/dashboard/reglements/0?company_id=5')).toBeNull();
 });
+
+it.each(['fr', 'en'] as const)(
+	'translates shared discount choices in %s without changing their API values',
+	(language) => {
+		const t = translations[language];
+		const items = getRemiseTypeItemsList(t);
+		expect(items.map((item) => item.value)).toEqual(remiseTypeItemsList.map((item) => item.value));
+		expect(items.map((item) => item.code)).toEqual([
+			t.globalRemiseModal.typeNone,
+			t.rawData.remiseTypes.percentage,
+			t.rawData.remiseTypes.fixed,
+		]);
+		expect(getRemiseTypeItemsList(t, 'EUR').map((item) => item.code)).toEqual([
+			t.globalRemiseModal.typeNone,
+			t.globalRemiseModal.typePercent,
+			t.globalRemiseModal.typeFixed('EUR'),
+		]);
+		expect(remiseTypeItemsList[1]).toEqual({ code: 'Pourcentage', value: 'Pourcentage' });
+	},
+);

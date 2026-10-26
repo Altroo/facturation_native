@@ -15,7 +15,7 @@ import ListCard from '@/components/shared/listCard/listCard';
 import InfoRow from '@/components/shared/infoRow/infoRow';
 import EntityImage from '@/components/shared/entityImage/entityImage';
 import CustomBadge from '@/components/nativeElements/customBadge/customBadge';
-import CustomTextInput from '@/components/nativeElements/customTextInput/customTextInput';
+import FormattedNumberInput from '@/components/nativeElements/formattedNumberInput/formattedNumberInput';
 import CustomNumberInput from '@/components/nativeElements/customNumberInput/customNumberInput';
 import CustomDropDownSelect from '@/components/nativeElements/customDropDownSelect/customDropDownSelect';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
@@ -25,7 +25,7 @@ import {
 	getServerFilterOperators,
 } from '@/components/shared/paginatedDataGrid/paginatedDataGrid';
 import { useLanguage } from '@/utils/hooks';
-import { calculateDocumentTotals, formatNumberWithSpaces, parseNumber } from '@/utils/helpers';
+import { calculateDocumentTotals, formatNumberWithSpaces, getRemiseTypeItemsList, parseNumber } from '@/utils/helpers';
 import { colors } from '@/utils/themes';
 import type { ArticleClass, DeviFactureLivraisonLineClass } from '@/models/classes';
 import type { DeviFactureLineFormValues } from '@/types/devisTypes';
@@ -51,11 +51,7 @@ const LinesGrid = (props: Props) => {
 	const [search, setSearch] = useState('');
 	const [filterModel, setFilterModel] = useState<FilterModel>({ items: [], logicOperator: 'and' });
 	const [sortModel, setSortModel] = useState<SortModel>([]);
-	const remiseItems = [
-		{ code: t.globalRemiseModal.typeNone, value: '' },
-		{ code: t.rawData.remiseTypes.percentage, value: 'Pourcentage' },
-		{ code: t.rawData.remiseTypes.fixed, value: 'Fixe' },
-	];
+	const remiseItems = getRemiseTypeItemsList(t);
 	// These are the complete document draft, not a page of catalogue results.
 	// Keep the Formik index while changing only the displayed order/visibility.
 	const rows = props.rows.map((line, index) => {
@@ -138,9 +134,7 @@ const LinesGrid = (props: Props) => {
 					disabled={props.disabled}
 				/>
 			</SectionCard>
-			{!visibleRows.length && (
-				<EmptyState message={props.rows.length ? t.common.noResults : t.common.noData} />
-			)}
+			{!visibleRows.length && <EmptyState message={props.rows.length ? t.common.noResults : t.common.noData} />}
 			{visibleRows.map(({ line, index }) => {
 				const article = props.articles.find((item) => item.id === line.article);
 				const coverage = line.stock_coverage;
@@ -168,7 +162,7 @@ const LinesGrid = (props: Props) => {
 						helperText: error,
 					};
 					return field === 'prix_vente' ? (
-						<CustomTextInput
+						<FormattedNumberInput
 							{...inputProps}
 							keyboardType="decimal-pad"
 							onChangeText={(value) => {
@@ -177,6 +171,7 @@ const LinesGrid = (props: Props) => {
 						/>
 					) : (
 						<CustomNumberInput
+							formatted
 							{...inputProps}
 							min={field === 'quantity' ? 0.01 : 0}
 							max={field === 'remise' && line.remise_type === 'Pourcentage' ? 100 : undefined}

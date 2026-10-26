@@ -180,3 +180,21 @@ it('keeps company selection usable when storage cannot be read or written', asyn
 	await fireEvent.press(screen.getByRole('tab', { name: 'Horizon' }));
 	expect(screen.getByText('Company 2: Commercial')).toBeOnTheScreen();
 });
+
+it('opens the requested notification company instead of the saved tab, then permits switching', async () => {
+	await AsyncStorage.setItem('selectedCompanyIndex', '0');
+	await render(
+		<CompanyDocumentsWrapperList requestedCompanyId={3}>
+			{(company) => (
+				<View>
+					{company.tabs}
+					<Text>{`Selected ${company.company_id}`}</Text>
+				</View>
+			)}
+		</CompanyDocumentsWrapperList>,
+	);
+	expect(await screen.findByRole('tab', { name: 'Nova Services', selected: true })).toBeOnTheScreen();
+	expect(screen.getByText('Selected 3')).toBeOnTheScreen();
+	await fireEvent.press(screen.getByRole('tab', { name: 'Horizon' }));
+	expect(screen.getByText('Selected 2')).toBeOnTheScreen();
+});

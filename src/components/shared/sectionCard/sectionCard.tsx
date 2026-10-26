@@ -9,6 +9,7 @@ type Props = {
 	icon?: ComponentProps<typeof MaterialIcons>['name'];
 	startIcon?: ReactNode;
 	count?: number;
+	headerActions?: ReactNode;
 	variant?: 'card' | 'list';
 	children: ReactNode;
 };
@@ -39,6 +40,7 @@ const SectionCard = (props: Props) => {
 							{props.count}
 						</Text>
 					)}
+					{props.headerActions}
 				</View>
 			)}
 			{props.children}

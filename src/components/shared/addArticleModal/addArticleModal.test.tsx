@@ -112,13 +112,13 @@ it('starts from existing line quantities and discounts and returns the edits for
 		/>,
 	);
 	await fireEvent.press(screen.getByRole('checkbox', { name: 'ART4' }));
-	expect(screen.getByLabelText(`${t.addArticleModal.colQuantite} ART4`)).toHaveProp('value', '3');
-	expect(screen.getByLabelText(`${t.addArticleModal.colRemise} ART4`)).toHaveProp('value', '10');
+	expect(screen.getByLabelText(`${t.addArticleModal.colQuantite} ART4`)).toHaveProp('value', '3,00');
+	expect(screen.getByLabelText(`${t.addArticleModal.colRemise} ART4`)).toHaveProp('value', '10,00');
 	await fireEvent.changeText(screen.getByLabelText(`${t.addArticleModal.colQuantite} ART4`), '4,5');
 	await fireEvent.changeText(screen.getByLabelText(`${t.addArticleModal.colRemise} ART4`), '15');
 	await fireEvent.press(screen.getByRole('button', { name: t.addArticleModal.addBtn(1) }));
 	expect(onAdd).toHaveBeenCalledWith([
-		{ articleId: 4, articleData: article(4), quantity: '4,5', remise_type: 'Pourcentage', remise: '15' },
+		{ articleId: 4, articleData: article(4), quantity: '4.5', remise_type: 'Pourcentage', remise: '15' },
 	]);
 });
 

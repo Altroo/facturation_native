@@ -1,5 +1,5 @@
 import { createRef, useState } from 'react';
-import type { TextInputInstance } from 'react-native';
+import { Platform, type TextInputInstance } from 'react-native';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import CustomNumberInput from './customNumberInput';
 import { translations } from '@/translations';
@@ -7,6 +7,21 @@ import { translations } from '@/translations';
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
 jest.mock('@/providers/themeProvider', () => ({ useColorMode: () => ({ mode: 'dark' }) }));
 const t = translations.fr;
+
+it('keeps formatted quantities in sync with step buttons while focused', async () => {
+	const Field = () => {
+		const [value, setValue] = useState('999.25');
+		return <CustomNumberInput formatted label="Quantity" value={value} onChangeText={setValue} />;
+	};
+	await render(<Field />);
+	await fireEvent(screen.getByLabelText('Quantity'), 'focus', { nativeEvent: { text: '999.25' } });
+	await fireEvent.press(screen.getByRole('button', { name: t.common.increaseValue('Quantity') }));
+	expect(screen.getByLabelText('Quantity')).toHaveProp('value', '1000.25');
+	await fireEvent(screen.getByLabelText('Quantity'), 'blur', { nativeEvent: { text: '1000.25' } });
+	expect(screen.getByLabelText('Quantity')).toHaveProp('value', '1\u00a0000,25');
+	await fireEvent.press(screen.getByRole('button', { name: t.common.decreaseValue('Quantity') }));
+	expect(screen.getByLabelText('Quantity')).toHaveProp('value', '999,25');
+});
 
 it('preserves decimal keyboard drafts and rejects nonnumeric input', async () => {
 	const onChangeText = jest.fn();
@@ -64,6 +79,33 @@ it('starts empty values and trailing decimal drafts from a finite number', async
 	await view.rerender(<CustomNumberInput label="Quantity" value="2," onChangeText={onChangeText} />);
 	await fireEvent.press(screen.getByRole('button', { name: t.common.increaseValue('Quantity') }));
 	expect(onChangeText).toHaveBeenLastCalledWith('3');
+});
+
+it.each(['ios', 'android'] as const)(
+	'supports signed Stock adjustments on %s while preserving the minus draft',
+	async (platform) => {
+		const platformSpy = jest.replaceProperty(Platform, 'OS', platform);
+		const onChangeText = jest.fn();
+		await render(<CustomNumberInput label="Adjustment" value="-1,25" min={-1000} onChangeText={onChangeText} />);
+		expect(screen.getByLabelText('Adjustment')).toHaveProp(
+			'keyboardType',
+			platform === 'ios' ? 'numbers-and-punctuation' : 'numeric',
+		);
+		await fireEvent.changeText(screen.getByLabelText('Adjustment'), '-');
+		expect(onChangeText).toHaveBeenLastCalledWith('-');
+		await fireEvent.changeText(screen.getByLabelText('Adjustment'), '-2,125');
+		expect(onChangeText).toHaveBeenLastCalledWith('-2,125');
+		await fireEvent.press(screen.getByRole('button', { name: t.common.decreaseValue('Adjustment') }));
+		expect(onChangeText).toHaveBeenLastCalledWith('-2,25');
+		platformSpy.restore();
+	},
+);
+
+it('keeps the three-decimal receipt minimum when stepping down', async () => {
+	const onChangeText = jest.fn();
+	await render(<CustomNumberInput label="Receipt" value="1" min={0.001} onChangeText={onChangeText} />);
+	await fireEvent.press(screen.getByRole('button', { name: t.common.decreaseValue('Receipt') }));
+	expect(onChangeText).toHaveBeenLastCalledWith('0.001');
 });
 
 it('keeps disabled and read-only inputs locked, and forwards the ref and blur handler', async () => {

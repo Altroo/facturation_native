@@ -14,7 +14,7 @@ type Props = {
 	onConfirm: () => void;
 	onClose: () => void;
 	loading?: boolean;
-	action?: 'delete' | 'suspend' | 'archive' | 'unarchive' | 'convert';
+	action?: 'delete' | 'suspend' | 'archive' | 'unarchive' | 'convert' | 'validate';
 	children?: ReactNode;
 };
 
@@ -23,7 +23,7 @@ const ConfirmationModal = (props: Props) => {
 	const { mode } = useColorMode();
 	const cancelColor = mode === 'dark' ? colors.slate[300] : colors.slate[500];
 	const archive = props.action === 'archive' || props.action === 'unarchive';
-	const conversion = props.action === 'convert';
+	const conversion = props.action === 'convert' || props.action === 'validate';
 	const actionColor = conversion
 		? colors.conversion
 		: archive
@@ -41,13 +41,15 @@ const ConfirmationModal = (props: Props) => {
 			titleIcon={
 				<MaterialIcons
 					name={
-						conversion
-							? 'receipt-long'
-							: props.action === 'unarchive'
-								? 'unarchive'
-								: archive
-									? 'archive'
-									: 'warning-amber'
+						props.action === 'validate'
+							? 'check-circle'
+							: conversion
+								? 'receipt-long'
+								: props.action === 'unarchive'
+									? 'unarchive'
+									: archive
+										? 'archive'
+										: 'warning-amber'
 					}
 					size={24}
 					color={actionColor}

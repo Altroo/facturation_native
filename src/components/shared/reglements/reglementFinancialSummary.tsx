@@ -7,7 +7,10 @@ import { formatNumberWithSpaces } from '@/utils/helpers';
 import { useLanguage } from '@/utils/hooks';
 import { colors } from '@/utils/themes';
 
-type Props = { payment: ReglementClass; showPayment?: boolean };
+type Props = {
+	payment: ReglementClass;
+	showPayment?: boolean
+};
 
 const ReglementFinancialSummary = (props: Props) => {
 	const { t } = useLanguage();

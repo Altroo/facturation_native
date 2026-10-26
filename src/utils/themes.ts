@@ -38,6 +38,7 @@ export const colors = {
 
 // Lists share one surface outline and corner radius in both color modes.
 export const listSpacing = 16;
+export const bottomNavigationContentHeight = 88;
 
 export const surfaceStyles = {
 	light: { borderWidth: 1, borderRadius: 16, borderColor: colors.slate[200], backgroundColor: colors.white },
