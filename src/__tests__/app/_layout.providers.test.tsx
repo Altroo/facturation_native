@@ -10,6 +10,10 @@ import { renderRouter, screen } from 'expo-router/testing-library';
 import RootLayout from '@/app/_layout';
 import { useAppSelector, useLanguage } from '@/utils/hooks';
 import { useColorMode } from '@/providers/themeProvider';
+import { create } from 'axios';
+import * as helpers from '@/utils/helpers';
+import { openPdf } from '@/utils/apiHelpers';
+import { translations } from '@/translations';
 
 jest.mock('@/styles/globals.css', () => ({}));
 jest.mock('expo-font', () => ({ ...jest.requireActual<typeof import('expo-font')>('expo-font'), useFonts: jest.fn() }));
@@ -68,6 +72,7 @@ beforeEach(() => {
 });
 afterEach(async () => {
 	await cleanup();
+	jest.restoreAllMocks();
 	jest.clearAllTimers();
 	jest.useRealTimers();
 });
@@ -78,6 +83,32 @@ it('mounts the actual original provider tree with restored preferences and the g
 		.mockImplementation(async (key) => (key === 'app-theme' ? 'dark' : key === 'app-language' ? 'en' : null));
 	await setup();
 	await screen.findByText('guest/en/dark');
+});
+
+it('shows the shared PDF loader above the navigator and removes it on a failed download', async () => {
+	jest.mocked(useFonts).mockReturnValue([true, null]);
+	await setup();
+	await screen.findByText('guest/fr/light');
+	const download = Promise.withResolvers<void>();
+	const instance = create({
+		adapter: async (config) => {
+			await download.promise;
+			return { config, status: 200, statusText: 'OK', headers: {}, data: new Uint8Array([123, 125]).buffer };
+		},
+	});
+	jest.spyOn(helpers, 'isAuthenticatedInstance').mockReturnValue(instance);
+	let request!: Promise<boolean>;
+	await act(() => {
+		request = openPdf('https://example.invalid/statement.pdf');
+	});
+	expect(screen.getByTestId('pdf-loading-overlay')).toBeOnTheScreen();
+	expect(screen.getByRole('progressbar', { name: translations.fr.common.loading })).toBeOnTheScreen();
+	await act(async () => {
+		download.resolve();
+		await request;
+	});
+	expect(screen.queryByTestId('pdf-loading-overlay')).toBeNull();
+	expect(screen.getByText('guest/fr/light')).toBeOnTheScreen();
 });
 it('waits for fonts before mounting the app', async () => {
 	jest.mocked(useFonts).mockReturnValue([false, null]);

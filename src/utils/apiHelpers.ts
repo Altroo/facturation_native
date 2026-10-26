@@ -6,9 +6,27 @@ import { isAppVersion, isAuthenticatedInstance, isNewerAppVersion } from '@/util
 import type { DocumentPdfType } from '@/types/devisTypes';
 import type { StatementType } from '@/types/clientTypes';
 
+let pendingPdfRequests = 0;
+const pdfLoadingListeners = new Set<() => void>();
+
+export const getPdfLoading = () => pendingPdfRequests > 0;
+
+export const subscribePdfLoading = (listener: () => void) => {
+	pdfLoadingListeners.add(listener);
+	return () => {
+		pdfLoadingListeners.delete(listener);
+	};
+};
+
+const updatePdfLoading = (change: 1 | -1) => {
+	pendingPdfRequests += change;
+	for (const listener of pdfLoadingListeners) listener();
+};
+
 // The web opens a Blob URL. Phones preview a local file instead. Axios still
 // owns authentication and token refresh; the existing Expo module owns the file.
 export const openPdf = async (url: string, filename = 'releve-client'): Promise<boolean> => {
+	updatePdfLoading(1);
 	try {
 		const instance = isAuthenticatedInstance();
 		const response = await instance.get<ArrayBuffer>(url, { responseType: 'arraybuffer' });
@@ -35,6 +53,10 @@ export const openPdf = async (url: string, filename = 'releve-client'): Promise<
 	} catch {
 		// The calling screen supplies its translated error toast.
 		return false;
+	} finally {
+		// Every PDF entry point shares this state, including failed downloads and
+		// unsupported viewers. Concurrent requests keep the indicator visible.
+		updatePdfLoading(-1);
 	}
 };
 

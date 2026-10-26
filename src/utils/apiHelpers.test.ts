@@ -11,6 +11,8 @@ import {
 	checkAppUpdate,
 	getApi,
 	getAppVersion,
+	getPdfLoading,
+	subscribePdfLoading,
 	openClientStatementPdf,
 	openDevisPdf,
 	openFactureProFormaPdf,
@@ -74,7 +76,66 @@ describe('openPdf', () => {
 			expect(mockPreviewPdf).toHaveBeenCalledWith({ mimeType: 'application/pdf' });
 		},
 	);
-	afterEach(() => jest.restoreAllMocks());
+	afterEach(() => {
+		expect(getPdfLoading()).toBe(false);
+		jest.restoreAllMocks();
+	});
+
+	it('keeps shared loading active during download, file writing and viewer presentation', async () => {
+		const downloaded = Promise.withResolvers<void>();
+		const written = Promise.withResolvers<void>();
+		const previewed = Promise.withResolvers<void>();
+		const writingStarted = Promise.withResolvers<void>();
+		const previewStarted = Promise.withResolvers<void>();
+		const listener = jest.fn();
+		const unsubscribe = subscribePdfLoading(listener);
+		adapter.mockImplementation(async (config) => {
+			await downloaded.promise;
+			return response(config, pdf.buffer);
+		});
+		mockWritePdf.mockImplementation(() => {
+			writingStarted.resolve();
+			return written.promise;
+		});
+		mockPreviewPdf.mockImplementation(() => {
+			previewStarted.resolve();
+			return previewed.promise;
+		});
+		const request = openPdf('/client/pdf/fr/7/');
+		expect(getPdfLoading()).toBe(true);
+		expect(listener).toHaveBeenCalledTimes(1);
+		downloaded.resolve();
+		await writingStarted.promise;
+		expect(getPdfLoading()).toBe(true);
+		written.resolve();
+		await previewStarted.promise;
+		expect(getPdfLoading()).toBe(true);
+		previewed.resolve();
+		await expect(request).resolves.toBe(true);
+		expect(getPdfLoading()).toBe(false);
+		expect(listener).toHaveBeenCalledTimes(2);
+		unsubscribe();
+		await openPdf('/client/pdf/fr/8/');
+		expect(listener).toHaveBeenCalledTimes(2);
+	});
+
+	it('keeps the indicator active until every concurrent PDF request has finished', async () => {
+		const first = Promise.withResolvers<void>();
+		const second = Promise.withResolvers<void>();
+		adapter.mockImplementation(async (config) => {
+			await (config.url === '/first.pdf' ? first.promise : second.promise);
+			return response(config, pdf.buffer);
+		});
+		const firstRequest = openPdf('/first.pdf');
+		const secondRequest = openPdf('/second.pdf');
+		expect(getPdfLoading()).toBe(true);
+		first.resolve();
+		await firstRequest;
+		expect(getPdfLoading()).toBe(true);
+		second.resolve();
+		await secondRequest;
+		expect(getPdfLoading()).toBe(false);
+	});
 
 	it.each(['avec_remise', 'sans_remise', 'avec_unite_sans_remise', 'avec_unite_avec_remise'] as const)(
 		'previews credit-note format %s through the configured authenticated endpoint',

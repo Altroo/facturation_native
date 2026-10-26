@@ -26,6 +26,7 @@ import { ToastContextProvider } from '@/contexts/toastContext';
 import ErrorBoundary from '@/components/shared/errorBoundary';
 import SessionExpiredListener from '@/components/shared/sessionExpiredListener/sessionExpiredListener';
 import Maintenance from '@/components/shared/maintenance/Maintenance';
+import PdfLoading from '@/components/portals/pdfLoading/pdfLoading';
 import { useAppDispatch, useAppSelector, useLanguage } from '@/utils/hooks';
 import { getInitState } from '@/store/selectors';
 import { initAppAction } from '@/store/actions/_initActions';
@@ -145,6 +146,7 @@ const RootLayout = () => {
 														<RootNavigator />
 													</AutocompleteDropdownContextProvider>
 													<Maintenance />
+													<PdfLoading />
 												</ToastContextProvider>
 											</ErrorBoundary>
 										</View>
