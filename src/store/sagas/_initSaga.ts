@@ -110,7 +110,7 @@ export function* initMaintenanceSaga(): SagaIterator {
 		});
 		if (response?.status === 200) {
 			yield put(setWSMaintenance(response.data.maintenance));
-			if (response.data.version !== undefined) yield put(setWSServerVersion(response.data.version));
+			if (response.data.version_mobile !== undefined) yield put(setWSServerVersion(response.data.version_mobile));
 		}
 	} catch {
 		return;

@@ -88,7 +88,9 @@ it('ignores malformed messages and delivers a validated maintenance signal', asy
 		sockets[0].onmessage?.({ data });
 	expect(receive).not.toHaveBeenCalled();
 	sockets[0].onmessage?.({
-		data: JSON.stringify({ message: { type: 'MAINTENANCE', maintenance: true, version: '3.6.2' } }),
+		data: JSON.stringify({
+			message: { type: 'MAINTENANCE', maintenance: true, version: '9.0.0', version_mobile: '3.6.2' },
+		}),
 	});
 	expect(receive).toHaveBeenCalledWith(WSMaintenanceAction(true, '3.6.2'));
 });
@@ -240,8 +242,21 @@ it.each([true, false])('applies maintenance %s even when the version is invalid'
 	await flush();
 	const receive = jest.fn();
 	channel.take(receive);
-	sockets[0].onmessage?.({ data: JSON.stringify({ message: { type: 'MAINTENANCE', maintenance, version: 'bad' } }) });
+	sockets[0].onmessage?.({
+		data: JSON.stringify({ message: { type: 'MAINTENANCE', maintenance, version_mobile: 'bad' } }),
+	});
 	expect(receive).toHaveBeenCalledWith(WSMaintenanceAction(maintenance, 'bad'));
+});
+
+it('does not fall back to the web version when the mobile announcement is missing', async () => {
+	const { channel } = open();
+	await flush();
+	const receive = jest.fn();
+	channel.take(receive);
+	sockets[0].onmessage?.({
+		data: JSON.stringify({ message: { type: 'MAINTENANCE', maintenance: false, version: '9.0.0' } }),
+	});
+	expect(receive).toHaveBeenCalledWith(WSMaintenanceAction(false));
 });
 
 class MockWebSocket implements WebSocket {

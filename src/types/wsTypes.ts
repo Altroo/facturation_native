@@ -17,6 +17,7 @@ type WSMessage = {
 	avatar?: string;
 	maintenance?: boolean;
 	version?: string;
+	version_mobile?: string;
 	id?: number;
 	title?: string;
 	message?: string;
@@ -35,4 +36,5 @@ export type WSEnvelope = {
 export interface WSMaintenanceBootstrap {
 	maintenance: boolean;
 	version?: string;
+	version_mobile?: string;
 }

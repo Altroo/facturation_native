@@ -96,7 +96,7 @@ export const initWebsocket = (getToken: () => Promise<string | null>): EventChan
 								}
 							} else if (signalType === 'MAINTENANCE') {
 								if (typeof message.maintenance === 'boolean') {
-									emitter(WSMaintenanceAction(message.maintenance, message.version));
+									emitter(WSMaintenanceAction(message.maintenance, message.version_mobile));
 								}
 							} else if (signalType === 'NOTIFICATION') {
 								if (typeof message.id === 'number' && typeof message.title === 'string') {

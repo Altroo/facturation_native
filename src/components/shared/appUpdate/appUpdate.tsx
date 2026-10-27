@@ -1,32 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
-import { AppState, Platform, Text } from 'react-native';
+import { Platform, Text } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import ActionModals from '@/components/nativeElements/modals/actionModal/actionModals';
 import { useAppSelector, useLanguage, useToast } from '@/utils/hooks';
-import { getAccessToken, getAppVersions } from '@/store/selectors';
-import { useGetChangelogQuery } from '@/store/services/changelog';
+import { getAppVersions } from '@/store/selectors';
 import { isNewerAppVersion, reloadApp } from '@/utils/helpers';
 import { checkAppUpdate } from '@/utils/apiHelpers';
 import { colors } from '@/utils/themes';
 
 const AppUpdate = () => {
 	const { localVersion, serverVersion, maintenance } = useAppSelector(getAppVersions);
-	const accessToken = useAppSelector(getAccessToken);
 	const installedNative = !__DEV__ && Platform.OS !== 'web';
-	const history = useGetChangelogQuery(undefined, {
-		skip: !installedNative || !accessToken,
-		refetchOnMountOrArgChange: true,
-	});
-	// Shared version numbers do not mean every web-only release updates mobile.
-	const mobileVersion =
-		history.data?.reduce<string | null>(
-			(latest, entry) =>
-				(entry.platform === 'mobile' || entry.platform === 'both') && isNewerAppVersion(entry.version, latest)
-					? entry.version
-					: latest,
-			localVersion,
-		) ?? null;
-	const availableVersion = installedNative ? mobileVersion : serverVersion;
+	// HTTP bootstrap and live announcements both read Django's version_mobile.
+	const availableVersion = serverVersion;
 	const { t } = useLanguage();
 	const { onError } = useToast();
 	const [dismissedVersion, setDismissedVersion] = useState<string | null>(null);
@@ -34,22 +20,6 @@ const AppUpdate = () => {
 	const inFlight = useRef(false);
 	const mounted = useRef(true);
 	const latestState = useRef({ serverVersion, maintenance });
-	const lastAnnouncement = useRef(serverVersion);
-	const { refetch, isUninitialized } = history;
-
-	useEffect(() => {
-		if (!installedNative || !accessToken || isUninitialized) return;
-		const listener = AppState.addEventListener('change', (state) => {
-			if (state === 'active') void refetch();
-		});
-		return () => listener.remove();
-	}, [installedNative, accessToken, isUninitialized, refetch]);
-
-	useEffect(() => {
-		if (!installedNative || !accessToken || isUninitialized || lastAnnouncement.current === serverVersion) return;
-		lastAnnouncement.current = serverVersion;
-		void refetch();
-	}, [installedNative, accessToken, isUninitialized, serverVersion, refetch]);
 
 	useEffect(() => {
 		latestState.current = { serverVersion, maintenance };

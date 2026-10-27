@@ -21,7 +21,7 @@ describe('wsSlice reducer', () => {
 	});
 });
 
-it('keeps the bundled mobile version separate from the announced web release', () => {
+it('keeps the bundled version separate from the announced mobile release', () => {
 	const initial = reducer(undefined, { type: 'test' });
 	const announced = reducer(initial, setWSServerVersion('3.6.2'));
 	expect(announced.localVersion).toBe(APP_VERSION);

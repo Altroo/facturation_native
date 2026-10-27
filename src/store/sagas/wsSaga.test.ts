@@ -162,7 +162,7 @@ afterEach(async () => {
 });
 it('bootstraps public maintenance without requiring a session or authenticated request', async () => {
 	jest.mocked(auth.getSession).mockReturnValue(null);
-	publicGet.mockResolvedValue({ status: 200, data: { maintenance: true, version: '3.6.2' } });
+	publicGet.mockResolvedValue({ status: 200, data: { maintenance: true, version: '9.0.0', version_mobile: '3.6.2' } });
 	const { task, actions } = start(initMaintenanceSaga);
 	await task.toPromise();
 	expect(publicGet).toHaveBeenCalledWith('/ws/maintenance/', { params: undefined, signal: expect.any(AbortSignal) });
@@ -175,8 +175,14 @@ it('preserves the last state on network errors', async () => {
 	await task.toPromise();
 	expect(actions).toEqual([]);
 });
+it('does not announce a web release when the HTTP response has no mobile version', async () => {
+	publicGet.mockResolvedValue({ status: 200, data: { maintenance: false, version: '9.0.0' } });
+	const { task, actions } = start(initMaintenanceSaga);
+	await task.toPromise();
+	expect(actions).toEqual([setWSMaintenance(false)]);
+});
 it('aborts an older HTTP snapshot when a live signal arrives and ignores its eventual response', async () => {
-	const pending = deferred<{ data: { maintenance: boolean; version: string } }>();
+	const pending = deferred<{ data: { maintenance: boolean; version_mobile: string } }>();
 	publicGet.mockReturnValue(pending.promise);
 	let emit!: (action: WSAction) => void;
 	const unsubscribe = jest.fn();
@@ -193,7 +199,7 @@ it('aborts an older HTTP snapshot when a live signal arrives and ignores its eve
 	emit(WSMaintenanceAction(true, '3.6.3'));
 	await flush();
 	expect(signal.aborted).toBe(true);
-	pending.resolve({ data: { maintenance: false, version: '3.6.2' } });
+	pending.resolve({ data: { maintenance: false, version_mobile: '3.6.2' } });
 	await flush();
 	expect(actions).toContainEqual(setWSMaintenance(true));
 	expect(actions).toContainEqual(setWSServerVersion('3.6.3'));
@@ -465,7 +471,7 @@ it('aborts a pending public maintenance check when its initialization watcher is
 it.each([true, false])(
 	'forwards HTTP maintenance %s and the announced version to the original reducers',
 	async (maintenance) => {
-		publicGet.mockResolvedValue({ status: 200, data: { maintenance, version: 'invalid' } });
+		publicGet.mockResolvedValue({ status: 200, data: { maintenance, version_mobile: 'invalid' } });
 		const { task, actions } = start(initMaintenanceSaga);
 		await task.toPromise();
 		expect(actions).toContainEqual(setWSMaintenance(maintenance));
