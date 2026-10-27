@@ -668,7 +668,7 @@ const CompanyDocumentsListContent = (props: Props) => {
 							/>
 							<InfoRow
 								dense
-								icon={<MaterialIcons name="payments" size={18} color={colors.brand} />}
+								icon={<MaterialIcons name="payments" size={18} color={colors.slate[400]} />}
 								label={t.documentList.colTotalTTC}
 								value={`${formatNumberWithSpaces(row.total_ttc_apres_remise ?? 0, 2)} ${row.devise || 'MAD'}`}
 							/>

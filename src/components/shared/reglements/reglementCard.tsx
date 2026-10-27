@@ -109,7 +109,7 @@ const ReglementCard = (props: Props) => {
 					value={payment.mode_reglement_name}
 				/>
 				{!!payment.observations && (
-					<InfoRow dense label={t.reglements.fieldObservations} value={payment.observations} />
+					<InfoRow dense icon={icon('notes')} label={t.reglements.fieldObservations} value={payment.observations} />
 				)}
 			</View>
 		</ListCard>

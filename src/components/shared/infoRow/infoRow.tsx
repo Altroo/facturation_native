@@ -24,7 +24,7 @@ const InfoRow = (props: Props) => {
 					? 'text-orange-600 dark:text-orange-300'
 					: 'text-ink dark:text-slate-100';
 	return (
-		<View className={'flex-row items-start gap-3 ' + (props.dense ? '' : 'py-2')}>
+		<View className={'flex-row items-center gap-3 ' + (props.dense ? '' : 'py-2')}>
 			{icon}
 			<View className={props.inline ? 'min-w-0 flex-1 flex-row items-start justify-between gap-3' : 'flex-1 gap-1'}>
 				{!!label && (
