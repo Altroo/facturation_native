@@ -10,7 +10,7 @@ import { DASHBOARD_SETTINGS, NOTIFICATIONS_LIST } from '@/utils/routes';
 import { bottomNavigationContentHeight, colors, navigationShadows } from '@/utils/themes';
 
 type Props = {
-	createAction?: { label: string; onPress: () => void };
+	createAction?: { label: string; onPress?: () => void; disabled?: boolean };
 	disabled?: boolean;
 	hidden?: boolean;
 	activePage?: 'notifications' | 'settings';
@@ -27,7 +27,9 @@ const BottomNavigation = (props: Props) => {
 	const surface = mode === 'dark' ? colors.panel : colors.white;
 	const foreground = mode === 'dark' ? colors.slate[300] : colors.slate[600];
 	const outline = mode === 'dark' ? colors.slate[600] : colors.slate[200];
-	const addDisabled = !!props.disabled;
+	const addDisabled = !!props.disabled || !!props.createAction?.disabled || !props.createAction?.onPress;
+	const addBackground = addDisabled ? (mode === 'dark' ? colors.slate[700] : colors.slate[200]) : colors.brand;
+	const addForeground = addDisabled ? (mode === 'dark' ? colors.slate[400] : colors.slate[500]) : colors.white;
 	const destinations = [
 		{ key: 'notifications', label: t.navigation.notifications, icon: 'notifications-none', path: NOTIFICATIONS_LIST },
 		{ key: 'settings', label: t.navigation.settings, icon: 'settings', path: DASHBOARD_SETTINGS },
@@ -131,43 +133,38 @@ const BottomNavigation = (props: Props) => {
 					>
 						{/* Keep the shadow outside the clipped ripple surface. The full
 					    raised button stays inside this parent's native touch bounds. */}
-						{props.createAction && (
-							<View
-								testID="bottom-navigation-add-shadow"
-								style={[
-									{
-										width: 64,
-										height: 64,
-										marginTop: addDisabled ? 16 : 0,
-										borderRadius: android ? 22 : 32,
-										backgroundColor: addDisabled ? 'transparent' : colors.brand,
-									},
-									!addDisabled && navigationShadows[mode === 'dark' ? 'addDark' : 'addLight'],
-								]}
+						<View
+							testID="bottom-navigation-add-shadow"
+							style={[
+								{
+									width: 64,
+									height: 64,
+									marginTop: 0,
+									borderRadius: android ? 22 : 32,
+									backgroundColor: addBackground,
+								},
+								navigationShadows[mode === 'dark' ? 'addDark' : 'addLight'],
+							]}
+						>
+							<Pressable
+								accessibilityRole="button"
+								accessibilityLabel={props.createAction?.label ?? t.common.add}
+								accessibilityState={{ disabled: addDisabled }}
+								disabled={addDisabled}
+								onPress={props.createAction?.onPress}
+								android_ripple={{ color: colors.brandDisabled, borderless: false }}
+								className="h-16 w-16 items-center justify-center overflow-hidden active:opacity-80"
+								style={{
+									borderRadius: android ? 22 : 32,
+									backgroundColor: addBackground,
+								}}
 							>
-								<Pressable
-									accessibilityRole="button"
-									accessibilityLabel={props.createAction.label}
-									accessibilityState={{ disabled: addDisabled }}
-									disabled={addDisabled}
-									onPress={props.createAction.onPress}
-									android_ripple={{ color: colors.brandDisabled, borderless: false }}
-									className="h-16 w-16 items-center justify-center overflow-hidden active:opacity-80"
-									style={{
-										borderRadius: android ? 22 : 32,
-										backgroundColor: addDisabled ? 'transparent' : colors.brand,
-									}}
-								>
-									<MaterialIcons name="add" size={28} color={addDisabled ? colors.slate[400] : colors.white} />
-									<Text
-										className="font-poppins-medium text-[10px] leading-3"
-										style={{ color: addDisabled ? colors.slate[400] : colors.white }}
-									>
-										{t.common.add}
-									</Text>
-								</Pressable>
-							</View>
-						)}
+								<MaterialIcons name="add" size={28} color={addForeground} />
+								<Text className="font-poppins-medium text-[10px] leading-3" style={{ color: addForeground }}>
+									{t.common.add}
+								</Text>
+							</Pressable>
+						</View>
 					</View>
 					<View className="mb-1.5 flex-1" pointerEvents="box-none">
 						{renderDestination(destinations[1])}

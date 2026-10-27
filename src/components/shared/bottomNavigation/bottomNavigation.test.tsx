@@ -63,7 +63,7 @@ it.each(['ios', 'android'] as const)(
 );
 
 it.each(['ios', 'android'] as const)(
-	'hides Add while keeping the navigation positions unchanged on %s',
+	'keeps Add raised and disabled while preserving navigation positions on %s',
 	async (platform) => {
 		const os = jest.replaceProperty(Platform, 'OS', platform);
 		try {
@@ -71,10 +71,15 @@ it.each(['ios', 'android'] as const)(
 			const slot = screen.getByTestId('bottom-navigation-add-slot').props;
 			const navigationStyle = screen.getByTestId('bottom-navigation').props.style;
 			await screen.rerender(<BottomNavigation />);
-			expect(screen.queryByRole('button', { name: t.common.add })).toBeNull();
-			expect(screen.queryByText(t.common.add)).toBeNull();
-			expect(screen.queryByTestId('bottom-navigation-add-shadow')).toBeNull();
-			expect(screen.getAllByRole('button')).toHaveLength(2);
+			expect(screen.getByRole('button', { name: t.common.add })).toBeDisabled();
+			expect(screen.getByTestId('bottom-navigation-add-shadow')).toHaveStyle({
+				marginTop: 0,
+				backgroundColor: colors.slate[200],
+			});
+			expect(screen.getByTestId('bottom-navigation-add-shadow').props.style).toEqual(
+				expect.arrayContaining([expect.objectContaining({ boxShadow: expect.any(String) })]),
+			);
+			expect(screen.getAllByRole('button')).toHaveLength(3);
 			expect(screen.getByTestId('bottom-navigation-add-slot')).toHaveStyle(slot.style);
 			expect(screen.getByTestId('bottom-navigation-add-slot')).toHaveProp('className', slot.className);
 			expect(screen.getByTestId('bottom-navigation')).toHaveStyle(navigationStyle);
@@ -92,6 +97,27 @@ it('keeps a temporarily disabled create action without allowing it to run', asyn
 	await fireEvent.press(screen.getByRole('button', { name: 'Nouvel utilisateur' }));
 	expect(add).not.toHaveBeenCalled();
 	expect(screen.getByRole('button', { name: t.navigation.settings })).toBeEnabled();
+});
+it('can disable an unfinished Add action independently of the rest of the page', async () => {
+	const add = jest.fn();
+	await render(
+		<BottomNavigation createAction={{ label: 'Nouveau dossier logistique', onPress: add, disabled: true }} />,
+	);
+	expect(screen.getByRole('button', { name: 'Nouveau dossier logistique' })).toBeDisabled();
+	await fireEvent.press(screen.getByRole('button', { name: 'Nouveau dossier logistique' }));
+	expect(add).not.toHaveBeenCalled();
+	expect(screen.getByRole('button', { name: t.navigation.notifications })).toBeEnabled();
+	expect(screen.getByRole('button', { name: t.navigation.settings })).toBeEnabled();
+});
+
+it('uses the dark disabled surface for unavailable Add actions', async () => {
+	mockMode = 'dark';
+	await render(<BottomNavigation />);
+	expect(screen.getByRole('button', { name: t.common.add })).toBeDisabled();
+	expect(screen.getByTestId('bottom-navigation-add-shadow')).toHaveStyle({
+		marginTop: 0,
+		backgroundColor: colors.slate[700],
+	});
 });
 
 it('uses the current list callback when the selected company changes', async () => {
