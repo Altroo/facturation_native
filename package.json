@@ -1,7 +1,7 @@
 {
 	"$schema": "https://json.schemastore.org/package.json",
 	"name": "facturation_native",
-	"version": "3.8.27",
+	"version": "1.6.1",
 	"main": "expo-router/entry",
 	"scripts": {
 		"dev": "expo start",
