@@ -6,6 +6,10 @@ import {
 	devisFactureStatusItemsList,
 	bonDeLivraisonStatusItemsList,
 	remiseTypeItemsList,
+	logistiqueGlobalStatusItemsList,
+	logistiquePaymentStatusItemsList,
+	logistiqueImportTitleStatusItemsList,
+	logistiqueManagerRoles,
 } from './rawData';
 import { version } from '../../package.json';
 import { expo } from '../../app.json';
@@ -84,6 +88,37 @@ describe('items lists', () => {
 it('uses the bundled package version in JavaScript and Expo config', () => {
 	expect(APP_VERSION).toBe(version);
 	expect(expo.version).toBe(version);
+});
+
+describe('logistics contracts', () => {
+	it('keeps the workflow filter values accepted by the web and Django', () => {
+		expect(logistiqueGlobalStatusItemsList).toEqual([
+			'Brouillon',
+			'À lancer',
+			'En cours',
+			'En attente externe',
+			'Bloqué',
+			'En retard',
+			'À clôturer',
+			'Clôturé',
+			'Annulé',
+			'Rouvert',
+		]);
+		expect(logistiquePaymentStatusItemsList).toEqual(['Non demandé', 'En attente', 'Validé']);
+		expect(logistiqueImportTitleStatusItemsList).toEqual([
+			'À préparer',
+			"Titre d'import validé – En attente de paiement",
+		]);
+	});
+
+	it('permits supplier management only for the three web manager roles', () => {
+		expect(logistiqueManagerRoles.has('Caissier')).toBe(true);
+		expect(logistiqueManagerRoles.has('Commercial')).toBe(true);
+		expect(logistiqueManagerRoles.has('Logistique')).toBe(true);
+		expect(logistiqueManagerRoles.has('Lecture')).toBe(false);
+		expect(logistiqueManagerRoles.has('')).toBe(false);
+		expect(logistiqueManagerRoles.size).toBe(3);
+	});
 });
 
 it('includes the invoiced state for delivery notes without exposing it to quotes or invoices', () => {

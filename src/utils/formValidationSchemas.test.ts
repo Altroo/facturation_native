@@ -23,7 +23,24 @@ import {
 	stockReceiptSchema,
 	stockInventorySchema,
 	monthlyObjectivesSchema,
+	logistiqueSupplierSchema,
 } from './formValidationSchemas';
+import { translations } from '@/translations';
+
+describe('Logistics supplier schema', () => {
+	const text = translations.fr.logistique;
+	const schema = logistiqueSupplierSchema(text);
+	it('keeps the web validation for required names and optional, trimmed email addresses', () => {
+		expect(schema.parse({ nom: '  Atlas  ', email: ' contact@example.invalid ' })).toEqual({
+			nom: 'Atlas',
+			email: 'contact@example.invalid',
+		});
+		expect(schema.safeParse({ nom: 'Atlas', email: '' }).success).toBe(true);
+		expect(schema.safeParse({ nom: '   ', email: '' }).success).toBe(false);
+		expect(schema.safeParse({ nom: 'Atlas', email: 'invalid' }).success).toBe(false);
+		expect(schema.safeParse({ nom: 'x'.repeat(256), email: '' }).success).toBe(false);
+	});
+});
 
 describe('Monthly objectives schema', () => {
 	const valid = {

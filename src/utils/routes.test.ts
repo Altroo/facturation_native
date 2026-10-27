@@ -1,6 +1,27 @@
 import * as routes from './routes';
 
 describe('routes constants', () => {
+	it('exports only the three available logistics destinations', () => {
+		expect(routes.LOGISTIQUE_DASHBOARD).toBe('/logistique/dashboard');
+		expect(routes.LOGISTIQUE_LIST).toBe('/logistique');
+		expect(routes.LOGISTIQUE_SUPPLIERS).toBe('/logistique/fournisseurs');
+		expect(routes).not.toHaveProperty('LOGISTIQUE_ADD');
+		expect(routes).not.toHaveProperty('LOGISTIQUE_VIEW');
+	});
+	it('keeps supplier form and detail routes scoped to their company', () => {
+		expect(routes.LOGISTIQUE_SUPPLIER_ADD(5)).toEqual({
+			pathname: '/logistique/fournisseurs/form',
+			params: { company_id: '5' },
+		});
+		expect(routes.LOGISTIQUE_SUPPLIER_EDIT(9, 5)).toEqual({
+			pathname: '/logistique/fournisseurs/form',
+			params: { id: '9', company_id: '5' },
+		});
+		expect(routes.LOGISTIQUE_SUPPLIER_VIEW(9, 5)).toEqual({
+			pathname: '/logistique/fournisseurs/[id]',
+			params: { id: '9', company_id: '5' },
+		});
+	});
 	it('exports payment list, detail and create/edit routes with optional invoice context', () => {
 		expect(routes.REGLEMENTS_LIST).toBe('/reglements');
 		expect(routes.REGLEMENTS_VIEW(7)).toEqual({ pathname: '/reglements/[id]', params: { id: '7' } });

@@ -106,6 +106,23 @@ export const FACTURE_AVOIR_EDIT = (id: number) => ({
 	params: { id: String(id) },
 });
 
+// Logistique
+export const LOGISTIQUE_DASHBOARD = '/logistique/dashboard' as const;
+export const LOGISTIQUE_LIST = '/logistique' as const;
+export const LOGISTIQUE_SUPPLIERS = '/logistique/fournisseurs' as const;
+export const LOGISTIQUE_SUPPLIER_ADD = (company_id: number) => ({
+	pathname: '/logistique/fournisseurs/form' as const,
+	params: { company_id: String(company_id) },
+});
+export const LOGISTIQUE_SUPPLIER_EDIT = (id: number, company_id: number) => ({
+	pathname: '/logistique/fournisseurs/form' as const,
+	params: { id: String(id), company_id: String(company_id) },
+});
+export const LOGISTIQUE_SUPPLIER_VIEW = (id: number, company_id: number) => ({
+	pathname: '/logistique/fournisseurs/[id]' as const,
+	params: { id: String(id), company_id: String(company_id) },
+});
+
 // Stock
 export const STOCK_LIST = '/stock' as const;
 export const STOCK_ADD = (company_id: number, balance_id?: number) => ({

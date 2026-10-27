@@ -1,5 +1,6 @@
 import { version } from '../../package.json';
 import type { AccountGenderCodeValueType, DropDownType, PasswordResetCodeField } from '@/types/accountTypes';
+import type { LogistiqueStatut, LogistiquePaymentStatus, LogistiqueImportTitleStatus } from '@/types/logistiqueTypes';
 
 export const genderItemsList: Array<AccountGenderCodeValueType> = [
 	{
@@ -118,6 +119,25 @@ export const remiseTypeItemsList: Array<DropDownType> = [
 export const bonDeLivraisonStatusItemsList: Array<DropDownType> = [
 	...devisFactureStatusItemsList,
 	{ code: 'Facturé', value: 'Facturé' },
+];
+
+export const logistiqueGlobalStatusItemsList: LogistiqueStatut[] = [
+	'Brouillon',
+	'À lancer',
+	'En cours',
+	'En attente externe',
+	'Bloqué',
+	'En retard',
+	'À clôturer',
+	'Clôturé',
+	'Annulé',
+	'Rouvert',
+];
+export const logistiquePaymentStatusItemsList: LogistiquePaymentStatus[] = ['Non demandé', 'En attente', 'Validé'];
+export const logistiqueManagerRoles = new Set(['Caissier', 'Commercial', 'Logistique']);
+export const logistiqueImportTitleStatusItemsList: LogistiqueImportTitleStatus[] = [
+	'À préparer',
+	"Titre d'import validé – En attente de paiement",
 ];
 
 export const dashboardChartColors = {

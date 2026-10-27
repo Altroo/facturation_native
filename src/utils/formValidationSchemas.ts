@@ -1,4 +1,5 @@
 import z from 'zod';
+import type { TranslationDictionary } from '@/types/languageTypes';
 import { pmRequired, ppRequired } from '@/utils/rawData';
 import {
 	INPUT_MAX,
@@ -18,6 +19,21 @@ import {
 } from '@/utils/formValidationErrorMessages';
 
 const base64ImageField = z.url().or(z.string().startsWith('data:image/')).nullable().optional();
+
+export const logistiqueSupplierSchema = (text: TranslationDictionary['logistique']) =>
+	z.object({
+		nom: z
+			.string({ error: text.supplierRequired })
+			.trim()
+			.min(1, text.supplierRequired)
+			.max(255, text.supplierNameTooLong),
+		email: z
+			.string()
+			.trim()
+			.max(254, text.supplierEmailTooLong)
+			.refine((value) => !value || z.email().safeParse(value).success, text.supplierInvalidEmail)
+			.default(''),
+	});
 
 const passwordField = z.preprocess(
 	(val) => (val === undefined ? '' : val),
