@@ -28,23 +28,24 @@ beforeEach(() => {
 });
 
 it.each(['ios', 'android'] as const)(
-	'keeps the same actions with a platform-specific surface on %s',
+	'keeps the same actions on one continuous surface with a raised Add button on %s',
 	async (platform) => {
 		const os = jest.replaceProperty(Platform, 'OS', platform);
 		const add = jest.fn();
 		try {
 			await render(<BottomNavigation createAction={{ label: 'Nouveau client', onPress: add }} />);
-			expect(screen.getByTestId('bottom-navigation')).toHaveStyle({ marginTop: -24, flexShrink: 0 });
+			expect(screen.getByTestId('bottom-navigation')).toHaveStyle({ marginTop: -16, flexShrink: 0 });
 			expect(screen.getByTestId('bottom-navigation')).toHaveProp('pointerEvents', 'box-none');
 			expect(screen.getByTestId('bottom-navigation-surface')).toHaveStyle({
+				top: 16,
 				bottom: 0,
 				left: 0,
 				right: 0,
-				borderTopLeftRadius: platform === 'ios' ? 24 : 16,
+				borderTopWidth: 1,
 			});
 			expect(screen.getByTestId('bottom-navigation-surface').props.style.boxShadow).toBeUndefined();
 			expect(screen.getByTestId('bottom-navigation-add-shadow')).toHaveStyle({
-				borderRadius: platform === 'ios' ? 32 : 20,
+				borderRadius: platform === 'ios' ? 32 : 22,
 			});
 			expect(screen.getByTestId('bottom-navigation-add-shadow').props.style).toEqual(
 				expect.arrayContaining([expect.objectContaining({ boxShadow: expect.any(String) })]),
@@ -61,11 +62,33 @@ it.each(['ios', 'android'] as const)(
 	},
 );
 
-it('disables Add without a permitted action, including archived lists', async () => {
+it.each(['ios', 'android'] as const)(
+	'hides Add while keeping the navigation positions unchanged on %s',
+	async (platform) => {
+		const os = jest.replaceProperty(Platform, 'OS', platform);
+		try {
+			await render(<BottomNavigation createAction={{ label: 'Nouveau client', onPress: jest.fn() }} />);
+			const slot = screen.getByTestId('bottom-navigation-add-slot').props;
+			const navigationStyle = screen.getByTestId('bottom-navigation').props.style;
+			await screen.rerender(<BottomNavigation />);
+			expect(screen.queryByRole('button', { name: t.common.add })).toBeNull();
+			expect(screen.queryByText(t.common.add)).toBeNull();
+			expect(screen.queryByTestId('bottom-navigation-add-shadow')).toBeNull();
+			expect(screen.getAllByRole('button')).toHaveLength(2);
+			expect(screen.getByTestId('bottom-navigation-add-slot')).toHaveStyle(slot.style);
+			expect(screen.getByTestId('bottom-navigation-add-slot')).toHaveProp('className', slot.className);
+			expect(screen.getByTestId('bottom-navigation')).toHaveStyle(navigationStyle);
+			expect(screen.getByTestId('bottom-navigation-surface')).toHaveStyle({ top: 16 });
+		} finally {
+			os.restore();
+		}
+	},
+);
+
+it('keeps a temporarily disabled create action without allowing it to run', async () => {
 	const add = jest.fn();
-	await render(<BottomNavigation />);
-	expect(screen.getByRole('button', { name: t.common.add })).toBeDisabled();
-	await screen.rerender(<BottomNavigation disabled createAction={{ label: 'Nouvel utilisateur', onPress: add }} />);
+	await render(<BottomNavigation disabled createAction={{ label: 'Nouvel utilisateur', onPress: add }} />);
+	expect(screen.getByRole('button', { name: 'Nouvel utilisateur' })).toBeDisabled();
 	await fireEvent.press(screen.getByRole('button', { name: 'Nouvel utilisateur' }));
 	expect(add).not.toHaveBeenCalled();
 	expect(screen.getByRole('button', { name: t.navigation.settings })).toBeEnabled();
