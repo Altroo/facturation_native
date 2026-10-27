@@ -15,6 +15,7 @@ type Props = {
 	onChange: (ids: number[]) => void;
 	placeholder: string;
 	disabled?: boolean;
+	showLabel?: boolean;
 };
 
 const ChipSelectFilter = (props: Props) => {
@@ -30,6 +31,9 @@ const ChipSelectFilter = (props: Props) => {
 
 	return (
 		<View className="gap-2">
+			{props.showLabel && (
+				<Text className="font-poppins-medium text-sm text-ink dark:text-slate-100">{props.label}</Text>
+			)}
 			<Pressable
 				accessibilityRole="button"
 				accessibilityLabel={props.label}

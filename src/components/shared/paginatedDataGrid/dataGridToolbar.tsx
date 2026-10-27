@@ -171,26 +171,28 @@ const DataGridToolbar = <TRow,>(props: Props<TRow>) => {
 								{props.countLabel ?? t.dataGrid.loadedCount(props.loadedCount, props.rowCount ?? props.loadedCount)}
 							</Text>
 						))}
-					<Pressable
-						accessibilityRole="button"
-						accessibilityLabel={t.dataGrid.toolbarFilters}
-						accessibilityState={{ disabled: !!disabled, selected: activeFilterCount > 0 }}
-						disabled={disabled}
-						onPress={handleToggleFilterPanel}
-						className="min-h-11 min-w-11 items-center justify-center"
-						style={props.embedded ? undefined : surfaceStyles[mode]}
-					>
-						<MaterialIcons
-							name="filter-list"
-							size={22}
-							color={activeFilterCount > 0 ? colors.brand : theme.toolbarTextColor}
-						/>
-						{activeFilterCount > 0 && (
-							<View className="absolute -right-1 -top-1 min-w-5 items-center rounded-full bg-brand px-1">
-								<Text className="font-sans text-xs text-white">{activeFilterCount}</Text>
-							</View>
-						)}
-					</Pressable>
+					{columns.some((column) => column.field !== 'actions' && column.filterable !== false) && (
+						<Pressable
+							accessibilityRole="button"
+							accessibilityLabel={t.dataGrid.toolbarFilters}
+							accessibilityState={{ disabled: !!disabled, selected: activeFilterCount > 0 }}
+							disabled={disabled}
+							onPress={handleToggleFilterPanel}
+							className="min-h-11 min-w-11 items-center justify-center"
+							style={props.embedded ? undefined : surfaceStyles[mode]}
+						>
+							<MaterialIcons
+								name="filter-list"
+								size={22}
+								color={activeFilterCount > 0 ? colors.brand : theme.toolbarTextColor}
+							/>
+							{activeFilterCount > 0 && (
+								<View className="absolute -right-1 -top-1 min-w-5 items-center rounded-full bg-brand px-1">
+									<Text className="font-sans text-xs text-white">{activeFilterCount}</Text>
+								</View>
+							)}
+						</Pressable>
+					)}
 					{searchOpen ? (
 						<Animated.View
 							entering={FadeInRight.duration(180)}

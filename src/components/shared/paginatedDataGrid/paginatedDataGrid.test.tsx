@@ -176,6 +176,13 @@ it('shows the total filter count and clears page-specific filters along with the
 	expect(clear).toHaveBeenCalledTimes(1);
 });
 
+it('keeps list controls enabled when only the unfinished create action is disabled', async () => {
+	await render(<PaginatedDataGrid {...props({ createAction: { label: 'New dossier', disabled: true } })} />);
+	expect(screen.getByRole('button', { name: 'New dossier' })).toBeDisabled();
+	expect(screen.getByRole('button', { name: t.dataGrid.toolbarFilters })).toBeEnabled();
+	expect(screen.getByRole('button', { name: t.common.search })).toBeEnabled();
+});
+
 it('only shows bulk actions with a selection and leaves more typing space while searching', async () => {
 	const create = jest.fn();
 	const base = props({

@@ -51,6 +51,26 @@ it.each(['delete', 'suspend', 'archive', 'unarchive', 'convert', 'validate'] as 
 	},
 );
 
+it('can disable deletion while leaving cancel available for linked records', async () => {
+	const onConfirm = jest.fn();
+	const onClose = jest.fn();
+	await render(
+		<ConfirmationModal
+			title="Delete supplier?"
+			body="Supplier has linked dossiers."
+			confirmText="Delete"
+			onConfirm={onConfirm}
+			onClose={onClose}
+			confirmDisabled
+		/>,
+	);
+	expect(screen.getByRole('button', { name: 'Delete' })).toBeDisabled();
+	await fireEvent.press(screen.getByRole('button', { name: 'Delete' }));
+	expect(onConfirm).not.toHaveBeenCalled();
+	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.cancel }));
+	expect(onClose).toHaveBeenCalledTimes(1);
+});
+
 it('blocks both confirmation and dismissal while pending, then enables them again', async () => {
 	const onConfirm = jest.fn();
 	const onClose = jest.fn();

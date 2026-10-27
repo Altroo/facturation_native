@@ -15,7 +15,7 @@ import { getDefaultFilterOperatorsByType, type FilterModel, DataGridProps } from
 import type { PaginationResponseType } from '@/types/_initTypes';
 import { useLanguage } from '@/utils/hooks';
 import { colors, listSpacing } from '@/utils/themes';
-import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
+import ListFooter from '@/components/shared/listFooter/listFooter';
 import { filterHasValue } from '@/components/shared/filterPanel/customFilterPanel';
 import { INFINITE_SCROLL_THRESHOLD } from '@/utils/rawData';
 import { createDateRangeFilterOperator } from '@/components/shared/dateRangeFilter/dateRangeFilterOperator';
@@ -207,7 +207,7 @@ export type PaginatedDataGridProps<TRow> = Pick<
 	title?: string;
 	titleIcon?: ComponentProps<typeof MaterialIcons>['name'];
 	header?: ReactNode;
-	createAction?: { label: string; onPress: () => void };
+	createAction?: ComponentProps<typeof BottomNavigation>['createAction'];
 	selectionControl?: ReactNode;
 	selectionActions?: ReactNode;
 	toolbarActions?: ReactNode;
@@ -266,47 +266,16 @@ const PaginatedDataGrid = <TRow,>(props: PaginatedDataGridProps<TRow>) => {
 		webListRef.current?.scrollToOffset({ offset: 0, animated: false });
 	}, [queryKey]);
 	const listFooter = (
-		<View className="items-center gap-2 px-3 py-4" accessibilityLiveRegion="polite">
-			{isFetchingNextPage ? (
-				<>
-					<ActivityIndicator color={colors.brand} />
-					<Text className="font-sans text-ink dark:text-slate-100 text-sm">{t.dataGrid.loadingMore}</Text>
-				</>
-			) : loadMoreError ? (
-				<>
-					<Text accessibilityRole="alert" className="font-sans text-sm text-red-700 dark:text-red-300">
-						{t.dataGrid.loadMoreError}
-					</Text>
-					<PrimaryLoadingButton
-						buttonText={t.common.retry}
-						inverted
-						onClick={() => {
-							if (!disabled) onRetryLoadMore?.();
-						}}
-						active={!disabled}
-						loading={false}
-						startIcon={<MaterialIcons name="refresh" size={20} color={colors.brand} />}
-					/>
-				</>
-			) : rows.length > 0 ? (
-				<View className="w-full flex-row items-center justify-center gap-3 py-2">
-					{!hasNextPage && <View className="h-px w-8 bg-slate-200 dark:bg-slate-700" />}
-					<View className="flex-row items-center gap-2">
-						<MaterialIcons
-							name={hasNextPage ? 'south' : 'done-all'}
-							size={18}
-							color={colors.brand}
-							accessible={false}
-						/>
-						<Text className="font-poppins-medium text-xs text-slate-500 dark:text-slate-400">
-							{hasNextPage ? t.dataGrid.scrollForMore : t.dataGrid.endOfList}
-						</Text>
-					</View>
-					{!hasNextPage && <View className="h-px w-8 bg-slate-200 dark:bg-slate-700" />}
-				</View>
-			) : null}
-		</View>
+		<ListFooter
+			rowsCount={rows.length}
+			loading={isFetchingNextPage}
+			error={loadMoreError}
+			hasNextPage={hasNextPage}
+			disabled={disabled}
+			onRetry={onRetryLoadMore}
+		/>
 	);
+
 	const listProps = {
 		data: rows,
 		renderItem: ({ item, index }: { item: TRow; index: number }) => (

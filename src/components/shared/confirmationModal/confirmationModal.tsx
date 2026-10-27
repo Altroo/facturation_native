@@ -14,6 +14,7 @@ type Props = {
 	onConfirm: () => void;
 	onClose: () => void;
 	loading?: boolean;
+	confirmDisabled?: boolean;
 	action?: 'delete' | 'suspend' | 'archive' | 'unarchive' | 'convert' | 'validate';
 	children?: ReactNode;
 };
@@ -69,10 +70,12 @@ const ConfirmationModal = (props: Props) => {
 				{
 					text: props.confirmText,
 					active: true,
-					onClick: props.onConfirm,
+					onClick: () => {
+						if (!props.loading && !props.confirmDisabled) props.onConfirm();
+					},
 					color: conversion ? colors.conversion : archive ? colors.warning : colors.danger,
 					loading: props.loading,
-					disabled: props.loading,
+					disabled: props.loading || props.confirmDisabled,
 				},
 			]}
 		>

@@ -63,3 +63,16 @@ it('blocks its trigger while the page is busy', async () => {
 	expect(screen.queryByRole('menuitem')).toBeNull();
 	expect(onEdit).not.toHaveBeenCalled();
 });
+
+it('shows a disabled edit placeholder while keeping available deletion enabled', async () => {
+	const onDelete = jest.fn();
+	await render(<ListCardActions editDisabled onDelete={onDelete} />);
+	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.moreActions }));
+	expect(screen.getAllByRole('menuitem').map((item) => item.props.accessibilityLabel)).toEqual([
+		translations.fr.common.edit,
+		translations.fr.common.delete,
+	]);
+	expect(screen.queryByRole('menuitem', { name: translations.fr.common.view })).toBeNull();
+	expect(screen.getByRole('menuitem', { name: translations.fr.common.edit })).toBeDisabled();
+	expect(screen.getByRole('menuitem', { name: translations.fr.common.delete })).toBeEnabled();
+});

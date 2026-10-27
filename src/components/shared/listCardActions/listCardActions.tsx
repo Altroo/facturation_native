@@ -8,6 +8,7 @@ import { colors } from '@/utils/themes';
 type Props = {
 	extraActions?: ComponentProps<typeof CustomMenu>['actions'];
 	onEdit?: () => void;
+	editDisabled?: boolean;
 	onArchive?: () => void;
 	onUnarchive?: () => void;
 	onDelete?: () => void;
@@ -25,11 +26,12 @@ const ListCardActions = (props: Props) => {
 			disabled={props.disabled}
 			actions={[
 				...(props.extraActions ?? []),
-				...(props.onEdit
+				...(props.onEdit || props.editDisabled
 					? [
 							{
 								label: t.common.edit,
-								onClick: props.onEdit,
+								onClick: () => props.onEdit?.(),
+								disabled: props.editDisabled,
 								icon: <MaterialIcons name="edit" size={22} color={colors.brand} />,
 							},
 						]

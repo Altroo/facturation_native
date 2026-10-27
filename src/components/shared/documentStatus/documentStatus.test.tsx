@@ -24,3 +24,19 @@ it('renders valid payment receipts with the shared green check instead of a pend
 		1,
 	);
 });
+
+it.each([
+	['Validé', 'text-emerald'],
+	['Clôturé', 'text-emerald'],
+	['Bloqué', 'text-red'],
+	['En retard', 'text-red'],
+	['En attente', 'text-orange'],
+	['À lancer', 'text-orange'],
+	['À clôturer', 'text-orange'],
+	['Non demandé', 'text-slate'],
+	['En cours', 'text-brand'],
+])('reuses the shared label, icon and semantic color for logistics status %s', async (statut, tone) => {
+	await render(<DocumentStatus statut={statut!} />);
+	expect(screen.getByText(statut!)).toHaveProp('className', expect.stringContaining(tone!));
+	expect(screen.container.queryAll((node) => node.type === 'Icon')).toHaveLength(1);
+});

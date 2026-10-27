@@ -20,6 +20,19 @@ const props = {
 	serializeFilters: extractCustomFilterParams,
 };
 
+it('keeps search and sorting but hides filters for a history whose columns cannot be filtered', async () => {
+	await render(
+		<DataGridToolbar
+			{...props}
+			columns={props.columns.map((column) => ({ ...column, filterable: false }))}
+			sorting={{ ordering: '', sortModel: [], onSortModelChange: jest.fn() }}
+		/>,
+	);
+	expect(screen.queryByRole('button', { name: t.dataGrid.toolbarFilters })).toBeNull();
+	expect(screen.getByRole('button', { name: t.common.search })).toBeEnabled();
+	expect(screen.getByRole('button', { name: t.dataGrid.toolbarSort })).toBeEnabled();
+});
+
 it('renders embedded controls and a styled count without adding navigation or a virtualized list', async () => {
 	await render(<DataGridToolbar {...props} embedded countLabel="1 article" />);
 	expect(screen.getByText('1 article')).toBeOnTheScreen();

@@ -35,6 +35,12 @@ const options = [
 ];
 const commonProps = { label: 'Ville', placeholder: 'Toutes les villes', options };
 
+it('can show the same visible field label used by forms', async () => {
+	await render(<ChipSelectFilter {...commonProps} showLabel selectedIds={[]} onChange={jest.fn()} />);
+	expect(screen.getByText('Ville')).toHaveProp('className', expect.stringContaining('font-poppins-medium'));
+	expect(screen.getByRole('button', { name: 'Ville' })).toBeEnabled();
+});
+
 const ControlledFilter = (props: { onChange: (ids: number[]) => void }) => {
 	const [ids, setIds] = useState<number[]>([]);
 	return (
