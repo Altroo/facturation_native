@@ -3,7 +3,7 @@
 		"name": "E.B.H Facturation",
 		"slug": "facturation-native",
 		"scheme": "facturation-native",
-		"version": "3.8.26",
+		"version": "3.8.27",
 		"orientation": "portrait",
 		"userInterfaceStyle": "automatic",
 		"icon": "./assets/icon.png",
