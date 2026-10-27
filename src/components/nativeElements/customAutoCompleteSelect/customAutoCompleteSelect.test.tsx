@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { fireEvent, render as renderComponent, screen } from '@testing-library/react-native';
+import { act, fireEvent, render as renderComponent, screen } from '@testing-library/react-native';
 import type { ReactElement } from 'react';
 import {
 	AutocompleteDropdownContextProvider,
@@ -24,6 +24,30 @@ const longItems: DropDownType[] = [
 	...items,
 	...Array.from({ length: 4 }, (_, index) => ({ value: String(index + 4), code: 'Person ' + index })),
 ];
+
+it('debounces server searches and leaves filtering to the server results', async () => {
+	const onSearchTextChange = jest.fn();
+	await render(
+		<CustomAutoCompleteSelect
+			label="Article"
+			items={items}
+			value={null}
+			noOptionsText="Aucun résultat"
+			onSearchTextChange={onSearchTextChange}
+		/>,
+	);
+	await toggleAutocomplete('Article');
+	onSearchTextChange.mockClear();
+	const input = screen.getByRole('combobox', { name: 'Article' });
+	await fireEvent.changeText(input, 'S');
+	await fireEvent.changeText(input, 'Sara');
+	await act(async () => await jest.advanceTimersByTimeAsync(299));
+	expect(onSearchTextChange).not.toHaveBeenCalled();
+	await act(async () => await jest.advanceTimersByTimeAsync(1));
+	expect(onSearchTextChange).toHaveBeenCalledTimes(1);
+	expect(onSearchTextChange).toHaveBeenCalledWith('Sara');
+	expect(screen.getAllByRole('radio')).toHaveLength(items.length);
+});
 
 it('keeps label actions separate from the full-width searchable field', async () => {
 	const onAdd = jest.fn();

@@ -6,7 +6,8 @@ import { useFormik, type FormikErrors } from 'formik';
 import { toFormikValidationSchema } from 'zod-formik-adapter';
 import type { KeyboardAwareScrollViewRef } from 'react-native-keyboard-controller';
 import type { StockAdjustmentFormValues, StockReceiptFormValues, StockInventoryFormValues } from '@/types/stockTypes';
-import { useGetArticlesListQuery } from '@/store/services/article';
+import { useGetArticlesInfiniteListInfiniteQuery, useGetArticleQuery } from '@/store/services/article';
+import type { ArticleClass } from '@/models/classes';
 import { useGetEmplacementListQuery } from '@/store/services/parameter';
 import { useGetLogistiqueListQuery, useGetLogistiqueQuery } from '@/store/services/logistique';
 import {
@@ -22,7 +23,7 @@ import { extractApiErrorMessage, formatNumberWithSpaces, parseNumber, setFormikA
 import { useLanguage, useToast } from '@/utils/hooks';
 import { STOCK_LIST, STOCK_INVENTORY_VIEW, STOCK_RECEIPT_VIEW } from '@/utils/routes';
 import { colors, listSpacing } from '@/utils/themes';
-import { stockAdjustmentMovementItems } from '@/utils/rawData';
+import { MODULES_PAGE_SIZE, stockAdjustmentMovementItems } from '@/utils/rawData';
 import ApiAlert from '@/components/nativeElements/apiLoading/apiAlert/apiAlert';
 import ApiProgress from '@/components/nativeElements/apiLoading/apiProgress/apiProgress';
 import CustomAutoCompleteSelect from '@/components/nativeElements/customAutoCompleteSelect/customAutoCompleteSelect';
@@ -54,13 +55,27 @@ const StockFormContent = (props: Props) => {
 	const pending = useRef(false);
 	const scrollRef = useRef<KeyboardAwareScrollViewRef>(null);
 	const [attempted, setAttempted] = useState(false);
+	const [articleSearch, setArticleSearch] = useState('');
+	const [selectedArticle, setSelectedArticle] = useState<Partial<ArticleClass>>();
 	const balanceQuery = useGetStockBalanceQuery(
 		{ company_id: props.company_id, id: props.balance_id ?? 0 },
 		{ skip: !props.balance_id || props.kind !== 'adjustment' },
 	);
-	const articlesQuery = useGetArticlesListQuery(
-		{ company_id: props.company_id, with_pagination: false, archived: false },
+	// Production has tens of thousands of articles. Search and append bounded
+	// pages instead of downloading the complete catalogue to populate one input.
+	const articlesQuery = useGetArticlesInfiniteListInfiniteQuery(
+		{
+			company_id: props.company_id,
+			archived: false,
+			type_article: 'Produit',
+			search: articleSearch,
+			pageSize: MODULES_PAGE_SIZE,
+		},
 		{ skip: receipt },
+	);
+	const initialArticleQuery = useGetArticleQuery(
+		{ id: balanceQuery.currentData?.article ?? 0 },
+		{ skip: receipt || !balanceQuery.currentData?.article },
 	);
 	const locationsQuery = useGetEmplacementListQuery({ company_id: props.company_id });
 	const ordersQuery = useGetLogistiqueListQuery(
@@ -78,9 +93,15 @@ const StockFormContent = (props: Props) => {
 		receiptValidation.isLoading ||
 		inventoryState.isLoading ||
 		inventoryValidation.isLoading;
-	const articles = (
-		Array.isArray(articlesQuery.currentData) ? articlesQuery.currentData : (articlesQuery.currentData?.results ?? [])
-	).filter((article) => article.type_article === 'Produit');
+	const articles = (articlesQuery.currentData?.pages.flatMap((page) => page.results) ?? []).filter(
+		(article) => article.type_article === 'Produit',
+	);
+	// Keep the chosen article when a search changes pages. A prefilled stock
+	// balance loads its one article separately, even if it is not on page one.
+	const findArticle = (id: number | null) =>
+		articles.find((article) => article.id === id) ??
+		(selectedArticle?.id === id && selectedArticle.company === props.company_id ? selectedArticle : undefined) ??
+		(initialArticleQuery.currentData?.id === id ? initialArticleQuery.currentData : undefined);
 	const eligibleOrders = (ordersQuery.currentData?.results ?? []).filter(
 		(order) =>
 			order.company === props.company_id &&
@@ -116,8 +137,10 @@ const StockFormContent = (props: Props) => {
 				if (values.logistics_line && !line) errors.logistics_line = t.stock.noIncoming;
 				if (line && (parseNumber(values.quantity) ?? 0) > Number(line.remaining_quantity))
 					errors.quantity = `${t.stock.remainingQuantity}: ${formatNumberWithSpaces(line.remaining_quantity, 3)}`;
-			} else if (values.article && !articles.some((article) => article.id === values.article))
-				errors.article = t.stock.noArticle;
+			} else if (values.article) {
+				const article = findArticle(values.article);
+				if (!article || article.type_article !== 'Produit' || article.archived) errors.article = t.stock.noArticle;
+			}
 			return errors;
 		},
 		onSubmit: async (values, { setFieldError }) => {
@@ -201,13 +224,13 @@ const StockFormContent = (props: Props) => {
 		) ?? [];
 	const initialLoading =
 		locationsQuery.isLoading ||
-		(!receipt && articlesQuery.isLoading) ||
 		(receipt && ordersQuery.isLoading) ||
+		(!receipt && initialArticleQuery.isLoading) ||
 		(!!props.balance_id && balanceQuery.isLoading);
 	const blocked =
 		initialLoading ||
 		locationsQuery.isError ||
-		(!receipt && articlesQuery.isError) ||
+		(!receipt && (articlesQuery.isLoading || articlesQuery.isError || initialArticleQuery.isError)) ||
 		(receipt && (ordersQuery.isError || orderQuery.isError || orderQuery.isFetching));
 	const icon = (name: ComponentProps<typeof MaterialIcons>['name']) => (
 		<MaterialIcons name={name} size={20} color={colors.slate[400]} />
@@ -229,6 +252,8 @@ const StockFormContent = (props: Props) => {
 	if (initialLoading) return <ApiProgress />;
 	if (balanceQuery.isError)
 		return <QueryError error={balanceQuery.error} onRetry={() => void balanceQuery.refetch()} />;
+	if (!receipt && initialArticleQuery.isError)
+		return <QueryError error={initialArticleQuery.error} onRetry={() => void initialArticleQuery.refetch()} />;
 	if (balanceQuery.currentData && balanceQuery.currentData.company !== props.company_id) return <NoPermission />;
 	const emplacementField = (
 		<CustomAutoCompleteSelect
@@ -246,15 +271,26 @@ const StockFormContent = (props: Props) => {
 			helperText={errorFor('emplacement')}
 		/>
 	);
+	const currentArticle = findArticle(formik.values.article);
 	const articleField = (
 		<CustomAutoCompleteSelect
 			id="article"
 			label={t.stock.article}
 			items={articleItems}
-			value={articleItems.find((item) => item.value === String(formik.values.article)) ?? null}
+			value={
+				currentArticle
+					? { value: String(currentArticle.id), code: `${currentArticle.reference} - ${currentArticle.designation}` }
+					: null
+			}
+			onSearchTextChange={setArticleSearch}
+			loading={articlesQuery.isFetching}
+			onEndReached={() => {
+				if (articlesQuery.hasNextPage && !articlesQuery.isFetching) void articlesQuery.fetchNextPage();
+			}}
 			noOptionsText={t.stock.noArticle}
 			onChange={(_, value) => {
 				const article = articles.find((item) => String(item.id) === value?.value);
+				setSelectedArticle(article ? { ...article, company: props.company_id } : undefined);
 				void formik.setValues({
 					...formik.values,
 					article: article?.id ?? null,

@@ -4,6 +4,7 @@ import {
 	Text,
 	Pressable,
 	View,
+	ActivityIndicator,
 	useWindowDimensions,
 	type PressableProps,
 	type GestureResponderEvent,
@@ -34,6 +35,9 @@ export type Props = {
 	cssClass?: string;
 	startIcon?: ReactNode;
 	endIcon?: ReactNode;
+	onSearchTextChange?: (text: string) => void;
+	onEndReached?: () => void;
+	loading?: boolean;
 	renderOption?: (props: PressableProps & { key: Key }, option: DropDownType) => ReactNode;
 };
 
@@ -65,21 +69,33 @@ const CustomAutoCompleteSelect: FC<Props> = (props: Props) => {
 	const suggestionsHeight = Math.max(48, Math.min(240, height * 0.25, Math.max(items.length, 1) * 56));
 	const dark = mode === 'dark';
 	const expanded = open && !disabled;
+	const onSearchTextChange = props.onSearchTextChange;
 
 	useEffect(() => {
 		if (!disabled) return;
 		controller.current?.close();
 		controller.current?.blur();
 	}, [disabled]);
+	useEffect(() => {
+		if (!onSearchTextChange || inputValue === null) return;
+		const timer = setTimeout(() => onSearchTextChange(inputValue), 300);
+		return () => clearTimeout(timer);
+	}, [inputValue, onSearchTextChange]);
 
 	const options = items
-		.filter((option) => option.code.toLowerCase().includes((inputValue ?? '').toLowerCase()))
+		.filter(
+			(option) => props.onSearchTextChange || option.code.toLowerCase().includes((inputValue ?? '').toLowerCase()),
+		)
 		.map((option) => ({ id: option.value, title: option.code }));
+	const resetSearch = () => {
+		setInputValue(null);
+		props.onSearchTextChange?.('');
+	};
 	const close = () => {
 		controller.current?.close();
 		controller.current?.blur();
 		onSuggestionsSpaceChange?.(0);
-		setInputValue(null);
+		resetSearch();
 		Keyboard.dismiss();
 	};
 	const defaultRenderOption = (props: PressableProps & { key: Key }, option: DropDownType) => {
@@ -113,7 +129,8 @@ const CustomAutoCompleteSelect: FC<Props> = (props: Props) => {
 			>
 				<AutocompleteDropdown
 					controller={controller}
-					dataSet={disabled ? null : options}
+					// Closed fields must not update the library's shared suggestions portal.
+					dataSet={expanded ? options : null}
 					useFilter={false}
 					theme={mode}
 					editable={!disabled}
@@ -124,19 +141,19 @@ const CustomAutoCompleteSelect: FC<Props> = (props: Props) => {
 					inputHeight={48}
 					// Keep results below when the form can scroll to reserve their space.
 					direction={onSuggestionsSpaceChange ? 'down' : undefined}
-					suggestionsListMaxHeight={suggestionsHeight}
+					suggestionsListMaxHeight={expanded ? suggestionsHeight : 0}
 					onFocus={() => {
 						if (!disabled) onSuggestionsSpaceChange?.(suggestionsHeight + 8);
 					}}
 					onOpenSuggestionsList={(next) => {
 						setOpen(next);
 						onSuggestionsSpaceChange?.(next ? suggestionsHeight + 8 : 0);
-						if (!next) setInputValue(null);
+						if (!next) resetSearch();
 					}}
 					onBlur={(event) => {
 						controller.current?.close();
 						onSuggestionsSpaceChange?.(0);
-						setInputValue(null);
+						resetSearch();
 						onBlur?.(event);
 					}}
 					LeftComponent={startIcon ? <View className="pl-3 pr-2">{startIcon}</View> : undefined}
@@ -170,41 +187,71 @@ const CustomAutoCompleteSelect: FC<Props> = (props: Props) => {
 							paddingRight: value && expanded ? 88 : 44,
 						},
 					}}
-					suggestionsListContainerStyle={{
-						borderRadius: 12,
-						borderWidth: 1,
-						borderColor: dark ? colors.slate[600] : colors.slate[200],
-						backgroundColor: dark ? colors.panel : colors.white,
-					}}
-					EmptyResultComponent={
-						<Text className="font-sans py-4 text-center text-slate-400 dark:text-slate-100">{noOptionsText}</Text>
+					suggestionsListContainerStyle={
+						expanded
+							? {
+									borderRadius: 12,
+									borderWidth: 1,
+									borderColor: dark ? colors.slate[600] : colors.slate[200],
+									backgroundColor: dark ? colors.panel : colors.white,
+								}
+							: undefined
 					}
-					flatListProps={{
-						keyboardShouldPersistTaps: 'handled',
-						keyboardDismissMode: 'none',
-						renderItem: ({ item }) => {
-							const option = items.find((entry) => entry.value === item.id);
-							if (!option) return null;
-							return (
-								<>
-									{(renderOptionProp || defaultRenderOption)(
-										{
-											key: option.value,
-											accessibilityRole: 'radio',
-											accessibilityState: { checked: value?.value === option.value },
-											disabled,
-											onPress: (event) => {
-												onChange?.(event, option);
-												close();
-											},
-											className: 'min-h-11 flex-row items-center justify-between gap-3 px-3 py-3',
-										},
-										option,
-									)}
-								</>
-							);
-						},
-					}}
+					EmptyResultComponent={
+						expanded ? (
+							props.loading ? (
+								<ActivityIndicator
+									accessibilityLabel={t.common.loading}
+									color={colors.slate[400]}
+									style={{ padding: 16 }}
+								/>
+							) : (
+								<Text className="font-sans py-4 text-center text-slate-400 dark:text-slate-100">{noOptionsText}</Text>
+							)
+						) : undefined
+					}
+					flatListProps={
+						expanded
+							? {
+									testID: id ? `${id}-suggestions` : undefined,
+									onLayout: (event) => onSuggestionsSpaceChange?.(event.nativeEvent.layout.height + 8),
+									keyboardShouldPersistTaps: 'handled',
+									keyboardDismissMode: 'none',
+									onEndReached: props.onEndReached,
+									onEndReachedThreshold: 0.5,
+									ListFooterComponent:
+										props.loading && items.length > 0 ? (
+											<ActivityIndicator
+												accessibilityLabel={t.common.loading}
+												color={colors.slate[400]}
+												style={{ padding: 12 }}
+											/>
+										) : undefined,
+									renderItem: ({ item }) => {
+										const option = items.find((entry) => entry.value === item.id);
+										if (!option) return null;
+										return (
+											<>
+												{(renderOptionProp || defaultRenderOption)(
+													{
+														key: option.value,
+														accessibilityRole: 'radio',
+														accessibilityState: { checked: value?.value === option.value },
+														disabled,
+														onPress: (event) => {
+															onChange?.(event, option);
+															close();
+														},
+														className: 'min-h-11 flex-row items-center justify-between gap-3 px-3 py-3',
+													},
+													option,
+												)}
+											</>
+										);
+									},
+								}
+							: undefined
+					}
 				/>
 				{value && open && !disabled && (
 					<Pressable
@@ -234,8 +281,12 @@ const CustomAutoCompleteSelect: FC<Props> = (props: Props) => {
 					}}
 					className="absolute right-0 top-0 h-12 w-11 items-center justify-center"
 				>
-					{endIcon || (
-						<MaterialIcons name={expanded ? 'expand-less' : 'expand-more'} size={22} color={colors.slate[400]} />
+					{props.loading ? (
+						<ActivityIndicator accessibilityLabel={t.common.loading} color={colors.slate[400]} />
+					) : (
+						endIcon || (
+							<MaterialIcons name={expanded ? 'expand-less' : 'expand-more'} size={22} color={colors.slate[400]} />
+						)
 					)}
 				</Pressable>
 			</View>

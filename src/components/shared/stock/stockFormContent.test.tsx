@@ -4,9 +4,11 @@ import StockFormContent from './stockFormContent';
 import { stockBalance as mockStockBalance } from '@/__tests__/stockFixtures';
 import { translations } from '@/translations';
 import { STOCK_INVENTORY_VIEW, STOCK_RECEIPT_VIEW } from '@/utils/routes';
+import { MODULES_PAGE_SIZE } from '@/utils/rawData';
 import {
 	AutocompleteDropdownContextProvider,
 	toggleAutocomplete,
+	flushAutocomplete,
 } from '@/components/nativeElements/customAutoCompleteSelect/setupAutocomplete';
 
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
@@ -21,12 +23,8 @@ jest.mock('@/utils/hooks', () => ({
 	useToast: () => ({ onSuccess: mockSuccess, onError: mockError }),
 }));
 jest.mock('@/store/services/article', () => ({
-	useGetArticlesListQuery: () => ({
-		currentData: [
-			{ id: 7, reference: 'ART-007', designation: 'Bureau Atlas', type_article: 'Produit', emplacement: 2 },
-			{ id: 8, reference: 'SERVICE', designation: 'Service exclu', type_article: 'Service' },
-		],
-	}),
+	useGetArticlesInfiniteListInfiniteQuery: (...args: unknown[]) => mockArticlesQuery(...args),
+	useGetArticleQuery: () => ({ currentData: mockArticle }),
 }));
 jest.mock('@/store/services/parameter', () => ({
 	useGetEmplacementListQuery: () => ({ currentData: [{ id: 2, nom: 'Dépôt Casablanca' }] }),
@@ -47,6 +45,29 @@ jest.mock('@/store/services/stock', () => ({
 }));
 const mockSuccess = jest.fn();
 const mockError = jest.fn();
+const mockArticlesQuery = jest.fn();
+const mockFetchNextPage = jest.fn();
+const mockArticle = {
+	id: 7,
+	company: 5,
+	reference: 'ART-007',
+	designation: 'Bureau Atlas',
+	type_article: 'Produit',
+	emplacement: 2,
+};
+const mockArticlePage = {
+	currentData: {
+		pages: [
+			{
+				results: [mockArticle, { id: 8, reference: 'SERVICE', designation: 'Service exclu', type_article: 'Service' }],
+			},
+		],
+	},
+	hasNextPage: true,
+	isFetching: false,
+	isLoading: false,
+	fetchNextPage: mockFetchNextPage,
+};
 const mockAdjust = jest.fn();
 const mockCreateReceipt = jest.fn();
 const mockValidateReceipt = jest.fn();
@@ -86,11 +107,69 @@ const select = async (label: string, option: RegExp) => {
 };
 beforeEach(() => {
 	jest.clearAllMocks();
+	mockArticlesQuery.mockReturnValue(mockArticlePage);
 	mockAdjust.mockReturnValue({ unwrap: async () => ({ id: 21 }) });
 	mockCreateReceipt.mockReturnValue({ unwrap: async () => ({ id: 31 }) });
 	mockValidateReceipt.mockReturnValue({ unwrap: async () => ({ id: 31 }) });
 	mockCreateInventory.mockReturnValue({ unwrap: async () => ({ id: 32 }) });
 	mockValidateInventory.mockReturnValue({ unwrap: async () => ({ id: 32 }) });
+});
+it('searches products on the server without replacing the form with a loading screen', async () => {
+	const view = await setup('inventory');
+	await toggleAutocomplete(t.stock.article);
+	await fireEvent.changeText(screen.getByRole('combobox', { name: t.stock.article }), 'Bureau');
+	await flushAutocomplete();
+	expect(mockArticlesQuery).toHaveBeenLastCalledWith(
+		expect.objectContaining({
+			company_id: 5,
+			archived: false,
+			type_article: 'Produit',
+			search: 'Bureau',
+			pageSize: MODULES_PAGE_SIZE,
+		}),
+		{ skip: false },
+	);
+	mockArticlesQuery.mockReturnValue({ ...mockArticlePage, currentData: undefined, isFetching: true, isLoading: true });
+	await view.rerender(<StockFormContent company_id={5} kind="inventory" />);
+	expect(screen.getByRole('combobox', { name: t.stock.article })).toHaveProp('value', 'Bureau');
+	expect(screen.getAllByLabelText(t.common.loading).length).toBeGreaterThan(0);
+});
+it('loads the next article page when suggestions reach the end, and prevents duplicate loading', async () => {
+	const view = await setup('inventory');
+	await toggleAutocomplete(t.stock.article);
+	mockFetchNextPage.mockClear();
+	await fireEvent(screen.getByTestId('article-suggestions'), 'endReached');
+	expect(mockFetchNextPage).toHaveBeenCalledTimes(1);
+	mockArticlesQuery.mockReturnValue({ ...mockArticlePage, isFetching: true });
+	await view.rerender(<StockFormContent company_id={5} kind="inventory" />);
+	await flushAutocomplete();
+	await fireEvent(screen.getByTestId('article-suggestions'), 'endReached');
+	expect(mockFetchNextPage).toHaveBeenCalledTimes(1);
+});
+it('prefills and saves a balance whose article is not on the first suggestions page', async () => {
+	mockArticlesQuery.mockReturnValue({ ...mockArticlePage, currentData: { pages: [{ results: [] }] } });
+	await setup('adjustment');
+	expect(screen.getByDisplayValue('ART-007 - Bureau Atlas')).toBeOnTheScreen();
+	await fireEvent.changeText(screen.getByLabelText(t.stock.signedQuantity), '1');
+	await fireEvent.changeText(screen.getByLabelText(t.stock.reason), 'Comptage');
+	await submit();
+	await waitFor(() => expect(mockAdjust).toHaveBeenCalledWith(expect.objectContaining({ article: 7, quantity: 1 })));
+});
+it('keeps a selected search result when the suggestions return to the first page', async () => {
+	const searchedArticle = { ...mockArticle, id: 99, reference: 'ART-099', designation: 'Chaise Atlas' };
+	mockArticlesQuery.mockReturnValue({ ...mockArticlePage, currentData: { pages: [{ results: [searchedArticle] }] } });
+	const view = await setup('inventory');
+	await select(t.stock.article, /ART-099/);
+	mockArticlesQuery.mockReturnValue(mockArticlePage);
+	await view.rerender(<StockFormContent company_id={5} kind="inventory" />);
+	expect(screen.getByDisplayValue('ART-099 - Chaise Atlas')).toBeOnTheScreen();
+	await fireEvent.changeText(screen.getByLabelText(t.stock.countedQuantity), '2');
+	await submit();
+	await waitFor(() =>
+		expect(mockCreateInventory).toHaveBeenCalledWith(
+			expect.objectContaining({ lines: [{ article: 99, counted_quantity: 2 }] }),
+		),
+	);
 });
 it('prefills an adjustment, excludes services and sends a negative quantity with its required reason', async () => {
 	await setup('adjustment');
