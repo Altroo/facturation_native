@@ -242,9 +242,11 @@ it('preserves the current image without an error when taking a photo is canceled
 describe('CustomSquareImageUploading original behaviors', () => {
 	const mockOnChange = jest.fn();
 	const mockOnCrop = jest.fn();
-	it('renders upload button when no image is provided', async () => {
+	it('uses the empty preview as the only upload button', async () => {
 		await render(<CustomSquareImageUploading image={null} onChange={mockOnChange} onCrop={mockOnCrop} />);
 		expect(screen.getByRole('button', { name: t.common.addImage })).toBeOnTheScreen();
+		expect(screen.getAllByRole('button')).toHaveLength(1);
+		expect(screen.queryByRole('button', { name: t.common.display })).toBeNull();
 	});
 	it('renders cropped image preview when not editing', async () => {
 		await render(
@@ -264,7 +266,7 @@ describe('CustomSquareImageUploading original behaviors', () => {
 		expect(mockOnChange).toHaveBeenCalledWith(null);
 		expect(mockOnCrop).toHaveBeenCalledWith(null);
 	});
-	it('enters editing mode when the crop action is pressed', async () => {
+	it('opens the crop editor when the uploaded preview is pressed', async () => {
 		await render(
 			<CustomSquareImageUploading image={original} croppedImage={crop} onChange={mockOnChange} onCrop={mockOnCrop} />,
 		);
@@ -298,7 +300,7 @@ it('shows validation errors without losing the image or preventing correction', 
 it('previews the cropped image and opens the full original in a dismissible preview', async () => {
 	await render(<Example />);
 	expect(screen.getByLabelText('Photo de profil')).toHaveProp('source', { uri: crop });
-	await fireEvent.press(screen.getByRole('button', { name: t.common.display + ' Photo de profil' }));
+	await fireEvent.press(screen.getByRole('button', { name: t.common.display }));
 	expect(screen.getAllByLabelText('Photo de profil').some((node) => node.props.source?.uri === original)).toBe(true);
 	await fireEvent.press(screen.getByRole('button', { name: t.common.close }));
 	expect(screen.getByLabelText('Photo de profil')).toHaveProp('source', { uri: crop });
@@ -349,13 +351,13 @@ it.each([true, false])('uses square avatar cropping and free company cropping fo
 
 it('uses the available form width for logos and stamps while keeping avatars compact', async () => {
 	const view = await render(<CustomSquareImageUploading {...props()} avatar={false} />);
-	expect(screen.getByRole('button', { name: t.common.display + ' Photo de profil' })).toHaveStyle({
+	expect(screen.getByRole('button', { name: t.common.clickToEditCrop })).toHaveStyle({
 		width: '100%',
 		aspectRatio: 36 / 25,
 	});
 	expect(screen.getByLabelText('Photo de profil')).toHaveStyle({ width: '100%', height: '100%' });
 	await view.rerender(<CustomSquareImageUploading {...props()} avatar />);
-	expect(screen.getByRole('button', { name: t.common.display + ' Photo de profil' })).toHaveStyle({
+	expect(screen.getByRole('button', { name: t.common.clickToEditCrop })).toHaveStyle({
 		width: 136,
 		height: 136,
 	});
@@ -591,7 +593,7 @@ it('disables upload, recrop and clear while retaining read-only full preview', a
 	expect(screen.getByRole('button', { name: t.common.editPhoto })).toBeDisabled();
 	expect(screen.getByRole('button', { name: t.common.clickToEditCrop })).toBeDisabled();
 	expect(screen.getByTestId('clear-button')).toBeDisabled();
-	await fireEvent.press(screen.getByRole('button', { name: t.common.display + ' Photo de profil' }));
+	await fireEvent.press(screen.getByRole('button', { name: t.common.display }));
 	expect(screen.getByRole('button', { name: t.common.close })).toBeOnTheScreen();
 	expect(data.onChange).not.toHaveBeenCalled();
 });

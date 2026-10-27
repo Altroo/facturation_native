@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState, type FC } from 'react';
-import { Text, Image, Platform, Pressable, View } from 'react-native';
+import { ActivityIndicator, Text, Image, Platform, Pressable, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as ImagePicker from 'expo-image-picker';
 import { File } from 'expo-file-system';
 import { Image as ExpoImage } from 'expo-image';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
-import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import ImagePreview from '@/components/nativeElements/modals/imagePreview/imagePreview';
 import BottomSheet from '@/components/nativeElements/modals/bottomSheet/bottomSheet';
 import { useLanguage, useToast } from '@/utils/hooks';
@@ -246,73 +245,92 @@ const CustomSquareImageUploading: FC<CustomSquareImageUploadingProps> = (props: 
 			{!!label && !props.hideLabel && (
 				<Text className="text-ink dark:text-slate-100 font-poppins-medium text-sm">{label}</Text>
 			)}
-			<View
-				className="items-center gap-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5
-			dark:border-slate-600 dark:bg-slate-800"
-			>
-				<Pressable
-					accessibilityRole="button"
-					accessibilityLabel={t.common.display + ' ' + name}
-					disabled={!preview}
-					onPress={() => setPreviewOpen(true)}
-					className={
-						'overflow-hidden border border-slate-200 bg-white dark:border-slate-600 dark:bg-panel ' +
-						(avatar ? 'rounded-full' : 'rounded-2xl')
-					}
-					style={avatar ? { width: avatarSize, height: avatarSize } : { width: '100%', aspectRatio: 36 / 25 }}
-				>
-					{preview ? (
-						<Image
-							accessibilityLabel={name}
-							source={{ uri: preview }}
-							style={{ width: '100%', height: '100%' }}
-							resizeMode={avatar ? 'cover' : 'contain'}
-						/>
-					) : (
-						<View className="flex-1 items-center justify-center">
-							<MaterialIcons name={avatar ? 'person-outline' : 'image'} size={46} color={colors.slate[400]} />
-						</View>
-					)}
-				</Pressable>
-				{!!preview && (
-					<View className="flex-row items-center gap-5">
-						<Pressable
-							accessibilityRole="button"
-							accessibilityLabel={t.common.display}
-							onPress={() => setPreviewOpen(true)}
-							className="min-h-11 items-center justify-center"
-						>
-							<MaterialIcons name="zoom-in" size={24} color={colors.brand} />
-						</Pressable>
-						<Pressable
-							accessibilityRole="button"
-							accessibilityLabel={t.common.clickToEditCrop}
-							disabled={disabled || busy}
-							onPress={() => void handleEditClick()}
-							className="min-h-11 items-center justify-center"
-						>
-							<MaterialIcons name="crop" size={24} color={colors.brand} />
-						</Pressable>
+			<View className="items-center gap-3">
+				<View className={avatar ? 'relative' : 'relative w-full'}>
+					<Pressable
+						accessibilityRole="button"
+						accessibilityLabel={preview ? t.common.clickToEditCrop : t.common.addImage}
+						accessibilityState={{ disabled: !!disabled || busy, busy }}
+						disabled={disabled || busy}
+						onPress={preview ? () => void handleEditClick() : handleImageUploadClick}
+						className={
+							'items-center justify-center overflow-hidden border bg-white dark:bg-panel ' +
+							(preview ? 'border-slate-200 dark:border-slate-600 ' : 'border-dashed border-brand ') +
+							(avatar ? 'rounded-full' : 'rounded-2xl')
+						}
+						style={avatar ? { width: avatarSize, height: avatarSize } : { width: '100%', aspectRatio: 36 / 25 }}
+					>
+						{preview ? (
+							<Image
+								accessibilityLabel={name}
+								source={{ uri: preview }}
+								style={{ width: '100%', height: '100%' }}
+								resizeMode={avatar ? 'cover' : 'contain'}
+							/>
+						) : (
+							<View className="items-center justify-center gap-2 p-3">
+								<MaterialIcons name="add-photo-alternate" size={36} color={colors.brand} />
+								<Text className="text-center font-poppins-medium text-sm text-brand dark:text-blue-300">
+									{t.common.addImage}
+								</Text>
+							</View>
+						)}
+						{busy ? (
+							<View
+								className="absolute inset-0 items-center justify-center bg-white/80 dark:bg-panel/80"
+								pointerEvents="none"
+							>
+								<ActivityIndicator
+									accessibilityRole="progressbar"
+									accessibilityLabel={t.common.loading}
+									color={colors.brand}
+								/>
+							</View>
+						) : (
+							!!preview && (
+								<View
+									className="absolute bottom-2 right-2 rounded-full bg-white/90 p-2 dark:bg-slate-800/90"
+									pointerEvents="none"
+								>
+									<MaterialIcons name="crop" size={20} color={colors.brand} />
+								</View>
+							)
+						)}
+					</Pressable>
+					{!!preview && (
 						<Pressable
 							testID="clear-button"
 							accessibilityRole="button"
 							accessibilityLabel={t.common.delete + ' ' + name}
 							disabled={disabled || busy}
 							onPress={handleClear}
-							className="min-h-11 items-center justify-center"
+							className="absolute right-2 top-2 min-h-11 min-w-11 items-center justify-center rounded-full bg-white/90 dark:bg-slate-800/90"
 						>
-							<MaterialIcons name="highlight-off" size={24} color={colors.danger} />
+							<MaterialIcons name="close" size={24} color={colors.danger} />
+						</Pressable>
+					)}
+				</View>
+				{!!preview && (
+					<View className="flex-row items-center gap-5">
+						<Pressable
+							accessibilityRole="button"
+							accessibilityLabel={t.common.display}
+							onPress={() => setPreviewOpen(true)}
+							className="min-h-11 min-w-11 items-center justify-center"
+						>
+							<MaterialIcons name="zoom-in" size={24} color={colors.brand} />
+						</Pressable>
+						<Pressable
+							accessibilityRole="button"
+							accessibilityLabel={avatar ? t.common.editPhoto : t.common.replaceImage}
+							disabled={disabled || busy}
+							onPress={handleImageUploadClick}
+							className="min-h-11 min-w-11 items-center justify-center"
+						>
+							<MaterialIcons name="add-photo-alternate" size={24} color={colors.brand} />
 						</Pressable>
 					</View>
 				)}
-				<PrimaryLoadingButton
-					buttonText={preview ? (avatar ? t.common.editPhoto : t.common.replaceImage) : t.common.addImage}
-					inverted={!!preview}
-					loading={busy}
-					onClick={handleImageUploadClick}
-					active={!disabled}
-					startIcon={<MaterialIcons name="add-photo-alternate" size={20} color={colors.brand} />}
-				/>
 			</View>
 			{!!error && (
 				<Text accessibilityRole="alert" className="font-sans text-xs text-red-600 dark:text-red-300">
