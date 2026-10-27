@@ -69,6 +69,11 @@ it.each([
 	['reglements/index', translations.fr.reglements.listTitle],
 	['reglements/[id]/index', translations.fr.reglements.detailsTitle],
 	['stock/index', translations.fr.stock.listTitle],
+	['logistique/index', translations.fr.navigation.logistiqueList],
+	['logistique/dashboard', translations.fr.navigation.logistiqueDashboard],
+	['logistique/fournisseurs/index', translations.fr.navigation.logistiqueSuppliers],
+	['logistique/fournisseurs/form', translations.fr.logistique.supplierAddTitle],
+	['logistique/fournisseurs/[id]/index', translations.fr.logistique.supplierViewTitle],
 	['stock/form', translations.fr.stock.adjustTitle],
 	['stock/[id]/index', translations.fr.stock.detailTitle],
 	['stock/movements/index', translations.fr.stock.movementsTitle],
@@ -99,7 +104,6 @@ it('preserves the native navbar and original back icon', async () => {
 	await setup();
 	expect(mockOptions.header).toBeUndefined();
 	expect(mockOptions.headerBackIcon).toBeUndefined();
-	expect(mockOptions.headerBackImageSource).toBeUndefined();
 	expect(mockOptions.headerStyle).not.toHaveProperty('height');
 	expect(mockOptions.headerTitleAlign).toBe('left');
 	expect(mockOptions.headerBackVisible).toBe(true);

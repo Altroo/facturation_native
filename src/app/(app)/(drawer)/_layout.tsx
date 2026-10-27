@@ -124,6 +124,13 @@ const DrawerStackLayout = () => {
 					'reglements/index': { title: t.reglements.listTitle, ...drawerHeaderOptions },
 					'reglements/form': { title: editing ? t.reglements.editTitle : t.reglements.addTitle },
 					'reglements/[id]/index': { title: t.reglements.detailsTitle },
+					'logistique/dashboard': { title: t.navigation.logistiqueDashboard, ...drawerHeaderOptions },
+					'logistique/index': { title: t.navigation.logistiqueList, ...drawerHeaderOptions },
+					'logistique/fournisseurs/index': { title: t.navigation.logistiqueSuppliers, ...drawerHeaderOptions },
+					'logistique/fournisseurs/form': {
+						title: editing ? t.logistique.supplierEditTitle : t.logistique.supplierAddTitle,
+					},
+					'logistique/fournisseurs/[id]/index': { title: t.logistique.supplierViewTitle },
 					'stock/index': { title: t.stock.listTitle, ...drawerHeaderOptions },
 					'stock/form': { title: t.stock.adjustTitle },
 					'stock/[id]/index': { title: t.stock.detailTitle },

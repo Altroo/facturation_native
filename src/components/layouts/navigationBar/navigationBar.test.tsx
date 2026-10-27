@@ -111,7 +111,7 @@ describe('NavigationBar additional behaviors', () => {
 			translations.fr.navigation.logistiqueList,
 			translations.fr.navigation.logistiqueSuppliers,
 		]) {
-			expect(screen.getByRole('button', { name })).toBeDisabled();
+			expect(screen.getByRole('button', { name })).toBeEnabled();
 		}
 		expect(screen.queryByText(/gantt/i)).toBeNull();
 	});
