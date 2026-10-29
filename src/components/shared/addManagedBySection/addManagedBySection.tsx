@@ -5,7 +5,7 @@ import CustomDropDownSelect from '@/components/nativeElements/customDropDownSele
 import CustomAutoCompleteSelect from '@/components/nativeElements/customAutoCompleteSelect/customAutoCompleteSelect';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import { useLanguage } from '@/utils/hooks';
-import { DropDownType } from '@/types/accountTypes';
+import type { DropDownType } from '@/types/accountTypes';
 import { colors } from '@/utils/themes';
 
 export interface AddManagedBySectionProps {

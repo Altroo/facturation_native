@@ -5,6 +5,7 @@ import { Platform } from 'react-native';
 import { isAppVersion, isAuthenticatedInstance, isNewerAppVersion } from '@/utils/helpers';
 import type { DocumentPdfType } from '@/types/devisTypes';
 import type { StatementType } from '@/types/clientTypes';
+import { DateFilterParams } from '@/types/dashboardTypes';
 
 let pendingPdfRequests = 0;
 const pdfLoadingListeners = new Set<() => void>();
@@ -16,6 +17,20 @@ export const subscribePdfLoading = (listener: () => void) => {
 	return () => {
 		pdfLoadingListeners.delete(listener);
 	};
+};
+
+// Helper function to build query string with date params
+export const buildDateQueryString = (params?: DateFilterParams): string => {
+	if (!params) return '';
+	const searchParams = new URLSearchParams();
+	if (params.date_from) searchParams.append('date_from', params.date_from);
+	if (params.date_to) searchParams.append('date_to', params.date_to);
+	if (params.company_id) searchParams.append('company_id', params.company_id.toString());
+	if (params.devise) searchParams.append('devise', params.devise);
+	if (params.client_id) searchParams.append('client_id', params.client_id.toString());
+	if (params.project) searchParams.append('project', params.project);
+	const queryString = searchParams.toString();
+	return queryString ? `?${queryString}` : '';
 };
 
 const updatePdfLoading = (change: 1 | -1) => {

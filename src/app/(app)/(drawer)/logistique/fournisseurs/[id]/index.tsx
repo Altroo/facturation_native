@@ -26,6 +26,7 @@ import DataGridToolbar from '@/components/shared/paginatedDataGrid/dataGridToolb
 import { getInfiniteRows, extractCustomFilterParams } from '@/components/shared/paginatedDataGrid/paginatedDataGrid';
 import ApiAlert from '@/components/nativeElements/apiLoading/apiAlert/apiAlert';
 import ApiProgress from '@/components/nativeElements/apiLoading/apiProgress/apiProgress';
+import type { SearchParams } from '@/types/_initTypes';
 
 type Props = {
 	id: number;
@@ -152,7 +153,7 @@ const SupplierViewContent = (props: Props) => {
 };
 
 const LogistiqueSupplierViewPage = () => {
-	const params = useLocalSearchParams<{ id?: string | string[]; company_id?: string | string[] }>();
+	const params = useLocalSearchParams<SearchParams>();
 	const id = parseEntityId(params.id);
 	const company_id = parseEntityId(params.company_id);
 	const invalid = id === null || company_id === null;

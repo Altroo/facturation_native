@@ -19,7 +19,11 @@ import { MODULES_PAGE_SIZE } from '@/utils/rawData';
 import { colors } from '@/utils/themes';
 import type { DevisQueryParams } from '@/types/devisTypes';
 
-type Props = { company_id: number; role: string; tabs: ReactNode };
+type Props = {
+	company_id: number;
+	role: string;
+	tabs: ReactNode;
+};
 
 const FactureAvoirListContent = (props: Props) => {
 	const token = useInitAccessToken();

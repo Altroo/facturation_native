@@ -125,7 +125,7 @@ export const logistiqueApi = createApi({
 					await queryFulfilled;
 					dispatch(factureProFormaApi.util.invalidateTags(['FactureProForma']));
 				} catch {
-					// Failed deletions leave the linked proforma cache unchanged.
+					// Failed deletions leave the linked pro forma cache unchanged.
 				}
 			},
 		}),
@@ -141,7 +141,7 @@ export const logistiqueApi = createApi({
 					await queryFulfilled;
 					dispatch(factureProFormaApi.util.invalidateTags(['FactureProForma']));
 				} catch {
-					// Failed deletions leave the linked proforma cache unchanged.
+					// Failed deletions leave the linked pro forma cache unchanged.
 				}
 			},
 		}),

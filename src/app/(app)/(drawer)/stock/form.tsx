@@ -4,9 +4,12 @@ import { useLanguage } from '@/utils/hooks';
 import ApiAlert from '@/components/nativeElements/apiLoading/apiAlert/apiAlert';
 import StockFormWrapper from '@/components/shared/stock/stockFormWrapper';
 import StockFormContent from '@/components/shared/stock/stockFormContent';
+import { SearchParams } from '@/types/_initTypes';
+
+type LocalSearchParams = Omit<SearchParams, 'id'> & { balance_id?: string | string[] };
 
 const StockAdjustmentFormPage = () => {
-	const params = useLocalSearchParams<{ company_id?: string | string[]; balance_id?: string | string[] }>();
+	const params = useLocalSearchParams<LocalSearchParams>();
 	const { t } = useLanguage();
 	const companyId = parseEntityId(params.company_id);
 	const balanceId = params.balance_id === undefined ? undefined : parseEntityId(params.balance_id);

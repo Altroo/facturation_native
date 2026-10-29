@@ -39,8 +39,6 @@ export const citiesApi = createApi({
 	}),
 });
 
-export const { useGetCitiesListQuery, useAddCityMutation, useEditCityMutation, useDeleteCityMutation } = citiesApi;
-
 export const marqueApi = createApi({
 	reducerPath: 'marqueApi',
 	tagTypes: ['Marque'],
@@ -68,9 +66,6 @@ export const marqueApi = createApi({
 		}),
 	}),
 });
-
-export const { useGetMarqueListQuery, useAddMarqueMutation, useEditMarqueMutation, useDeleteMarqueMutation } =
-	marqueApi;
 
 export const categorieApi = createApi({
 	reducerPath: 'categorieApi',
@@ -100,13 +95,6 @@ export const categorieApi = createApi({
 	}),
 });
 
-export const {
-	useGetCategorieListQuery,
-	useAddCategorieMutation,
-	useEditCategorieMutation,
-	useDeleteCategorieMutation,
-} = categorieApi;
-
 export const uniteApi = createApi({
 	reducerPath: 'uniteApi',
 	tagTypes: ['Unite'],
@@ -135,8 +123,6 @@ export const uniteApi = createApi({
 	}),
 });
 
-export const { useGetUniteListQuery, useAddUniteMutation, useEditUniteMutation, useDeleteUniteMutation } = uniteApi;
-
 export const emplacementApi = createApi({
 	reducerPath: 'emplacementApi',
 	tagTypes: ['Emplacement'],
@@ -164,13 +150,6 @@ export const emplacementApi = createApi({
 		}),
 	}),
 });
-
-export const {
-	useGetEmplacementListQuery,
-	useAddEmplacementMutation,
-	useEditEmplacementMutation,
-	useDeleteEmplacementMutation,
-} = emplacementApi;
 
 export const modePaiementApi = createApi({
 	reducerPath: 'modePaiementApi',
@@ -211,13 +190,6 @@ export const modePaiementApi = createApi({
 	}),
 });
 
-export const {
-	useGetModePaiementListQuery,
-	useDeleteModePaiementMutation,
-	useEditModePaiementMutation,
-	useAddModePaiementMutation,
-} = modePaiementApi;
-
 export const livreParApi = createApi({
 	reducerPath: 'livreParApi',
 	tagTypes: ['LivrePar'],
@@ -257,5 +229,45 @@ export const livreParApi = createApi({
 	}),
 });
 
-export const { useGetLivreParListQuery, useDeleteLivreParMutation, useEditLivreParMutation, useAddLivreParMutation } =
-	livreParApi;
+export const {
+	useGetCitiesListQuery,
+	useAddCityMutation,
+	useEditCityMutation,
+	useDeleteCityMutation,
+} = citiesApi;
+export const {
+	useGetMarqueListQuery,
+	useAddMarqueMutation,
+	useEditMarqueMutation,
+	useDeleteMarqueMutation,
+} = marqueApi;
+export const {
+	useGetCategorieListQuery,
+	useAddCategorieMutation,
+	useEditCategorieMutation,
+	useDeleteCategorieMutation,
+} = categorieApi;
+export const {
+	useGetUniteListQuery,
+	useAddUniteMutation,
+	useEditUniteMutation,
+	useDeleteUniteMutation,
+} = uniteApi;
+export const {
+	useGetEmplacementListQuery,
+	useAddEmplacementMutation,
+	useEditEmplacementMutation,
+	useDeleteEmplacementMutation,
+} = emplacementApi;
+export const {
+	useGetModePaiementListQuery,
+	useDeleteModePaiementMutation,
+	useEditModePaiementMutation,
+	useAddModePaiementMutation,
+} = modePaiementApi;
+export const {
+	useGetLivreParListQuery,
+	useDeleteLivreParMutation,
+	useEditLivreParMutation,
+	useAddLivreParMutation,
+} = livreParApi;

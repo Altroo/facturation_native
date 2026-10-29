@@ -14,6 +14,7 @@ import StockSessionCard from '@/components/shared/stock/stockSessionCard';
 import StockSessionActions from '@/components/shared/stock/stockSessionActions';
 import { STOCK_RECEIPTS_ADD } from '@/utils/routes';
 import { stockReceiptStatusOptions } from '@/utils/rawData';
+import type { SearchParams } from '@/types/_initTypes';
 
 type Props = {
 	company_id: number;
@@ -74,8 +75,10 @@ const StockReceiptsContent = (props: Props) => {
 	);
 };
 
+type LocalSearchParams = Omit<SearchParams, 'id'>;
+
 const StockReceiptsPage = () => {
-	const params = useLocalSearchParams<{ company_id?: string | string[] }>();
+	const params = useLocalSearchParams<LocalSearchParams>();
 	const { t } = useLanguage();
 	const companyId = params.company_id === undefined ? undefined : parseEntityId(params.company_id);
 	if (companyId === null) return <ApiAlert errorDetails={t.notFound.message} />;

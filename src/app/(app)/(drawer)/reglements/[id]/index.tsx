@@ -23,8 +23,12 @@ import ConfirmationModal from '@/components/shared/confirmationModal/confirmatio
 import ReglementFinancialSummary from '@/components/shared/reglements/reglementFinancialSummary';
 import QueryError from '@/components/shared/queryError/queryError';
 import NoPermission from '@/components/shared/noPermission/noPermission';
+import type { SearchParams } from '@/types/_initTypes';
 
-type Props = { id: number; company_id: number };
+type Props = {
+	id: number;
+	company_id: number;
+};
 
 const ReglementViewContent = (props: Props) => {
 	const token = useInitAccessToken();
@@ -191,7 +195,7 @@ const ReglementViewContent = (props: Props) => {
 };
 
 const ReglementViewPage = () => {
-	const params = useLocalSearchParams<{ id?: string | string[]; company_id?: string | string[] }>();
+	const params = useLocalSearchParams<SearchParams>();
 	const id = parseEntityId(params.id);
 	const company_id = parseEntityId(params.company_id);
 	const { t } = useLanguage();

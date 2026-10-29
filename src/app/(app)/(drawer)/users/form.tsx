@@ -43,6 +43,7 @@ import PageActionBar from '@/components/shared/pageActionBar/pageActionBar';
 import ManagedByTableSection from '@/components/shared/addManagedByTable/addManagedByTable';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { colors } from '@/utils/themes';
+import type { SearchParams } from '@/types/_initTypes';
 
 type FormikContentProps = {
 	id?: number;
@@ -455,10 +456,10 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 	);
 };
 
+type LocalSearchParams = Omit<SearchParams, 'company_id'>;
+
 const UsersFormPage = () => {
-	const params = useLocalSearchParams<{
-		id?: string | string[];
-	}>();
+	const params = useLocalSearchParams<LocalSearchParams>();
 	const id = params.id === undefined ? undefined : parseEntityId(params.id);
 	const { t } = useLanguage();
 	const profile = useAppSelector(getProfilState);

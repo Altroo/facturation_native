@@ -1,8 +1,6 @@
 import { Platform, Pressable, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import CustomTextInput, {
-	type CustomTextInputProps,
-} from '@/components/nativeElements/customTextInput/customTextInput';
+import CustomTextInput, { type CustomTextInputProps } from '@/components/nativeElements/customTextInput/customTextInput';
 import { useLanguage } from '@/utils/hooks';
 import FormattedNumberInput from '@/components/nativeElements/formattedNumberInput/formattedNumberInput';
 import { colors } from '@/utils/themes';

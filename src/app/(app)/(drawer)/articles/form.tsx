@@ -64,6 +64,7 @@ import RemarkSection from '@/components/shared/remarkSection/remarkSection';
 import EntityCrudControls from '@/components/shared/entityCrudControls/entityCrudControls';
 import QueryError from '@/components/shared/queryError/queryError';
 import NoPermission from '@/components/shared/noPermission/noPermission';
+import type { SearchParams } from '@/types/_initTypes';
 
 type Props = {
 	id?: number;
@@ -507,7 +508,7 @@ const FormikContent = (props: Props) => {
 };
 
 const ArticlesFormPage = () => {
-	const params = useLocalSearchParams<{ id?: string | string[]; company_id?: string | string[] }>();
+	const params = useLocalSearchParams<SearchParams>();
 	const id = params.id === undefined ? undefined : parseEntityId(params.id);
 	const requestedCompanyId = params.company_id === undefined ? undefined : parseEntityId(params.company_id);
 	const token = useInitAccessToken();

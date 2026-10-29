@@ -1,5 +1,5 @@
 import CustomSwitch from '@/components/nativeElements/customSwitch/customSwitch';
-import { type FC, type ReactNode } from 'react';
+import type { FC, ReactNode } from 'react';
 import { Text, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import CustomDropDownSelect from '@/components/nativeElements/customDropDownSelect/customDropDownSelect';

@@ -15,6 +15,7 @@ export const useColorMode = () => useContext(ColorModeContext);
 const ThemeProvider = ({ children, initialTheme }: { children: ReactNode; initialTheme?: ColorMode }) => {
 	const [mode, setMode] = useState<ColorMode>(initialTheme ?? 'light');
 	const [ready, setReady] = useState(initialTheme !== undefined);
+
 	useEffect(() => {
 		// Web receives its saved cookie from RootLayout. Native restores device storage
 		// only when no initial theme was supplied by the caller.
@@ -35,11 +36,13 @@ const ThemeProvider = ({ children, initialTheme }: { children: ReactNode; initia
 			mounted = false;
 		};
 	}, [initialTheme]);
+
 	useEffect(() => {
 		if (!ready) return;
 		Uniwind.setTheme(mode);
 		void AsyncStorage.setItem(STORAGE_KEY, mode).catch(() => {});
 	}, [mode, ready]);
+
 	if (!ready) return null;
 	return (
 		<ColorModeContext

@@ -185,9 +185,14 @@ export const profilApi = createApi({
 	}),
 });
 
-export const { useSendPasswordResetCodeMutation, usePasswordResetMutation, useSetPasswordMutation } = accountApi;
-export const { useGetProfilQuery, useEditProfilMutation, useEditPasswordMutation } = profilApi;
-export const { useGetGroupsQuery } = groupApi;
+export const {
+	useSendPasswordResetCodeMutation,
+	usePasswordResetMutation,
+	useSetPasswordMutation,
+} = accountApi;
+export const {
+	useGetGroupsQuery,
+} = groupApi;
 export const {
 	useGetUsersListQuery,
 	useDeleteUserMutation,
@@ -198,3 +203,8 @@ export const {
 	useBulkDeleteUsersMutation,
 	useGetUsersInfiniteListInfiniteQuery,
 } = usersApi;
+export const {
+	useGetProfilQuery,
+	useEditProfilMutation,
+	useEditPasswordMutation,
+} = profilApi;

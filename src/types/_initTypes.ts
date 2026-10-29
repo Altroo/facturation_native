@@ -73,3 +73,8 @@ export type KeyValueStorage = {
 	setItem: (key: string, value: string) => Promise<void>;
 	removeItem: (key: string) => Promise<void>;
 };
+
+export type SearchParams = {
+	id?: string | string[];
+	company_id?: string | string[];
+};

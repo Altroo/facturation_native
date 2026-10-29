@@ -19,7 +19,6 @@ import TextButton from '@/components/nativeElements/buttons/textButton/textButto
 import QueryError from '@/components/shared/queryError/queryError';
 import NoPermission from '@/components/shared/noPermission/noPermission';
 import InvoicePaymentSummary from '@/components/shared/facture-client/invoicePaymentSummary';
-
 import { useGetClientsListQuery } from '@/store/services/client';
 import { useGetModePaiementListQuery } from '@/store/services/parameter';
 import { useInitAccessToken } from '@/contexts/InitContext';

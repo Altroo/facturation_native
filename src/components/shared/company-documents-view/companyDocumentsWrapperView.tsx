@@ -43,9 +43,9 @@ import NoPermission from '@/components/shared/noPermission/noPermission';
 import QueryError from '@/components/shared/queryError/queryError';
 import ApiProgress from '@/components/nativeElements/apiLoading/apiProgress/apiProgress';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
-
 import type { DocumentData, DocumentType } from '@/types/companyDocumentsTypes';
 import type { DocumentPdfType } from '@/types/devisTypes';
+
 type Props = {
 	id: number;
 	company_id: number;

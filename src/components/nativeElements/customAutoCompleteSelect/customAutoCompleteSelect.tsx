@@ -76,6 +76,7 @@ const CustomAutoCompleteSelect: FC<Props> = (props: Props) => {
 		controller.current?.close();
 		controller.current?.blur();
 	}, [disabled]);
+
 	useEffect(() => {
 		if (!onSearchTextChange || inputValue === null) return;
 		const timer = setTimeout(() => onSearchTextChange(inputValue), 300);

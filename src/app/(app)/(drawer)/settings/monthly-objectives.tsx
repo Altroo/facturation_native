@@ -26,6 +26,7 @@ import { monthlyObjectivesSchema } from '@/utils/formValidationSchemas';
 import { colors, listSpacing } from '@/utils/themes';
 import { DASHBOARD_SETTINGS } from '@/utils/routes';
 import type { ReactNode } from 'react';
+import type { SearchParams } from '@/types/_initTypes';
 
 type Props = {
 	company_id: number;
@@ -145,8 +146,10 @@ const MonthlyObjectivesForm = (props: Props) => {
 	);
 };
 
+type LocalSearchParams = Omit<SearchParams, 'id'>;
+
 const MonthlyObjectivesPage = () => {
-	const params = useLocalSearchParams<{ company_id?: string }>();
+	const params = useLocalSearchParams<LocalSearchParams>();
 	const profil = useAppSelector(getProfilState);
 	const { t } = useLanguage();
 	const companyId = params.company_id === undefined ? undefined : parseEntityId(params.company_id);

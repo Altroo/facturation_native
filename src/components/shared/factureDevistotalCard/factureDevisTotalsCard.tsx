@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+import { Text, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import SectionCard from '@/components/shared/sectionCard/sectionCard';
 import InfoRow from '@/components/shared/infoRow/infoRow';
@@ -71,5 +73,3 @@ const FactureDevisTotalsCard = (props: Props) => {
 };
 
 export default FactureDevisTotalsCard;
-import type { ReactNode } from 'react';
-import { Text, View } from 'react-native';

@@ -19,13 +19,12 @@ import ApiAlert from '@/components/nativeElements/apiLoading/apiAlert/apiAlert';
 import ApiProgress from '@/components/nativeElements/apiLoading/apiProgress/apiProgress';
 import QueryError from '@/components/shared/queryError/queryError';
 import NoPermission from '@/components/shared/noPermission/noPermission';
+import type { SearchParams } from '@/types/_initTypes';
+
+type LocalSearchParams = SearchParams & { scrollToLines?: string };
 
 const FactureProFormaFormPage = () => {
-	const params = useLocalSearchParams<{
-		id?: string | string[];
-		company_id?: string | string[];
-		scrollToLines?: string;
-	}>();
+	const params = useLocalSearchParams<LocalSearchParams>();
 	const id = params.id === undefined ? undefined : parseEntityId(params.id);
 	const requestedCompanyId = params.company_id === undefined ? undefined : parseEntityId(params.company_id);
 	const token = useInitAccessToken();

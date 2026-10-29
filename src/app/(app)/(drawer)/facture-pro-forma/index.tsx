@@ -21,6 +21,7 @@ type Props = {
 	role: string;
 	tabs: ReactNode;
 };
+
 const FactureProFormaListContent = (props: Props) => {
 	const token = useInitAccessToken();
 	const [searchTerm, setSearchTerm] = useState('');

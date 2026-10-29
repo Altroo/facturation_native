@@ -82,9 +82,11 @@ function* consumeWS(): SagaIterator {
 		channel.close();
 	}
 }
+
 function* connection(): SagaIterator {
 	yield race({ socket: call(consumeWS), stopped: take([Types.WS_STOP, Types.ACCOUNT_LOGOUT, initToken.type]) });
 }
+
 export function* watchWS(): SagaIterator {
 	if (Platform.OS !== 'web') {
 		try {

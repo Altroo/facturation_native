@@ -9,7 +9,6 @@ import ApiAlert from '@/components/nativeElements/apiLoading/apiAlert/apiAlert';
 import { useGetEmplacementListQuery } from '@/store/services/parameter';
 import { useLanguage } from '@/utils/hooks';
 import { parseEntityId } from '@/utils/helpers';
-
 import type { InventorySession } from '@/types/stockTypes';
 import { useGetInventoriesInfiniteListInfiniteQuery } from '@/store/services/stock';
 import StockSessionCard from '@/components/shared/stock/stockSessionCard';
@@ -17,6 +16,7 @@ import StockSessionActions from '@/components/shared/stock/stockSessionActions';
 import StockDisabledState from '@/components/shared/stock/stockDisabledState';
 import { STOCK_INVENTORIES_ADD } from '@/utils/routes';
 import { stockInventoryStatusOptions } from '@/utils/rawData';
+import type { SearchParams } from '@/types/_initTypes';
 
 type Props = {
 	company_id: number;
@@ -85,8 +85,10 @@ const StockInventoriesContent = (props: Props) => {
 	);
 };
 
+type LocalSearchParams = Omit<SearchParams, 'id'>;
+
 const StockInventoriesPage = () => {
-	const params = useLocalSearchParams<{ company_id?: string | string[] }>();
+	const params = useLocalSearchParams<LocalSearchParams>();
 	const { t } = useLanguage();
 	const companyId = params.company_id === undefined ? undefined : parseEntityId(params.company_id);
 	if (companyId === null) return <ApiAlert errorDetails={t.notFound.message} />;

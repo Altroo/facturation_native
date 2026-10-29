@@ -30,6 +30,7 @@ import KeyboardAwareScrollView from '@/components/shared/keyboardAwareScrollView
 import PageActionBar from '@/components/shared/pageActionBar/pageActionBar';
 import QueryError from '@/components/shared/queryError/queryError';
 import NoPermission from '@/components/shared/noPermission/noPermission';
+import type { SearchParams } from '@/types/_initTypes';
 
 type Props = {
 	company_id: number;
@@ -160,7 +161,7 @@ const FormikContent = (props: Props) => {
 };
 
 const LogistiqueSupplierFormPage = () => {
-	const params = useLocalSearchParams<{ id?: string | string[]; company_id?: string | string[] }>();
+	const params = useLocalSearchParams<SearchParams>();
 	const id = params.id === undefined ? undefined : parseEntityId(params.id);
 	const company_id = parseEntityId(params.company_id);
 	const invalid = id === null || company_id === null;

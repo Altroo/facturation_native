@@ -44,8 +44,13 @@ import PageActionBar from '@/components/shared/pageActionBar/pageActionBar';
 import QueryError from '@/components/shared/queryError/queryError';
 import NoPermission from '@/components/shared/noPermission/noPermission';
 import ReglementFinancialSummary from '@/components/shared/reglements/reglementFinancialSummary';
+import type { SearchParams } from '@/types/_initTypes';
 
-type Props = { company_id: number; invoice?: FactureClass; rawData?: ReglementClass };
+type Props = {
+	company_id: number;
+	invoice?: FactureClass;
+	rawData?: ReglementClass;
+};
 
 const FormikContent = (props: Props) => {
 	const { t } = useLanguage();
@@ -320,12 +325,10 @@ const FormikContent = (props: Props) => {
 	);
 };
 
+type LocalSearchParams = SearchParams & { facture_client_id?: string | string[] };
+
 const ReglementFormPage = () => {
-	const params = useLocalSearchParams<{
-		id?: string | string[];
-		company_id?: string | string[];
-		facture_client_id?: string | string[];
-	}>();
+	const params = useLocalSearchParams<LocalSearchParams>();
 	const id = params.id === undefined ? undefined : parseEntityId(params.id);
 	const companyId = parseEntityId(params.company_id);
 	const invoiceId = params.facture_client_id === undefined ? undefined : parseEntityId(params.facture_client_id);

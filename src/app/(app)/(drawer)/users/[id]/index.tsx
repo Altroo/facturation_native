@@ -20,6 +20,7 @@ import { extractApiErrorMessage, formatDate, parseEntityId, runWithCleanup } fro
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import ConfirmationModal from '@/components/shared/confirmationModal/confirmationModal';
 import { colors } from '@/utils/themes';
+import type { SearchParams } from '@/types/_initTypes';
 
 type UsersViewProps = {
 	id: number;
@@ -231,11 +232,11 @@ const UsersViewPageContent = (props: UsersViewProps) => {
 	);
 };
 
+type LocalSearchParams = Omit<SearchParams, 'company_id'>;
+
 const UsersViewPage = () => {
 	const { t } = useLanguage();
-	const params = useLocalSearchParams<{
-		id?: string | string[];
-	}>();
+	const params = useLocalSearchParams<LocalSearchParams>();
 	const id = parseEntityId(params.id);
 	if (id === null)
 		return (

@@ -63,16 +63,7 @@ import GlobalRemiseModal from '@/components/shared/globalRemiseModal/globalRemis
 import ConfirmationModal from '@/components/shared/confirmationModal/confirmationModal';
 import QueryError from '@/components/shared/queryError/queryError';
 import NoPermission from '@/components/shared/noPermission/noPermission';
-
-type Props = {
-	company: CompanyClass;
-	role: string;
-	canChangeStatus: boolean;
-	id?: number;
-	rawData?: FactureAvoirClass;
-	prefill?: FactureAvoirFromFactureResponse;
-	companySelect?: (disabled: boolean) => ReactNode;
-};
+import type { SearchParams } from '@/types/_initTypes';
 
 const toFormLines = (lines: FactureAvoirClass['lignes'] = []): FactureAvoirFormValues['lignes'] =>
 	lines.map((line) => ({
@@ -87,6 +78,16 @@ const toFormLines = (lines: FactureAvoirClass['lignes'] = []): FactureAvoirFormV
 		remise_type: line.remise_type || '',
 		remise: Number(line.remise ?? 0),
 	}));
+
+type Props = {
+	company: CompanyClass;
+	role: string;
+	canChangeStatus: boolean;
+	id?: number;
+	rawData?: FactureAvoirClass;
+	prefill?: FactureAvoirFromFactureResponse;
+	companySelect?: (disabled: boolean) => ReactNode;
+};
 
 const FormikContent = (props: Props) => {
 	const { t } = useLanguage();
@@ -626,12 +627,10 @@ const FormikContent = (props: Props) => {
 	);
 };
 
+type LocalSearchParams = SearchParams & { facture_origine_id?: string | string[] };
+
 const FactureAvoirFormPage = () => {
-	const params = useLocalSearchParams<{
-		id?: string | string[];
-		company_id?: string | string[];
-		facture_origine_id?: string | string[];
-	}>();
+	const params = useLocalSearchParams<LocalSearchParams>();
 	const id = params.id === undefined ? undefined : parseEntityId(params.id);
 	const requestedCompany = params.company_id === undefined ? undefined : parseEntityId(params.company_id);
 	const initialOrigin = params.facture_origine_id === undefined ? undefined : parseEntityId(params.facture_origine_id);

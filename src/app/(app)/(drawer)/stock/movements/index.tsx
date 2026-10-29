@@ -13,6 +13,7 @@ import { useGetStockMovementsInfiniteListInfiniteQuery } from '@/store/services/
 import StockMovementCard from '@/components/shared/stock/stockMovementCard';
 import { stockMovementOptions } from '@/utils/rawData';
 import { useGetEmplacementListQuery } from '@/store/services/parameter';
+import type { SearchParams } from '@/types/_initTypes';
 
 type Props = {
 	company_id: number;
@@ -56,8 +57,10 @@ const StockMovementsContent = (props: Props) => {
 	);
 };
 
+type LocalSearchParams = Omit<SearchParams, 'id'>;
+
 const StockMovementsPage = () => {
-	const params = useLocalSearchParams<{ company_id?: string | string[] }>();
+	const params = useLocalSearchParams<LocalSearchParams>();
 	const { t } = useLanguage();
 	const companyId = params.company_id === undefined ? undefined : parseEntityId(params.company_id);
 	if (companyId === null) return <ApiAlert errorDetails={t.notFound.message} />;

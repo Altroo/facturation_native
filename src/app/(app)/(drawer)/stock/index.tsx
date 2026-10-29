@@ -9,7 +9,6 @@ import ApiAlert from '@/components/nativeElements/apiLoading/apiAlert/apiAlert';
 import { useGetEmplacementListQuery } from '@/store/services/parameter';
 import { useLanguage } from '@/utils/hooks';
 import { parseEntityId } from '@/utils/helpers';
-
 import type { StockBalance } from '@/types/stockTypes';
 import { useGetStockBalancesInfiniteListInfiniteQuery } from '@/store/services/stock';
 import StockBalanceCard from '@/components/shared/stock/stockBalanceCard';
@@ -17,6 +16,7 @@ import StockDisabledState from '@/components/shared/stock/stockDisabledState';
 import DetailsPage from '@/components/shared/detailsPage/detailsPage';
 import { STOCK_ADD } from '@/utils/routes';
 import { stockStateOptions } from '@/utils/rawData';
+import type { SearchParams } from '@/types/_initTypes';
 
 type Props = {
 	company_id: number;
@@ -87,8 +87,10 @@ const StockBalancesContent = (props: Props) => {
 	);
 };
 
+type LocalSearchParams = Omit<SearchParams, 'id'>;
+
 const StockBalancesPage = () => {
-	const params = useLocalSearchParams<{ company_id?: string | string[] }>();
+	const params = useLocalSearchParams<LocalSearchParams>();
 	const { t } = useLanguage();
 	const companyId = params.company_id === undefined ? undefined : parseEntityId(params.company_id);
 	if (companyId === null) return <ApiAlert errorDetails={t.notFound.message} />;

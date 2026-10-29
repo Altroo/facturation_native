@@ -31,12 +31,13 @@ import PageActionBar from '@/components/shared/pageActionBar/pageActionBar';
 import ManagedByTableSection, { type ManagedByType } from '@/components/shared/addManagedByTable/addManagedByTable';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { colors } from '@/utils/themes';
+import type { SearchParams } from '@/types/_initTypes';
 
-type FormikContentProps = {
+type Props = {
 	id?: number;
 };
 
-const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
+const FormikContent: FC<Props> = (props: Props) => {
 	const { id } = props;
 	const token = useInitAccessToken();
 	const { first_name, last_name } = useAppSelector(getProfilState);
@@ -337,13 +338,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 								disabled={isPending}
 								error={formik.touched.raison_sociale && Boolean(formik.errors.raison_sociale)}
 								helperText={formik.touched.raison_sociale ? formik.errors.raison_sociale : ''}
-								startIcon={
-									<MaterialIcons
-										name="business"
-										size={20}
-										color={colors.slate[400]}
-									/>
-								}
+								startIcon={<MaterialIcons name="business" size={20} color={colors.slate[400]} />}
 							/>
 							<CustomTextInput
 								id="email"
@@ -358,13 +353,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 								disabled={isPending}
 								error={formik.touched.email && Boolean(formik.errors.email)}
 								helperText={formik.touched.email ? formik.errors.email : ''}
-								startIcon={
-									<MaterialIcons
-										name="mail-outline"
-										size={20}
-										color={colors.slate[400]}
-									/>
-								}
+								startIcon={<MaterialIcons name="mail-outline" size={20} color={colors.slate[400]} />}
 							/>
 							<CustomDropDownSelect
 								id="nbr_employe"
@@ -390,13 +379,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 								disabled={isPending}
 								error={formik.touched.adresse && Boolean(formik.errors.adresse)}
 								helperText={formik.touched.adresse ? formik.errors.adresse : ''}
-								startIcon={
-									<MaterialIcons
-										name="location-on"
-										size={20}
-										color={colors.slate[400]}
-									/>
-								}
+								startIcon={<MaterialIcons name="location-on" size={20} color={colors.slate[400]} />}
 							/>
 							<CustomTextInput
 								id="site_web"
@@ -411,13 +394,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 								disabled={isPending}
 								error={formik.touched.site_web && Boolean(formik.errors.site_web)}
 								helperText={formik.touched.site_web ? formik.errors.site_web : ''}
-								startIcon={
-									<MaterialIcons
-										name="language"
-										size={20}
-										color={colors.slate[400]}
-									/>
-								}
+								startIcon={<MaterialIcons name="language" size={20} color={colors.slate[400]} />}
 							/>
 						</>
 					</SectionCard>
@@ -442,13 +419,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 								disabled={isPending}
 								error={formik.touched.nom_responsable && Boolean(formik.errors.nom_responsable)}
 								helperText={formik.touched.nom_responsable ? formik.errors.nom_responsable : ''}
-								startIcon={
-									<MaterialIcons
-										name="person-outline"
-										size={20}
-										color={colors.slate[400]}
-									/>
-								}
+								startIcon={<MaterialIcons name="person-outline" size={20} color={colors.slate[400]} />}
 							/>
 							<CustomTextInput
 								id="gsm_responsable"
@@ -461,13 +432,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 								disabled={isPending}
 								error={formik.touched.gsm_responsable && Boolean(formik.errors.gsm_responsable)}
 								helperText={formik.touched.gsm_responsable ? formik.errors.gsm_responsable : ''}
-								startIcon={
-									<MaterialIcons
-										name="smartphone"
-										size={20}
-										color={colors.slate[400]}
-									/>
-								}
+								startIcon={<MaterialIcons name="smartphone" size={20} color={colors.slate[400]} />}
 							/>
 						</>
 					</SectionCard>
@@ -484,13 +449,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 								disabled={isPending}
 								error={formik.touched.telephone && Boolean(formik.errors.telephone)}
 								helperText={formik.touched.telephone ? formik.errors.telephone : ''}
-								startIcon={
-									<MaterialIcons
-										name="phone"
-										size={20}
-										color={colors.slate[400]}
-									/>
-								}
+								startIcon={<MaterialIcons name="phone" size={20} color={colors.slate[400]} />}
 							/>
 							<CustomTextInput
 								id="fax"
@@ -503,13 +462,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 								disabled={isPending}
 								error={formik.touched.fax && Boolean(formik.errors.fax)}
 								helperText={formik.touched.fax ? formik.errors.fax : ''}
-								startIcon={
-									<MaterialIcons
-										name="print"
-										size={20}
-										color={colors.slate[400]}
-									/>
-								}
+								startIcon={<MaterialIcons name="print" size={20} color={colors.slate[400]} />}
 							/>
 						</>
 					</SectionCard>
@@ -525,13 +478,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 								disabled={isPending}
 								error={formik.touched.numero_du_compte && Boolean(formik.errors.numero_du_compte)}
 								helperText={formik.touched.numero_du_compte ? formik.errors.numero_du_compte : ''}
-								startIcon={
-									<MaterialIcons
-										name="credit-card"
-										size={20}
-										color={colors.slate[400]}
-									/>
-								}
+								startIcon={<MaterialIcons name="credit-card" size={20} color={colors.slate[400]} />}
 							/>
 							<CustomTextInput
 								id="ICE"
@@ -543,13 +490,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 								disabled={isPending}
 								error={formik.touched.ICE && Boolean(formik.errors.ICE)}
 								helperText={formik.touched.ICE ? formik.errors.ICE : ''}
-								startIcon={
-									<MaterialIcons
-										name="fingerprint"
-										size={20}
-										color={colors.slate[400]}
-									/>
-								}
+								startIcon={<MaterialIcons name="fingerprint" size={20} color={colors.slate[400]} />}
 							/>
 							<CustomTextInput
 								id="registre_de_commerce"
@@ -561,13 +502,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 								disabled={isPending}
 								error={formik.touched.registre_de_commerce && Boolean(formik.errors.registre_de_commerce)}
 								helperText={formik.touched.registre_de_commerce ? formik.errors.registre_de_commerce : ''}
-								startIcon={
-									<MaterialIcons
-										name="description"
-										size={20}
-										color={colors.slate[400]}
-									/>
-								}
+								startIcon={<MaterialIcons name="description" size={20} color={colors.slate[400]} />}
 							/>
 							<CustomTextInput
 								id="identifiant_fiscal"
@@ -579,13 +514,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 								disabled={isPending}
 								error={formik.touched.identifiant_fiscal && Boolean(formik.errors.identifiant_fiscal)}
 								helperText={formik.touched.identifiant_fiscal ? formik.errors.identifiant_fiscal : ''}
-								startIcon={
-									<MaterialIcons
-										name="badge"
-										size={20}
-										color={colors.slate[400]}
-									/>
-								}
+								startIcon={<MaterialIcons name="badge" size={20} color={colors.slate[400]} />}
 							/>
 							<CustomTextInput
 								id="tax_professionnelle"
@@ -597,13 +526,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 								disabled={isPending}
 								error={formik.touched.tax_professionnelle && Boolean(formik.errors.tax_professionnelle)}
 								helperText={formik.touched.tax_professionnelle ? formik.errors.tax_professionnelle : ''}
-								startIcon={
-									<MaterialIcons
-										name="receipt-long"
-										size={20}
-										color={colors.slate[400]}
-									/>
-								}
+								startIcon={<MaterialIcons name="receipt-long" size={20} color={colors.slate[400]} />}
 							/>
 							<CustomTextInput
 								id="CNSS"
@@ -615,13 +538,7 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 								disabled={isPending}
 								error={formik.touched.CNSS && Boolean(formik.errors.CNSS)}
 								helperText={formik.touched.CNSS ? formik.errors.CNSS : ''}
-								startIcon={
-									<MaterialIcons
-										name="verified-user"
-										size={20}
-										color={colors.slate[400]}
-									/>
-								}
+								startIcon={<MaterialIcons name="verified-user" size={20} color={colors.slate[400]} />}
 							/>
 						</>
 					</SectionCard>
@@ -726,8 +643,10 @@ const FormikContent: FC<FormikContentProps> = (props: FormikContentProps) => {
 	);
 };
 
+type LocalSearchParams = Omit<SearchParams, 'company_id'>;
+
 const CompaniesFormPage = () => {
-	const params = useLocalSearchParams<{ id?: string | string[] }>();
+	const params = useLocalSearchParams<LocalSearchParams>();
 	const id = params.id === undefined ? undefined : parseEntityId(params.id);
 	const { t } = useLanguage();
 	const { is_staff } = usePermission();

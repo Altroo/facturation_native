@@ -2,9 +2,7 @@ import { useColorMode } from '@/providers/themeProvider';
 import { useState } from 'react';
 import { Pressable } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import CustomTextInput, {
-	type CustomTextInputProps,
-} from '@/components/nativeElements/customTextInput/customTextInput';
+import CustomTextInput, { type CustomTextInputProps } from '@/components/nativeElements/customTextInput/customTextInput';
 import { useLanguage } from '@/utils/hooks';
 import { colors } from '@/utils/themes';
 

@@ -7,6 +7,7 @@ import { openFactureAvoirPdf } from '@/utils/apiHelpers';
 import { parseEntityId } from '@/utils/helpers';
 import CompanyDocumentViewContent from '@/components/shared/company-documents-view/companyDocumentsWrapperView';
 import ApiAlert from '@/components/nativeElements/apiLoading/apiAlert/apiAlert';
+import type { SearchParams } from '@/types/_initTypes';
 
 type Props = {
 	id: number;
@@ -32,7 +33,7 @@ const FactureAvoirViewContent = (props: Props) => {
 };
 
 const FactureAvoirViewPage = () => {
-	const params = useLocalSearchParams<{ id?: string | string[]; company_id?: string | string[] }>();
+	const params = useLocalSearchParams<SearchParams>();
 	const id = parseEntityId(params.id);
 	const company_id = parseEntityId(params.company_id);
 	const { t } = useLanguage();

@@ -39,7 +39,11 @@ import { REGLEMENTS_ADD, REGLEMENTS_EDIT } from '@/utils/routes';
 import { MODULES_PAGE_SIZE } from '@/utils/rawData';
 import { colors } from '@/utils/themes';
 
-type Props = { company_id: number; role: string; tabs: ReactNode };
+type Props = {
+	company_id: number;
+	role: string;
+	tabs: ReactNode;
+};
 
 const ReglementsListContent = (props: Props) => {
 	const token = useInitAccessToken();

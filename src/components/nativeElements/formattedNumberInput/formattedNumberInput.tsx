@@ -1,7 +1,5 @@
 import { useState } from 'react';
-import CustomTextInput, {
-	type CustomTextInputProps,
-} from '@/components/nativeElements/customTextInput/customTextInput';
+import CustomTextInput, { type CustomTextInputProps } from '@/components/nativeElements/customTextInput/customTextInput';
 import { formatNumberWithSpaces, parseFormattedNumber } from '@/utils/helpers';
 
 type Props = Omit<CustomTextInputProps, 'value' | 'onChangeText'> & {

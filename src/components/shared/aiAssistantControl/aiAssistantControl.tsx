@@ -104,7 +104,7 @@ const EnabledAiAssistantControl: FC<Props> = (props: Props) => {
 			<View className="self-end">
 				<CustomMenu
 					label={t.aiAssistant.previewTitle}
-					disabled={!!controlsDisabled}
+					disabled={controlsDisabled}
 					icon={
 						isLoading ? (
 							<ActivityIndicator color={colors.brand} />

@@ -22,6 +22,7 @@ type Props = {
 	role: string;
 	tabs: ReactNode;
 };
+
 const BonDeLivraisonListContent = (props: Props) => {
 	const token = useInitAccessToken();
 	const [searchTerm, setSearchTerm] = useState('');

@@ -7,11 +7,13 @@ import { openDevisPdf } from '@/utils/apiHelpers';
 import { parseEntityId } from '@/utils/helpers';
 import CompanyDocumentViewContent from '@/components/shared/company-documents-view/companyDocumentsWrapperView';
 import ApiAlert from '@/components/nativeElements/apiLoading/apiAlert/apiAlert';
+import type { SearchParams } from '@/types/_initTypes';
 
 type Props = {
 	id: number;
 	company_id: number;
 };
+
 const DevisViewContent = (props: Props) => {
 	const token = useInitAccessToken();
 	const company = useAppSelector(getUserCompaniesState).find((item) => item.id === props.company_id);
@@ -31,7 +33,7 @@ const DevisViewContent = (props: Props) => {
 };
 
 const DevisViewPage = () => {
-	const params = useLocalSearchParams<{ id?: string | string[]; company_id?: string | string[] }>();
+	const params = useLocalSearchParams<SearchParams>();
 	const id = parseEntityId(params.id);
 	const company_id = parseEntityId(params.company_id);
 	const { t } = useLanguage();

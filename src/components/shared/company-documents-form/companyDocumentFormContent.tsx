@@ -11,7 +11,6 @@ import { useInitAccessToken } from '@/contexts/InitContext';
 import { useLanguage, useToast } from '@/utils/hooks';
 import { useGetClientsListQuery } from '@/store/services/client';
 import { useGetArticlesListQuery } from '@/store/services/article';
-
 import {
 	useGetModePaiementListQuery,
 	useAddModePaiementMutation,
@@ -67,7 +66,6 @@ import GlobalRemiseModal from '@/components/shared/globalRemiseModal/globalRemis
 import LinesGrid from '@/components/shared/linesGrid/linesGrid';
 import ConfirmationModal from '@/components/shared/confirmationModal/confirmationModal';
 import QueryError from '@/components/shared/queryError/queryError';
-
 import type { DocumentData, DocumentFormSchema, DocumentType, DocumentWriteData } from '@/types/companyDocumentsTypes';
 import type { SelectedArticlePopupValues } from '@/types/articleTypes';
 

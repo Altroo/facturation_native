@@ -35,8 +35,12 @@ import CustomDropDownSelect from '@/components/nativeElements/customDropDownSele
 import ApiAlert from '@/components/nativeElements/apiLoading/apiAlert/apiAlert';
 import ApiProgress from '@/components/nativeElements/apiLoading/apiProgress/apiProgress';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
+import type { SearchParams } from '@/types/_initTypes';
 
-type Props = { id: number; company_id: number };
+type Props = {
+	id: number;
+	company_id: number;
+};
 
 const ClientsViewPageContent = (props: Props) => {
 	const { t } = useLanguage();
@@ -597,7 +601,7 @@ const ClientsViewPageContent = (props: Props) => {
 const ClientsViewPage = () => {
 	// Expo Router replaces Next's server params/searchParams. Validate URL values
 	// before mounting the querying component, just like the web's route guard.
-	const params = useLocalSearchParams<{ id?: string | string[]; company_id?: string | string[] }>();
+	const params = useLocalSearchParams<SearchParams>();
 	const id = parseEntityId(params.id);
 	const company_id = parseEntityId(params.company_id);
 	const { t } = useLanguage();

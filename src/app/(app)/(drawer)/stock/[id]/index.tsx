@@ -30,6 +30,7 @@ import { STOCK_ADD } from '@/utils/routes';
 import { useLanguage } from '@/utils/hooks';
 import { colors } from '@/utils/themes';
 import { stockMovementOptions } from '@/utils/rawData';
+import type { SearchParams } from '@/types/_initTypes';
 
 type Props = {
 	id: number;
@@ -149,7 +150,7 @@ const StockViewContent = (props: Props) => {
 };
 
 const StockViewPage = () => {
-	const params = useLocalSearchParams<{ id?: string | string[]; company_id?: string | string[] }>();
+	const params = useLocalSearchParams<SearchParams>();
 	const { t } = useLanguage();
 	const id = parseEntityId(params.id);
 	const company_id = parseEntityId(params.company_id);

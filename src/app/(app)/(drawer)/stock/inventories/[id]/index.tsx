@@ -4,9 +4,10 @@ import { useLanguage } from '@/utils/hooks';
 import ApiAlert from '@/components/nativeElements/apiLoading/apiAlert/apiAlert';
 import StockFormWrapper from '@/components/shared/stock/stockFormWrapper';
 import StockSessionView from '@/components/shared/stock/stockSessionView';
+import type { SearchParams } from '@/types/_initTypes';
 
 const StockInventoryPage = () => {
-	const params = useLocalSearchParams<{ id?: string | string[]; company_id?: string | string[] }>();
+	const params = useLocalSearchParams<SearchParams>();
 	const { t } = useLanguage();
 	const id = parseEntityId(params.id);
 	const company_id = parseEntityId(params.company_id);

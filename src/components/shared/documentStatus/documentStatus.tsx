@@ -4,7 +4,9 @@ import { useLanguage } from '@/utils/hooks';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { colors } from '@/utils/themes';
 
-type Props = { statut: string };
+type Props = {
+	statut: string;
+};
 
 const DocumentStatus = (props: Props) => {
 	const { t } = useLanguage();

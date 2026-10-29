@@ -21,12 +21,13 @@ import { COMPANIES_EDIT, COMPANIES_LIST } from '@/utils/routes';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import ConfirmationModal from '@/components/shared/confirmationModal/confirmationModal';
 import { colors } from '@/utils/themes';
+import type { SearchParams } from '@/types/_initTypes';
 
-type CompaniesViewProps = {
+type Props = {
 	id: number;
 };
 
-const CompaniesViewPageContent = (props: CompaniesViewProps) => {
+const CompaniesViewPageContent = (props: Props) => {
 	const { id } = props;
 	const { t } = useLanguage();
 	const { is_staff } = usePermission();
@@ -283,11 +284,11 @@ const CompaniesViewPageContent = (props: CompaniesViewProps) => {
 	);
 };
 
+type LocalSearchParams = Omit<SearchParams, 'company_id'>;
+
 const CompaniesViewPage = () => {
 	const { t } = useLanguage();
-	const params = useLocalSearchParams<{
-		id?: string | string[];
-	}>();
+	const params = useLocalSearchParams<LocalSearchParams>();
 	const id = parseEntityId(params.id);
 	if (id === null)
 		return (

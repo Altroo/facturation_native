@@ -26,20 +26,7 @@ import type {
 	TopClientData,
 	TopProductData,
 } from '@/types/dashboardTypes';
-
-// Helper function to build query string with date params
-export const buildDateQueryString = (params?: DateFilterParams): string => {
-	if (!params) return '';
-	const searchParams = new URLSearchParams();
-	if (params.date_from) searchParams.append('date_from', params.date_from);
-	if (params.date_to) searchParams.append('date_to', params.date_to);
-	if (params.company_id) searchParams.append('company_id', params.company_id.toString());
-	if (params.devise) searchParams.append('devise', params.devise);
-	if (params.client_id) searchParams.append('client_id', params.client_id.toString());
-	if (params.project) searchParams.append('project', params.project);
-	const queryString = searchParams.toString();
-	return queryString ? `?${queryString}` : '';
-};
+import { buildDateQueryString } from '@/utils/apiHelpers';
 
 export const dashboardApi = createApi({
 	reducerPath: 'dashboardApi',
