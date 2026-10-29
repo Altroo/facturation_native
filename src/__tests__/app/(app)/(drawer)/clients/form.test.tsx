@@ -92,6 +92,17 @@ beforeEach(async () => {
 });
 
 describe('ClientsFormPage', () => {
+	it('creates a company client without a commerce register and shows no required marker for it', async () => {
+		await setup();
+		expect(screen.getByText(t.clients.fieldRegistreCommerce, { exact: true })).toBeOnTheScreen();
+		expect(screen.queryByText(`${t.clients.fieldRegistreCommerce} *`)).toBeNull();
+		await fillPM();
+		await fireEvent.changeText(screen.getByLabelText(t.clients.fieldRegistreCommerce), '');
+		await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
+		await waitFor(() => expect(mockAddClient).toHaveBeenCalledTimes(1));
+		expect(mockAddClient.mock.calls[0][0].data.registre_de_commerce).toBe('');
+	});
+
 	it('creates a company-scoped client, preserves the visible phone, and returns to the list', async () => {
 		await setup();
 		expect(screen.queryByRole('header', { name: t.clients.addTitle })).toBeNull();

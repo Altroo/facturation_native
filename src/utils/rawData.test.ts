@@ -10,11 +10,16 @@ import {
 	logistiquePaymentStatusItemsList,
 	logistiqueImportTitleStatusItemsList,
 	logistiqueManagerRoles,
+	pmRequired,
 } from './rawData';
 import { version } from '../../package.json';
 import { expo } from '../../app.json';
 
 describe('Raw Data', () => {
+	it('requires the same company-client fields as Django without requiring a commerce register', () => {
+		expect(pmRequired).toEqual(['raison_sociale', 'ville', 'ICE', 'delai_de_paiement']);
+	});
+
 	describe('items lists', () => {
 		it('keeps the same stored discount choices as the web', () => {
 			expect(remiseTypeItemsList).toEqual([

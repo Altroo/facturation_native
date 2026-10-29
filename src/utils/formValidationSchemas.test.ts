@@ -186,12 +186,9 @@ describe('Form Validation Schemas', () => {
 			delai_de_paiement: 60,
 		};
 
-		it('requires the company-client fields enforced by Django, including the trade register', () => {
-			expect(clientSchema.safeParse(pm).success).toBe(true);
-			const result = clientSchema.safeParse({ ...pm, registre_de_commerce: '' });
-			expect(result.success).toBe(false);
-			if (!result.success)
-				expect(result.error.issues.map((issue) => issue.path)).toContainEqual(['registre_de_commerce']);
+		it.each([undefined, '', null])('allows an omitted, blank or null commerce register: %s', (registre_de_commerce) => {
+			expect(clientSchema.safeParse({ ...pm, registre_de_commerce }).success).toBe(true);
+			expect(clientSchema.safeParse({ ...pm, registre_de_commerce, ICE: '' }).success).toBe(false);
 		});
 
 		it('requires a physical person name, first name, address, city and payment term', () => {
