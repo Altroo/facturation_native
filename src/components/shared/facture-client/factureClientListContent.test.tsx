@@ -51,27 +51,31 @@ const createProps = (): Props => ({
 	onRetryCompany: jest.fn(),
 });
 
-it('displays the supplied financial totals and switches their currency without a duplicate visible label', async () => {
-	await render(<FactureClientListContent {...createProps()} />);
-	expect(screen.queryByText(t.documentForm.deviseLabel)).not.toBeOnTheScreen();
-	expect(screen.getByRole('radio', { name: 'MAD' })).toHaveProp('accessibilityHint', t.documentForm.deviseLabel);
-	expect(screen.getByText('12 000,00 MAD')).toBeOnTheScreen();
-	await fireEvent.press(screen.getByRole('radio', { name: 'EUR' }));
-	expect(screen.getByText('100,00 EUR')).toBeOnTheScreen();
-	expect(screen.getByText('25,00 EUR')).toBeOnTheScreen();
-	expect(screen.getByText('75,00 EUR')).toBeOnTheScreen();
-});
+describe('FactureClientListContent', () => {
+	it('displays the supplied financial totals and switches their currency without a duplicate visible label', async () => {
+		await render(<FactureClientListContent {...createProps()} />);
+		expect(screen.queryByText(t.documentForm.deviseLabel)).not.toBeOnTheScreen();
+		expect(screen.getByRole('radio', { name: 'MAD' })).toHaveProp('accessibilityHint', t.documentForm.deviseLabel);
+		expect(screen.getByText('12 000,00 MAD')).toBeOnTheScreen();
+		await fireEvent.press(screen.getByRole('radio', { name: 'EUR' }));
+		expect(screen.getByText('100,00 EUR')).toBeOnTheScreen();
+		expect(screen.getByText('25,00 EUR')).toBeOnTheScreen();
+		expect(screen.getByText('75,00 EUR')).toBeOnTheScreen();
+	});
 
-it('shows MAD statistics without currency choices when foreign currency is disabled', async () => {
-	await render(<FactureClientListContent {...createProps()} usesForeignCurrency={false} />);
-	expect(screen.queryByRole('radio')).toBeNull();
-	expect(screen.getByText('12 000,00 MAD')).toBeOnTheScreen();
-});
+	it('shows MAD statistics without currency choices when foreign currency is disabled', async () => {
+		await render(<FactureClientListContent {...createProps()} usesForeignCurrency={false} />);
+		expect(screen.queryByRole('radio')).toBeNull();
+		expect(screen.getByText('12 000,00 MAD')).toBeOnTheScreen();
+	});
 
-it('lets the owning page retry a failed company request without losing its financial totals', async () => {
-	const props = createProps();
-	await render(<FactureClientListContent {...props} companyError={{ status: 503, message: 'Company unavailable' }} />);
-	await fireEvent.press(screen.getByRole('button', { name: t.common.retry }));
-	expect(props.onRetryCompany).toHaveBeenCalledTimes(1);
-	expect(screen.getByText('12 000,00 MAD')).toBeOnTheScreen();
+	it('lets the owning page retry a failed company request without losing its financial totals', async () => {
+		const props = createProps();
+		await render(
+			<FactureClientListContent {...props} companyError={{ status: 503, message: 'Company unavailable' }} />,
+		);
+		await fireEvent.press(screen.getByRole('button', { name: t.common.retry }));
+		expect(props.onRetryCompany).toHaveBeenCalledTimes(1);
+		expect(screen.getByText('12 000,00 MAD')).toBeOnTheScreen();
+	});
 });

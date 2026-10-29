@@ -3,6 +3,7 @@ import type { NativeStackNavigationOptions } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import DrawerStackLayout from '@/app/(app)/(drawer)/_layout';
 import { translations } from '@/translations';
+
 let mockOptions: NativeStackNavigationOptions;
 let mockRouteName = 'users/form';
 let mockReduceMotion = false;
@@ -52,72 +53,74 @@ beforeEach(() => {
 	mockReduceMotion = false;
 });
 
-it.each([
-	['bon-de-livraison/index', translations.fr.bonsLivraison.listTitle],
-	['bon-de-livraison/uninvoiced', translations.fr.bonsLivraison.uninvoicedTitle],
-	['bon-de-livraison/form', translations.fr.bonsLivraison.addTitle],
-	['bon-de-livraison/[id]/index', translations.fr.bonsLivraison.detailsTitle],
-	['facture-avoir/index', translations.fr.facturesAvoir.listTitle],
-	['facture-avoir/form', translations.fr.facturesAvoir.addTitle],
-	['facture-avoir/[id]/index', translations.fr.facturesAvoir.detailsTitle],
-	['facture-pro-forma/index', translations.fr.facturesProforma.listTitle],
-	['facture-pro-forma/[id]/index', translations.fr.facturesProforma.detailsTitle],
-	['facture-client/index', translations.fr.facturesClient.listTitle],
-	['facture-client/unpaid', translations.fr.facturesClient.unpaidListTitle],
-	['facture-client/[id]/index', translations.fr.facturesClient.detailsTitle],
-	['reglements/form', translations.fr.reglements.addTitle],
-	['reglements/index', translations.fr.reglements.listTitle],
-	['reglements/[id]/index', translations.fr.reglements.detailsTitle],
-	['stock/index', translations.fr.stock.listTitle],
-	['logistique/index', translations.fr.navigation.logistiqueList],
-	['logistique/dashboard', translations.fr.navigation.logistiqueDashboard],
-	['logistique/fournisseurs/index', translations.fr.navigation.logistiqueSuppliers],
-	['logistique/fournisseurs/form', translations.fr.logistique.supplierAddTitle],
-	['logistique/fournisseurs/[id]/index', translations.fr.logistique.supplierViewTitle],
-	['stock/form', translations.fr.stock.adjustTitle],
-	['stock/[id]/index', translations.fr.stock.detailTitle],
-	['stock/movements/index', translations.fr.stock.movementsTitle],
-	['stock/movements/[id]/index', translations.fr.stock.movementDetailTitle],
-	['stock/receipts/index', translations.fr.stock.receiptsTitle],
-	['stock/receipts/form', translations.fr.stock.receiptAddTitle],
-	['stock/receipts/[id]/index', translations.fr.stock.receiptDetailTitle],
-	['stock/inventories/index', translations.fr.stock.inventoriesTitle],
-	['stock/inventories/form', translations.fr.stock.inventoryAddTitle],
-	['stock/inventories/[id]/index', translations.fr.stock.inventoryDetailTitle],
-])('keeps both theme and language actions usable on %s', async (route, title) => {
-	mockRouteName = route;
-	await setup();
-	expect(mockOptions.title).toBe(title);
-	const action = mockOptions.unstable_headerRightItems?.({ canGoBack: true })[0];
-	if (action?.type !== 'custom') {
-		expect(action?.type).toBe('custom');
-		return;
-	}
-	await render(action.element);
-	await fireEvent.press(screen.getByRole('button', { name: 'Activer le mode sombre' }));
-	expect(mockToggleTheme).toHaveBeenCalledTimes(1);
-	await fireEvent.press(screen.getByRole('button', { name: 'English' }));
-	expect(mockSetLanguage).toHaveBeenCalledWith('en');
-});
+describe('DrawerStackLayout', () => {
+	it.each([
+		['bon-de-livraison/index', translations.fr.bonsLivraison.listTitle],
+		['bon-de-livraison/uninvoiced', translations.fr.bonsLivraison.uninvoicedTitle],
+		['bon-de-livraison/form', translations.fr.bonsLivraison.addTitle],
+		['bon-de-livraison/[id]/index', translations.fr.bonsLivraison.detailsTitle],
+		['facture-avoir/index', translations.fr.facturesAvoir.listTitle],
+		['facture-avoir/form', translations.fr.facturesAvoir.addTitle],
+		['facture-avoir/[id]/index', translations.fr.facturesAvoir.detailsTitle],
+		['facture-pro-forma/index', translations.fr.facturesProforma.listTitle],
+		['facture-pro-forma/[id]/index', translations.fr.facturesProforma.detailsTitle],
+		['facture-client/index', translations.fr.facturesClient.listTitle],
+		['facture-client/unpaid', translations.fr.facturesClient.unpaidListTitle],
+		['facture-client/[id]/index', translations.fr.facturesClient.detailsTitle],
+		['reglements/form', translations.fr.reglements.addTitle],
+		['reglements/index', translations.fr.reglements.listTitle],
+		['reglements/[id]/index', translations.fr.reglements.detailsTitle],
+		['stock/index', translations.fr.stock.listTitle],
+		['logistique/index', translations.fr.navigation.logistiqueList],
+		['logistique/dashboard', translations.fr.navigation.logistiqueDashboard],
+		['logistique/fournisseurs/index', translations.fr.navigation.logistiqueSuppliers],
+		['logistique/fournisseurs/form', translations.fr.logistique.supplierAddTitle],
+		['logistique/fournisseurs/[id]/index', translations.fr.logistique.supplierViewTitle],
+		['stock/form', translations.fr.stock.adjustTitle],
+		['stock/[id]/index', translations.fr.stock.detailTitle],
+		['stock/movements/index', translations.fr.stock.movementsTitle],
+		['stock/movements/[id]/index', translations.fr.stock.movementDetailTitle],
+		['stock/receipts/index', translations.fr.stock.receiptsTitle],
+		['stock/receipts/form', translations.fr.stock.receiptAddTitle],
+		['stock/receipts/[id]/index', translations.fr.stock.receiptDetailTitle],
+		['stock/inventories/index', translations.fr.stock.inventoriesTitle],
+		['stock/inventories/form', translations.fr.stock.inventoryAddTitle],
+		['stock/inventories/[id]/index', translations.fr.stock.inventoryDetailTitle],
+	])('keeps both theme and language actions usable on %s', async (route, title) => {
+		mockRouteName = route;
+		await setup();
+		expect(mockOptions.title).toBe(title);
+		const action = mockOptions.unstable_headerRightItems?.({ canGoBack: true })[0];
+		if (action?.type !== 'custom') {
+			expect(action?.type).toBe('custom');
+			return;
+		}
+		await render(action.element);
+		await fireEvent.press(screen.getByRole('button', { name: 'Activer le mode sombre' }));
+		expect(mockToggleTheme).toHaveBeenCalledTimes(1);
+		await fireEvent.press(screen.getByRole('button', { name: 'English' }));
+		expect(mockSetLanguage).toHaveBeenCalledWith('en');
+	});
 
-it('preserves the native navbar and original back icon', async () => {
-	await setup();
-	expect(mockOptions.header).toBeUndefined();
-	expect(mockOptions.headerBackIcon).toBeUndefined();
-	expect(mockOptions.headerStyle).not.toHaveProperty('height');
-	expect(mockOptions.headerTitleAlign).toBe('left');
-	expect(mockOptions.headerBackVisible).toBe(true);
-});
+	it('preserves the native navbar and original back icon', async () => {
+		await setup();
+		expect(mockOptions.header).toBeUndefined();
+		expect(mockOptions.headerBackIcon).toBeUndefined();
+		expect(mockOptions.headerStyle).not.toHaveProperty('height');
+		expect(mockOptions.headerTitleAlign).toBe('left');
+		expect(mockOptions.headerBackVisible).toBe(true);
+	});
 
-it.each([
-	['future-module/index', 'slide_from_right'],
-	['notifications/index', 'slide_from_bottom'],
-	['settings/index', 'slide_from_bottom'],
-])('uses the shared transition for %s and respects Reduced Motion', async (route, animation) => {
-	mockRouteName = route;
-	await setup();
-	expect(mockOptions.animation).toBe(animation);
-	mockReduceMotion = true;
-	await setup();
-	expect(mockOptions.animation).toBe('none');
+	it.each([
+		['future-module/index', 'slide_from_right'],
+		['notifications/index', 'slide_from_bottom'],
+		['settings/index', 'slide_from_bottom'],
+	])('uses the shared transition for %s and respects Reduced Motion', async (route, animation) => {
+		mockRouteName = route;
+		await setup();
+		expect(mockOptions.animation).toBe(animation);
+		mockReduceMotion = true;
+		await setup();
+		expect(mockOptions.animation).toBe('none');
+	});
 });

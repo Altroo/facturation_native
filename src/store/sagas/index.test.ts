@@ -33,91 +33,91 @@ afterEach(async () => {
 	}
 });
 
-it('preserves useful object, Error and circular-error diagnostics', () => {
-	const error = new Error('Watcher failed');
-	expect(formatSagaError(error)).toBe(error.stack);
-	expect(formatSagaError({ error: { status_code: 429, message: 'Trop de requêtes' } })).toBe(
-		'{"error":{"status_code":429,"message":"Trop de requêtes"}}',
-	);
-	const circular: { self?: unknown } = {};
-	circular.self = circular;
-	expect(formatSagaError(circular)).toBe('[object Object]');
-	expect(formatSagaError(null)).toBe('null');
-});
-
-it('cancels session restore, closes the socket and stops all isolated watchers with the root task', async () => {
-	let resolveRestore!: (restored: SessionResult<boolean>) => void;
-	jest.mocked(auth.restore).mockReturnValue(
-		new Promise((resolve) => {
-			resolveRestore = resolve;
-		}),
-	);
-	const channel = stdChannel();
-	const dispatch = jest.fn();
-	const task = runSaga({ channel, dispatch }, rootSaga);
-	tasks.push(task);
-	channel.put(initAppAction());
-	channel.put(startWSAction());
-	channel.put(accountSetGroupesAction({ group_titles: ['Lecture'] }));
-	channel.put(companiesSetUserCompaniesAction([]));
-	expect(dispatch).toHaveBeenCalledWith(setGroupes({ group_titles: ['Lecture'] }));
-	expect(dispatch).toHaveBeenCalledWith(setUserCompanies([]));
-	task.cancel();
-	await task.toPromise();
-	expect(closeSocket).toHaveBeenCalledTimes(1);
-	dispatch.mockClear();
-	resolveRestore({ success: true, data: false });
-	await Promise.resolve();
-	channel.put(initAppAction());
-	channel.put(startWSAction());
-	channel.put(accountSetGroupesAction({ group_titles: ['Caissier'] }));
-	channel.put(companiesSetUserCompaniesAction([]));
-	expect(dispatch).not.toHaveBeenCalled();
-	expect(auth.restore).toHaveBeenCalledTimes(1);
-	expect(initWebsocket).toHaveBeenCalledTimes(1);
-	expect(task.isCancelled()).toBe(true);
-});
-
-it('isolates a watcher failure while company actions and socket lifecycle continue to work', async () => {
-	const error = new Error('Reducer dispatch failed');
-	const onError = jest.fn();
-	const channel = stdChannel();
-	const dispatch = jest.fn((action: UnknownAction) => {
-		if (action.type === setGroupes.type) throw error;
-	});
-	const task = runSaga({ channel, dispatch, onError }, rootSaga);
-	tasks.push(task);
-	channel.put(startWSAction());
-	channel.put(accountSetGroupesAction({ group_titles: ['Lecture'] }));
-	expect(onError).toHaveBeenCalledWith(error, expect.objectContaining({ sagaStack: expect.any(String) }));
-	expect(closeSocket).not.toHaveBeenCalled();
-	expect(task.isRunning()).toBe(true);
-	channel.put(companiesSetUserCompaniesAction([]));
-	expect(dispatch).toHaveBeenCalledWith(setUserCompanies([]));
-	task.cancel();
-	await task.toPromise();
-	expect(closeSocket).toHaveBeenCalledTimes(1);
-});
-
-it('closes the active socket on logout and retains watchers for a later login', async () => {
-	const channel = stdChannel();
-	const dispatch = jest.fn();
-	const task = runSaga({ channel, dispatch }, rootSaga);
-	tasks.push(task);
-	channel.put(startWSAction());
-	channel.put(initToken());
-	expect(closeSocket).toHaveBeenCalledTimes(1);
-	expect(task.isRunning()).toBe(true);
-	channel.put(accountSetGroupesAction({ group_titles: ['Lecture'] }));
-	expect(dispatch).toHaveBeenCalledWith(setGroupes({ group_titles: ['Lecture'] }));
-	channel.put(startWSAction());
-	expect(initWebsocket).toHaveBeenCalledTimes(2);
-	task.cancel();
-	await task.toPromise();
-	expect(closeSocket).toHaveBeenCalledTimes(2);
-});
-
 describe('rootSaga', () => {
+	it('preserves useful object, Error and circular-error diagnostics', () => {
+		const error = new Error('Watcher failed');
+		expect(formatSagaError(error)).toBe(error.stack);
+		expect(formatSagaError({ error: { status_code: 429, message: 'Trop de requêtes' } })).toBe(
+			'{"error":{"status_code":429,"message":"Trop de requêtes"}}',
+		);
+		const circular: { self?: unknown } = {};
+		circular.self = circular;
+		expect(formatSagaError(circular)).toBe('[object Object]');
+		expect(formatSagaError(null)).toBe('null');
+	});
+
+	it('cancels session restore, closes the socket and stops all isolated watchers with the root task', async () => {
+		let resolveRestore!: (restored: SessionResult<boolean>) => void;
+		jest.mocked(auth.restore).mockReturnValue(
+			new Promise((resolve) => {
+				resolveRestore = resolve;
+			}),
+		);
+		const channel = stdChannel();
+		const dispatch = jest.fn();
+		const task = runSaga({ channel, dispatch }, rootSaga);
+		tasks.push(task);
+		channel.put(initAppAction());
+		channel.put(startWSAction());
+		channel.put(accountSetGroupesAction({ group_titles: ['Lecture'] }));
+		channel.put(companiesSetUserCompaniesAction([]));
+		expect(dispatch).toHaveBeenCalledWith(setGroupes({ group_titles: ['Lecture'] }));
+		expect(dispatch).toHaveBeenCalledWith(setUserCompanies([]));
+		task.cancel();
+		await task.toPromise();
+		expect(closeSocket).toHaveBeenCalledTimes(1);
+		dispatch.mockClear();
+		resolveRestore({ success: true, data: false });
+		await Promise.resolve();
+		channel.put(initAppAction());
+		channel.put(startWSAction());
+		channel.put(accountSetGroupesAction({ group_titles: ['Caissier'] }));
+		channel.put(companiesSetUserCompaniesAction([]));
+		expect(dispatch).not.toHaveBeenCalled();
+		expect(auth.restore).toHaveBeenCalledTimes(1);
+		expect(initWebsocket).toHaveBeenCalledTimes(1);
+		expect(task.isCancelled()).toBe(true);
+	});
+
+	it('isolates a watcher failure while company actions and socket lifecycle continue to work', async () => {
+		const error = new Error('Reducer dispatch failed');
+		const onError = jest.fn();
+		const channel = stdChannel();
+		const dispatch = jest.fn((action: UnknownAction) => {
+			if (action.type === setGroupes.type) throw error;
+		});
+		const task = runSaga({ channel, dispatch, onError }, rootSaga);
+		tasks.push(task);
+		channel.put(startWSAction());
+		channel.put(accountSetGroupesAction({ group_titles: ['Lecture'] }));
+		expect(onError).toHaveBeenCalledWith(error, expect.objectContaining({ sagaStack: expect.any(String) }));
+		expect(closeSocket).not.toHaveBeenCalled();
+		expect(task.isRunning()).toBe(true);
+		channel.put(companiesSetUserCompaniesAction([]));
+		expect(dispatch).toHaveBeenCalledWith(setUserCompanies([]));
+		task.cancel();
+		await task.toPromise();
+		expect(closeSocket).toHaveBeenCalledTimes(1);
+	});
+
+	it('closes the active socket on logout and retains watchers for a later login', async () => {
+		const channel = stdChannel();
+		const dispatch = jest.fn();
+		const task = runSaga({ channel, dispatch }, rootSaga);
+		tasks.push(task);
+		channel.put(startWSAction());
+		channel.put(initToken());
+		expect(closeSocket).toHaveBeenCalledTimes(1);
+		expect(task.isRunning()).toBe(true);
+		channel.put(accountSetGroupesAction({ group_titles: ['Lecture'] }));
+		expect(dispatch).toHaveBeenCalledWith(setGroupes({ group_titles: ['Lecture'] }));
+		channel.put(startWSAction());
+		expect(initWebsocket).toHaveBeenCalledTimes(2);
+		task.cancel();
+		await task.toPromise();
+		expect(closeSocket).toHaveBeenCalledTimes(2);
+	});
+
 	it('should spawn watchInit, watchAccount, watchCompanies and watchWS', () => {
 		const generator = rootSaga();
 		const effect = generator.next().value as AllEffect<ForkEffect>;

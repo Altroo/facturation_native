@@ -7,54 +7,57 @@ jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
 jest.mock('@/utils/hooks', () => ({
 	useLanguage: () => ({ t: jest.requireActual<typeof import('@/translations')>('@/translations').translations.fr }),
 }));
-it('starts masked and uses the original visibility label without changing the password', async () => {
-	const onChangeText = jest.fn();
-	await render(<CustomPasswordInput label="Mot de passe" value="Secret123!" onChangeText={onChangeText} />);
-	const input = screen.getByLabelText('Mot de passe');
-	expect(input).toHaveProp('secureTextEntry', true);
-	expect(input).toHaveProp('autoCorrect', false);
-	expect(input).toHaveProp('autoCapitalize', 'none');
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.togglePasswordVisibility }));
-	expect(input).toHaveProp('secureTextEntry', false);
-	expect(input).toHaveProp('value', 'Secret123!');
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.togglePasswordVisibility }));
-	expect(input).toHaveProp('secureTextEntry', true);
-	expect(onChangeText).not.toHaveBeenCalled();
-});
-it('forwards native editing and blur, and announces boolean error/helperText', async () => {
-	const onChangeText = jest.fn(),
-		onBlur = jest.fn();
-	await render(
-		<CustomPasswordInput
-			label="Mot de passe"
-			value=""
-			onChangeText={onChangeText}
-			onBlur={onBlur}
-			error
-			helperText="Mot de passe requis"
-		/>,
-	);
-	const input = screen.getByLabelText('Mot de passe');
-	await fireEvent.changeText(input, 'Example123!');
-	await fireEvent(input, 'blur', { nativeEvent: { text: 'Example123!' } });
-	expect(onChangeText).toHaveBeenCalledWith('Example123!');
-	expect(onBlur).toHaveBeenCalledTimes(1);
-	expect(screen.getByRole('alert')).toHaveTextContent('Mot de passe requis');
-});
-it('uses disabled to prevent native editing', async () => {
-	const onChangeText = jest.fn();
-	await render(<CustomPasswordInput label="Mot de passe" value="Saved" disabled onChangeText={onChangeText} />);
-	const input = screen.getByLabelText('Mot de passe');
-	expect(input).toHaveProp('editable', false);
-	await fireEvent.changeText(input, 'Other');
-	expect(onChangeText).not.toHaveBeenCalled();
-	const toggle = screen.getByRole('button', { name: translations.fr.common.togglePasswordVisibility });
-	expect(toggle).toBeDisabled();
-	await fireEvent.press(toggle);
-	expect(input).toHaveProp('secureTextEntry', true);
-});
 
 describe('CustomPasswordInput', () => {
+	it('starts masked and uses the original visibility label without changing the password', async () => {
+		const onChangeText = jest.fn();
+		await render(<CustomPasswordInput label="Mot de passe" value="Secret123!" onChangeText={onChangeText} />);
+		const input = screen.getByLabelText('Mot de passe');
+		expect(input).toHaveProp('secureTextEntry', true);
+		expect(input).toHaveProp('autoCorrect', false);
+		expect(input).toHaveProp('autoCapitalize', 'none');
+		await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.togglePasswordVisibility }));
+		expect(input).toHaveProp('secureTextEntry', false);
+		expect(input).toHaveProp('value', 'Secret123!');
+		await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.togglePasswordVisibility }));
+		expect(input).toHaveProp('secureTextEntry', true);
+		expect(onChangeText).not.toHaveBeenCalled();
+	});
+
+	it('forwards native editing and blur, and announces boolean error/helperText', async () => {
+		const onChangeText = jest.fn(),
+			onBlur = jest.fn();
+		await render(
+			<CustomPasswordInput
+				label="Mot de passe"
+				value=""
+				onChangeText={onChangeText}
+				onBlur={onBlur}
+				error
+				helperText="Mot de passe requis"
+			/>,
+		);
+		const input = screen.getByLabelText('Mot de passe');
+		await fireEvent.changeText(input, 'Example123!');
+		await fireEvent(input, 'blur', { nativeEvent: { text: 'Example123!' } });
+		expect(onChangeText).toHaveBeenCalledWith('Example123!');
+		expect(onBlur).toHaveBeenCalledTimes(1);
+		expect(screen.getByRole('alert')).toHaveTextContent('Mot de passe requis');
+	});
+
+	it('uses disabled to prevent native editing', async () => {
+		const onChangeText = jest.fn();
+		await render(<CustomPasswordInput label="Mot de passe" value="Saved" disabled onChangeText={onChangeText} />);
+		const input = screen.getByLabelText('Mot de passe');
+		expect(input).toHaveProp('editable', false);
+		await fireEvent.changeText(input, 'Other');
+		expect(onChangeText).not.toHaveBeenCalled();
+		const toggle = screen.getByRole('button', { name: translations.fr.common.togglePasswordVisibility });
+		expect(toggle).toBeDisabled();
+		await fireEvent.press(toggle);
+		expect(input).toHaveProp('secureTextEntry', true);
+	});
+
 	it('passes its ref to the password input', async () => {
 		const ref = createRef<TextInputInstance>();
 		await render(

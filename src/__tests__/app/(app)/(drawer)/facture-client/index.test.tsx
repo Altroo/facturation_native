@@ -8,7 +8,7 @@ import {
 	useGetFactureClientUnpaidInfiniteListInfiniteQuery,
 } from '@/store/services/factureClient';
 import { translations } from '@/translations';
-import { createQueryMock } from '@/store/setupQuery';
+import { createQueryMock } from '@/__tests__/setupQuery';
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
 jest.mock('@expo/vector-icons', () => ({ MaterialIcons: 'Icon' }));
 jest.mock(
@@ -147,154 +147,170 @@ beforeEach(async () => {
 	).default;
 	nativeMethods.measureInWindow.mockImplementation((callback) => callback(200, 200, 44, 44));
 });
-it('shows server financial totals and routes cards to invoice details', async () => {
-	await render(<FactureClientListPage />);
-	expect(useGetFactureClientInfiniteListInfiniteQuery).toHaveBeenLastCalledWith(
-		expect.objectContaining({ company_id: 5 }),
-		expect.objectContaining({ skip: false }),
-	);
-	expect(useGetFactureClientUnpaidInfiniteListInfiniteQuery).not.toHaveBeenCalled();
-	expect(screen.getByText('12 000,00 MAD')).toBeOnTheScreen();
-	expect(screen.getByText('5 000,00 MAD')).toBeOnTheScreen();
-	expect(screen.getByText('7 000,00 MAD')).toBeOnTheScreen();
-	expect(within(screen.getByTestId('facture-client-card-7')).getByText('Partiellement payée')).toBeOnTheScreen();
-	await fireEvent.press(screen.getByRole('button', { name: `${t.common.view} INV7/26` }));
-	expect(router.push).toHaveBeenCalledWith({ pathname: '/facture-client/[id]', params: { id: '7', company_id: '5' } });
-});
-it('switches displayed statistics by currency without converting or filtering invoice values locally', async () => {
-	await render(<FactureClientListPage />);
-	await fireEvent.press(screen.getByRole('radio', { name: 'EUR' }));
-	expect(screen.getByText('100,00 EUR')).toBeOnTheScreen();
-	expect(screen.getByText('25,00 EUR')).toBeOnTheScreen();
-	expect(lastArgs()).not.toHaveProperty('devise');
-});
-it('resets currency, search and pending selection when switching company', async () => {
-	let resolve!: (rows: Array<{ id: number }>) => void;
-	const result = new Promise<Array<{ id: number }>>((done) => {
-		resolve = done;
-	});
-	mockFetchAll.mockReturnValue({ unwrap: () => result, abort: mockAbort, unsubscribe: mockUnsubscribe });
-	await render(<FactureClientListPage />);
-	await fireEvent.press(screen.getByRole('radio', { name: 'EUR' }));
-	await fireEvent.press(screen.getByLabelText(t.common.search));
-	await fireEvent.changeText(screen.getByPlaceholderText(t.dataGrid.searchPlaceholder), 'Atlas');
-	await fireEvent(screen.getByPlaceholderText(t.dataGrid.searchPlaceholder), 'submitEditing');
-	await fireEvent.press(screen.getByRole('checkbox', { name: t.shared.selectAllMatching(3) }));
-	await fireEvent.press(screen.getByText('Switch company'));
-	expect(mockAbort).toHaveBeenCalledTimes(1);
-	await act(() => resolve([{ id: 7 }, { id: 8 }, { id: 9 }]));
-	expect(lastArgs()).toMatchObject({ company_id: 11, search: '' });
-	expect(screen.getByRole('radio', { name: 'MAD', checked: true })).toBeOnTheScreen();
-	expect(screen.getByText('12 000,00 MAD')).toBeOnTheScreen();
-	expect(screen.queryByRole('button', { name: t.documentList.bulkDeleteBtn(3) })).toBeNull();
-});
-it('sends search to the server and selects every matching ID from its results envelope', async () => {
-	mockFetchAll.mockReturnValue({
-		unwrap: async () => ({ results: [{ id: 7 }, { id: 8 }, { id: 9 }], stats_by_currency: {} }),
-		abort: mockAbort,
-		unsubscribe: mockUnsubscribe,
-	});
-	await render(<FactureClientListPage />);
-	await fireEvent.press(screen.getByLabelText(t.common.search));
-	await fireEvent.changeText(screen.getByPlaceholderText(t.dataGrid.searchPlaceholder), 'Atlas');
-	await fireEvent(screen.getByPlaceholderText(t.dataGrid.searchPlaceholder), 'submitEditing');
-	expect(lastArgs()).toMatchObject({ company_id: 5, search: 'Atlas' });
-	await fireEvent.press(screen.getByRole('checkbox', { name: t.shared.selectAllMatching(3) }));
-	await waitFor(() =>
-		expect(screen.getByRole('checkbox', { name: t.shared.clearSelection, checked: true })).toBeOnTheScreen(),
-	);
-	expect(mockFetchAll).toHaveBeenCalledWith(
-		expect.objectContaining({ company_id: 5, search: 'Atlas', with_pagination: false }),
-		false,
-	);
-});
-it('requires confirmation before deleting selected invoices', async () => {
-	await render(<FactureClientListPage />);
-	await fireEvent.press(screen.getByRole('checkbox', { name: t.shared.selectAllMatching(3) }));
-	await fireEvent.press(await screen.findByRole('button', { name: t.documentList.bulkDeleteBtn(3) }));
-	expect(mockBulk).not.toHaveBeenCalled();
-	await fireEvent.press(within(screen.getByTestId('action-modal')).getByRole('button', { name: t.common.delete }));
-	await waitFor(() => expect(mockBulk).toHaveBeenCalledWith({ ids: [7, 8, 9] }));
-});
-it('leaves delivery-note conversion disabled until that mobile module exists', async () => {
-	await render(<FactureClientListPage />);
-	await fireEvent.press(screen.getAllByRole('button', { name: t.common.moreActions })[0]);
-	expect(screen.getByRole('menuitem', { name: t.facturesClient.labelBonLivraison })).toBeEnabled();
-});
-it('opens the shared PDF format and language choices', async () => {
-	await render(<FactureClientListPage />);
-	await cardAction(t.common.print);
-	expect(screen.getByRole('button', { name: t.pdf.generatePdf })).toBeOnTheScreen();
-});
-it('prevents printing invoices that are neither drafts nor accepted', async () => {
-	await mockQuery.setResult({
-		...initialQuery,
-		currentData: {
-			...initialQuery.currentData,
-			pages: [{ ...initialQuery.currentData.pages[0], results: [{ ...row(7), statut: 'Envoyé' }] }],
-		},
-	});
-	await render(<FactureClientListPage />);
-	await fireEvent.press(screen.getAllByRole('button', { name: t.common.moreActions })[0]);
-	expect(screen.getByRole('menuitem', { name: t.facturesClient.printRequiresValidation })).toBeDisabled();
-});
-it('loads more on scroll and refreshes by pulling the list', async () => {
-	await render(<FactureClientListPage />);
-	await fireEvent(screen.getByTestId('facture-client-grid'), 'endReached');
-	expect(fetchNextPage).toHaveBeenCalledTimes(1);
-	await fireEvent(screen.getByTestId('facture-client-grid'), 'refresh');
-	expect(refetch).toHaveBeenCalledTimes(1);
-});
-it('maps date ranges to Django date_after/before inside an OR group', async () => {
-	await render(<FactureClientListPage />);
-	await fireEvent.press(screen.getByRole('button', { name: t.dataGrid.toolbarFilters }));
-	await fireEvent.press(screen.getByRole('button', { name: t.dataGrid.fieldLabel }));
-	await fireEvent.press(screen.getByRole('radio', { name: t.facturesClient.colDateFacture }));
-	await fireEvent.press(screen.getByRole('button', { name: t.dateRange.from }));
-	const date = new Date(2026, 0, 2, 12);
-	await fireEvent(screen.getByTestId('date-picker-' + t.dateRange.from), 'valueChange', {}, date);
-	await fireEvent.press(screen.getByLabelText(t.dataGrid.done));
-	await fireEvent.press(screen.getByLabelText(t.common.addFilter));
-	await fireEvent.press(screen.getAllByRole('button', { name: t.dataGrid.fieldLabel })[1]);
-	await fireEvent.press(screen.getByRole('radio', { name: t.documentList.colStatut }));
-	await fireEvent.press(screen.getAllByRole('button', { name: t.common.value })[0]);
-	await fireEvent.press(screen.getByRole('radio', { name: 'Envoyé' }));
-	await fireEvent.press(screen.getByRole('button', { name: t.filterPanel.logicOperator }));
-	await fireEvent.press(screen.getByRole('radio', { name: t.filterPanel.or }));
-	await fireEvent.press(screen.getByText(t.dataGrid.searchApply));
-	expect(lastArgs()).toMatchObject({ filter_logic: 'or' });
-	const groups = JSON.parse(String(lastArgs().filter_groups));
-	expect(groups).toEqual(
-		expect.arrayContaining([
-			expect.objectContaining({ date_after: '2026-01-02' }),
-			expect.objectContaining({ statut: 'Envoyé' }),
-		]),
-	);
-	expect(JSON.stringify(groups)).not.toContain('date_facture_after');
-});
 
-it('converts an eligible invoice to a delivery note using the green confirmation flow', async () => {
-	await render(<FactureClientListPage />);
-	await cardAction(t.facturesClient.labelBonLivraison);
-	expect(screen.getByText(t.facturesClient.convertToBLTitle)).toBeOnTheScreen();
-	expect(screen.getByText(t.facturesClient.convertToBLBody)).toBeOnTheScreen();
-	expect(mockConvert).not.toHaveBeenCalled();
-	await fireEvent.press(within(screen.getByTestId('action-modal')).getByRole('button', { name: t.common.convert }));
-	await waitFor(() => expect(mockConvert).toHaveBeenCalledWith({ id: 7 }));
-	expect(router.push).toHaveBeenCalledWith({
-		pathname: '/bon-de-livraison/form',
-		params: { id: '31', company_id: '5' },
+describe('FactureClientListPage', () => {
+	it('shows server financial totals and routes cards to invoice details', async () => {
+		await render(<FactureClientListPage />);
+		expect(useGetFactureClientInfiniteListInfiniteQuery).toHaveBeenLastCalledWith(
+			expect.objectContaining({ company_id: 5 }),
+			expect.objectContaining({ skip: false }),
+		);
+		expect(useGetFactureClientUnpaidInfiniteListInfiniteQuery).not.toHaveBeenCalled();
+		expect(screen.getByText('12 000,00 MAD')).toBeOnTheScreen();
+		expect(screen.getByText('5 000,00 MAD')).toBeOnTheScreen();
+		expect(screen.getByText('7 000,00 MAD')).toBeOnTheScreen();
+		expect(within(screen.getByTestId('facture-client-card-7')).getByText('Partiellement payée')).toBeOnTheScreen();
+		await fireEvent.press(screen.getByRole('button', { name: `${t.common.view} INV7/26` }));
+		expect(router.push).toHaveBeenCalledWith({
+			pathname: '/facture-client/[id]',
+			params: { id: '7', company_id: '5' },
+		});
 	});
-});
-it('does not offer delivery conversion to a draft or read-only member', async () => {
-	await mockQuery.setResult({
-		...initialQuery,
-		currentData: {
-			...initialQuery.currentData,
-			pages: [{ ...initialQuery.currentData.pages[0]!, results: [{ ...row(7), statut: 'Brouillon' }] }],
-		},
+
+	it('switches displayed statistics by currency without converting or filtering invoice values locally', async () => {
+		await render(<FactureClientListPage />);
+		await fireEvent.press(screen.getByRole('radio', { name: 'EUR' }));
+		expect(screen.getByText('100,00 EUR')).toBeOnTheScreen();
+		expect(screen.getByText('25,00 EUR')).toBeOnTheScreen();
+		expect(lastArgs()).not.toHaveProperty('devise');
 	});
-	await render(<FactureClientListPage />);
-	await fireEvent.press(screen.getAllByRole('button', { name: t.common.moreActions })[0]);
-	expect(screen.getByRole('menuitem', { name: t.facturesClient.labelBonLivraison })).toBeDisabled();
+
+	it('resets currency, search and pending selection when switching company', async () => {
+		let resolve!: (rows: Array<{ id: number }>) => void;
+		const result = new Promise<Array<{ id: number }>>((done) => {
+			resolve = done;
+		});
+		mockFetchAll.mockReturnValue({ unwrap: () => result, abort: mockAbort, unsubscribe: mockUnsubscribe });
+		await render(<FactureClientListPage />);
+		await fireEvent.press(screen.getByRole('radio', { name: 'EUR' }));
+		await fireEvent.press(screen.getByLabelText(t.common.search));
+		await fireEvent.changeText(screen.getByPlaceholderText(t.dataGrid.searchPlaceholder), 'Atlas');
+		await fireEvent(screen.getByPlaceholderText(t.dataGrid.searchPlaceholder), 'submitEditing');
+		await fireEvent.press(screen.getByRole('checkbox', { name: t.shared.selectAllMatching(3) }));
+		await fireEvent.press(screen.getByText('Switch company'));
+		expect(mockAbort).toHaveBeenCalledTimes(1);
+		await act(() => resolve([{ id: 7 }, { id: 8 }, { id: 9 }]));
+		expect(lastArgs()).toMatchObject({ company_id: 11, search: '' });
+		expect(screen.getByRole('radio', { name: 'MAD', checked: true })).toBeOnTheScreen();
+		expect(screen.getByText('12 000,00 MAD')).toBeOnTheScreen();
+		expect(screen.queryByRole('button', { name: t.documentList.bulkDeleteBtn(3) })).toBeNull();
+	});
+
+	it('sends search to the server and selects every matching ID from its results envelope', async () => {
+		mockFetchAll.mockReturnValue({
+			unwrap: async () => ({ results: [{ id: 7 }, { id: 8 }, { id: 9 }], stats_by_currency: {} }),
+			abort: mockAbort,
+			unsubscribe: mockUnsubscribe,
+		});
+		await render(<FactureClientListPage />);
+		await fireEvent.press(screen.getByLabelText(t.common.search));
+		await fireEvent.changeText(screen.getByPlaceholderText(t.dataGrid.searchPlaceholder), 'Atlas');
+		await fireEvent(screen.getByPlaceholderText(t.dataGrid.searchPlaceholder), 'submitEditing');
+		expect(lastArgs()).toMatchObject({ company_id: 5, search: 'Atlas' });
+		await fireEvent.press(screen.getByRole('checkbox', { name: t.shared.selectAllMatching(3) }));
+		await waitFor(() =>
+			expect(screen.getByRole('checkbox', { name: t.shared.clearSelection, checked: true })).toBeOnTheScreen(),
+		);
+		expect(mockFetchAll).toHaveBeenCalledWith(
+			expect.objectContaining({ company_id: 5, search: 'Atlas', with_pagination: false }),
+			false,
+		);
+	});
+
+	it('requires confirmation before deleting selected invoices', async () => {
+		await render(<FactureClientListPage />);
+		await fireEvent.press(screen.getByRole('checkbox', { name: t.shared.selectAllMatching(3) }));
+		await fireEvent.press(await screen.findByRole('button', { name: t.documentList.bulkDeleteBtn(3) }));
+		expect(mockBulk).not.toHaveBeenCalled();
+		await fireEvent.press(within(screen.getByTestId('action-modal')).getByRole('button', { name: t.common.delete }));
+		await waitFor(() => expect(mockBulk).toHaveBeenCalledWith({ ids: [7, 8, 9] }));
+	});
+
+	it('leaves delivery-note conversion disabled until that mobile module exists', async () => {
+		await render(<FactureClientListPage />);
+		await fireEvent.press(screen.getAllByRole('button', { name: t.common.moreActions })[0]);
+		expect(screen.getByRole('menuitem', { name: t.facturesClient.labelBonLivraison })).toBeEnabled();
+	});
+
+	it('opens the shared PDF format and language choices', async () => {
+		await render(<FactureClientListPage />);
+		await cardAction(t.common.print);
+		expect(screen.getByRole('button', { name: t.pdf.generatePdf })).toBeOnTheScreen();
+	});
+
+	it('prevents printing invoices that are neither drafts nor accepted', async () => {
+		await mockQuery.setResult({
+			...initialQuery,
+			currentData: {
+				...initialQuery.currentData,
+				pages: [{ ...initialQuery.currentData.pages[0], results: [{ ...row(7), statut: 'Envoyé' }] }],
+			},
+		});
+		await render(<FactureClientListPage />);
+		await fireEvent.press(screen.getAllByRole('button', { name: t.common.moreActions })[0]);
+		expect(screen.getByRole('menuitem', { name: t.facturesClient.printRequiresValidation })).toBeDisabled();
+	});
+
+	it('loads more on scroll and refreshes by pulling the list', async () => {
+		await render(<FactureClientListPage />);
+		await fireEvent(screen.getByTestId('facture-client-grid'), 'endReached');
+		expect(fetchNextPage).toHaveBeenCalledTimes(1);
+		await fireEvent(screen.getByTestId('facture-client-grid'), 'refresh');
+		expect(refetch).toHaveBeenCalledTimes(1);
+	});
+
+	it('maps date ranges to Django date_after/before inside an OR group', async () => {
+		await render(<FactureClientListPage />);
+		await fireEvent.press(screen.getByRole('button', { name: t.dataGrid.toolbarFilters }));
+		await fireEvent.press(screen.getByRole('button', { name: t.dataGrid.fieldLabel }));
+		await fireEvent.press(screen.getByRole('radio', { name: t.facturesClient.colDateFacture }));
+		await fireEvent.press(screen.getByRole('button', { name: t.dateRange.from }));
+		const date = new Date(2026, 0, 2, 12);
+		await fireEvent(screen.getByTestId('date-picker-' + t.dateRange.from), 'valueChange', {}, date);
+		await fireEvent.press(screen.getByLabelText(t.dataGrid.done));
+		await fireEvent.press(screen.getByLabelText(t.common.addFilter));
+		await fireEvent.press(screen.getAllByRole('button', { name: t.dataGrid.fieldLabel })[1]);
+		await fireEvent.press(screen.getByRole('radio', { name: t.documentList.colStatut }));
+		await fireEvent.press(screen.getAllByRole('button', { name: t.common.value })[0]);
+		await fireEvent.press(screen.getByRole('radio', { name: 'Envoyé' }));
+		await fireEvent.press(screen.getByRole('button', { name: t.filterPanel.logicOperator }));
+		await fireEvent.press(screen.getByRole('radio', { name: t.filterPanel.or }));
+		await fireEvent.press(screen.getByText(t.dataGrid.searchApply));
+		expect(lastArgs()).toMatchObject({ filter_logic: 'or' });
+		const groups = JSON.parse(String(lastArgs().filter_groups));
+		expect(groups).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ date_after: '2026-01-02' }),
+				expect.objectContaining({ statut: 'Envoyé' }),
+			]),
+		);
+		expect(JSON.stringify(groups)).not.toContain('date_facture_after');
+	});
+
+	it('converts an eligible invoice to a delivery note using the green confirmation flow', async () => {
+		await render(<FactureClientListPage />);
+		await cardAction(t.facturesClient.labelBonLivraison);
+		expect(screen.getByText(t.facturesClient.convertToBLTitle)).toBeOnTheScreen();
+		expect(screen.getByText(t.facturesClient.convertToBLBody)).toBeOnTheScreen();
+		expect(mockConvert).not.toHaveBeenCalled();
+		await fireEvent.press(within(screen.getByTestId('action-modal')).getByRole('button', { name: t.common.convert }));
+		await waitFor(() => expect(mockConvert).toHaveBeenCalledWith({ id: 7 }));
+		expect(router.push).toHaveBeenCalledWith({
+			pathname: '/bon-de-livraison/form',
+			params: { id: '31', company_id: '5' },
+		});
+	});
+
+	it('does not offer delivery conversion to a draft or read-only member', async () => {
+		await mockQuery.setResult({
+			...initialQuery,
+			currentData: {
+				...initialQuery.currentData,
+				pages: [{ ...initialQuery.currentData.pages[0]!, results: [{ ...row(7), statut: 'Brouillon' }] }],
+			},
+		});
+		await render(<FactureClientListPage />);
+		await fireEvent.press(screen.getAllByRole('button', { name: t.common.moreActions })[0]);
+		expect(screen.getByRole('menuitem', { name: t.facturesClient.labelBonLivraison })).toBeDisabled();
+	});
 });

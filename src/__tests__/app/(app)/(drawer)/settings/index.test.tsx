@@ -22,25 +22,27 @@ beforeEach(() => {
 	jest.clearAllMocks();
 });
 
-it('opens the existing settings forms from one menu without duplicating their inputs', async () => {
-	await render(<SettingsPage />);
-	for (const [label, path] of [
-		[translations.fr.navigation.myProfile, DASHBOARD_EDIT_PROFILE],
-		[translations.fr.navigation.changePassword, DASHBOARD_PASSWORD],
-		[translations.fr.navigation.notificationPreferences, DASHBOARD_NOTIFICATIONS],
-	]) {
-		await fireEvent.press(screen.getByRole('button', { name: label }));
-		expect(router.push).toHaveBeenLastCalledWith(path);
-	}
-	expect(screen.queryAllByRole('textbox')).toHaveLength(0);
-	expect(screen.getByRole('button', { name: translations.fr.navigation.settings })).toBeSelected();
-});
+describe('SettingsPage', () => {
+	it('opens the existing settings forms from one menu without duplicating their inputs', async () => {
+		await render(<SettingsPage />);
+		for (const [label, path] of [
+			[translations.fr.navigation.myProfile, DASHBOARD_EDIT_PROFILE],
+			[translations.fr.navigation.changePassword, DASHBOARD_PASSWORD],
+			[translations.fr.navigation.notificationPreferences, DASHBOARD_NOTIFICATIONS],
+		]) {
+			await fireEvent.press(screen.getByRole('button', { name: label }));
+			expect(router.push).toHaveBeenLastCalledWith(path);
+		}
+		expect(screen.queryAllByRole('textbox')).toHaveLength(0);
+		expect(screen.getByRole('button', { name: translations.fr.navigation.settings })).toBeSelected();
+	});
 
-it('opens monthly objective configuration from Paramètres for administrators only', async () => {
-	const view = await render(<SettingsPage />);
-	expect(screen.queryByRole('button', { name: translations.fr.navigation.monthlyObjectives })).not.toBeOnTheScreen();
-	mockProfile.is_staff = true;
-	await view.rerender(<SettingsPage />);
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.monthlyObjectives }));
-	expect(router.push).toHaveBeenLastCalledWith(DASHBOARD_OBJECTIFS_MENSUELS());
+	it('opens monthly objective configuration from Paramètres for administrators only', async () => {
+		const view = await render(<SettingsPage />);
+		expect(screen.queryByRole('button', { name: translations.fr.navigation.monthlyObjectives })).not.toBeOnTheScreen();
+		mockProfile.is_staff = true;
+		await view.rerender(<SettingsPage />);
+		await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.monthlyObjectives }));
+		expect(router.push).toHaveBeenLastCalledWith(DASHBOARD_OBJECTIFS_MENSUELS());
+	});
 });

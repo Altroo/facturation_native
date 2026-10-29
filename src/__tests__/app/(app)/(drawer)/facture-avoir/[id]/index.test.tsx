@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { router } from 'expo-router';
 import FactureAvoirViewPage from '@/app/(app)/(drawer)/facture-avoir/[id]/index';
 import { useGetFactureAvoirQuery } from '@/store/services/factureAvoir';
-import { createQueryMock } from '@/store/setupQuery';
+import { createQueryMock } from '@/__tests__/setupQuery';
 import { translations } from '@/translations';
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
 jest.mock(
@@ -80,64 +80,74 @@ beforeEach(async () => {
 	mockRemove.mockReturnValue({ unwrap: () => Promise.resolve() });
 	await mockQuery.setResult({ currentData: quote, refetch: jest.fn() } as never);
 });
-it('shows server totals, document fields and shared compact line/detail cards', async () => {
-	await render(<FactureAvoirViewPage />);
-	for (const value of [
-		'001/26',
-		'Atlas Client',
-		'Supplier',
-		'long.supplier@example.invalid',
-		'Virement',
-		'REQ-5',
-		'Deliver Monday',
-		'999,00 MAD',
-	])
-		expect(screen.getByText(value)).toBeOnTheScreen();
-	expect(screen.getByText(t.totalsCard.totalTTC)).toBeOnTheScreen();
-	expect(screen.getByText(t.totalsCard.totalTTCApresRemise)).toBeOnTheScreen();
-	expect(screen.getByText('1 000,00 MAD')).toBeOnTheScreen();
-	expect(within(screen.getByTestId('details-page')).queryByRole('button', { name: t.common.edit })).toBeNull();
-	await fireEvent.press(screen.getByRole('button', { name: t.common.edit }));
-	expect(router.push).toHaveBeenCalledWith({
-		pathname: '/facture-avoir/form',
-		params: { id: '7', company_id: '5' },
-	});
-});
-it.each(['Lecture', 'Comptable', 'Commercial'])('honors detail/write/print permissions for %s', async (role) => {
-	mockRole = role;
-	await render(<FactureAvoirViewPage />);
-	expect(screen.queryByRole('button', { name: t.common.delete })).toBeNull();
-	expect(!!screen.queryByRole('button', { name: t.common.edit })).toBe(role === 'Commercial');
-	expect(!!screen.queryByRole('button', { name: t.common.print })).toBe(role !== 'Lecture');
-});
-it('confirms deletion before mutating and only returns after success', async () => {
-	await render(<FactureAvoirViewPage />);
-	await fireEvent.press(screen.getByRole('button', { name: t.common.delete }));
-	expect(mockRemove).not.toHaveBeenCalled();
-	await fireEvent.press(within(screen.getByTestId('action-modal')).getByRole('button', { name: t.common.delete }));
-	await waitFor(() => expect(mockRemove).toHaveBeenCalledWith({ id: 7 }));
-	expect(router.dismissTo).toHaveBeenCalledWith('/facture-avoir');
-});
-it('reports deletion failure without leaving the document', async () => {
-	mockRemove.mockReturnValue({ unwrap: () => Promise.reject({ data: { message: 'In use' } }) });
-	await render(<FactureAvoirViewPage />);
-	await fireEvent.press(screen.getByRole('button', { name: t.common.delete }));
-	await fireEvent.press(within(screen.getByTestId('action-modal')).getByRole('button', { name: t.common.delete }));
-	await waitFor(() => expect(mockError).toHaveBeenCalledWith('In use'));
-	expect(router.dismissTo).not.toHaveBeenCalled();
-});
-it('does not reveal another company document through a forged company parameter', async () => {
-	await mockQuery.setResult({ currentData: { ...quote, company: 11 } } as never);
-	await render(<FactureAvoirViewPage />);
-	expect(screen.getByText(t.noPermission.title)).toBeOnTheScreen();
-	expect(screen.queryByText('001/26')).toBeNull();
-});
 
-it('hides editing on a finalized credit note and links the original invoice', async () => {
-	await mockQuery.setResult({ currentData: { ...quote, statut: 'Accepté' } } as never);
-	await render(<FactureAvoirViewPage />);
-	expect(screen.queryByRole('button', { name: t.common.edit })).toBeNull();
-	expect(screen.getByText('Retour marchandise')).toBeOnTheScreen();
-	await fireEvent.press(screen.getByText('FAC12/26'));
-	expect(router.push).toHaveBeenCalledWith({ pathname: '/facture-client/[id]', params: { id: '12', company_id: '5' } });
+describe('FactureAvoirViewPage', () => {
+	it('shows server totals, document fields and shared compact line/detail cards', async () => {
+		await render(<FactureAvoirViewPage />);
+		for (const value of [
+			'001/26',
+			'Atlas Client',
+			'Supplier',
+			'long.supplier@example.invalid',
+			'Virement',
+			'REQ-5',
+			'Deliver Monday',
+			'999,00 MAD',
+		])
+			expect(screen.getByText(value)).toBeOnTheScreen();
+		expect(screen.getByText(t.totalsCard.totalTTC)).toBeOnTheScreen();
+		expect(screen.getByText(t.totalsCard.totalTTCApresRemise)).toBeOnTheScreen();
+		expect(screen.getByText('1 000,00 MAD')).toBeOnTheScreen();
+		expect(within(screen.getByTestId('details-page')).queryByRole('button', { name: t.common.edit })).toBeNull();
+		await fireEvent.press(screen.getByRole('button', { name: t.common.edit }));
+		expect(router.push).toHaveBeenCalledWith({
+			pathname: '/facture-avoir/form',
+			params: { id: '7', company_id: '5' },
+		});
+	});
+
+	it.each(['Lecture', 'Comptable', 'Commercial'])('honors detail/write/print permissions for %s', async (role) => {
+		mockRole = role;
+		await render(<FactureAvoirViewPage />);
+		expect(screen.queryByRole('button', { name: t.common.delete })).toBeNull();
+		expect(!!screen.queryByRole('button', { name: t.common.edit })).toBe(role === 'Commercial');
+		expect(!!screen.queryByRole('button', { name: t.common.print })).toBe(role !== 'Lecture');
+	});
+
+	it('confirms deletion before mutating and only returns after success', async () => {
+		await render(<FactureAvoirViewPage />);
+		await fireEvent.press(screen.getByRole('button', { name: t.common.delete }));
+		expect(mockRemove).not.toHaveBeenCalled();
+		await fireEvent.press(within(screen.getByTestId('action-modal')).getByRole('button', { name: t.common.delete }));
+		await waitFor(() => expect(mockRemove).toHaveBeenCalledWith({ id: 7 }));
+		expect(router.dismissTo).toHaveBeenCalledWith('/facture-avoir');
+	});
+
+	it('reports deletion failure without leaving the document', async () => {
+		mockRemove.mockReturnValue({ unwrap: () => Promise.reject({ data: { message: 'In use' } }) });
+		await render(<FactureAvoirViewPage />);
+		await fireEvent.press(screen.getByRole('button', { name: t.common.delete }));
+		await fireEvent.press(within(screen.getByTestId('action-modal')).getByRole('button', { name: t.common.delete }));
+		await waitFor(() => expect(mockError).toHaveBeenCalledWith('In use'));
+		expect(router.dismissTo).not.toHaveBeenCalled();
+	});
+
+	it('does not reveal another company document through a forged company parameter', async () => {
+		await mockQuery.setResult({ currentData: { ...quote, company: 11 } } as never);
+		await render(<FactureAvoirViewPage />);
+		expect(screen.getByText(t.noPermission.title)).toBeOnTheScreen();
+		expect(screen.queryByText('001/26')).toBeNull();
+	});
+
+	it('hides editing on a finalized credit note and links the original invoice', async () => {
+		await mockQuery.setResult({ currentData: { ...quote, statut: 'Accepté' } } as never);
+		await render(<FactureAvoirViewPage />);
+		expect(screen.queryByRole('button', { name: t.common.edit })).toBeNull();
+		expect(screen.getByText('Retour marchandise')).toBeOnTheScreen();
+		await fireEvent.press(screen.getByText('FAC12/26'));
+		expect(router.push).toHaveBeenCalledWith({
+			pathname: '/facture-client/[id]',
+			params: { id: '12', company_id: '5' },
+		});
+	});
 });

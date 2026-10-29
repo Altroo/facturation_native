@@ -35,12 +35,6 @@ const options = [
 ];
 const commonProps = { label: 'Ville', placeholder: 'Toutes les villes', options };
 
-it('can show the same visible field label used by forms', async () => {
-	await render(<ChipSelectFilter {...commonProps} showLabel selectedIds={[]} onChange={jest.fn()} />);
-	expect(screen.getByText('Ville')).toHaveProp('className', expect.stringContaining('font-poppins-medium'));
-	expect(screen.getByRole('button', { name: 'Ville' })).toBeEnabled();
-});
-
 const ControlledFilter = (props: { onChange: (ids: number[]) => void }) => {
 	const [ids, setIds] = useState<number[]>([]);
 	return (
@@ -55,62 +49,70 @@ const ControlledFilter = (props: { onChange: (ids: number[]) => void }) => {
 	);
 };
 
-it('selects several IDs, deselects one, and clears the controlled selection', async () => {
-	const onChange = jest.fn();
-	await render(<ControlledFilter onChange={onChange} />);
-	expect(screen.getByText(commonProps.placeholder)).toBeOnTheScreen();
-	await fireEvent.press(screen.getByRole('button', { name: 'Ville' }));
-	await fireEvent.press(screen.getByRole('checkbox', { name: 'Rabat' }));
-	expect(onChange).toHaveBeenLastCalledWith([2]);
-	await fireEvent.press(screen.getByRole('checkbox', { name: 'Casablanca' }));
-	expect(onChange).toHaveBeenLastCalledWith([2, 1]);
-	expect(screen.getByRole('checkbox', { name: 'Rabat' })).toBeChecked();
-	expect(screen.getByRole('checkbox', { name: 'Casablanca' })).toBeChecked();
-	await fireEvent.press(screen.getByRole('button', { name: 'Close filter' }));
-	expect(screen.getByText('Casablanca, Rabat')).toBeOnTheScreen();
-	await fireEvent.press(screen.getByRole('button', { name: 'Ville' }));
-	await fireEvent.press(screen.getByRole('checkbox', { name: 'Rabat' }));
-	expect(onChange).toHaveBeenLastCalledWith([1]);
-	await fireEvent.press(screen.getByRole('button', { name: t.shared.clearSelection }));
-	expect(onChange).toHaveBeenLastCalledWith([]);
-	expect(screen.getByRole('checkbox', { name: 'Casablanca' })).not.toBeChecked();
-	await fireEvent.press(screen.getByRole('button', { name: 'Close filter' }));
-	expect(screen.getByText(commonProps.placeholder)).toBeOnTheScreen();
-});
+describe('ChipSelectFilter', () => {
+	it('can show the same visible field label used by forms', async () => {
+		await render(<ChipSelectFilter {...commonProps} showLabel selectedIds={[]} onChange={jest.fn()} />);
+		expect(screen.getByText('Ville')).toHaveProp('className', expect.stringContaining('font-poppins-medium'));
+		expect(screen.getByRole('button', { name: 'Ville' })).toBeEnabled();
+	});
 
-it('searches choices without changing selected IDs and resets search when reopened', async () => {
-	const onChange = jest.fn();
-	await render(<ChipSelectFilter {...commonProps} selectedIds={[1]} onChange={onChange} />);
-	await fireEvent.press(screen.getByRole('button', { name: 'Ville' }));
-	await fireEvent.changeText(screen.getByPlaceholderText(t.common.search), '  RAB  ');
-	expect(screen.getByRole('checkbox', { name: 'Rabat' })).toBeOnTheScreen();
-	expect(screen.queryByRole('checkbox', { name: 'Casablanca' })).toBeNull();
-	expect(onChange).not.toHaveBeenCalled();
-	await fireEvent.changeText(screen.getByPlaceholderText(t.common.search), 'Missing city');
-	expect(screen.getByText(t.common.noOptions)).toBeOnTheScreen();
-	await fireEvent.press(screen.getByRole('button', { name: 'Close filter' }));
-	await fireEvent.press(screen.getByRole('button', { name: 'Ville' }));
-	expect(screen.getByPlaceholderText(t.common.search)).toHaveProp('value', '');
-	expect(screen.getAllByRole('checkbox')).toHaveLength(3);
-	expect(screen.getByRole('checkbox', { name: 'Casablanca' })).toBeChecked();
-});
+	it('selects several IDs, deselects one, and clears the controlled selection', async () => {
+		const onChange = jest.fn();
+		await render(<ControlledFilter onChange={onChange} />);
+		expect(screen.getByText(commonProps.placeholder)).toBeOnTheScreen();
+		await fireEvent.press(screen.getByRole('button', { name: 'Ville' }));
+		await fireEvent.press(screen.getByRole('checkbox', { name: 'Rabat' }));
+		expect(onChange).toHaveBeenLastCalledWith([2]);
+		await fireEvent.press(screen.getByRole('checkbox', { name: 'Casablanca' }));
+		expect(onChange).toHaveBeenLastCalledWith([2, 1]);
+		expect(screen.getByRole('checkbox', { name: 'Rabat' })).toBeChecked();
+		expect(screen.getByRole('checkbox', { name: 'Casablanca' })).toBeChecked();
+		await fireEvent.press(screen.getByRole('button', { name: 'Close filter' }));
+		expect(screen.getByText('Casablanca, Rabat')).toBeOnTheScreen();
+		await fireEvent.press(screen.getByRole('button', { name: 'Ville' }));
+		await fireEvent.press(screen.getByRole('checkbox', { name: 'Rabat' }));
+		expect(onChange).toHaveBeenLastCalledWith([1]);
+		await fireEvent.press(screen.getByRole('button', { name: t.shared.clearSelection }));
+		expect(onChange).toHaveBeenLastCalledWith([]);
+		expect(screen.getByRole('checkbox', { name: 'Casablanca' })).not.toBeChecked();
+		await fireEvent.press(screen.getByRole('button', { name: 'Close filter' }));
+		expect(screen.getByText(commonProps.placeholder)).toBeOnTheScreen();
+	});
 
-it('prevents opening while disabled and hides an open sheet when disabled', async () => {
-	const onChange = jest.fn();
-	await render(<ChipSelectFilter {...commonProps} selectedIds={[]} onChange={onChange} disabled />);
-	await fireEvent.press(screen.getByRole('button', { name: 'Ville' }));
-	expect(screen.queryByTestId('chip-select-filter')).toBeNull();
-	await screen.rerender(<ChipSelectFilter {...commonProps} selectedIds={[]} onChange={onChange} />);
-	await fireEvent.press(screen.getByRole('button', { name: 'Ville' }));
-	expect(screen.getByTestId('chip-select-filter')).toBeOnTheScreen();
-	await screen.rerender(<ChipSelectFilter {...commonProps} selectedIds={[]} onChange={onChange} disabled />);
-	expect(screen.queryByTestId('chip-select-filter')).toBeNull();
-	expect(onChange).not.toHaveBeenCalled();
-});
+	it('searches choices without changing selected IDs and resets search when reopened', async () => {
+		const onChange = jest.fn();
+		await render(<ChipSelectFilter {...commonProps} selectedIds={[1]} onChange={onChange} />);
+		await fireEvent.press(screen.getByRole('button', { name: 'Ville' }));
+		await fireEvent.changeText(screen.getByPlaceholderText(t.common.search), '  RAB  ');
+		expect(screen.getByRole('checkbox', { name: 'Rabat' })).toBeOnTheScreen();
+		expect(screen.queryByRole('checkbox', { name: 'Casablanca' })).toBeNull();
+		expect(onChange).not.toHaveBeenCalled();
+		await fireEvent.changeText(screen.getByPlaceholderText(t.common.search), 'Missing city');
+		expect(screen.getByText(t.common.noOptions)).toBeOnTheScreen();
+		await fireEvent.press(screen.getByRole('button', { name: 'Close filter' }));
+		await fireEvent.press(screen.getByRole('button', { name: 'Ville' }));
+		expect(screen.getByPlaceholderText(t.common.search)).toHaveProp('value', '');
+		expect(screen.getAllByRole('checkbox')).toHaveLength(3);
+		expect(screen.getByRole('checkbox', { name: 'Casablanca' })).toBeChecked();
+	});
 
-it('handles an empty options response without offering an empty clear action', async () => {
-	await render(<ChipSelectFilter {...commonProps} options={[]} selectedIds={[]} onChange={jest.fn()} />);
-	await fireEvent.press(screen.getByRole('button', { name: 'Ville' }));
-	expect(screen.getByText(t.common.noOptions)).toBeOnTheScreen();
-	expect(screen.queryByRole('button', { name: t.shared.clearSelection })).toBeNull();
+	it('prevents opening while disabled and hides an open sheet when disabled', async () => {
+		const onChange = jest.fn();
+		await render(<ChipSelectFilter {...commonProps} selectedIds={[]} onChange={onChange} disabled />);
+		await fireEvent.press(screen.getByRole('button', { name: 'Ville' }));
+		expect(screen.queryByTestId('chip-select-filter')).toBeNull();
+		await screen.rerender(<ChipSelectFilter {...commonProps} selectedIds={[]} onChange={onChange} />);
+		await fireEvent.press(screen.getByRole('button', { name: 'Ville' }));
+		expect(screen.getByTestId('chip-select-filter')).toBeOnTheScreen();
+		await screen.rerender(<ChipSelectFilter {...commonProps} selectedIds={[]} onChange={onChange} disabled />);
+		expect(screen.queryByTestId('chip-select-filter')).toBeNull();
+		expect(onChange).not.toHaveBeenCalled();
+	});
+
+	it('handles an empty options response without offering an empty clear action', async () => {
+		await render(<ChipSelectFilter {...commonProps} options={[]} selectedIds={[]} onChange={jest.fn()} />);
+		await fireEvent.press(screen.getByRole('button', { name: 'Ville' }));
+		expect(screen.getByText(t.common.noOptions)).toBeOnTheScreen();
+		expect(screen.queryByRole('button', { name: t.shared.clearSelection })).toBeNull();
+	});
 });

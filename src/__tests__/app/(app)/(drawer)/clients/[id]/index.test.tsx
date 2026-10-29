@@ -5,7 +5,7 @@ import { router } from 'expo-router';
 import ClientsViewPage from '@/app/(app)/(drawer)/clients/[id]/index';
 import { useGetClientQuery, useGetClientHistoryQuery, useDeleteClientMutation } from '@/store/services/client';
 import { openClientStatementPdf } from '@/utils/apiHelpers';
-import { createQueryMock } from '@/store/setupQuery';
+import { createQueryMock } from '@/__tests__/setupQuery';
 import { translations } from '@/translations';
 import type { ClientClass } from '@/models/classes';
 import type { ClientHistoryResponseType } from '@/types/clientTypes';
@@ -187,306 +187,311 @@ beforeEach(async () => {
 	await setHistory();
 });
 
-it('renders all PM fields, keeps zero payment days and uses existing field styles without a client avatar', async () => {
-	await render(<ClientsViewPage />);
-	for (const value of [
-		client.code_client,
-		client.raison_sociale,
-		client.email,
-		client.tel,
-		client.ICE,
-		client.numero_du_compte,
-		client.registre_de_commerce,
-		client.identifiant_fiscal,
-		client.taxe_professionnelle,
-		client.CNSS,
-		client.remarque,
-		client.ville_name,
-	])
-		expect(screen.getByText(value!)).toBeOnTheScreen();
-	expect(screen.getByText('0')).toBeOnTheScreen();
-	expect(screen.getByText(t.clients.identitySection)).toBeOnTheScreen();
-	expect(screen.getAllByText(t.common.noData).length).toBeGreaterThan(0);
-	expect(screen.queryAllByRole('image')).toHaveLength(0);
-	expect(useGetClientQuery).toHaveBeenCalledWith({ id: 7 }, expect.objectContaining({ skip: false }));
-	expect(useGetClientHistoryQuery).toHaveBeenCalledWith({ id: 7 }, expect.objectContaining({ skip: false }));
-});
-
-it.each(['PP', 'CD'])('uses the web identity fields for %s clients', async (client_type) => {
-	await setClient({
-		...client,
-		client_type,
-		nom: 'Alaoui',
-		prenom: 'Sara',
-		raison_sociale: client_type === 'CD' ? 'Client divers' : null,
+describe('ClientsViewPage', () => {
+	it('renders all PM fields, keeps zero payment days and uses existing field styles without a client avatar', async () => {
+		await render(<ClientsViewPage />);
+		for (const value of [
+			client.code_client,
+			client.raison_sociale,
+			client.email,
+			client.tel,
+			client.ICE,
+			client.numero_du_compte,
+			client.registre_de_commerce,
+			client.identifiant_fiscal,
+			client.taxe_professionnelle,
+			client.CNSS,
+			client.remarque,
+			client.ville_name,
+		])
+			expect(screen.getByText(value!)).toBeOnTheScreen();
+		expect(screen.getByText('0')).toBeOnTheScreen();
+		expect(screen.getByText(t.clients.identitySection)).toBeOnTheScreen();
+		expect(screen.getAllByText(t.common.noData).length).toBeGreaterThan(0);
+		expect(screen.queryAllByRole('image')).toHaveLength(0);
+		expect(useGetClientQuery).toHaveBeenCalledWith({ id: 7 }, expect.objectContaining({ skip: false }));
+		expect(useGetClientHistoryQuery).toHaveBeenCalledWith({ id: 7 }, expect.objectContaining({ skip: false }));
 	});
-	await render(<ClientsViewPage />);
-	if (client_type === 'PP') {
-		expect(screen.getByText('Alaoui')).toBeOnTheScreen();
-		expect(screen.getByText('Sara')).toBeOnTheScreen();
-		expect(screen.getByText(client.adresse!)).toBeOnTheScreen();
-	} else {
-		expect(screen.getByText(t.clients.typeClientDivers)).toBeOnTheScreen();
-		expect(screen.getByText('Client divers')).toBeOnTheScreen();
-		expect(screen.queryByText('Alaoui')).toBeNull();
-	}
-});
 
-it.each([
-	{ id: 'invalid', company_id: '5' },
-	{ id: '0', company_id: '5' },
-	{ id: '7' },
-	{ id: '7', company_id: ['5', '6'] },
-])('rejects invalid route params before calling the services: %j', async (params) => {
-	mockParams = params;
-	await render(<ClientsViewPage />);
-	expect(screen.getByText(t.notFound.message)).toBeOnTheScreen();
-	expect(useGetClientQuery).not.toHaveBeenCalled();
-});
-
-it.each(['guest', 'different-company'])('skips API calls when the visitor is %s', async (visitor) => {
-	if (visitor === 'guest') mockToken = undefined;
-	else mockCompanies = [{ id: 99, role: 'Caissier' }];
-	await render(<ClientsViewPage />);
-	expect(screen.getByText(t.noPermission.description)).toBeOnTheScreen();
-	expect(useGetClientQuery).toHaveBeenCalledWith({ id: 7 }, expect.objectContaining({ skip: true }));
-	expect(useGetClientHistoryQuery).toHaveBeenCalledWith({ id: 7 }, expect.objectContaining({ skip: true }));
-	expect(screen.queryByText(client.raison_sociale!)).toBeNull();
-});
-
-it('hides data and skips history when a valid client belongs to another company', async () => {
-	await setClient({ ...client, company: 99 });
-	await render(<ClientsViewPage />);
-	expect(screen.getByText(t.noPermission.description)).toBeOnTheScreen();
-	expect(screen.queryByText(client.raison_sociale!)).toBeNull();
-	expect(useGetClientHistoryQuery).toHaveBeenCalledWith({ id: 7 }, expect.objectContaining({ skip: true }));
-});
-
-it('shows loading and a retryable client error without displaying stale data', async () => {
-	await mockClientQuery.setResult({ currentData: undefined, isLoading: true, isFetching: true } as never);
-	await render(<ClientsViewPage />);
-	expect(screen.getByTestId('api-loader')).toBeOnTheScreen();
-	await setClient(undefined, {
-		currentData: undefined,
-		data: client,
-		error: { status: 500, data: { message: 'Client indisponible' } },
+	it.each(['PP', 'CD'])('uses the web identity fields for %s clients', async (client_type) => {
+		await setClient({
+			...client,
+			client_type,
+			nom: 'Alaoui',
+			prenom: 'Sara',
+			raison_sociale: client_type === 'CD' ? 'Client divers' : null,
+		});
+		await render(<ClientsViewPage />);
+		if (client_type === 'PP') {
+			expect(screen.getByText('Alaoui')).toBeOnTheScreen();
+			expect(screen.getByText('Sara')).toBeOnTheScreen();
+			expect(screen.getByText(client.adresse!)).toBeOnTheScreen();
+		} else {
+			expect(screen.getByText(t.clients.typeClientDivers)).toBeOnTheScreen();
+			expect(screen.getByText('Client divers')).toBeOnTheScreen();
+			expect(screen.queryByText('Alaoui')).toBeNull();
+		}
 	});
-	expect(screen.queryByText(client.raison_sociale!)).toBeNull();
-	await fireEvent.press(screen.getByRole('button', { name: t.common.retry }));
-	expect(refetchClient).toHaveBeenCalledTimes(1);
-});
 
-it.each(['Lecture', 'Comptable', 'Commercial'])('matches web action permissions for %s', async (role) => {
-	mockCompanies = [{ id: 5, role }];
-	await render(<ClientsViewPage />);
-	expect(!!screen.queryByRole('button', { name: t.common.edit })).toBe(role === 'Commercial');
-	expect(!!screen.queryByRole('button', { name: t.common.delete })).toBe(role === 'Commercial');
-	expect(!!screen.queryByRole('button', { name: t.clients.statementPrint })).toBe(role !== 'Lecture');
-	expect(screen.getByText(client.raison_sociale!)).toBeOnTheScreen();
-});
-
-it('preserves company_id when navigating to the existing edit route', async () => {
-	await render(<ClientsViewPage />);
-	const actions = within(screen.getByTestId('details-page-actions'));
-	expect(actions.getAllByRole('button').map((button) => button.props.accessibilityLabel)).toEqual([
-		t.common.delete,
-		t.common.edit,
-	]);
-	expect(within(screen.getByTestId('details-page')).queryByTestId('details-page-actions')).toBeNull();
-	expect(within(screen.getByTestId('page-action-bar')).getByTestId('details-page-actions')).toBeOnTheScreen();
-	await fireEvent.press(actions.getByRole('button', { name: t.common.edit }));
-	expect(router.push).toHaveBeenCalledWith({ pathname: '/clients/form', params: { id: '7', company_id: '5' } });
-});
-
-it('cancels deletion without a request, then deletes once after confirmation and returns to the list', async () => {
-	await render(<ClientsViewPage />);
-	await openDelete();
-	expect(remove).not.toHaveBeenCalled();
-	await fireEvent.press(within(screen.getByTestId('action-modal')).getByRole('button', { name: t.common.cancel }));
-	expect(remove).not.toHaveBeenCalled();
-	await openDelete();
-	await confirmDelete();
-	expect(remove).toHaveBeenCalledTimes(1);
-	expect(remove).toHaveBeenCalledWith({ id: 7 });
-	expect(mockSuccess).toHaveBeenCalledWith(t.clients.deleteSuccess);
-	expect(router.dismissTo).toHaveBeenCalledWith('/clients');
-});
-
-it('prevents duplicate deletes while the first request is pending and shows server failures in a toast', async () => {
-	let reject!: (error: unknown) => void;
-	remove.mockReturnValue({
-		unwrap: () =>
-			new Promise((_resolve, rejectRequest) => {
-				reject = rejectRequest;
-			}),
+	it.each([
+		{ id: 'invalid', company_id: '5' },
+		{ id: '0', company_id: '5' },
+		{ id: '7' },
+		{ id: '7', company_id: ['5', '6'] },
+	])('rejects invalid route params before calling the services: %j', async (params) => {
+		mockParams = params;
+		await render(<ClientsViewPage />);
+		expect(screen.getByText(t.notFound.message)).toBeOnTheScreen();
+		expect(useGetClientQuery).not.toHaveBeenCalled();
 	});
-	await render(<ClientsViewPage />);
-	await openDelete();
-	await confirmDelete();
-	await confirmDelete();
-	expect(remove).toHaveBeenCalledTimes(1);
-	await act(async () => reject({ status: 403, data: { message: 'Suppression interdite' } }));
-	await waitFor(() => expect(mockError).toHaveBeenCalled());
-	expect(mockSuccess).not.toHaveBeenCalled();
-	expect(router.dismissTo).not.toHaveBeenCalled();
-});
 
-it('sorts statement entries and keeps each currency total separate', async () => {
-	await render(<ClientsViewPage />);
-	const mad = within(screen.getByTestId('statement-total-MAD'));
-	expect(mad.getByText(/1\s000,50 MAD/)).toBeOnTheScreen();
-	expect(mad.getByText('400,50 MAD')).toBeOnTheScreen();
-	expect(mad.getByText('600,00 MAD')).toBeOnTheScreen();
-	expect(mad.getByText(/1\s000,50 MAD/).props.className).toContain('text-red-600 dark:text-red-300');
-	expect(mad.getByText('400,50 MAD').props.className).toContain('text-emerald-600 dark:text-emerald-300');
-	expect(mad.getByText('600,00 MAD').props.className).toContain('text-ink dark:text-slate-100');
-	expect(within(screen.getByTestId('history-0-1')).getByText(/1\s000,50 MAD/).props.className).toContain(
-		'text-ink dark:text-slate-100',
-	);
-	expect(within(screen.getByTestId('statement-total-EUR')).getAllByText('200,00 EUR')).toHaveLength(2);
-	expect(screen.getAllByTestId(/^(invoice|credit-note|payment)-/).map((node) => node.props.testID)).toEqual([
-		'invoice-10',
-		'credit-note-20',
-		'invoice-11',
-		'payment-30',
-	]);
-});
-
-it.each([
-	{ label: t.clients.statementDateFrom, removedEntry: 'invoice-10' },
-	{ label: t.clients.statementDateTo, removedEntry: 'payment-30' },
-])('applies the $label statement filter only after confirming the picker', async ({ label, removedEntry }) => {
-	await render(<ClientsViewPage />);
-	await fireEvent.press(screen.getByRole('button', { name: label }));
-	await fireEvent(screen.getByTestId('date-picker-' + label), 'valueChange', {}, new Date(2026, 0, 3, 12));
-	expect(screen.getByTestId(removedEntry)).toBeOnTheScreen();
-	await fireEvent.press(screen.getByRole('button', { name: t.dataGrid.done }));
-	expect(screen.queryByTestId(removedEntry)).toBeNull();
-});
-
-it('filters statement dates inclusively and constrains both pickers to the other date', async () => {
-	await render(<ClientsViewPage />);
-	await setDate(t.clients.statementDateFrom, '2026-01-03');
-	expect(screen.queryByTestId('invoice-10')).toBeNull();
-	expect(screen.getByTestId('invoice-11')).toBeOnTheScreen();
-	await setDate(t.clients.statementDateTo, '2026-01-03');
-	expect(screen.getByTestId('invoice-11')).toBeOnTheScreen();
-	expect(screen.queryByTestId('payment-30')).toBeNull();
-	await setDate(t.clients.statementDateTo, '2026-01-02');
-	expect(screen.queryByText(t.clients.statementInvalidDates)).toBeNull();
-	expect(screen.getByRole('button', { name: t.clients.statementPrint })).toBeEnabled();
-	await fireEvent.press(screen.getByRole('button', { name: t.clients.statementDateTo }));
-	expect(screen.getByTestId('date-picker-' + t.clients.statementDateTo)).toHaveProp(
-		'minimumDate',
-		new Date(2026, 0, 3, 12),
-	);
-	expect(screen.getByTestId('date-picker-' + t.clients.statementDateTo)).toHaveProp('value', new Date(2026, 0, 3, 12));
-	await fireEvent.press(screen.getByRole('button', { name: t.dataGrid.done }));
-	await fireEvent.press(screen.getByRole('button', { name: t.clients.statementDateFrom }));
-	expect(screen.getByTestId('date-picker-' + t.clients.statementDateFrom)).toHaveProp(
-		'maximumDate',
-		new Date(2026, 0, 3, 12),
-	);
-	await fireEvent(
-		screen.getByTestId('date-picker-' + t.clients.statementDateFrom),
-		'valueChange',
-		{},
-		new Date(2026, 0, 4, 12),
-	);
-	await fireEvent.press(screen.getByRole('button', { name: t.dataGrid.done }));
-	expect(screen.queryByText(t.clients.statementInvalidDates)).toBeNull();
-	expect(screen.getByTestId('invoice-11')).toBeOnTheScreen();
-	expect(screen.getByTestId('history-0-1')).toBeOnTheScreen();
-	await fireEvent.press(screen.getByRole('button', { name: `${t.common.reset} (${t.clients.statementDateTo})` }));
-	await fireEvent.press(screen.getByRole('button', { name: t.clients.statementDateFrom }));
-	expect(screen.getByTestId('date-picker-' + t.clients.statementDateFrom)).toHaveProp(
-		'maximumDate',
-		new Date(format(new Date(), 'yyyy-MM-dd') + 'T12:00:00'),
-	);
-});
-
-it('filters by document type and sends the same filters and language to the PDF endpoint', async () => {
-	await render(<ClientsViewPage />);
-	await setDate(t.clients.statementDateFrom, '2026-01-02');
-	await fireEvent.press(screen.getByRole('button', { name: t.clients.statementType }));
-	await fireEvent.press(within(screen.getByTestId('dropdown-options')).getByText(t.clients.historyFactures));
-	expect(screen.queryByTestId('credit-note-20')).toBeNull();
-	expect(screen.queryByTestId('payment-30')).toBeNull();
-	await fireEvent.press(screen.getByRole('button', { name: t.clients.statementPrint }));
-	await fireEvent.press(screen.getByRole('button', { name: t.pdf.dutch }));
-	expect(openClientStatementPdf).toHaveBeenCalledWith(7, 5, 'nl', {
-		date_from: '2026-01-02',
-		date_to: format(new Date(), 'yyyy-MM-dd'),
-		type: 'invoice',
+	it.each(['guest', 'different-company'])('skips API calls when the visitor is %s', async (visitor) => {
+		if (visitor === 'guest') mockToken = undefined;
+		else mockCompanies = [{ id: 99, role: 'Caissier' }];
+		await render(<ClientsViewPage />);
+		expect(screen.getByText(t.noPermission.description)).toBeOnTheScreen();
+		expect(useGetClientQuery).toHaveBeenCalledWith({ id: 7 }, expect.objectContaining({ skip: true }));
+		expect(useGetClientHistoryQuery).toHaveBeenCalledWith({ id: 7 }, expect.objectContaining({ skip: true }));
+		expect(screen.queryByText(client.raison_sociale!)).toBeNull();
 	});
-});
 
-it('uses the company tab control to scroll history choices without changing the selected document type', async () => {
-	await render(<ClientsViewPage />);
-	await fireEvent.layout(screen.getByTestId('client-history-tabs'), { width: 300, height: 56 });
-	await fireEvent(screen.getByLabelText(t.clients.historySection), 'contentSizeChange', 600, 56);
-	await fireEvent.layout(screen.getByLabelText(t.clients.historySection), { width: 212, height: 56 });
-	expect(screen.getByRole('button', { name: t.common.tabsScrollLeft })).toBeDisabled();
-	await fireEvent.press(screen.getByRole('button', { name: t.common.tabsScrollRight }));
-	expect(ScrollView.prototype.scrollTo).toHaveBeenLastCalledWith({ x: expect.closeTo(169.6), animated: true });
-	expect(screen.getByRole('tab', { name: t.clients.historyDevis, selected: true })).toBeOnTheScreen();
-	expect(screen.getByText('DEV-001')).toBeOnTheScreen();
-	expect(screen.getByText(`${t.clients.historyFactures} (2)`)).toBeOnTheScreen();
-});
-
-it('switches all four history tabs, retaining status, payment status and payment method', async () => {
-	await render(<ClientsViewPage />);
-	expect(screen.getByText('DEV-001')).toBeOnTheScreen();
-	await fireEvent.press(screen.getByRole('tab', { name: t.clients.historyFactures }));
-	expect(screen.getByText('FAC-010')).toBeOnTheScreen();
-	expect(within(screen.getByTestId('history-1-10')).getByText(/1\s000,50 MAD/)).toBeOnTheScreen();
-	expect(screen.getByText('Partiel')).toBeOnTheScreen();
-	await fireEvent.press(screen.getByRole('tab', { name: t.clients.historyAvoirs }));
-	expect(screen.getByText('AV-020')).toBeOnTheScreen();
-	await fireEvent.press(screen.getByRole('tab', { name: t.clients.historyReglements }));
-	expect(screen.getByText('Virement janvier')).toBeOnTheScreen();
-	expect(screen.getByText('Virement')).toBeOnTheScreen();
-});
-
-it('keeps the profile readable when history fails and retries the history independently', async () => {
-	await setHistory(undefined, {
-		currentData: undefined,
-		error: { status: 500, data: { message: 'Historique indisponible' } },
+	it('hides data and skips history when a valid client belongs to another company', async () => {
+		await setClient({ ...client, company: 99 });
+		await render(<ClientsViewPage />);
+		expect(screen.getByText(t.noPermission.description)).toBeOnTheScreen();
+		expect(screen.queryByText(client.raison_sociale!)).toBeNull();
+		expect(useGetClientHistoryQuery).toHaveBeenCalledWith({ id: 7 }, expect.objectContaining({ skip: true }));
 	});
-	await render(<ClientsViewPage />);
-	expect(screen.getByText(client.raison_sociale!)).toBeOnTheScreen();
-	expect(screen.getByRole('button', { name: t.clients.statementPrint })).toBeDisabled();
-	await fireEvent.press(screen.getAllByRole('button', { name: t.common.retry })[0]);
-	expect(refetchHistory).toHaveBeenCalledTimes(1);
-});
 
-it('disables PDF export for an empty statement, including a date-filtered opening line', async () => {
-	await setHistory({ devis: [], factures: [], avoirs: [], reglements: [] });
-	await render(<ClientsViewPage />);
-	await setDate(t.clients.statementDateFrom, '2026-01-01');
-	expect(screen.getByRole('button', { name: t.clients.statementPrint })).toBeDisabled();
-	expect(screen.queryByTestId('opening-balance')).toBeNull();
-	expect(screen.getAllByText(t.clients.noHistory)).toHaveLength(2);
-	expect(within(screen.getByTestId('client-statement-empty')).getByText(t.clients.noHistory)).toBeOnTheScreen();
-	expect(within(screen.getByTestId('client-history-empty')).getByText(t.clients.noHistory)).toBeOnTheScreen();
-	await setHistory(history);
-	expect(screen.queryByTestId('client-statement-empty')).toBeNull();
-	expect(screen.queryByTestId('client-history-empty')).toBeNull();
-});
+	it('shows loading and a retryable client error without displaying stale data', async () => {
+		await mockClientQuery.setResult({ currentData: undefined, isLoading: true, isFetching: true } as never);
+		await render(<ClientsViewPage />);
+		expect(screen.getByTestId('api-loader')).toBeOnTheScreen();
+		await setClient(undefined, {
+			currentData: undefined,
+			data: client,
+			error: { status: 500, data: { message: 'Client indisponible' } },
+		});
+		expect(screen.queryByText(client.raison_sociale!)).toBeNull();
+		await fireEvent.press(screen.getByRole('button', { name: t.common.retry }));
+		expect(refetchClient).toHaveBeenCalledTimes(1);
+	});
 
-it('shows a toast if PDF preview is unavailable and allows trying again', async () => {
-	jest.mocked(openClientStatementPdf).mockResolvedValue(false);
-	await render(<ClientsViewPage />);
-	await fireEvent.press(screen.getByRole('button', { name: t.clients.statementPrint }));
-	await fireEvent.press(screen.getByRole('button', { name: t.pdf.french }));
-	expect(mockError).toHaveBeenCalledWith(t.errors.documentOpenError);
-	expect(screen.getByRole('button', { name: t.clients.statementPrint })).toBeEnabled();
-});
+	it.each(['Lecture', 'Comptable', 'Commercial'])('matches web action permissions for %s', async (role) => {
+		mockCompanies = [{ id: 5, role }];
+		await render(<ClientsViewPage />);
+		expect(!!screen.queryByRole('button', { name: t.common.edit })).toBe(role === 'Commercial');
+		expect(!!screen.queryByRole('button', { name: t.common.delete })).toBe(role === 'Commercial');
+		expect(!!screen.queryByRole('button', { name: t.clients.statementPrint })).toBe(role !== 'Lecture');
+		expect(screen.getByText(client.raison_sociale!)).toBeOnTheScreen();
+	});
 
-it('translates the complete view to English', async () => {
-	mockLanguage = 'en';
-	await render(<ClientsViewPage />);
-	expect(screen.getByText(translations.en.clients.identitySection)).toBeOnTheScreen();
-	expect(screen.getByText(translations.en.clients.accountStatement)).toBeOnTheScreen();
-	expect(screen.getByRole('tab', { name: translations.en.clients.historyDevis })).toBeOnTheScreen();
+	it('preserves company_id when navigating to the existing edit route', async () => {
+		await render(<ClientsViewPage />);
+		const actions = within(screen.getByTestId('details-page-actions'));
+		expect(actions.getAllByRole('button').map((button) => button.props.accessibilityLabel)).toEqual([
+			t.common.delete,
+			t.common.edit,
+		]);
+		expect(within(screen.getByTestId('details-page')).queryByTestId('details-page-actions')).toBeNull();
+		expect(within(screen.getByTestId('page-action-bar')).getByTestId('details-page-actions')).toBeOnTheScreen();
+		await fireEvent.press(actions.getByRole('button', { name: t.common.edit }));
+		expect(router.push).toHaveBeenCalledWith({ pathname: '/clients/form', params: { id: '7', company_id: '5' } });
+	});
+
+	it('cancels deletion without a request, then deletes once after confirmation and returns to the list', async () => {
+		await render(<ClientsViewPage />);
+		await openDelete();
+		expect(remove).not.toHaveBeenCalled();
+		await fireEvent.press(within(screen.getByTestId('action-modal')).getByRole('button', { name: t.common.cancel }));
+		expect(remove).not.toHaveBeenCalled();
+		await openDelete();
+		await confirmDelete();
+		expect(remove).toHaveBeenCalledTimes(1);
+		expect(remove).toHaveBeenCalledWith({ id: 7 });
+		expect(mockSuccess).toHaveBeenCalledWith(t.clients.deleteSuccess);
+		expect(router.dismissTo).toHaveBeenCalledWith('/clients');
+	});
+
+	it('prevents duplicate deletes while the first request is pending and shows server failures in a toast', async () => {
+		let reject!: (error: unknown) => void;
+		remove.mockReturnValue({
+			unwrap: () =>
+				new Promise((_resolve, rejectRequest) => {
+					reject = rejectRequest;
+				}),
+		});
+		await render(<ClientsViewPage />);
+		await openDelete();
+		await confirmDelete();
+		await confirmDelete();
+		expect(remove).toHaveBeenCalledTimes(1);
+		await act(async () => reject({ status: 403, data: { message: 'Suppression interdite' } }));
+		await waitFor(() => expect(mockError).toHaveBeenCalled());
+		expect(mockSuccess).not.toHaveBeenCalled();
+		expect(router.dismissTo).not.toHaveBeenCalled();
+	});
+
+	it('sorts statement entries and keeps each currency total separate', async () => {
+		await render(<ClientsViewPage />);
+		const mad = within(screen.getByTestId('statement-total-MAD'));
+		expect(mad.getByText(/1\s000,50 MAD/)).toBeOnTheScreen();
+		expect(mad.getByText('400,50 MAD')).toBeOnTheScreen();
+		expect(mad.getByText('600,00 MAD')).toBeOnTheScreen();
+		expect(mad.getByText(/1\s000,50 MAD/).props.className).toContain('text-red-600 dark:text-red-300');
+		expect(mad.getByText('400,50 MAD').props.className).toContain('text-emerald-600 dark:text-emerald-300');
+		expect(mad.getByText('600,00 MAD').props.className).toContain('text-ink dark:text-slate-100');
+		expect(within(screen.getByTestId('history-0-1')).getByText(/1\s000,50 MAD/).props.className).toContain(
+			'text-ink dark:text-slate-100',
+		);
+		expect(within(screen.getByTestId('statement-total-EUR')).getAllByText('200,00 EUR')).toHaveLength(2);
+		expect(screen.getAllByTestId(/^(invoice|credit-note|payment)-/).map((node) => node.props.testID)).toEqual([
+			'invoice-10',
+			'credit-note-20',
+			'invoice-11',
+			'payment-30',
+		]);
+	});
+
+	it.each([
+		{ label: t.clients.statementDateFrom, removedEntry: 'invoice-10' },
+		{ label: t.clients.statementDateTo, removedEntry: 'payment-30' },
+	])('applies the $label statement filter only after confirming the picker', async ({ label, removedEntry }) => {
+		await render(<ClientsViewPage />);
+		await fireEvent.press(screen.getByRole('button', { name: label }));
+		await fireEvent(screen.getByTestId('date-picker-' + label), 'valueChange', {}, new Date(2026, 0, 3, 12));
+		expect(screen.getByTestId(removedEntry)).toBeOnTheScreen();
+		await fireEvent.press(screen.getByRole('button', { name: t.dataGrid.done }));
+		expect(screen.queryByTestId(removedEntry)).toBeNull();
+	});
+
+	it('filters statement dates inclusively and constrains both pickers to the other date', async () => {
+		await render(<ClientsViewPage />);
+		await setDate(t.clients.statementDateFrom, '2026-01-03');
+		expect(screen.queryByTestId('invoice-10')).toBeNull();
+		expect(screen.getByTestId('invoice-11')).toBeOnTheScreen();
+		await setDate(t.clients.statementDateTo, '2026-01-03');
+		expect(screen.getByTestId('invoice-11')).toBeOnTheScreen();
+		expect(screen.queryByTestId('payment-30')).toBeNull();
+		await setDate(t.clients.statementDateTo, '2026-01-02');
+		expect(screen.queryByText(t.clients.statementInvalidDates)).toBeNull();
+		expect(screen.getByRole('button', { name: t.clients.statementPrint })).toBeEnabled();
+		await fireEvent.press(screen.getByRole('button', { name: t.clients.statementDateTo }));
+		expect(screen.getByTestId('date-picker-' + t.clients.statementDateTo)).toHaveProp(
+			'minimumDate',
+			new Date(2026, 0, 3, 12),
+		);
+		expect(screen.getByTestId('date-picker-' + t.clients.statementDateTo)).toHaveProp(
+			'value',
+			new Date(2026, 0, 3, 12),
+		);
+		await fireEvent.press(screen.getByRole('button', { name: t.dataGrid.done }));
+		await fireEvent.press(screen.getByRole('button', { name: t.clients.statementDateFrom }));
+		expect(screen.getByTestId('date-picker-' + t.clients.statementDateFrom)).toHaveProp(
+			'maximumDate',
+			new Date(2026, 0, 3, 12),
+		);
+		await fireEvent(
+			screen.getByTestId('date-picker-' + t.clients.statementDateFrom),
+			'valueChange',
+			{},
+			new Date(2026, 0, 4, 12),
+		);
+		await fireEvent.press(screen.getByRole('button', { name: t.dataGrid.done }));
+		expect(screen.queryByText(t.clients.statementInvalidDates)).toBeNull();
+		expect(screen.getByTestId('invoice-11')).toBeOnTheScreen();
+		expect(screen.getByTestId('history-0-1')).toBeOnTheScreen();
+		await fireEvent.press(screen.getByRole('button', { name: `${t.common.reset} (${t.clients.statementDateTo})` }));
+		await fireEvent.press(screen.getByRole('button', { name: t.clients.statementDateFrom }));
+		expect(screen.getByTestId('date-picker-' + t.clients.statementDateFrom)).toHaveProp(
+			'maximumDate',
+			new Date(format(new Date(), 'yyyy-MM-dd') + 'T12:00:00'),
+		);
+	});
+
+	it('filters by document type and sends the same filters and language to the PDF endpoint', async () => {
+		await render(<ClientsViewPage />);
+		await setDate(t.clients.statementDateFrom, '2026-01-02');
+		await fireEvent.press(screen.getByRole('button', { name: t.clients.statementType }));
+		await fireEvent.press(within(screen.getByTestId('dropdown-options')).getByText(t.clients.historyFactures));
+		expect(screen.queryByTestId('credit-note-20')).toBeNull();
+		expect(screen.queryByTestId('payment-30')).toBeNull();
+		await fireEvent.press(screen.getByRole('button', { name: t.clients.statementPrint }));
+		await fireEvent.press(screen.getByRole('button', { name: t.pdf.dutch }));
+		expect(openClientStatementPdf).toHaveBeenCalledWith(7, 5, 'nl', {
+			date_from: '2026-01-02',
+			date_to: format(new Date(), 'yyyy-MM-dd'),
+			type: 'invoice',
+		});
+	});
+
+	it('uses the company tab control to scroll history choices without changing the selected document type', async () => {
+		await render(<ClientsViewPage />);
+		await fireEvent.layout(screen.getByTestId('client-history-tabs'), { width: 300, height: 56 });
+		await fireEvent(screen.getByLabelText(t.clients.historySection), 'contentSizeChange', 600, 56);
+		await fireEvent.layout(screen.getByLabelText(t.clients.historySection), { width: 212, height: 56 });
+		expect(screen.getByRole('button', { name: t.common.tabsScrollLeft })).toBeDisabled();
+		await fireEvent.press(screen.getByRole('button', { name: t.common.tabsScrollRight }));
+		expect(ScrollView.prototype.scrollTo).toHaveBeenLastCalledWith({ x: expect.closeTo(169.6), animated: true });
+		expect(screen.getByRole('tab', { name: t.clients.historyDevis, selected: true })).toBeOnTheScreen();
+		expect(screen.getByText('DEV-001')).toBeOnTheScreen();
+		expect(screen.getByText(`${t.clients.historyFactures} (2)`)).toBeOnTheScreen();
+	});
+
+	it('switches all four history tabs, retaining status, payment status and payment method', async () => {
+		await render(<ClientsViewPage />);
+		expect(screen.getByText('DEV-001')).toBeOnTheScreen();
+		await fireEvent.press(screen.getByRole('tab', { name: t.clients.historyFactures }));
+		expect(screen.getByText('FAC-010')).toBeOnTheScreen();
+		expect(within(screen.getByTestId('history-1-10')).getByText(/1\s000,50 MAD/)).toBeOnTheScreen();
+		expect(screen.getByText('Partiel')).toBeOnTheScreen();
+		await fireEvent.press(screen.getByRole('tab', { name: t.clients.historyAvoirs }));
+		expect(screen.getByText('AV-020')).toBeOnTheScreen();
+		await fireEvent.press(screen.getByRole('tab', { name: t.clients.historyReglements }));
+		expect(screen.getByText('Virement janvier')).toBeOnTheScreen();
+		expect(screen.getByText('Virement')).toBeOnTheScreen();
+	});
+
+	it('keeps the profile readable when history fails and retries the history independently', async () => {
+		await setHistory(undefined, {
+			currentData: undefined,
+			error: { status: 500, data: { message: 'Historique indisponible' } },
+		});
+		await render(<ClientsViewPage />);
+		expect(screen.getByText(client.raison_sociale!)).toBeOnTheScreen();
+		expect(screen.getByRole('button', { name: t.clients.statementPrint })).toBeDisabled();
+		await fireEvent.press(screen.getAllByRole('button', { name: t.common.retry })[0]);
+		expect(refetchHistory).toHaveBeenCalledTimes(1);
+	});
+
+	it('disables PDF export for an empty statement, including a date-filtered opening line', async () => {
+		await setHistory({ devis: [], factures: [], avoirs: [], reglements: [] });
+		await render(<ClientsViewPage />);
+		await setDate(t.clients.statementDateFrom, '2026-01-01');
+		expect(screen.getByRole('button', { name: t.clients.statementPrint })).toBeDisabled();
+		expect(screen.queryByTestId('opening-balance')).toBeNull();
+		expect(screen.getAllByText(t.clients.noHistory)).toHaveLength(2);
+		expect(within(screen.getByTestId('client-statement-empty')).getByText(t.clients.noHistory)).toBeOnTheScreen();
+		expect(within(screen.getByTestId('client-history-empty')).getByText(t.clients.noHistory)).toBeOnTheScreen();
+		await setHistory(history);
+		expect(screen.queryByTestId('client-statement-empty')).toBeNull();
+		expect(screen.queryByTestId('client-history-empty')).toBeNull();
+	});
+
+	it('shows a toast if PDF preview is unavailable and allows trying again', async () => {
+		jest.mocked(openClientStatementPdf).mockResolvedValue(false);
+		await render(<ClientsViewPage />);
+		await fireEvent.press(screen.getByRole('button', { name: t.clients.statementPrint }));
+		await fireEvent.press(screen.getByRole('button', { name: t.pdf.french }));
+		expect(mockError).toHaveBeenCalledWith(t.errors.documentOpenError);
+		expect(screen.getByRole('button', { name: t.clients.statementPrint })).toBeEnabled();
+	});
+
+	it('translates the complete view to English', async () => {
+		mockLanguage = 'en';
+		await render(<ClientsViewPage />);
+		expect(screen.getByText(translations.en.clients.identitySection)).toBeOnTheScreen();
+		expect(screen.getByText(translations.en.clients.accountStatement)).toBeOnTheScreen();
+		expect(screen.getByRole('tab', { name: translations.en.clients.historyDevis })).toBeOnTheScreen();
+	});
 });

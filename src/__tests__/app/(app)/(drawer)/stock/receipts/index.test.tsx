@@ -6,19 +6,23 @@ import { useGetStockReceiptsInfiniteListInfiniteQuery } from '@/store/services/s
 import { translations } from '@/translations';
 
 beforeEach(resetStockScreen);
-it('opens company-scoped receipts with server controls and the correct write permission', async () => {
-	stockScreen.role = 'Logistique';
-	await render(<Page />);
-	expect(useGetStockReceiptsInfiniteListInfiniteQuery).toHaveBeenCalledWith(
-		expect.objectContaining({ company_id: 5, search: '', filters: {} }),
-		expect.anything(),
-	);
-	const props = jest.mocked(StockList).mock.calls.at(-1)![0];
-	expect(!!props.createAction).toBe(true);
-});
-it('rejects a malformed company parameter without starting the list request', async () => {
-	stockScreen.params = { company_id: 'invalid' };
-	await render(<Page />);
-	expect(screen.getByText(translations.fr.notFound.message)).toBeOnTheScreen();
-	expect(useGetStockReceiptsInfiniteListInfiniteQuery).not.toHaveBeenCalled();
+
+describe('StockReceiptsPage', () => {
+	it('opens company-scoped receipts with server controls and the correct write permission', async () => {
+		stockScreen.role = 'Logistique';
+		await render(<Page />);
+		expect(useGetStockReceiptsInfiniteListInfiniteQuery).toHaveBeenCalledWith(
+			expect.objectContaining({ company_id: 5, search: '', filters: {} }),
+			expect.anything(),
+		);
+		const props = jest.mocked(StockList).mock.calls.at(-1)![0];
+		expect(!!props.createAction).toBe(true);
+	});
+
+	it('rejects a malformed company parameter without starting the list request', async () => {
+		stockScreen.params = { company_id: 'invalid' };
+		await render(<Page />);
+		expect(screen.getByText(translations.fr.notFound.message)).toBeOnTheScreen();
+		expect(useGetStockReceiptsInfiniteListInfiniteQuery).not.toHaveBeenCalled();
+	});
 });

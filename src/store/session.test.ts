@@ -59,6 +59,18 @@ const { fixture, storage } = jest.requireMock('@/auth') as {
 	storage: { read: jest.Mock; write: jest.Mock };
 };
 
+beforeEach(async () => {
+	jest.useFakeTimers();
+	await auth.clear();
+	storage.write.mockClear();
+	fixture.profileCalls = 0;
+	fixture.membershipCalls = 0;
+});
+afterEach(() => {
+	jest.clearAllTimers();
+	jest.useRealTimers();
+});
+
 describe('getAccessTokenFromSession', () => {
 	it('returns undefined when session is undefined', () => {
 		const result = getAccessTokenFromSession(undefined);
@@ -142,44 +154,32 @@ describe('getAccessTokenFromSession', () => {
 		const result = getAccessTokenFromSession(session);
 		expect(result).toBe('only-root');
 	});
-});
 
-beforeEach(async () => {
-	jest.useFakeTimers();
-	await auth.clear();
-	storage.write.mockClear();
-	fixture.profileCalls = 0;
-	fixture.membershipCalls = 0;
+	it.each([false, true])(
+		'never authenticates after account loading expires the session (both fail: %s)',
+		async (failMembership) => {
+			fixture.failMembership = failMembership;
+			const store = makeStore();
+			const sagaTask = store.runSaga(rootSaga);
+			const statuses: string[] = [];
+			const unsubscribe = store.subscribe(() => statuses.push(store.getState()._init.status));
+			// InitEffects owns this subscriber while the app is mounted.
+			const unsubscribeExpired = auth.subscribeExpired(() => store.dispatch(initToken()));
+			try {
+				store.dispatch(initAppAction());
+				await jest.runAllTimersAsync();
+				expect(fixture.profileCalls).toBeGreaterThan(0);
+				expect(storage.write).toHaveBeenLastCalledWith(null);
+				expect(statuses).toContain('guest');
+				expect(statuses).not.toContain('authenticated');
+				expect(store.getState()._init).toMatchObject({ status: 'guest' });
+				expect(Object.values(store.getState().companyApi.queries).some((query) => query?.data)).toBe(false);
+			} finally {
+				unsubscribe();
+				unsubscribeExpired();
+				sagaTask.cancel();
+				store.dispatch(companyApi.util.resetApiState());
+			}
+		},
+	);
 });
-afterEach(() => {
-	jest.clearAllTimers();
-	jest.useRealTimers();
-});
-
-it.each([false, true])(
-	'never authenticates after account loading expires the session (both fail: %s)',
-	async (failMembership) => {
-		fixture.failMembership = failMembership;
-		const store = makeStore();
-		const sagaTask = store.runSaga(rootSaga);
-		const statuses: string[] = [];
-		const unsubscribe = store.subscribe(() => statuses.push(store.getState()._init.status));
-		// InitEffects owns this subscriber while the app is mounted.
-		const unsubscribeExpired = auth.subscribeExpired(() => store.dispatch(initToken()));
-		try {
-			store.dispatch(initAppAction());
-			await jest.runAllTimersAsync();
-			expect(fixture.profileCalls).toBeGreaterThan(0);
-			expect(storage.write).toHaveBeenLastCalledWith(null);
-			expect(statuses).toContain('guest');
-			expect(statuses).not.toContain('authenticated');
-			expect(store.getState()._init).toMatchObject({ status: 'guest' });
-			expect(Object.values(store.getState().companyApi.queries).some((query) => query?.data)).toBe(false);
-		} finally {
-			unsubscribe();
-			unsubscribeExpired();
-			sagaTask.cancel();
-			store.dispatch(companyApi.util.resetApiState());
-		}
-	},
-);

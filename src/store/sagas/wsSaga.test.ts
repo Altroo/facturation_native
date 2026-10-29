@@ -160,326 +160,342 @@ afterEach(async () => {
 	else Reflect.deleteProperty(window, 'Notification');
 	expect(sagaErrors).toEqual([]);
 });
-it('bootstraps public maintenance without requiring a session or authenticated request', async () => {
-	jest.mocked(auth.getSession).mockReturnValue(null);
-	publicGet.mockResolvedValue({ status: 200, data: { maintenance: true, version: '9.0.0', version_mobile: '3.6.2' } });
-	const { task, actions } = start(initMaintenanceSaga);
-	await task.toPromise();
-	expect(publicGet).toHaveBeenCalledWith('/ws/maintenance/', { params: undefined, signal: expect.any(AbortSignal) });
-	expect(privateGet).not.toHaveBeenCalled();
-	expect(actions).toEqual([setWSMaintenance(true), setWSServerVersion('3.6.2')]);
-});
-it('preserves the last state on network errors', async () => {
-	publicGet.mockRejectedValue(new Error('offline'));
-	const { task, actions } = start(initMaintenanceSaga);
-	await task.toPromise();
-	expect(actions).toEqual([]);
-});
-it('does not announce a web release when the HTTP response has no mobile version', async () => {
-	publicGet.mockResolvedValue({ status: 200, data: { maintenance: false, version: '9.0.0' } });
-	const { task, actions } = start(initMaintenanceSaga);
-	await task.toPromise();
-	expect(actions).toEqual([setWSMaintenance(false)]);
-});
-it('aborts an older HTTP snapshot when a live signal arrives and ignores its eventual response', async () => {
-	const pending = deferred<{ data: { maintenance: boolean; version_mobile: string } }>();
-	publicGet.mockReturnValue(pending.promise);
-	let emit!: (action: WSAction) => void;
-	const unsubscribe = jest.fn();
-	jest.mocked(initWebsocket).mockImplementation(() =>
-		eventChannel((next) => {
-			emit = next;
-			return unsubscribe;
-		}),
-	);
-	const { send, actions } = start();
-	send(startWSAction());
-	send(initMaintenanceAction());
-	const signal: AbortSignal = publicGet.mock.calls[0][1].signal;
-	emit(WSMaintenanceAction(true, '3.6.3'));
-	await flush();
-	expect(signal.aborted).toBe(true);
-	pending.resolve({ data: { maintenance: false, version_mobile: '3.6.2' } });
-	await flush();
-	expect(actions).toContainEqual(setWSMaintenance(true));
-	expect(actions).toContainEqual(setWSServerVersion('3.6.3'));
-	expect(actions).not.toContainEqual(setWSMaintenance(false));
-	expect(actions).not.toContainEqual(setWSServerVersion('3.6.2'));
-});
-it('refreshes a public snapshot when a socket connects and cancels superseded HTTP checks', async () => {
-	let emit!: (action: WSAction) => void;
-	jest.mocked(initWebsocket).mockImplementation(() =>
-		eventChannel((next) => {
-			emit = next;
-			return () => {};
-		}),
-	);
-	const { send } = start();
-	send(startWSAction());
-	emit(WSReconnectedAction());
-	expect(publicGet).toHaveBeenCalledTimes(1);
-	const firstSignal: AbortSignal = publicGet.mock.calls[0][1].signal;
-	send(initMaintenanceAction());
-	expect(firstSignal.aborted).toBe(true);
-	expect(publicGet).toHaveBeenCalledTimes(2);
-});
-it.each([stopWSAction(), accountLogoutAction(), initToken()])('closes the active channel on $type', async (action) => {
-	const unsubscribe = jest.fn();
-	jest.mocked(initWebsocket).mockImplementation(() => eventChannel(() => unsubscribe));
-	const { send } = start();
-	send(startWSAction());
-	send(action);
-	await flush();
-	expect(unsubscribe).toHaveBeenCalledTimes(1);
-});
-it('closes an old connection before starting another and closes the last one on cancellation', async () => {
-	const closes: jest.Mock[] = [];
-	jest.mocked(initWebsocket).mockImplementation(() =>
-		eventChannel(() => {
-			const close = jest.fn();
-			closes.push(close);
-			return close;
-		}),
-	);
-	const { send, task } = start();
-	send(startWSAction());
-	send(startWSAction());
-	expect(closes[0]).toHaveBeenCalledTimes(1);
-	expect(closes[1]).not.toHaveBeenCalled();
-	task.cancel();
-	await flush();
-	expect(closes[1]).toHaveBeenCalledTimes(1);
-});
-it('reads the rotated access token through session refresh without a profile API request', async () => {
-	const { send } = start();
-	send(startWSAction());
-	const getToken = jest.mocked(initWebsocket).mock.calls[0][0];
-	jest.mocked(auth.refresh).mockImplementationOnce(async () => {
-		jest.mocked(auth.getSession).mockReturnValue(tokens('rotated'));
-		return { success: true, data: undefined };
+
+describe('watchWS saga', () => {
+	it('bootstraps public maintenance without requiring a session or authenticated request', async () => {
+		jest.mocked(auth.getSession).mockReturnValue(null);
+		publicGet.mockResolvedValue({
+			status: 200,
+			data: { maintenance: true, version: '9.0.0', version_mobile: '3.6.2' },
+		});
+		const { task, actions } = start(initMaintenanceSaga);
+		await task.toPromise();
+		expect(publicGet).toHaveBeenCalledWith('/ws/maintenance/', { params: undefined, signal: expect.any(AbortSignal) });
+		expect(privateGet).not.toHaveBeenCalled();
+		expect(actions).toEqual([setWSMaintenance(true), setWSServerVersion('3.6.2')]);
 	});
-	await expect(getToken()).resolves.toBe('rotated');
-	expect(auth.refresh).toHaveBeenCalledTimes(1);
-	expect(isAuthenticatedInstance).not.toHaveBeenCalled();
-	expect(privateGet).not.toHaveBeenCalled();
-});
-it('does not request a socket token for guests or reuse a token after logout during refresh', async () => {
-	const { send } = start();
-	send(startWSAction());
-	const getToken = jest.mocked(initWebsocket).mock.calls[0][0];
-	jest.mocked(auth.getSession).mockReturnValue(null);
-	await expect(getToken()).resolves.toBeNull();
-	expect(auth.refresh).not.toHaveBeenCalled();
-	expect(privateGet).not.toHaveBeenCalled();
-	jest.mocked(auth.getSession).mockReturnValue(tokens('old'));
-	const pending = deferred<Awaited<ReturnType<typeof auth.refresh>>>();
-	jest.mocked(auth.refresh).mockReturnValueOnce(pending.promise);
-	const request = getToken();
-	Object.defineProperty(auth, 'epoch', { configurable: true, value: 2 });
-	jest.mocked(auth.getSession).mockReturnValue(tokens('different-account'));
-	pending.resolve({ success: true, data: undefined });
-	await expect(request).resolves.toBeNull();
-});
 
-it('allows the socket service to retry a failed session refresh without clearing the session', async () => {
-	const { send } = start();
-	send(startWSAction());
-	const getToken = jest.mocked(initWebsocket).mock.calls[0][0];
-	const failure = new Error('Offline');
-	jest.mocked(auth.refresh).mockResolvedValueOnce({ success: false, error: failure });
-	await expect(getToken()).resolves.toBeNull();
-	expect(auth.signOut).not.toHaveBeenCalled();
-	await expect(getToken()).resolves.toBe('old');
-	expect(auth.refresh).toHaveBeenCalledTimes(2);
-});
+	it('preserves the last state on network errors', async () => {
+		publicGet.mockRejectedValue(new Error('offline'));
+		const { task, actions } = start(initMaintenanceSaga);
+		await task.toPromise();
+		expect(actions).toEqual([]);
+	});
 
-it('updates in-app notification state and invalidates cached lists without requesting OS permissions', async () => {
-	let emit!: (action: WSAction) => void;
-	jest.mocked(initWebsocket).mockImplementation(() =>
-		eventChannel((next) => {
-			emit = next;
-			return () => {};
-		}),
+	it('does not announce a web release when the HTTP response has no mobile version', async () => {
+		publicGet.mockResolvedValue({ status: 200, data: { maintenance: false, version: '9.0.0' } });
+		const { task, actions } = start(initMaintenanceSaga);
+		await task.toPromise();
+		expect(actions).toEqual([setWSMaintenance(false)]);
+	});
+
+	it('aborts an older HTTP snapshot when a live signal arrives and ignores its eventual response', async () => {
+		const pending = deferred<{ data: { maintenance: boolean; version_mobile: string } }>();
+		publicGet.mockReturnValue(pending.promise);
+		let emit!: (action: WSAction) => void;
+		const unsubscribe = jest.fn();
+		jest.mocked(initWebsocket).mockImplementation(() =>
+			eventChannel((next) => {
+				emit = next;
+				return unsubscribe;
+			}),
+		);
+		const { send, actions } = start();
+		send(startWSAction());
+		send(initMaintenanceAction());
+		const signal: AbortSignal = publicGet.mock.calls[0][1].signal;
+		emit(WSMaintenanceAction(true, '3.6.3'));
+		await flush();
+		expect(signal.aborted).toBe(true);
+		pending.resolve({ data: { maintenance: false, version_mobile: '3.6.2' } });
+		await flush();
+		expect(actions).toContainEqual(setWSMaintenance(true));
+		expect(actions).toContainEqual(setWSServerVersion('3.6.3'));
+		expect(actions).not.toContainEqual(setWSMaintenance(false));
+		expect(actions).not.toContainEqual(setWSServerVersion('3.6.2'));
+	});
+
+	it('refreshes a public snapshot when a socket connects and cancels superseded HTTP checks', async () => {
+		let emit!: (action: WSAction) => void;
+		jest.mocked(initWebsocket).mockImplementation(() =>
+			eventChannel((next) => {
+				emit = next;
+				return () => {};
+			}),
+		);
+		const { send } = start();
+		send(startWSAction());
+		emit(WSReconnectedAction());
+		expect(publicGet).toHaveBeenCalledTimes(1);
+		const firstSignal: AbortSignal = publicGet.mock.calls[0][1].signal;
+		send(initMaintenanceAction());
+		expect(firstSignal.aborted).toBe(true);
+		expect(publicGet).toHaveBeenCalledTimes(2);
+	});
+
+	it.each([stopWSAction(), accountLogoutAction(), initToken()])(
+		'closes the active channel on $type',
+		async (action) => {
+			const unsubscribe = jest.fn();
+			jest.mocked(initWebsocket).mockImplementation(() => eventChannel(() => unsubscribe));
+			const { send } = start();
+			send(startWSAction());
+			send(action);
+			await flush();
+			expect(unsubscribe).toHaveBeenCalledTimes(1);
+		},
 	);
-	const { send, actions } = start();
-	send(startWSAction());
-	emit(WSNotificationAction(notification));
-	await flush();
-	expect(actions).toContainEqual(incrementUnreadCount());
-	expect(actions).toContainEqual(setLatestNotification(notification));
-	expect(actions).toContainEqual(notificationApi.util.invalidateTags(['Notification']));
-	actions.length = 0;
-	emit(WSNotificationAction({ ...notification, is_read: true }));
-	await flush();
-	expect(actions).not.toContainEqual(incrementUnreadCount());
-	expect(actions).toContainEqual(setLatestNotification({ ...notification, is_read: true }));
-	expect(requestPermissionsAsync).not.toHaveBeenCalled();
-	expect(scheduleNotificationAsync).not.toHaveBeenCalled();
-});
 
-it.each(['ios', 'android'] as const)(
-	'shows an immediate system notification on %s only with granted permission',
-	async (platform) => {
-		Object.defineProperty(Platform, 'OS', { configurable: true, value: platform });
-		jest.mocked(getPermissionsAsync).mockResolvedValue(permissions(true));
-		const { emit } = startSocket();
+	it('closes an old connection before starting another and closes the last one on cancellation', async () => {
+		const closes: jest.Mock[] = [];
+		jest.mocked(initWebsocket).mockImplementation(() =>
+			eventChannel(() => {
+				const close = jest.fn();
+				closes.push(close);
+				return close;
+			}),
+		);
+		const { send, task } = start();
+		send(startWSAction());
+		send(startWSAction());
+		expect(closes[0]).toHaveBeenCalledTimes(1);
+		expect(closes[1]).not.toHaveBeenCalled();
+		task.cancel();
+		await flush();
+		expect(closes[1]).toHaveBeenCalledTimes(1);
+	});
+
+	it('reads the rotated access token through session refresh without a profile API request', async () => {
+		const { send } = start();
+		send(startWSAction());
+		const getToken = jest.mocked(initWebsocket).mock.calls[0][0];
+		jest.mocked(auth.refresh).mockImplementationOnce(async () => {
+			jest.mocked(auth.getSession).mockReturnValue(tokens('rotated'));
+			return { success: true, data: undefined };
+		});
+		await expect(getToken()).resolves.toBe('rotated');
+		expect(auth.refresh).toHaveBeenCalledTimes(1);
+		expect(isAuthenticatedInstance).not.toHaveBeenCalled();
+		expect(privateGet).not.toHaveBeenCalled();
+	});
+
+	it('does not request a socket token for guests or reuse a token after logout during refresh', async () => {
+		const { send } = start();
+		send(startWSAction());
+		const getToken = jest.mocked(initWebsocket).mock.calls[0][0];
+		jest.mocked(auth.getSession).mockReturnValue(null);
+		await expect(getToken()).resolves.toBeNull();
+		expect(auth.refresh).not.toHaveBeenCalled();
+		expect(privateGet).not.toHaveBeenCalled();
+		jest.mocked(auth.getSession).mockReturnValue(tokens('old'));
+		const pending = deferred<Awaited<ReturnType<typeof auth.refresh>>>();
+		jest.mocked(auth.refresh).mockReturnValueOnce(pending.promise);
+		const request = getToken();
+		Object.defineProperty(auth, 'epoch', { configurable: true, value: 2 });
+		jest.mocked(auth.getSession).mockReturnValue(tokens('different-account'));
+		pending.resolve({ success: true, data: undefined });
+		await expect(request).resolves.toBeNull();
+	});
+
+	it('allows the socket service to retry a failed session refresh without clearing the session', async () => {
+		const { send } = start();
+		send(startWSAction());
+		const getToken = jest.mocked(initWebsocket).mock.calls[0][0];
+		const failure = new Error('Offline');
+		jest.mocked(auth.refresh).mockResolvedValueOnce({ success: false, error: failure });
+		await expect(getToken()).resolves.toBeNull();
+		expect(auth.signOut).not.toHaveBeenCalled();
+		await expect(getToken()).resolves.toBe('old');
+		expect(auth.refresh).toHaveBeenCalledTimes(2);
+	});
+
+	it('updates in-app notification state and invalidates cached lists without requesting OS permissions', async () => {
+		let emit!: (action: WSAction) => void;
+		jest.mocked(initWebsocket).mockImplementation(() =>
+			eventChannel((next) => {
+				emit = next;
+				return () => {};
+			}),
+		);
+		const { send, actions } = start();
+		send(startWSAction());
 		emit(WSNotificationAction(notification));
 		await flush();
-		expect(scheduleNotificationAsync).toHaveBeenCalledWith({
-			content: { title: notification.title, body: notification.message },
-			trigger: platform === 'android' ? { channelId: 'facturation' } : null,
-		});
+		expect(actions).toContainEqual(incrementUnreadCount());
+		expect(actions).toContainEqual(setLatestNotification(notification));
+		expect(actions).toContainEqual(notificationApi.util.invalidateTags(['Notification']));
+		actions.length = 0;
+		emit(WSNotificationAction({ ...notification, is_read: true }));
+		await flush();
+		expect(actions).not.toContainEqual(incrementUnreadCount());
+		expect(actions).toContainEqual(setLatestNotification({ ...notification, is_read: true }));
 		expect(requestPermissionsAsync).not.toHaveBeenCalled();
-		const handler = jest.mocked(setNotificationHandler).mock.calls[0][0];
-		expect(handler).not.toBeNull();
-		await expect(
-			handler!.handleNotification({} as Parameters<NonNullable<typeof handler>['handleNotification']>[0]),
-		).resolves.toEqual({
-			shouldShowBanner: true,
-			shouldShowList: true,
-			shouldPlaySound: false,
-			shouldSetBadge: false,
-		});
-		jest.mocked(auth.getSession).mockReturnValue(null);
-		await expect(
-			handler!.handleNotification({} as Parameters<NonNullable<typeof handler>['handleNotification']>[0]),
-		).resolves.toMatchObject({
-			shouldShowBanner: false,
-			shouldShowList: false,
-		});
-	},
-);
+		expect(scheduleNotificationAsync).not.toHaveBeenCalled();
+	});
 
-it('continues processing socket messages while system permissions are being read', async () => {
-	const pending = deferred<NotificationPermissionsStatus>();
-	jest.mocked(getPermissionsAsync).mockReturnValue(pending.promise);
-	const { emit, actions } = startSocket();
-	emit(WSNotificationAction(notification));
-	emit(WSMaintenanceAction(true, '3.7.2'));
-	expect(actions).toContainEqual(setWSMaintenance(true));
-	expect(actions).toContainEqual(setLatestNotification(notification));
-	expect(scheduleNotificationAsync).not.toHaveBeenCalled();
-	pending.resolve(permissions(true));
-	await flush();
-	expect(scheduleNotificationAsync).toHaveBeenCalledTimes(1);
-});
+	it.each(['ios', 'android'] as const)(
+		'shows an immediate system notification on %s only with granted permission',
+		async (platform) => {
+			Object.defineProperty(Platform, 'OS', { configurable: true, value: platform });
+			jest.mocked(getPermissionsAsync).mockResolvedValue(permissions(true));
+			const { emit } = startSocket();
+			emit(WSNotificationAction(notification));
+			await flush();
+			expect(scheduleNotificationAsync).toHaveBeenCalledWith({
+				content: { title: notification.title, body: notification.message },
+				trigger: platform === 'android' ? { channelId: 'facturation' } : null,
+			});
+			expect(requestPermissionsAsync).not.toHaveBeenCalled();
+			const handler = jest.mocked(setNotificationHandler).mock.calls[0][0];
+			expect(handler).not.toBeNull();
+			await expect(
+				handler!.handleNotification({} as Parameters<NonNullable<typeof handler>['handleNotification']>[0]),
+			).resolves.toEqual({
+				shouldShowBanner: true,
+				shouldShowList: true,
+				shouldPlaySound: false,
+				shouldSetBadge: false,
+			});
+			jest.mocked(auth.getSession).mockReturnValue(null);
+			await expect(
+				handler!.handleNotification({} as Parameters<NonNullable<typeof handler>['handleNotification']>[0]),
+			).resolves.toMatchObject({
+				shouldShowBanner: false,
+				shouldShowList: false,
+			});
+		},
+	);
 
-it.each([stopWSAction(), accountLogoutAction(), initToken()])(
-	'does not display a late notification after $type',
-	async (action) => {
+	it('continues processing socket messages while system permissions are being read', async () => {
 		const pending = deferred<NotificationPermissionsStatus>();
 		jest.mocked(getPermissionsAsync).mockReturnValue(pending.promise);
-		const { emit, send } = startSocket();
+		const { emit, actions } = startSocket();
 		emit(WSNotificationAction(notification));
-		send(action);
+		emit(WSMaintenanceAction(true, '3.7.2'));
+		expect(actions).toContainEqual(setWSMaintenance(true));
+		expect(actions).toContainEqual(setLatestNotification(notification));
+		expect(scheduleNotificationAsync).not.toHaveBeenCalled();
+		pending.resolve(permissions(true));
+		await flush();
+		expect(scheduleNotificationAsync).toHaveBeenCalledTimes(1);
+	});
+
+	it.each([stopWSAction(), accountLogoutAction(), initToken()])(
+		'does not display a late notification after $type',
+		async (action) => {
+			const pending = deferred<NotificationPermissionsStatus>();
+			jest.mocked(getPermissionsAsync).mockReturnValue(pending.promise);
+			const { emit, send } = startSocket();
+			emit(WSNotificationAction(notification));
+			send(action);
+			pending.resolve(permissions(true));
+			await flush();
+			expect(scheduleNotificationAsync).not.toHaveBeenCalled();
+		},
+	);
+
+	it('does not display a previous account notification after the session changes', async () => {
+		const pending = deferred<NotificationPermissionsStatus>();
+		jest.mocked(getPermissionsAsync).mockReturnValue(pending.promise);
+		const { emit } = startSocket();
+		emit(WSNotificationAction(notification));
+		Object.defineProperty(auth, 'epoch', { configurable: true, value: 2 });
+		jest.mocked(auth.getSession).mockReturnValue(tokens('different-account'));
 		pending.resolve(permissions(true));
 		await flush();
 		expect(scheduleNotificationAsync).not.toHaveBeenCalled();
-	},
-);
+	});
 
-it('does not display a previous account notification after the session changes', async () => {
-	const pending = deferred<NotificationPermissionsStatus>();
-	jest.mocked(getPermissionsAsync).mockReturnValue(pending.promise);
-	const { emit } = startSocket();
-	emit(WSNotificationAction(notification));
-	Object.defineProperty(auth, 'epoch', { configurable: true, value: 2 });
-	jest.mocked(auth.getSession).mockReturnValue(tokens('different-account'));
-	pending.resolve(permissions(true));
-	await flush();
-	expect(scheduleNotificationAsync).not.toHaveBeenCalled();
-});
-
-it.each(['handler', 'permissions', 'schedule'])(
-	'keeps socket and in-app notifications working when the system %s fails',
-	async (failure) => {
-		jest.mocked(getPermissionsAsync).mockResolvedValue(permissions(true));
-		if (failure === 'handler')
-			jest.mocked(setNotificationHandler).mockImplementationOnce(() => {
-				throw new Error('unavailable');
-			});
-		if (failure === 'permissions') jest.mocked(getPermissionsAsync).mockRejectedValueOnce(new Error('unavailable'));
-		if (failure === 'schedule') jest.mocked(scheduleNotificationAsync).mockRejectedValueOnce(new Error('unavailable'));
-		const { emit, actions, task } = startSocket();
-		emit(WSNotificationAction(notification));
-		await flush();
-		emit(WSMaintenanceAction(true));
-		expect(task.isRunning()).toBe(true);
-		expect(actions).toContainEqual(setLatestNotification(notification));
-		expect(actions).toContainEqual(setWSMaintenance(true));
-	},
-);
-
-it.each(['granted', 'denied', 'default'] as const)(
-	'preserves browser system notifications for %s permission without native APIs',
-	async (permission) => {
-		Object.defineProperty(Platform, 'OS', { configurable: true, value: 'web' });
-		const BrowserNotification = Object.assign(jest.fn(), { permission });
-		Object.defineProperty(window, 'Notification', { configurable: true, value: BrowserNotification });
-		const { emit, actions } = startSocket();
-		emit(WSNotificationAction(notification));
-		await flush();
-		if (permission === 'granted') {
-			expect(BrowserNotification).toHaveBeenCalledWith(notification.title, {
-				body: notification.message,
-				icon: 'asset:/facturation-logo.png',
-			});
-		} else expect(BrowserNotification).not.toHaveBeenCalled();
-		expect(actions).toContainEqual(setLatestNotification(notification));
-		expect(getPermissionsAsync).not.toHaveBeenCalled();
-		expect(setNotificationHandler).not.toHaveBeenCalled();
-		expect(scheduleNotificationAsync).not.toHaveBeenCalled();
-	},
-);
-
-it('forwards avatar updates to account watchers and stops forwarding after logout', async () => {
-	let emit!: (action: WSAction) => void;
-	const close = jest.fn();
-	jest.mocked(initWebsocket).mockImplementation(() =>
-		eventChannel((next) => {
-			emit = next;
-			return close;
-		}),
+	it.each(['handler', 'permissions', 'schedule'])(
+		'keeps socket and in-app notifications working when the system %s fails',
+		async (failure) => {
+			jest.mocked(getPermissionsAsync).mockResolvedValue(permissions(true));
+			if (failure === 'handler')
+				jest.mocked(setNotificationHandler).mockImplementationOnce(() => {
+					throw new Error('unavailable');
+				});
+			if (failure === 'permissions') jest.mocked(getPermissionsAsync).mockRejectedValueOnce(new Error('unavailable'));
+			if (failure === 'schedule')
+				jest.mocked(scheduleNotificationAsync).mockRejectedValueOnce(new Error('unavailable'));
+			const { emit, actions, task } = startSocket();
+			emit(WSNotificationAction(notification));
+			await flush();
+			emit(WSMaintenanceAction(true));
+			expect(task.isRunning()).toBe(true);
+			expect(actions).toContainEqual(setLatestNotification(notification));
+			expect(actions).toContainEqual(setWSMaintenance(true));
+		},
 	);
-	const { send, actions } = start();
-	send(startWSAction());
-	const action = WSUserAvatarAction(7, 'resized.png');
-	emit(action);
-	await flush();
-	expect(actions).toContainEqual(action);
-	send(initToken());
-	expect(close).toHaveBeenCalledTimes(1);
-	actions.length = 0;
-	emit(WSUserAvatarAction(7, 'late.png'));
-	await flush();
-	expect(actions).not.toContainEqual(WSUserAvatarAction(7, 'late.png'));
-});
 
-it('aborts a pending public maintenance check when its initialization watcher is cancelled', async () => {
-	const pending = deferred<{ data: { maintenance: boolean } }>();
-	publicGet.mockReturnValue(pending.promise);
-	const { send, task, actions } = start();
-	send(initMaintenanceAction());
-	const signal: AbortSignal = publicGet.mock.calls[0][1].signal;
-	task.cancel();
-	expect(signal.aborted).toBe(true);
-	pending.resolve({ data: { maintenance: true } });
-	await flush();
-	expect(actions).not.toContainEqual(setWSMaintenance(true));
-});
+	it.each(['granted', 'denied', 'default'] as const)(
+		'preserves browser system notifications for %s permission without native APIs',
+		async (permission) => {
+			Object.defineProperty(Platform, 'OS', { configurable: true, value: 'web' });
+			const BrowserNotification = Object.assign(jest.fn(), { permission });
+			Object.defineProperty(window, 'Notification', { configurable: true, value: BrowserNotification });
+			const { emit, actions } = startSocket();
+			emit(WSNotificationAction(notification));
+			await flush();
+			if (permission === 'granted') {
+				expect(BrowserNotification).toHaveBeenCalledWith(notification.title, {
+					body: notification.message,
+					icon: 'asset:/facturation-logo.png',
+				});
+			} else expect(BrowserNotification).not.toHaveBeenCalled();
+			expect(actions).toContainEqual(setLatestNotification(notification));
+			expect(getPermissionsAsync).not.toHaveBeenCalled();
+			expect(setNotificationHandler).not.toHaveBeenCalled();
+			expect(scheduleNotificationAsync).not.toHaveBeenCalled();
+		},
+	);
 
-it.each([true, false])(
-	'forwards HTTP maintenance %s and the announced version to the original reducers',
-	async (maintenance) => {
-		publicGet.mockResolvedValue({ status: 200, data: { maintenance, version_mobile: 'invalid' } });
-		const { task, actions } = start(initMaintenanceSaga);
-		await task.toPromise();
-		expect(actions).toContainEqual(setWSMaintenance(maintenance));
-		expect(actions).toContainEqual(setWSServerVersion('invalid'));
-	},
-);
+	it('forwards avatar updates to account watchers and stops forwarding after logout', async () => {
+		let emit!: (action: WSAction) => void;
+		const close = jest.fn();
+		jest.mocked(initWebsocket).mockImplementation(() =>
+			eventChannel((next) => {
+				emit = next;
+				return close;
+			}),
+		);
+		const { send, actions } = start();
+		send(startWSAction());
+		const action = WSUserAvatarAction(7, 'resized.png');
+		emit(action);
+		await flush();
+		expect(actions).toContainEqual(action);
+		send(initToken());
+		expect(close).toHaveBeenCalledTimes(1);
+		actions.length = 0;
+		emit(WSUserAvatarAction(7, 'late.png'));
+		await flush();
+		expect(actions).not.toContainEqual(WSUserAvatarAction(7, 'late.png'));
+	});
 
-describe('watchWS saga', () => {
+	it('aborts a pending public maintenance check when its initialization watcher is cancelled', async () => {
+		const pending = deferred<{ data: { maintenance: boolean } }>();
+		publicGet.mockReturnValue(pending.promise);
+		const { send, task, actions } = start();
+		send(initMaintenanceAction());
+		const signal: AbortSignal = publicGet.mock.calls[0][1].signal;
+		task.cancel();
+		expect(signal.aborted).toBe(true);
+		pending.resolve({ data: { maintenance: true } });
+		await flush();
+		expect(actions).not.toContainEqual(setWSMaintenance(true));
+	});
+
+	it.each([true, false])(
+		'forwards HTTP maintenance %s and the announced version to the original reducers',
+		async (maintenance) => {
+			publicGet.mockResolvedValue({ status: 200, data: { maintenance, version_mobile: 'invalid' } });
+			const { task, actions } = start(initMaintenanceSaga);
+			await task.toPromise();
+			expect(actions).toContainEqual(setWSMaintenance(maintenance));
+			expect(actions).toContainEqual(setWSServerVersion('invalid'));
+		},
+	);
+
 	it('should initialize websocket and dispatch actions from the channel', async () => {
 		const dispatched: Action[] = [];
 		const mockToken = 'mock-token';

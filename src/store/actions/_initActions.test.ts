@@ -8,18 +8,18 @@ describe('Redux Actions', () => {
 			type: types.INIT_APP,
 		});
 	});
-});
 
-it.each([
-	[types.INIT_APP_SESSION_TOKENS, initAppSessionTokensAction],
-	[types.REFRESH_APP_TOKEN_STATES, refreshAppTokenStatesAction],
-])('preserves the native session snapshot in the original %s action', (type, action) => {
-	const session = {
-		access: 'access',
-		refresh: 'refresh',
-		access_expiration: '2030-01-01',
-		refresh_expiration: '2031-01-01',
-	};
-	expect(action(session)).toEqual({ type, session });
-	expect(action(session).session).toBe(session);
+	it.each([
+		[types.INIT_APP_SESSION_TOKENS, initAppSessionTokensAction],
+		[types.REFRESH_APP_TOKEN_STATES, refreshAppTokenStatesAction],
+	])('preserves the native session snapshot in the original %s action', (type, action) => {
+		const session = {
+			access: 'access',
+			refresh: 'refresh',
+			access_expiration: '2030-01-01',
+			refresh_expiration: '2031-01-01',
+		};
+		expect(action(session)).toEqual({ type, session });
+		expect(action(session).session).toBe(session);
+	});
 });

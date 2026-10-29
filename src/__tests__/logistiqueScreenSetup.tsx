@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { createQueryMock } from '@/store/setupQuery';
+import { createQueryMock } from '@/__tests__/setupQuery';
 import type { LogistiqueOrder, LogistiqueStats, LogistiqueSupplier } from '@/types/logistiqueTypes';
 
 export const logisticsOrder: LogistiqueOrder = {

@@ -8,34 +8,36 @@ jest.mock('@/auth', () => {
 	return { ...jest.requireActual<typeof import('@/auth')>('@/auth'), auth: { instance: create() } };
 });
 
-it('requests mobile history from the configured API, leaving platform filtering to Django', async () => {
-	jest.useFakeTimers();
-	const env = jest.replaceProperty(process.env, 'EXPO_PUBLIC_CHANGELOG', '/configured-changelog/');
-	const adapter = jest.fn<Promise<AxiosResponse>, [InternalAxiosRequestConfig]>(async (config) => ({
-		config,
-		status: 200,
-		statusText: 'OK',
-		headers: {},
-		data: [],
-	}));
-	auth.instance.defaults.adapter = adapter;
-	const store = configureStore({
-		reducer: { [changelogApi.reducerPath]: changelogApi.reducer },
-		middleware: (get) => get().concat(changelogApi.middleware),
-	});
-	try {
-		const request = store.dispatch(changelogApi.endpoints.getChangelog.initiate());
-		await expect(request.unwrap()).resolves.toEqual([]);
-		expect(adapter.mock.calls[0]![0]).toMatchObject({
-			url: '/configured-changelog/',
-			method: 'get',
-			params: { platform: 'mobile' },
+describe('Changelog API', () => {
+	it('requests mobile history from the configured API, leaving platform filtering to Django', async () => {
+		jest.useFakeTimers();
+		const env = jest.replaceProperty(process.env, 'EXPO_PUBLIC_CHANGELOG', '/configured-changelog/');
+		const adapter = jest.fn<Promise<AxiosResponse>, [InternalAxiosRequestConfig]>(async (config) => ({
+			config,
+			status: 200,
+			statusText: 'OK',
+			headers: {},
+			data: [],
+		}));
+		auth.instance.defaults.adapter = adapter;
+		const store = configureStore({
+			reducer: { [changelogApi.reducerPath]: changelogApi.reducer },
+			middleware: (get) => get().concat(changelogApi.middleware),
 		});
-		request.unsubscribe();
-	} finally {
-		store.dispatch(changelogApi.util.resetApiState());
-		await jest.runOnlyPendingTimersAsync();
-		jest.useRealTimers();
-		env.restore();
-	}
+		try {
+			const request = store.dispatch(changelogApi.endpoints.getChangelog.initiate());
+			await expect(request.unwrap()).resolves.toEqual([]);
+			expect(adapter.mock.calls[0]![0]).toMatchObject({
+				url: '/configured-changelog/',
+				method: 'get',
+				params: { platform: 'mobile' },
+			});
+			request.unsubscribe();
+		} finally {
+			store.dispatch(changelogApi.util.resetApiState());
+			await jest.runOnlyPendingTimersAsync();
+			jest.useRealTimers();
+			env.restore();
+		}
+	});
 });

@@ -4,9 +4,11 @@ import { translations } from '@/translations';
 
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
 
-it.each([false, true])('explains the disabled company setting, inventory=%s', async (inventory) => {
-	await render(<StockDisabledState inventory={inventory} />);
-	expect(
-		screen.getByText(inventory ? translations.fr.stock.inventoryDisabledTitle : translations.fr.stock.disabledTitle),
-	).toBeOnTheScreen();
+describe('StockDisabledState', () => {
+	it.each([false, true])('explains the disabled company setting, inventory=%s', async (inventory) => {
+		await render(<StockDisabledState inventory={inventory} />);
+		expect(
+			screen.getByText(inventory ? translations.fr.stock.inventoryDisabledTitle : translations.fr.stock.disabledTitle),
+		).toBeOnTheScreen();
+	});
 });

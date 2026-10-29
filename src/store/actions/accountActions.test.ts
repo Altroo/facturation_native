@@ -66,55 +66,55 @@ describe('Account Actions', () => {
 			data: { ...user },
 		});
 	});
-});
 
-it('passes credentials under data and copies them before the form can change', () => {
-	const credentials = { email: 'test@example.invalid', password: 'example-password' };
-	const action = accountLoginAction(credentials);
-	credentials.password = 'changed-in-form';
-	expect(action).toEqual({
-		type: 'ACCOUNT_LOGIN',
-		data: { email: 'test@example.invalid', password: 'example-password' },
+	it('passes credentials under data and copies them before the form can change', () => {
+		const credentials = { email: 'test@example.invalid', password: 'example-password' };
+		const action = accountLoginAction(credentials);
+		credentials.password = 'changed-in-form';
+		expect(action).toEqual({
+			type: 'ACCOUNT_LOGIN',
+			data: { email: 'test@example.invalid', password: 'example-password' },
+		});
 	});
-});
 
-it('keeps logout free of credentials and extra payload fields', () => {
-	expect(accountLogoutAction()).toEqual({ type: 'ACCOUNT_LOGOUT' });
-});
+	it('keeps logout free of credentials and extra payload fields', () => {
+		expect(accountLogoutAction()).toEqual({ type: 'ACCOUNT_LOGOUT' });
+	});
 
-it.each([
-	[accountSetProfilAction, 'ACCOUNT_SET_PROFIL'],
-	[accountEditProfilAction, 'ACCOUNT_EDIT_PROFIL'],
-] as const)('copies UserClass fields into the original data envelope for %s', (createAction, type) => {
-	const profile = new UserClass(
-		7,
-		'Test',
-		'User',
-		'test@example.invalid',
-		'Femme',
-		'avatar.png',
-		null,
-		true,
-		false,
-		false,
-		'2026-01-01',
-		null,
-		null,
-	);
-	const fields = { ...profile };
-	const action = createAction(profile);
-	profile.first_name = 'Changed';
-	expect(action).toEqual({ type, data: fields });
-	expect(action.data).not.toBe(profile);
-	expect(Object.getPrototypeOf(action.data)).toBe(Object.prototype);
-});
+	it.each([
+		[accountSetProfilAction, 'ACCOUNT_SET_PROFIL'],
+		[accountEditProfilAction, 'ACCOUNT_EDIT_PROFIL'],
+	] as const)('copies UserClass fields into the original data envelope for %s', (createAction, type) => {
+		const profile = new UserClass(
+			7,
+			'Test',
+			'User',
+			'test@example.invalid',
+			'Femme',
+			'avatar.png',
+			null,
+			true,
+			false,
+			false,
+			'2026-01-01',
+			null,
+			null,
+		);
+		const fields = { ...profile };
+		const action = createAction(profile);
+		profile.first_name = 'Changed';
+		expect(action).toEqual({ type, data: fields });
+		expect(action.data).not.toBe(profile);
+		expect(Object.getPrototypeOf(action.data)).toBe(Object.prototype);
+	});
 
-it('preserves the original group_titles payload, including an empty role list', () => {
-	const groups = { group_titles: ['Caissier', 'Commercial'] };
-	expect(accountSetGroupesAction(groups)).toEqual({ type: 'ACCOUNT_SET_GROUPES', data: groups });
-	expect(accountSetGroupesAction(groups).data).toBe(groups);
-	expect(accountSetGroupesAction({ group_titles: [] })).toEqual({
-		type: 'ACCOUNT_SET_GROUPES',
-		data: { group_titles: [] },
+	it('preserves the original group_titles payload, including an empty role list', () => {
+		const groups = { group_titles: ['Caissier', 'Commercial'] };
+		expect(accountSetGroupesAction(groups)).toEqual({ type: 'ACCOUNT_SET_GROUPES', data: groups });
+		expect(accountSetGroupesAction(groups).data).toBe(groups);
+		expect(accountSetGroupesAction({ group_titles: [] })).toEqual({
+			type: 'ACCOUNT_SET_GROUPES',
+			data: { group_titles: [] },
+		});
 	});
 });

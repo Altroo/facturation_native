@@ -35,27 +35,31 @@ afterAll(() => {
 	else Reflect.deleteProperty(globalThis, 'localStorage');
 });
 
-it('retains tokens in preview memory and clears them on logout without browser persistence', async () => {
-	await expect(tokenStorage.read()).resolves.toBeNull();
-	await tokenStorage.write(tokens);
-	await expect(tokenStorage.read()).resolves.toEqual(tokens);
-	await tokenStorage.write(null);
-	await expect(tokenStorage.read()).resolves.toBeNull();
-});
-
-it('does not restore tokens in a newly loaded browser module', async () => {
-	await tokenStorage.write(tokens);
-	let reloaded!: typeof tokenStorage;
-	jest.isolateModules(() => {
-		reloaded =
-			jest.requireActual<typeof import('@/Storage/sessionStorage.web')>('@/Storage/sessionStorage.web').sessionStorage;
+describe('Session Storage web', () => {
+	it('retains tokens in preview memory and clears them on logout without browser persistence', async () => {
+		await expect(tokenStorage.read()).resolves.toBeNull();
+		await tokenStorage.write(tokens);
+		await expect(tokenStorage.read()).resolves.toEqual(tokens);
+		await tokenStorage.write(null);
+		await expect(tokenStorage.read()).resolves.toBeNull();
 	});
-	await expect(reloaded.read()).resolves.toBeNull();
-});
 
-it('works without browser storage during rendering', async () => {
-	Reflect.deleteProperty(globalThis, 'sessionStorage');
-	Reflect.deleteProperty(globalThis, 'localStorage');
-	await tokenStorage.write(tokens);
-	await expect(tokenStorage.read()).resolves.toEqual(tokens);
+	it('does not restore tokens in a newly loaded browser module', async () => {
+		await tokenStorage.write(tokens);
+		let reloaded!: typeof tokenStorage;
+		jest.isolateModules(() => {
+			reloaded =
+				jest.requireActual<typeof import('@/Storage/sessionStorage.web')>(
+					'@/Storage/sessionStorage.web',
+				).sessionStorage;
+		});
+		await expect(reloaded.read()).resolves.toBeNull();
+	});
+
+	it('works without browser storage during rendering', async () => {
+		Reflect.deleteProperty(globalThis, 'sessionStorage');
+		Reflect.deleteProperty(globalThis, 'localStorage');
+		await tokenStorage.write(tokens);
+		await expect(tokenStorage.read()).resolves.toEqual(tokens);
+	});
 });

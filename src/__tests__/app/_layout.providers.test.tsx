@@ -76,95 +76,105 @@ afterEach(async () => {
 	jest.clearAllTimers();
 	jest.useRealTimers();
 });
-it('mounts the actual original provider tree with restored preferences and the guest navigator', async () => {
-	jest.mocked(useFonts).mockReturnValue([true, null]);
-	jest
-		.mocked(AsyncStorage.getItem)
-		.mockImplementation(async (key) => (key === 'app-theme' ? 'dark' : key === 'app-language' ? 'en' : null));
-	await setup();
-	await screen.findByText('guest/en/dark');
-});
 
-it('shows the shared PDF loader above the navigator and removes it on a failed download', async () => {
-	jest.mocked(useFonts).mockReturnValue([true, null]);
-	await setup();
-	await screen.findByText('guest/fr/light');
-	const download = Promise.withResolvers<void>();
-	const instance = create({
-		adapter: async (config) => {
-			await download.promise;
-			return { config, status: 200, statusText: 'OK', headers: {}, data: new Uint8Array([123, 125]).buffer };
-		},
+describe('Root providers', () => {
+	it('mounts the actual original provider tree with restored preferences and the guest navigator', async () => {
+		jest.mocked(useFonts).mockReturnValue([true, null]);
+		jest
+			.mocked(AsyncStorage.getItem)
+			.mockImplementation(async (key) => (key === 'app-theme' ? 'dark' : key === 'app-language' ? 'en' : null));
+		await setup();
+		await screen.findByText('guest/en/dark');
 	});
-	jest.spyOn(helpers, 'isAuthenticatedInstance').mockReturnValue(instance);
-	let request!: Promise<boolean>;
-	await act(() => {
-		request = openPdf('https://example.invalid/statement.pdf');
+
+	it('shows the shared PDF loader above the navigator and removes it on a failed download', async () => {
+		jest.mocked(useFonts).mockReturnValue([true, null]);
+		await setup();
+		await screen.findByText('guest/fr/light');
+		const download = Promise.withResolvers<void>();
+		const instance = create({
+			adapter: async (config) => {
+				await download.promise;
+				return { config, status: 200, statusText: 'OK', headers: {}, data: new Uint8Array([123, 125]).buffer };
+			},
+		});
+		jest.spyOn(helpers, 'isAuthenticatedInstance').mockReturnValue(instance);
+		let request!: Promise<boolean>;
+		await act(() => {
+			request = openPdf('https://example.invalid/statement.pdf');
+		});
+		expect(screen.getByTestId('pdf-loading-overlay')).toBeOnTheScreen();
+		expect(screen.getByRole('progressbar', { name: translations.fr.common.loading })).toBeOnTheScreen();
+		await act(async () => {
+			download.resolve();
+			await request;
+		});
+		expect(screen.queryByTestId('pdf-loading-overlay')).toBeNull();
+		expect(screen.getByText('guest/fr/light')).toBeOnTheScreen();
 	});
-	expect(screen.getByTestId('pdf-loading-overlay')).toBeOnTheScreen();
-	expect(screen.getByRole('progressbar', { name: translations.fr.common.loading })).toBeOnTheScreen();
-	await act(async () => {
-		download.resolve();
-		await request;
+
+	it('waits for fonts before mounting the app', async () => {
+		jest.mocked(useFonts).mockReturnValue([false, null]);
+		await setup();
+		expect(screen.queryByText('guest/fr/light')).toBeNull();
+		expect(AsyncStorage.getItem).not.toHaveBeenCalled();
+		expect(SplashScreen.hide).not.toHaveBeenCalled();
 	});
-	expect(screen.queryByTestId('pdf-loading-overlay')).toBeNull();
-	expect(screen.getByText('guest/fr/light')).toBeOnTheScreen();
-});
-it('waits for fonts before mounting the app', async () => {
-	jest.mocked(useFonts).mockReturnValue([false, null]);
-	await setup();
-	expect(screen.queryByText('guest/fr/light')).toBeNull();
-	expect(AsyncStorage.getItem).not.toHaveBeenCalled();
-	expect(SplashScreen.hide).not.toHaveBeenCalled();
-});
-it('keeps the splash visible while the logo is loading', async () => {
-	jest.mocked(useFonts).mockReturnValue([true, null]);
-	jest.mocked(useAssets).mockReturnValue([undefined, undefined]);
-	await setup();
-	expect(screen.queryByTestId('app-root')).toBeNull();
-	expect(AsyncStorage.getItem).not.toHaveBeenCalled();
-	expect(SplashScreen.hide).not.toHaveBeenCalled();
-});
-it('hides the splash after saved preferences finish restoring and the app has laid out', async () => {
-	jest.mocked(useFonts).mockReturnValue([true, null]);
-	const language = Promise.withResolvers<string | null>();
-	jest
-		.mocked(AsyncStorage.getItem)
-		.mockImplementation(async (key) =>
-			key === 'app-theme' ? 'dark' : key === 'app-language' ? language.promise : null,
-		);
-	await setup();
-	expect(screen.queryByTestId('app-root')).toBeNull();
-	expect(SplashScreen.hide).not.toHaveBeenCalled();
-	await act(() => language.resolve('en'));
-	await screen.findByText('guest/en/dark');
-	expect(SplashScreen.hide).not.toHaveBeenCalled();
-	await fireEvent(screen.getByTestId('app-root'), 'layout');
-	expect(SplashScreen.hide).toHaveBeenCalledTimes(1);
-});
-it('falls back to native fonts when loading fails instead of hiding the login screen', async () => {
-	jest.mocked(useFonts).mockReturnValue([false, new Error('Font unavailable')]);
-	await setup();
-	await screen.findByText('guest/fr/light');
-});
-it('opens the app if logo loading fails instead of leaving the splash visible forever', async () => {
-	jest.mocked(useFonts).mockReturnValue([true, null]);
-	jest.mocked(useAssets).mockReturnValue([undefined, new Error('Logo unavailable')]);
-	await setup();
-	await screen.findByText('guest/fr/light');
-	await fireEvent(screen.getByTestId('app-root'), 'layout');
-	expect(SplashScreen.hide).toHaveBeenCalledTimes(1);
-});
-it('uses default preferences and releases the splash if preference storage fails', async () => {
-	jest.mocked(useFonts).mockReturnValue([true, null]);
-	jest.mocked(AsyncStorage.getItem).mockRejectedValue(new Error('Storage unavailable'));
-	await setup();
-	await screen.findByText('guest/fr/light');
-	await fireEvent(screen.getByTestId('app-root'), 'layout');
-	expect(SplashScreen.hide).toHaveBeenCalledTimes(1);
-});
-it('restarts initialization after StrictMode replays provider cleanup', async () => {
-	jest.mocked(useFonts).mockReturnValue([true, null]);
-	await setup(true);
-	await screen.findByText('guest/fr/light');
+
+	it('keeps the splash visible while the logo is loading', async () => {
+		jest.mocked(useFonts).mockReturnValue([true, null]);
+		jest.mocked(useAssets).mockReturnValue([undefined, undefined]);
+		await setup();
+		expect(screen.queryByTestId('app-root')).toBeNull();
+		expect(AsyncStorage.getItem).not.toHaveBeenCalled();
+		expect(SplashScreen.hide).not.toHaveBeenCalled();
+	});
+
+	it('hides the splash after saved preferences finish restoring and the app has laid out', async () => {
+		jest.mocked(useFonts).mockReturnValue([true, null]);
+		const language = Promise.withResolvers<string | null>();
+		jest
+			.mocked(AsyncStorage.getItem)
+			.mockImplementation(async (key) =>
+				key === 'app-theme' ? 'dark' : key === 'app-language' ? language.promise : null,
+			);
+		await setup();
+		expect(screen.queryByTestId('app-root')).toBeNull();
+		expect(SplashScreen.hide).not.toHaveBeenCalled();
+		await act(() => language.resolve('en'));
+		await screen.findByText('guest/en/dark');
+		expect(SplashScreen.hide).not.toHaveBeenCalled();
+		await fireEvent(screen.getByTestId('app-root'), 'layout');
+		expect(SplashScreen.hide).toHaveBeenCalledTimes(1);
+	});
+
+	it('falls back to native fonts when loading fails instead of hiding the login screen', async () => {
+		jest.mocked(useFonts).mockReturnValue([false, new Error('Font unavailable')]);
+		await setup();
+		await screen.findByText('guest/fr/light');
+	});
+
+	it('opens the app if logo loading fails instead of leaving the splash visible forever', async () => {
+		jest.mocked(useFonts).mockReturnValue([true, null]);
+		jest.mocked(useAssets).mockReturnValue([undefined, new Error('Logo unavailable')]);
+		await setup();
+		await screen.findByText('guest/fr/light');
+		await fireEvent(screen.getByTestId('app-root'), 'layout');
+		expect(SplashScreen.hide).toHaveBeenCalledTimes(1);
+	});
+
+	it('uses default preferences and releases the splash if preference storage fails', async () => {
+		jest.mocked(useFonts).mockReturnValue([true, null]);
+		jest.mocked(AsyncStorage.getItem).mockRejectedValue(new Error('Storage unavailable'));
+		await setup();
+		await screen.findByText('guest/fr/light');
+		await fireEvent(screen.getByTestId('app-root'), 'layout');
+		expect(SplashScreen.hide).toHaveBeenCalledTimes(1);
+	});
+
+	it('restarts initialization after StrictMode replays provider cleanup', async () => {
+		jest.mocked(useFonts).mockReturnValue([true, null]);
+		await setup(true);
+		await screen.findByText('guest/fr/light');
+	});
 });

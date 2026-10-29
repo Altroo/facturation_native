@@ -89,74 +89,76 @@ const fill = async (confirmation = 'new-example-pass') => {
 };
 const submit = async () => await fireEvent.press(screen.getByRole('button', { name: t.settings.save }));
 
-it('changes the password, clears the default-password warning through its action, and resets the form', async () => {
-	adapter.mockImplementation(async (config) => response(config, '', 204));
-	await setup();
-	expect(screen.getByText(t.settings.defaultPasswordWarning)).toBeOnTheScreen();
-	await fill();
-	await submit();
-	await waitFor(() => expect(mockSuccess).toHaveBeenCalledWith(t.settings.passwordChangeSuccess));
-	expect(adapter.mock.calls[0][0]).toMatchObject({ method: 'put', url: '/account/password_change/' });
-	expect(JSON.parse(adapter.mock.calls[0][0].data)).toEqual({
-		old_password: 'old-example-pass',
-		new_password: 'new-example-pass',
-		new_password2: 'new-example-pass',
+describe('ChangePasswordPage', () => {
+	it('changes the password, clears the default-password warning through its action, and resets the form', async () => {
+		adapter.mockImplementation(async (config) => response(config, '', 204));
+		await setup();
+		expect(screen.getByText(t.settings.defaultPasswordWarning)).toBeOnTheScreen();
+		await fill();
+		await submit();
+		await waitFor(() => expect(mockSuccess).toHaveBeenCalledWith(t.settings.passwordChangeSuccess));
+		expect(adapter.mock.calls[0][0]).toMatchObject({ method: 'put', url: '/account/password_change/' });
+		expect(JSON.parse(adapter.mock.calls[0][0].data)).toEqual({
+			old_password: 'old-example-pass',
+			new_password: 'new-example-pass',
+			new_password2: 'new-example-pass',
+		});
+		expect(adapter).toHaveBeenCalledTimes(1);
+		expect(getProfilState(store.getState())).toEqual({ ...profile, default_password_set: false });
+		expect(screen.queryByText(t.settings.defaultPasswordWarning)).toBeNull();
+		for (const label of [t.settings.fieldOldPassword, t.settings.fieldNewPassword, t.settings.fieldConfirmPassword])
+			expect(screen.getByLabelText(label)).toHaveProp('value', '');
+		expect(mockError).not.toHaveBeenCalled();
 	});
-	expect(adapter).toHaveBeenCalledTimes(1);
-	expect(getProfilState(store.getState())).toEqual({ ...profile, default_password_set: false });
-	expect(screen.queryByText(t.settings.defaultPasswordWarning)).toBeNull();
-	for (const label of [t.settings.fieldOldPassword, t.settings.fieldNewPassword, t.settings.fieldConfirmPassword])
-		expect(screen.getByLabelText(label)).toHaveProp('value', '');
-	expect(mockError).not.toHaveBeenCalled();
-});
 
-it('keeps a successful password change and cleared default flag when the follow-up profile request fails', async () => {
-	let profileReads = 0;
-	adapter.mockImplementation(async (config) =>
-		config.method === 'put'
-			? response(config, '', 204)
-			: ++profileReads === 1
-				? response(config, profile)
-				: reject(config, { detail: ['Profile temporarily unavailable'] }, 503),
-	);
-	const subscription = store.dispatch(profilApi.endpoints.getProfil.initiate());
-	await subscription.unwrap();
-	await setup();
-	await fill();
-	await submit();
-	await waitFor(() => expect(mockSuccess).toHaveBeenCalledWith(t.settings.passwordChangeSuccess));
-	expect(getProfilState(store.getState())).toEqual({ ...profile, default_password_set: false });
-	expect(screen.queryByText(t.settings.defaultPasswordWarning)).toBeNull();
-	expect(screen.getByLabelText(t.settings.fieldOldPassword)).toHaveProp('value', '');
-	expect(mockError).not.toHaveBeenCalled();
-	await waitFor(() => expect(profileReads).toBe(2));
-	subscription.unsubscribe();
-});
+	it('keeps a successful password change and cleared default flag when the follow-up profile request fails', async () => {
+		let profileReads = 0;
+		adapter.mockImplementation(async (config) =>
+			config.method === 'put'
+				? response(config, '', 204)
+				: ++profileReads === 1
+					? response(config, profile)
+					: reject(config, { detail: ['Profile temporarily unavailable'] }, 503),
+		);
+		const subscription = store.dispatch(profilApi.endpoints.getProfil.initiate());
+		await subscription.unwrap();
+		await setup();
+		await fill();
+		await submit();
+		await waitFor(() => expect(mockSuccess).toHaveBeenCalledWith(t.settings.passwordChangeSuccess));
+		expect(getProfilState(store.getState())).toEqual({ ...profile, default_password_set: false });
+		expect(screen.queryByText(t.settings.defaultPasswordWarning)).toBeNull();
+		expect(screen.getByLabelText(t.settings.fieldOldPassword)).toHaveProp('value', '');
+		expect(mockError).not.toHaveBeenCalled();
+		await waitFor(() => expect(profileReads).toBe(2));
+		subscription.unsubscribe();
+	});
 
-it('shows an incorrect current-password error without clearing the inputs or the default flag', async () => {
-	adapter.mockImplementation(async (config) => reject(config, { old_password: ['Incorrect current password'] }));
-	await setup();
-	await fill();
-	await submit();
-	await screen.findByText('Incorrect current password');
-	expect(screen.getByLabelText(t.settings.fieldOldPassword)).toHaveProp('value', 'old-example-pass');
-	expect(getProfilState(store.getState())).toEqual(profile);
-	expect(adapter).toHaveBeenCalledTimes(1);
-	expect(mockError).toHaveBeenCalledWith(t.settings.passwordChangeError);
-	expect(mockSuccess).not.toHaveBeenCalled();
-});
+	it('shows an incorrect current-password error without clearing the inputs or the default flag', async () => {
+		adapter.mockImplementation(async (config) => reject(config, { old_password: ['Incorrect current password'] }));
+		await setup();
+		await fill();
+		await submit();
+		await screen.findByText('Incorrect current password');
+		expect(screen.getByLabelText(t.settings.fieldOldPassword)).toHaveProp('value', 'old-example-pass');
+		expect(getProfilState(store.getState())).toEqual(profile);
+		expect(adapter).toHaveBeenCalledTimes(1);
+		expect(mockError).toHaveBeenCalledWith(t.settings.passwordChangeError);
+		expect(mockSuccess).not.toHaveBeenCalled();
+	});
 
-it('shows the original server-failure fallback and permits retry without changing the profile', async () => {
-	adapter.mockImplementation(async (config) =>
-		reject(config, { non_field_errors: ['Password service unavailable'] }, 503),
-	);
-	await setup();
-	await fill();
-	await submit();
-	await screen.findByText(
-		'Il semble que nous ne puissions pas nous connecter. Veuillez vérifier votre connexion réseau et réessayer.',
-	);
-	expect(screen.getByRole('button', { name: t.settings.save })).not.toBeDisabled();
-	expect(getProfilState(store.getState())).toEqual(profile);
-	expect(mockError).toHaveBeenCalledWith(t.settings.passwordChangeError);
+	it('shows the original server-failure fallback and permits retry without changing the profile', async () => {
+		adapter.mockImplementation(async (config) =>
+			reject(config, { non_field_errors: ['Password service unavailable'] }, 503),
+		);
+		await setup();
+		await fill();
+		await submit();
+		await screen.findByText(
+			'Il semble que nous ne puissions pas nous connecter. Veuillez vérifier votre connexion réseau et réessayer.',
+		);
+		expect(screen.getByRole('button', { name: t.settings.save })).not.toBeDisabled();
+		expect(getProfilState(store.getState())).toEqual(profile);
+		expect(mockError).toHaveBeenCalledWith(t.settings.passwordChangeError);
+	});
 });

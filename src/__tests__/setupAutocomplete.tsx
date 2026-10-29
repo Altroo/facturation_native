@@ -1,5 +1,6 @@
 import { beforeEach, afterEach } from '@jest/globals';
 import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react-native';
+
 export { AutocompleteDropdownContextProvider } from 'react-native-autocomplete-dropdown';
 
 // Native measurements are unavailable in Jest. Keep the real dropdown and provider.

@@ -8,19 +8,18 @@ const config: Config = {
 	modulePathIgnorePatterns: ['<rootDir>/android/', '<rootDir>/ios/', '<rootDir>/dist/', '<rootDir>/coverage/'],
 	// Compile app source as Metro does; keep Expo's preset transforms for dependencies and tests.
 	transform: {
-		'^(?!.*node_modules/).*src/(?!.*(?:__tests__/|\\.(?:test|spec)\\.|/setup(?:Autocomplete|Query)\\.tsx$)).*\\.[jt]sx?$':
-			[
-				require.resolve('babel-jest', { paths: [require.resolve('jest-expo/package.json')] }),
-				{
-					plugins: ['@babel/plugin-transform-dynamic-import'],
-					caller: {
-						name: 'metro',
-						bundler: 'jest',
-						platform: 'ios',
-						supportsReactCompiler: appConfig.expo.experiments.reactCompiler,
-					},
+		'^(?!.*node_modules/).*src/(?!.*(?:__tests__/|\\.(?:test|spec)\\.)).*\\.[jt]sx?$': [
+			require.resolve('babel-jest', { paths: [require.resolve('jest-expo/package.json')] }),
+			{
+				plugins: ['@babel/plugin-transform-dynamic-import'],
+				caller: {
+					name: 'metro',
+					bundler: 'jest',
+					platform: 'ios',
+					supportsReactCompiler: appConfig.expo.experiments.reactCompiler,
 				},
-			],
+			},
+		],
 	},
 	transformIgnorePatterns: [
 		'/node_modules/(?!(react-native|@react-native|expo|@expo|@expo-google-fonts|@shopify/flash-list|react-navigation|@react-navigation|standard-navigation|immer|@reduxjs|redux|react-redux|@redux-saga))',
@@ -42,8 +41,7 @@ const config: Config = {
 		'!src/types/**',
 		'!src/**/index.{js,ts}',
 		'!src/**/*.test.{js,jsx,ts,tsx}',
-		'!src/components/nativeElements/customAutoCompleteSelect/setupAutocomplete.tsx',
-		'!src/store/setupQuery.tsx',
+		'!src/__tests__/**',
 		'!src/uniwind-types.d.ts',
 	],
 	coverageDirectory: 'coverage',

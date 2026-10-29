@@ -77,6 +77,7 @@ beforeEach(() => {
 	jest.mocked(usePathname).mockReturnValue('/');
 	jest.mocked(useGlobalSearchParams).mockReturnValue({});
 });
+
 describe('NavigationBar additional behaviors', () => {
 	it('opens Nouveautés for regular users and marks its drawer destination as selected', async () => {
 		jest.mocked(usePathname).mockReturnValue('/changelog');
@@ -86,6 +87,7 @@ describe('NavigationBar additional behaviors', () => {
 		await fireEvent.press(destination);
 		expect(router.navigate).toHaveBeenCalledWith('/changelog');
 	});
+
 	it.each([
 		['Homme', translations.fr.navigation.welcomeMale],
 		['Femme', translations.fr.navigation.welcomeFemale],
@@ -94,15 +96,18 @@ describe('NavigationBar additional behaviors', () => {
 		await setup(false, gender);
 		expect(screen.getByText(greeting)).toBeOnTheScreen();
 	});
+
 	it('expands default panel based on pathname (dashboard) and shows its item', async () => {
 		await setup();
 		expect(screen.getByText(translations.fr.navigation.viewDashboard)).toBeOnTheScreen();
 	});
+
 	it('clicking another section expands it (Articles) and its items become visible', async () => {
 		await setup();
 		await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.articles }));
 		expect(screen.getByText(translations.fr.navigation.articlesList)).toBeOnTheScreen();
 	});
+
 	it('keeps the logistics menu aligned with web without an extra Gantt destination', async () => {
 		await setup();
 		await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.logistique }));
@@ -115,168 +120,176 @@ describe('NavigationBar additional behaviors', () => {
 		}
 		expect(screen.queryByText(/gantt/i)).toBeNull();
 	});
+
 	it('finds exact match for pathname and expands correct panel', async () => {
 		jest.mocked(usePathname).mockReturnValue('/companies');
 		await setup(true);
 		expect(screen.getByText(translations.fr.navigation.companiesList)).toBeOnTheScreen();
 	});
+
 	it.each(['/companies/123', '/companies/different/path'])('handles partial path matching at %s', async (pathname) => {
 		jest.mocked(usePathname).mockReturnValue(pathname);
 		await setup(true);
 		expect(screen.getByText(translations.fr.navigation.companiesList)).toBeOnTheScreen();
 	});
+
 	it('handles pathname with no matching menu item', async () => {
 		jest.mocked(usePathname).mockReturnValue('/some/random/path');
 		await setup();
 		expect(screen.getByText('Test User')).toBeOnTheScreen();
 		expect(screen.queryByText(translations.fr.navigation.viewDashboard)).toBeNull();
 	});
-});
-it.each([
-	['/users/form', translations.fr.navigation.newUser],
-	['/companies/form', translations.fr.navigation.newCompany],
-] as const)('opens a blank create form from an edit route at %s', async (pathname, label) => {
-	jest.mocked(usePathname).mockReturnValue(pathname);
-	jest.mocked(useGlobalSearchParams).mockReturnValue({ id: '7' });
-	await setup(true);
-	const button = screen.getByRole('button', { name: label });
-	expect(button).not.toBeSelected();
-	await fireEvent.press(button);
-	expect(router.push).toHaveBeenCalledWith(pathname);
-	expect(closeDrawer).toHaveBeenCalledTimes(1);
-});
-it.each([
-	['/users/form', translations.fr.navigation.newUser],
-	['/companies/form', translations.fr.navigation.newCompany],
-] as const)('selects the create drawer entry only when %s has no edit ID', async (pathname, label) => {
-	jest.mocked(usePathname).mockReturnValue(pathname);
-	await setup(true);
-	expect(screen.getByRole('button', { name: label })).toBeSelected();
-});
-it('navigates to the implemented destination and leaves placeholders disabled', async () => {
-	await setup();
-	expect(screen.getByRole('button', { name: translations.fr.navigation.viewDashboard })).toBeSelected();
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.viewDashboard }));
-	expect(closeDrawer).toHaveBeenCalledTimes(1);
-	expect(router.navigate).toHaveBeenCalledWith('/');
-	await fireEvent.press(screen.getByText(translations.fr.navigation.clients));
-	for (const [name, path] of [
-		[translations.fr.navigation.clientsList, CLIENTS_LIST],
-		[translations.fr.navigation.clientsArchived, CLIENTS_ARCHIVED],
-	]) {
-		const entry = screen.getByRole('button', { name });
-		expect(entry).toBeEnabled();
-		await fireEvent.press(entry);
-		expect(router.navigate).toHaveBeenLastCalledWith(path);
-	}
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.articles }));
-	for (const [name, path] of [
-		[translations.fr.navigation.articlesList, ARTICLES_LIST],
-		[translations.fr.navigation.articlesArchived, ARTICLES_ARCHIVED],
-	]) {
-		const entry = screen.getByRole('button', { name });
-		expect(entry).toBeEnabled();
-		await fireEvent.press(entry);
-		expect(router.navigate).toHaveBeenLastCalledWith(path);
-	}
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.devis }));
-	expect(screen.getByRole('button', { name: translations.fr.navigation.devisList })).toBeEnabled();
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.devisList }));
-	expect(router.navigate).toHaveBeenLastCalledWith('/devis');
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.facturesProforma }));
-	expect(screen.getByRole('button', { name: translations.fr.navigation.facturesProformaList })).toBeEnabled();
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.facturesProformaList }));
-	expect(router.navigate).toHaveBeenLastCalledWith('/facture-pro-forma');
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.facturesClient }));
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.facturesClientList }));
-	expect(router.navigate).toHaveBeenLastCalledWith('/facture-client');
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.facturesImpayees }));
-	expect(router.navigate).toHaveBeenLastCalledWith('/facture-client/unpaid');
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.facturesAvoir }));
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.facturesAvoirList }));
-	expect(router.navigate).toHaveBeenLastCalledWith('/facture-avoir');
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.bonsLivraison }));
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.bonsLivraisonList }));
-	expect(router.navigate).toHaveBeenLastCalledWith('/bon-de-livraison');
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.bonsLivraisonUninvoiced }));
-	expect(router.navigate).toHaveBeenLastCalledWith('/bon-de-livraison/uninvoiced');
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.reglement }));
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.reglementsList }));
-	expect(router.navigate).toHaveBeenLastCalledWith('/reglements');
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.stock }));
-	for (const [name, path] of [
-		[translations.fr.navigation.stockState, '/stock'],
-		[translations.fr.navigation.stockMovements, '/stock/movements'],
-		[translations.fr.navigation.stockReceipts, '/stock/receipts'],
-		[translations.fr.navigation.stockInventories, '/stock/inventories'],
-	]) {
-		await fireEvent.press(screen.getByRole('button', { name }));
-		expect(router.navigate).toHaveBeenLastCalledWith(path);
-	}
-	expect(router.navigate).toHaveBeenCalledTimes(17);
-});
-it('hides staff-only sections for regular users and requests logout', async () => {
-	const store = await setup();
-	expect(screen.queryByText(translations.fr.navigation.companies)).toBeNull();
-	expect(screen.queryByText(translations.fr.navigation.users)).toBeNull();
-	expect(screen.queryByRole('button', { name: translations.fr.navigation.administration })).toBeNull();
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.logout }));
-	expect(store.getState()._init.status).toBe('signingOut');
-});
-it('shows staff sections and allows changing the expanded navigation group', async () => {
-	await setup(true);
-	expect(screen.getByText(translations.fr.navigation.companies)).toBeOnTheScreen();
-	expect(screen.getByText(translations.fr.navigation.users)).toBeOnTheScreen();
-	await fireEvent.press(screen.getByText(translations.fr.navigation.users));
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.usersList }));
-	expect(router.navigate).toHaveBeenCalledWith('/users');
-	await fireEvent.press(screen.getByText(translations.fr.navigation.dashboard));
-	expect(screen.queryByText(translations.fr.navigation.clientsList)).toBeNull();
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.viewDashboard }));
-	expect(router.navigate).toHaveBeenCalledWith('/');
-});
 
-it('keeps the compact account header and logout without invented brand or footer text', async () => {
-	await setup(true);
-	expect(screen.getByText('Test User')).toBeOnTheScreen();
-	expect(screen.getByText(translations.fr.navigation.welcomeNeutral)).toBeOnTheScreen();
-	expect(screen.getByRole('button', { name: translations.fr.navigation.myProfile })).toBeOnTheScreen();
-	expect(screen.getByRole('button', { name: translations.fr.navigation.logout })).toBeOnTheScreen();
-	expect(screen.queryByText('Facturation')).toBeNull();
-	expect(screen.container.queryAll((node) => node.type === 'Image')).toHaveLength(0);
-	expect(screen.queryByText(/^v\d/)).toBeNull();
-	expect(screen.getByRole('button', { name: translations.fr.navigation.administration })).toBeOnTheScreen();
-	expect(screen.queryByText('À venir')).toBeNull();
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.myProfile }));
-	expect(router.navigate).toHaveBeenCalledWith('/settings/edit-profile');
-	expect(closeDrawer).toHaveBeenCalledTimes(1);
-});
+	it.each([
+		['/users/form', translations.fr.navigation.newUser],
+		['/companies/form', translations.fr.navigation.newCompany],
+	] as const)('opens a blank create form from an edit route at %s', async (pathname, label) => {
+		jest.mocked(usePathname).mockReturnValue(pathname);
+		jest.mocked(useGlobalSearchParams).mockReturnValue({ id: '7' });
+		await setup(true);
+		const button = screen.getByRole('button', { name: label });
+		expect(button).not.toBeSelected();
+		await fireEvent.press(button);
+		expect(router.push).toHaveBeenCalledWith(pathname);
+		expect(closeDrawer).toHaveBeenCalledTimes(1);
+	});
 
-it('opens the configured Django administration outside the app for staff', async () => {
-	await setup(true);
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.administration }));
-	await waitFor(() => expect(openURL).toHaveBeenCalledWith(BACKEND_SITE_ADMIN));
-	expect(closeDrawer).toHaveBeenCalledTimes(1);
-	expect(router.navigate).not.toHaveBeenCalled();
-});
+	it.each([
+		['/users/form', translations.fr.navigation.newUser],
+		['/companies/form', translations.fr.navigation.newCompany],
+	] as const)('selects the create drawer entry only when %s has no edit ID', async (pathname, label) => {
+		jest.mocked(usePathname).mockReturnValue(pathname);
+		await setup(true);
+		expect(screen.getByRole('button', { name: label })).toBeSelected();
+	});
 
-it('reports an administration link failure through the error toast', async () => {
-	jest.mocked(openURL).mockRejectedValueOnce(new Error('Browser unavailable'));
-	await setup(true);
-	await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.administration }));
-	await waitFor(() => expect(onDrawerError).toHaveBeenCalledWith(translations.fr.common.genericError));
-});
+	it('navigates to the implemented destination and leaves placeholders disabled', async () => {
+		await setup();
+		expect(screen.getByRole('button', { name: translations.fr.navigation.viewDashboard })).toBeSelected();
+		await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.viewDashboard }));
+		expect(closeDrawer).toHaveBeenCalledTimes(1);
+		expect(router.navigate).toHaveBeenCalledWith('/');
+		await fireEvent.press(screen.getByText(translations.fr.navigation.clients));
+		for (const [name, path] of [
+			[translations.fr.navigation.clientsList, CLIENTS_LIST],
+			[translations.fr.navigation.clientsArchived, CLIENTS_ARCHIVED],
+		]) {
+			const entry = screen.getByRole('button', { name });
+			expect(entry).toBeEnabled();
+			await fireEvent.press(entry);
+			expect(router.navigate).toHaveBeenLastCalledWith(path);
+		}
+		await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.articles }));
+		for (const [name, path] of [
+			[translations.fr.navigation.articlesList, ARTICLES_LIST],
+			[translations.fr.navigation.articlesArchived, ARTICLES_ARCHIVED],
+		]) {
+			const entry = screen.getByRole('button', { name });
+			expect(entry).toBeEnabled();
+			await fireEvent.press(entry);
+			expect(router.navigate).toHaveBeenLastCalledWith(path);
+		}
+		await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.devis }));
+		expect(screen.getByRole('button', { name: translations.fr.navigation.devisList })).toBeEnabled();
+		await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.devisList }));
+		expect(router.navigate).toHaveBeenLastCalledWith('/devis');
+		await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.facturesProforma }));
+		expect(screen.getByRole('button', { name: translations.fr.navigation.facturesProformaList })).toBeEnabled();
+		await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.facturesProformaList }));
+		expect(router.navigate).toHaveBeenLastCalledWith('/facture-pro-forma');
+		await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.facturesClient }));
+		await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.facturesClientList }));
+		expect(router.navigate).toHaveBeenLastCalledWith('/facture-client');
+		await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.facturesImpayees }));
+		expect(router.navigate).toHaveBeenLastCalledWith('/facture-client/unpaid');
+		await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.facturesAvoir }));
+		await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.facturesAvoirList }));
+		expect(router.navigate).toHaveBeenLastCalledWith('/facture-avoir');
+		await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.bonsLivraison }));
+		await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.bonsLivraisonList }));
+		expect(router.navigate).toHaveBeenLastCalledWith('/bon-de-livraison');
+		await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.bonsLivraisonUninvoiced }));
+		expect(router.navigate).toHaveBeenLastCalledWith('/bon-de-livraison/uninvoiced');
+		await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.reglement }));
+		await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.reglementsList }));
+		expect(router.navigate).toHaveBeenLastCalledWith('/reglements');
+		await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.stock }));
+		for (const [name, path] of [
+			[translations.fr.navigation.stockState, '/stock'],
+			[translations.fr.navigation.stockMovements, '/stock/movements'],
+			[translations.fr.navigation.stockReceipts, '/stock/receipts'],
+			[translations.fr.navigation.stockInventories, '/stock/inventories'],
+		]) {
+			await fireEvent.press(screen.getByRole('button', { name }));
+			expect(router.navigate).toHaveBeenLastCalledWith(path);
+		}
+		expect(router.navigate).toHaveBeenCalledTimes(17);
+	});
 
-it('opens the current section after deep navigation and only selects the exact destination', async () => {
-	jest.mocked(usePathname).mockReturnValue('/users/form');
-	await setup(true);
-	expect(screen.getByRole('button', { name: translations.fr.navigation.newUser })).toBeSelected();
-	expect(screen.getByRole('button', { name: translations.fr.navigation.usersList })).not.toBeSelected();
-	await fireEvent.press(screen.getByText(translations.fr.navigation.users));
-	expect(screen.queryByRole('button', { name: translations.fr.navigation.newUser })).toBeNull();
-});
+	it('hides staff-only sections for regular users and requests logout', async () => {
+		const store = await setup();
+		expect(screen.queryByText(translations.fr.navigation.companies)).toBeNull();
+		expect(screen.queryByText(translations.fr.navigation.users)).toBeNull();
+		expect(screen.queryByRole('button', { name: translations.fr.navigation.administration })).toBeNull();
+		await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.logout }));
+		expect(store.getState()._init.status).toBe('signingOut');
+	});
 
-it('keeps Settings out of the drawer now that the bottom navigation owns it', async () => {
-	await setup(true);
-	expect(screen.queryByRole('button', { name: translations.fr.navigation.settings })).toBeNull();
+	it('shows staff sections and allows changing the expanded navigation group', async () => {
+		await setup(true);
+		expect(screen.getByText(translations.fr.navigation.companies)).toBeOnTheScreen();
+		expect(screen.getByText(translations.fr.navigation.users)).toBeOnTheScreen();
+		await fireEvent.press(screen.getByText(translations.fr.navigation.users));
+		await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.usersList }));
+		expect(router.navigate).toHaveBeenCalledWith('/users');
+		await fireEvent.press(screen.getByText(translations.fr.navigation.dashboard));
+		expect(screen.queryByText(translations.fr.navigation.clientsList)).toBeNull();
+		await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.viewDashboard }));
+		expect(router.navigate).toHaveBeenCalledWith('/');
+	});
+
+	it('keeps the compact account header and logout without invented brand or footer text', async () => {
+		await setup(true);
+		expect(screen.getByText('Test User')).toBeOnTheScreen();
+		expect(screen.getByText(translations.fr.navigation.welcomeNeutral)).toBeOnTheScreen();
+		expect(screen.getByRole('button', { name: translations.fr.navigation.myProfile })).toBeOnTheScreen();
+		expect(screen.getByRole('button', { name: translations.fr.navigation.logout })).toBeOnTheScreen();
+		expect(screen.queryByText('Facturation')).toBeNull();
+		expect(screen.container.queryAll((node) => node.type === 'Image')).toHaveLength(0);
+		expect(screen.queryByText(/^v\d/)).toBeNull();
+		expect(screen.getByRole('button', { name: translations.fr.navigation.administration })).toBeOnTheScreen();
+		expect(screen.queryByText('À venir')).toBeNull();
+		await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.myProfile }));
+		expect(router.navigate).toHaveBeenCalledWith('/settings/edit-profile');
+		expect(closeDrawer).toHaveBeenCalledTimes(1);
+	});
+
+	it('opens the configured Django administration outside the app for staff', async () => {
+		await setup(true);
+		await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.administration }));
+		await waitFor(() => expect(openURL).toHaveBeenCalledWith(BACKEND_SITE_ADMIN));
+		expect(closeDrawer).toHaveBeenCalledTimes(1);
+		expect(router.navigate).not.toHaveBeenCalled();
+	});
+
+	it('reports an administration link failure through the error toast', async () => {
+		jest.mocked(openURL).mockRejectedValueOnce(new Error('Browser unavailable'));
+		await setup(true);
+		await fireEvent.press(screen.getByRole('button', { name: translations.fr.navigation.administration }));
+		await waitFor(() => expect(onDrawerError).toHaveBeenCalledWith(translations.fr.common.genericError));
+	});
+
+	it('opens the current section after deep navigation and only selects the exact destination', async () => {
+		jest.mocked(usePathname).mockReturnValue('/users/form');
+		await setup(true);
+		expect(screen.getByRole('button', { name: translations.fr.navigation.newUser })).toBeSelected();
+		expect(screen.getByRole('button', { name: translations.fr.navigation.usersList })).not.toBeSelected();
+		await fireEvent.press(screen.getByText(translations.fr.navigation.users));
+		expect(screen.queryByRole('button', { name: translations.fr.navigation.newUser })).toBeNull();
+	});
+
+	it('keeps Settings out of the drawer now that the bottom navigation owns it', async () => {
+		await setup(true);
+		expect(screen.queryByRole('button', { name: translations.fr.navigation.settings })).toBeNull();
+	});
 });

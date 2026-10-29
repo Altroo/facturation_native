@@ -4,7 +4,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import { router } from 'expo-router';
 import ReglementsListPage from '@/app/(app)/(drawer)/reglements/index';
 import { useGetReglementsInfiniteListInfiniteQuery } from '@/store/services/reglement';
-import { createQueryMock } from '@/store/setupQuery';
+import { createQueryMock } from '@/__tests__/setupQuery';
 import { translations } from '@/translations';
 
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
@@ -150,109 +150,119 @@ beforeEach(async () => {
 		.default.measureInWindow.mockImplementation((callback) => callback(200, 200, 44, 44));
 });
 
-it('shows payment cards, company currency statistics and scoped navigation', async () => {
-	await render(<ReglementsListPage />);
-	expect(args()).toMatchObject({ company_id: 5 });
-	expect(screen.getByText('2 500 000,00 MAD')).toBeOnTheScreen();
-	await fireEvent.press(screen.getByRole('radio', { name: 'EUR' }));
-	expect(screen.getByText('2 000,00 EUR')).toBeOnTheScreen();
-	await fireEvent.press(screen.getByRole('button', { name: `${t.reglements.detailsTitle}: REF7` }));
-	expect(router.push).toHaveBeenCalledWith({ pathname: '/reglements/[id]', params: { id: '7', company_id: '5' } });
-	await fireEvent.press(screen.getByRole('button', { name: t.reglements.newReglement }));
-	expect(router.push).toHaveBeenLastCalledWith({ pathname: '/reglements/form', params: { company_id: '5' } });
-});
-it('sends search to the server and selects every matching payment, including unloaded pages', async () => {
-	await render(<ReglementsListPage />);
-	await fireEvent.press(screen.getByLabelText(t.common.search));
-	await fireEvent.changeText(screen.getByPlaceholderText(t.dataGrid.searchPlaceholder), 'REF');
-	await fireEvent(screen.getByPlaceholderText(t.dataGrid.searchPlaceholder), 'submitEditing');
-	expect(args()).toMatchObject({ search: 'REF' });
-	await fireEvent.press(screen.getByRole('checkbox', { name: t.shared.selectAllMatching(3) }));
-	expect(mockFetchAll).toHaveBeenCalledWith(
-		expect.objectContaining({ company_id: 5, search: 'REF', with_pagination: false }),
-		false,
-	);
-	await fireEvent.press(screen.getByRole('button', { name: t.reglements.bulkDeleteBtn(3) }));
-	expect(mockBulk).not.toHaveBeenCalled();
-	await fireEvent.press(within(screen.getByTestId('action-modal')).getByRole('button', { name: t.common.delete }));
-	await waitFor(() => expect(mockBulk).toHaveBeenCalledWith({ ids: [7, 8, 9] }));
-	expect(mockUnsubscribe).toHaveBeenCalled();
-});
-it('puts mode choices in the filter sheet and filters on the displayed mode name', async () => {
-	await render(<ReglementsListPage />);
-	await fireEvent.press(screen.getByRole('button', { name: t.dataGrid.toolbarFilters }));
-	await fireEvent.press(screen.getByRole('button', { name: t.dataGrid.fieldLabel }));
-	await fireEvent.press(screen.getByRole('radio', { name: t.reglements.colModeReglement }));
-	await fireEvent.press(screen.getByRole('button', { name: t.common.value }));
-	await fireEvent.press(screen.getByRole('radio', { name: 'Virement' }));
-	await fireEvent.press(screen.getByText(t.dataGrid.searchApply));
-	expect(args()).toMatchObject({ mode_reglement_name__icontains: 'Virement' });
-});
-it('cancels only after confirmation and sends the cancelled status', async () => {
-	await render(<ReglementsListPage />);
-	await action(t.reglements.cancelBtn);
-	expect(screen.getByText(t.reglements.cancelModalBody)).toBeOnTheScreen();
-	expect(mockCancel).not.toHaveBeenCalled();
-	const modal = within(screen.getByTestId('action-modal'));
-	expect(modal.getAllByRole('button').map((button) => button.props.accessibilityLabel)).toEqual([
-		t.common.cancel,
-		t.common.confirm,
-	]);
-	await fireEvent.press(modal.getByRole('button', { name: t.common.confirm }));
-	await waitFor(() => expect(mockCancel).toHaveBeenCalledWith({ id: 7, data: { statut: 'Annulé' } }));
-	expect(mockSuccess).toHaveBeenCalledWith(t.reglements.cancelSuccess);
-});
-it('deletes a single payment and surfaces mutation errors without a success toast', async () => {
-	mockDelete.mockReturnValue({ unwrap: () => Promise.reject({ status: 500 }) });
-	await render(<ReglementsListPage />);
-	await action(t.common.delete);
-	await fireEvent.press(within(screen.getByTestId('action-modal')).getByRole('button', { name: t.common.delete }));
-	await waitFor(() => expect(mockError).toHaveBeenCalled());
-	expect(mockDelete).toHaveBeenCalledWith({ id: 7 });
-	expect(mockSuccess).not.toHaveBeenCalled();
-});
-it.each(['Commercial', 'Comptable', 'Lecture'])('respects %s list permissions', async (role) => {
-	mockRole = role;
-	await render(<ReglementsListPage />);
-	expect(screen.queryByRole('checkbox')).toBeNull();
-	if (role === 'Lecture') expect(screen.queryByRole('button', { name: t.common.moreActions })).toBeNull();
-	else {
+describe('ReglementsListPage', () => {
+	it('shows payment cards, company currency statistics and scoped navigation', async () => {
+		await render(<ReglementsListPage />);
+		expect(args()).toMatchObject({ company_id: 5 });
+		expect(screen.getByText('2 500 000,00 MAD')).toBeOnTheScreen();
+		await fireEvent.press(screen.getByRole('radio', { name: 'EUR' }));
+		expect(screen.getByText('2 000,00 EUR')).toBeOnTheScreen();
+		await fireEvent.press(screen.getByRole('button', { name: `${t.reglements.detailsTitle}: REF7` }));
+		expect(router.push).toHaveBeenCalledWith({ pathname: '/reglements/[id]', params: { id: '7', company_id: '5' } });
+		await fireEvent.press(screen.getByRole('button', { name: t.reglements.newReglement }));
+		expect(router.push).toHaveBeenLastCalledWith({ pathname: '/reglements/form', params: { company_id: '5' } });
+	});
+
+	it('sends search to the server and selects every matching payment, including unloaded pages', async () => {
+		await render(<ReglementsListPage />);
+		await fireEvent.press(screen.getByLabelText(t.common.search));
+		await fireEvent.changeText(screen.getByPlaceholderText(t.dataGrid.searchPlaceholder), 'REF');
+		await fireEvent(screen.getByPlaceholderText(t.dataGrid.searchPlaceholder), 'submitEditing');
+		expect(args()).toMatchObject({ search: 'REF' });
+		await fireEvent.press(screen.getByRole('checkbox', { name: t.shared.selectAllMatching(3) }));
+		expect(mockFetchAll).toHaveBeenCalledWith(
+			expect.objectContaining({ company_id: 5, search: 'REF', with_pagination: false }),
+			false,
+		);
+		await fireEvent.press(screen.getByRole('button', { name: t.reglements.bulkDeleteBtn(3) }));
+		expect(mockBulk).not.toHaveBeenCalled();
+		await fireEvent.press(within(screen.getByTestId('action-modal')).getByRole('button', { name: t.common.delete }));
+		await waitFor(() => expect(mockBulk).toHaveBeenCalledWith({ ids: [7, 8, 9] }));
+		expect(mockUnsubscribe).toHaveBeenCalled();
+	});
+
+	it('puts mode choices in the filter sheet and filters on the displayed mode name', async () => {
+		await render(<ReglementsListPage />);
+		await fireEvent.press(screen.getByRole('button', { name: t.dataGrid.toolbarFilters }));
+		await fireEvent.press(screen.getByRole('button', { name: t.dataGrid.fieldLabel }));
+		await fireEvent.press(screen.getByRole('radio', { name: t.reglements.colModeReglement }));
+		await fireEvent.press(screen.getByRole('button', { name: t.common.value }));
+		await fireEvent.press(screen.getByRole('radio', { name: 'Virement' }));
+		await fireEvent.press(screen.getByText(t.dataGrid.searchApply));
+		expect(args()).toMatchObject({ mode_reglement_name__icontains: 'Virement' });
+	});
+
+	it('cancels only after confirmation and sends the cancelled status', async () => {
+		await render(<ReglementsListPage />);
+		await action(t.reglements.cancelBtn);
+		expect(screen.getByText(t.reglements.cancelModalBody)).toBeOnTheScreen();
+		expect(mockCancel).not.toHaveBeenCalled();
+		const modal = within(screen.getByTestId('action-modal'));
+		expect(modal.getAllByRole('button').map((button) => button.props.accessibilityLabel)).toEqual([
+			t.common.cancel,
+			t.common.confirm,
+		]);
+		await fireEvent.press(modal.getByRole('button', { name: t.common.confirm }));
+		await waitFor(() => expect(mockCancel).toHaveBeenCalledWith({ id: 7, data: { statut: 'Annulé' } }));
+		expect(mockSuccess).toHaveBeenCalledWith(t.reglements.cancelSuccess);
+	});
+
+	it('deletes a single payment and surfaces mutation errors without a success toast', async () => {
+		mockDelete.mockReturnValue({ unwrap: () => Promise.reject({ status: 500 }) });
+		await render(<ReglementsListPage />);
+		await action(t.common.delete);
+		await fireEvent.press(within(screen.getByTestId('action-modal')).getByRole('button', { name: t.common.delete }));
+		await waitFor(() => expect(mockError).toHaveBeenCalled());
+		expect(mockDelete).toHaveBeenCalledWith({ id: 7 });
+		expect(mockSuccess).not.toHaveBeenCalled();
+	});
+
+	it.each(['Commercial', 'Comptable', 'Lecture'])('respects %s list permissions', async (role) => {
+		mockRole = role;
+		await render(<ReglementsListPage />);
+		expect(screen.queryByRole('checkbox')).toBeNull();
+		if (role === 'Lecture') expect(screen.queryByRole('button', { name: t.common.moreActions })).toBeNull();
+		else {
+			await fireEvent.press(screen.getAllByRole('button', { name: t.common.moreActions })[0]);
+			expect(screen.queryByRole('menuitem', { name: t.common.delete })).toBeNull();
+			expect(screen.queryByRole('menuitem', { name: t.common.edit })).toBeNull();
+			expect(screen.queryByRole('menuitem', { name: t.reglements.cancelBtn })).toBeNull();
+		}
+	});
+
+	it('requires the status flag for edit/cancel and keeps only language choices for receipts', async () => {
+		mockCanChange = false;
+		await render(<ReglementsListPage />);
 		await fireEvent.press(screen.getAllByRole('button', { name: t.common.moreActions })[0]);
-		expect(screen.queryByRole('menuitem', { name: t.common.delete })).toBeNull();
 		expect(screen.queryByRole('menuitem', { name: t.common.edit })).toBeNull();
 		expect(screen.queryByRole('menuitem', { name: t.reglements.cancelBtn })).toBeNull();
-	}
-});
-it('requires the status flag for edit/cancel and keeps only language choices for receipts', async () => {
-	mockCanChange = false;
-	await render(<ReglementsListPage />);
-	await fireEvent.press(screen.getAllByRole('button', { name: t.common.moreActions })[0]);
-	expect(screen.queryByRole('menuitem', { name: t.common.edit })).toBeNull();
-	expect(screen.queryByRole('menuitem', { name: t.reglements.cancelBtn })).toBeNull();
-	const modal = screen.getByTestId('custom-menu');
-	await fireEvent.press(screen.getByRole('menuitem', { name: t.reglements.printReceipt }));
-	await act(() => modal.props.onDismiss());
-	expect(screen.getByText(t.pdf.language)).toBeOnTheScreen();
-	expect(screen.queryByText(t.pdf.format)).toBeNull();
-});
-it('loads the next page, supports pull to refresh and resets selection on company changes', async () => {
-	await render(<ReglementsListPage />);
-	await fireEvent(screen.getByTestId('payment-list'), 'endReached');
-	expect(fetchNextPage).toHaveBeenCalledTimes(1);
-	await fireEvent(screen.getByTestId('payment-list'), 'refresh');
-	expect(refetch).toHaveBeenCalledTimes(1);
-	await fireEvent.press(screen.getByRole('checkbox', { name: t.shared.selectAllMatching(3) }));
-	await fireEvent.press(screen.getByText('Switch company'));
-	expect(args()).toMatchObject({ company_id: 11 });
-	expect(screen.queryByRole('button', { name: t.reglements.bulkDeleteBtn(3) })).toBeNull();
-});
-it('does not request payments for an unknown role or missing session', async () => {
-	mockRole = 'Logistique';
-	mockToken = undefined;
-	await render(<ReglementsListPage />);
-	expect(useGetReglementsInfiniteListInfiniteQuery).toHaveBeenCalledWith(
-		expect.anything(),
-		expect.objectContaining({ skip: true }),
-	);
-	expect(screen.getByText(t.noPermission.title)).toBeOnTheScreen();
+		const modal = screen.getByTestId('custom-menu');
+		await fireEvent.press(screen.getByRole('menuitem', { name: t.reglements.printReceipt }));
+		await act(() => modal.props.onDismiss());
+		expect(screen.getByText(t.pdf.language)).toBeOnTheScreen();
+		expect(screen.queryByText(t.pdf.format)).toBeNull();
+	});
+
+	it('loads the next page, supports pull to refresh and resets selection on company changes', async () => {
+		await render(<ReglementsListPage />);
+		await fireEvent(screen.getByTestId('payment-list'), 'endReached');
+		expect(fetchNextPage).toHaveBeenCalledTimes(1);
+		await fireEvent(screen.getByTestId('payment-list'), 'refresh');
+		expect(refetch).toHaveBeenCalledTimes(1);
+		await fireEvent.press(screen.getByRole('checkbox', { name: t.shared.selectAllMatching(3) }));
+		await fireEvent.press(screen.getByText('Switch company'));
+		expect(args()).toMatchObject({ company_id: 11 });
+		expect(screen.queryByRole('button', { name: t.reglements.bulkDeleteBtn(3) })).toBeNull();
+	});
+
+	it('does not request payments for an unknown role or missing session', async () => {
+		mockRole = 'Logistique';
+		mockToken = undefined;
+		await render(<ReglementsListPage />);
+		expect(useGetReglementsInfiniteListInfiniteQuery).toHaveBeenCalledWith(
+			expect.anything(),
+			expect.objectContaining({ skip: true }),
+		);
+		expect(screen.getByText(t.noPermission.title)).toBeOnTheScreen();
+	});
 });

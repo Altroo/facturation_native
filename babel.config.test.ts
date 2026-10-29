@@ -37,20 +37,22 @@ const runBabel = (filename?: string) =>
 		),
 	);
 
-it('loads without a filename when Metro computes the transformer cache key', () => {
-	expect(runBabel()).toBe(true);
-});
+describe('Babel configuration', () => {
+	it('loads without a filename when Metro computes the transformer cache key', () => {
+		expect(runBabel()).toBe(true);
+	});
 
-it.each(['Drawer', 'Overlay'])('removes ignored native dependencies from the published %s', (component) => {
-	const hooks = runBabel(`node_modules/react-native-drawer-layout/src/views/${component}.native.tsx`);
-	expect(hooks.length).toBeGreaterThan(0);
-	expect(hooks.every((argumentCount: number) => argumentCount === 1)).toBe(true);
-});
+	it.each(['Drawer', 'Overlay'])('removes ignored native dependencies from the published %s', (component) => {
+		const hooks = runBabel(`node_modules/react-native-drawer-layout/src/views/${component}.native.tsx`);
+		expect(hooks.length).toBeGreaterThan(0);
+		expect(hooks.every((argumentCount: number) => argumentCount === 1)).toBe(true);
+	});
 
-it('retains hook dependencies in the drawer web entry', () => {
-	expect(runBabel('node_modules/react-native-drawer-layout/src/views/Overlay.tsx')).toEqual([2]);
-});
+	it('retains hook dependencies in the drawer web entry', () => {
+		expect(runBabel('node_modules/react-native-drawer-layout/src/views/Overlay.tsx')).toEqual([2]);
+	});
 
-it('leaves app animation hooks unchanged', () => {
-	expect(runBabel('babel.config.test.ts')).toEqual([2]);
+	it('leaves app animation hooks unchanged', () => {
+		expect(runBabel('babel.config.test.ts')).toEqual([2]);
+	});
 });

@@ -105,6 +105,7 @@ describe('axiosBaseQuery (real Axios instance, no any)', () => {
 			},
 		});
 	});
+
 	it.each([
 		[new Error('unexpected'), 'unexpected'],
 		[{ error: null }, 'Erreur inconnue'],

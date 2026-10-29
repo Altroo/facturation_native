@@ -54,97 +54,99 @@ beforeEach(() => {
 	mockUpdate.mockReturnValue({ unwrap: async () => ({ id: 11 }) });
 });
 
-it('denies objective configuration to non-administrators before requesting settings', async () => {
-	mockState.staff = false;
-	await render(<MonthlyObjectivesPage />);
-	expect(screen.getByRole('header', { name: t.noPermission.title })).toBeOnTheScreen();
-	expect(useGetMonthlyObjectivesSettingsByCompanyQuery).not.toHaveBeenCalled();
-});
-
-it('treats an unconfigured company as a new form and saves the same payload as the web', async () => {
-	await render(<MonthlyObjectivesPage />);
-	await fireEvent.changeText(screen.getByLabelText(t.monthlyObjectives.fieldCALabel), '1000');
-	await fireEvent.changeText(screen.getByLabelText(t.monthlyObjectives.fieldFacturesLabel), '5');
-	await fireEvent.changeText(screen.getByLabelText(t.monthlyObjectives.fieldConversionLabel), '50');
-	await waitFor(() => expect(screen.getByRole('button', { name: t.common.save })).toBeEnabled());
-	await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
-	await waitFor(() => expect(mockSuccess).toHaveBeenCalledWith(t.monthlyObjectives.createSuccess));
-	expect(router.back).toHaveBeenCalledTimes(1);
-	expect(mockCreate).toHaveBeenCalledWith({
-		company: 5,
-		objectif_ca: '1000',
-		objectif_factures: 5,
-		objectif_conversion: '50',
-		objectif_ca_eur: null,
-		objectif_ca_usd: null,
+describe('MonthlyObjectivesPage', () => {
+	it('denies objective configuration to non-administrators before requesting settings', async () => {
+		mockState.staff = false;
+		await render(<MonthlyObjectivesPage />);
+		expect(screen.getByRole('header', { name: t.noPermission.title })).toBeOnTheScreen();
+		expect(useGetMonthlyObjectivesSettingsByCompanyQuery).not.toHaveBeenCalled();
 	});
-});
 
-it('edits existing objectives and hides foreign currency fields when the company does not use them', async () => {
-	mockState.foreign = false;
-	mockState.error = undefined;
-	mockState.existing = {
-		id: 11,
-		company: 5,
-		objectif_ca: '1000',
-		objectif_factures: 5,
-		objectif_conversion: '50',
-		objectif_ca_eur: null,
-		objectif_ca_usd: null,
-		date_created: '',
-		date_updated: '',
-	};
-	await render(<MonthlyObjectivesPage />);
-	expect(screen.queryByLabelText(t.monthlyObjectives.fieldCAEurLabel)).not.toBeOnTheScreen();
-	await waitFor(() => expect(screen.getByRole('button', { name: t.common.save })).toBeEnabled());
-	await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
-	await waitFor(() =>
-		expect(mockUpdate).toHaveBeenCalledWith({
-			id: 11,
-			data: { company: 5, objectif_ca: '1000', objectif_factures: 5, objectif_conversion: '50' },
-		}),
-	);
-	expect(router.back).toHaveBeenCalledTimes(1);
-});
-
-it('returns to settings when an objectives screen was opened without navigation history', async () => {
-	jest.mocked(router.canGoBack).mockReturnValue(false);
-	await render(<MonthlyObjectivesPage />);
-	await waitFor(() => expect(screen.getByRole('button', { name: t.common.save })).toBeEnabled());
-	await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
-	await waitFor(() => expect(router.replace).toHaveBeenCalledWith(DASHBOARD_SETTINGS));
-	expect(router.back).not.toHaveBeenCalled();
-});
-
-it('groups currency objectives for display but submits raw amounts for every currency', async () => {
-	await render(<MonthlyObjectivesPage />);
-	await fireEvent.changeText(screen.getByLabelText(t.monthlyObjectives.fieldCALabel), '300 000 000,25');
-	await fireEvent.changeText(screen.getByLabelText(t.monthlyObjectives.fieldCAEurLabel), '10 000,50');
-	await fireEvent.changeText(screen.getByLabelText(t.monthlyObjectives.fieldCAUsdLabel), '20 000');
-	expect(screen.getByLabelText(t.monthlyObjectives.fieldCALabel)).toHaveProp('value', '300\u00a0000\u00a0000,25');
-	await waitFor(() => expect(screen.getByRole('button', { name: t.common.save })).toBeEnabled());
-	await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
-	await waitFor(() =>
+	it('treats an unconfigured company as a new form and saves the same payload as the web', async () => {
+		await render(<MonthlyObjectivesPage />);
+		await fireEvent.changeText(screen.getByLabelText(t.monthlyObjectives.fieldCALabel), '1000');
+		await fireEvent.changeText(screen.getByLabelText(t.monthlyObjectives.fieldFacturesLabel), '5');
+		await fireEvent.changeText(screen.getByLabelText(t.monthlyObjectives.fieldConversionLabel), '50');
+		await waitFor(() => expect(screen.getByRole('button', { name: t.common.save })).toBeEnabled());
+		await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
+		await waitFor(() => expect(mockSuccess).toHaveBeenCalledWith(t.monthlyObjectives.createSuccess));
+		expect(router.back).toHaveBeenCalledTimes(1);
 		expect(mockCreate).toHaveBeenCalledWith({
 			company: 5,
-			objectif_ca: '300000000.25',
-			objectif_ca_eur: '10000.5',
-			objectif_ca_usd: '20000',
-			objectif_factures: 0,
-			objectif_conversion: '0',
-		}),
-	);
-});
-
-it('reports a failed save and leaves the form available for correction', async () => {
-	mockCreate.mockReturnValue({
-		unwrap: async () => Promise.reject({ status: 400, data: { details: { error: ['Invalid objective'] } } }),
+			objectif_ca: '1000',
+			objectif_factures: 5,
+			objectif_conversion: '50',
+			objectif_ca_eur: null,
+			objectif_ca_usd: null,
+		});
 	});
-	await render(<MonthlyObjectivesPage />);
-	await waitFor(() => expect(screen.getByRole('button', { name: t.common.save })).toBeEnabled());
-	await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
-	await waitFor(() => expect(mockError).toHaveBeenCalledWith(t.monthlyObjectives.createError));
-	expect(router.back).not.toHaveBeenCalled();
-	expect(router.replace).not.toHaveBeenCalled();
-	expect(screen.getByLabelText(t.monthlyObjectives.fieldCALabel)).toBeOnTheScreen();
+
+	it('edits existing objectives and hides foreign currency fields when the company does not use them', async () => {
+		mockState.foreign = false;
+		mockState.error = undefined;
+		mockState.existing = {
+			id: 11,
+			company: 5,
+			objectif_ca: '1000',
+			objectif_factures: 5,
+			objectif_conversion: '50',
+			objectif_ca_eur: null,
+			objectif_ca_usd: null,
+			date_created: '',
+			date_updated: '',
+		};
+		await render(<MonthlyObjectivesPage />);
+		expect(screen.queryByLabelText(t.monthlyObjectives.fieldCAEurLabel)).not.toBeOnTheScreen();
+		await waitFor(() => expect(screen.getByRole('button', { name: t.common.save })).toBeEnabled());
+		await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
+		await waitFor(() =>
+			expect(mockUpdate).toHaveBeenCalledWith({
+				id: 11,
+				data: { company: 5, objectif_ca: '1000', objectif_factures: 5, objectif_conversion: '50' },
+			}),
+		);
+		expect(router.back).toHaveBeenCalledTimes(1);
+	});
+
+	it('returns to settings when an objectives screen was opened without navigation history', async () => {
+		jest.mocked(router.canGoBack).mockReturnValue(false);
+		await render(<MonthlyObjectivesPage />);
+		await waitFor(() => expect(screen.getByRole('button', { name: t.common.save })).toBeEnabled());
+		await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
+		await waitFor(() => expect(router.replace).toHaveBeenCalledWith(DASHBOARD_SETTINGS));
+		expect(router.back).not.toHaveBeenCalled();
+	});
+
+	it('groups currency objectives for display but submits raw amounts for every currency', async () => {
+		await render(<MonthlyObjectivesPage />);
+		await fireEvent.changeText(screen.getByLabelText(t.monthlyObjectives.fieldCALabel), '300 000 000,25');
+		await fireEvent.changeText(screen.getByLabelText(t.monthlyObjectives.fieldCAEurLabel), '10 000,50');
+		await fireEvent.changeText(screen.getByLabelText(t.monthlyObjectives.fieldCAUsdLabel), '20 000');
+		expect(screen.getByLabelText(t.monthlyObjectives.fieldCALabel)).toHaveProp('value', '300\u00a0000\u00a0000,25');
+		await waitFor(() => expect(screen.getByRole('button', { name: t.common.save })).toBeEnabled());
+		await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
+		await waitFor(() =>
+			expect(mockCreate).toHaveBeenCalledWith({
+				company: 5,
+				objectif_ca: '300000000.25',
+				objectif_ca_eur: '10000.5',
+				objectif_ca_usd: '20000',
+				objectif_factures: 0,
+				objectif_conversion: '0',
+			}),
+		);
+	});
+
+	it('reports a failed save and leaves the form available for correction', async () => {
+		mockCreate.mockReturnValue({
+			unwrap: async () => Promise.reject({ status: 400, data: { details: { error: ['Invalid objective'] } } }),
+		});
+		await render(<MonthlyObjectivesPage />);
+		await waitFor(() => expect(screen.getByRole('button', { name: t.common.save })).toBeEnabled());
+		await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
+		await waitFor(() => expect(mockError).toHaveBeenCalledWith(t.monthlyObjectives.createError));
+		expect(router.back).not.toHaveBeenCalled();
+		expect(router.replace).not.toHaveBeenCalled();
+		expect(screen.getByLabelText(t.monthlyObjectives.fieldCALabel)).toBeOnTheScreen();
+	});
 });

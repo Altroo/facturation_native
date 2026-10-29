@@ -53,33 +53,38 @@ beforeEach(() => {
 	mockPage.foreign = true;
 });
 const lastScope = () => jest.mocked(KPICardsSection).mock.calls.at(-1)![0].dateParams;
-it('uses the existing company tabs and scopes dashboard data to the selected company', async () => {
-	await render(<DashboardPage />);
-	expect(screen.getByText('Company tabs')).toBeOnTheScreen();
-	expect(lastScope()).toMatchObject({ company_id: 5, devise: 'MAD' });
-	expect(screen.queryByText('Facturation')).not.toBeOnTheScreen();
-});
-it('changes the server currency and clears company-specific filters when switching company', async () => {
-	const view = await render(<DashboardPage />);
-	await fireEvent.press(screen.getByRole('radio', { name: 'EUR' }));
-	expect(lastScope()).toMatchObject({ devise: 'EUR' });
-	mockPage.company = 8;
-	mockPage.foreign = false;
-	await view.rerender(<DashboardPage key="company-8" />);
-	expect(lastScope()).toMatchObject({ company_id: 8, devise: 'MAD' });
-	expect(screen.queryByRole('radio', { name: 'EUR' })).not.toBeOnTheScreen();
-});
-it('applies dates and project to requests, then restores the web default date range on reset', async () => {
-	await render(<DashboardPage />);
-	const t = translations.fr;
-	await fireEvent.press(screen.getByRole('button', { name: t.dataGrid.toolbarFilters }));
-	await fireEvent.changeText(screen.getByLabelText(t.dashboard.dateFrom), '2026-01-01');
-	await fireEvent.changeText(screen.getByLabelText(t.dashboard.filterProject), 'Atlas');
-	await fireEvent(screen.getByLabelText(t.dashboard.filterProject), 'endEditing');
-	expect(lastScope()).toMatchObject({ date_from: '2026-01-01', project: 'Atlas' });
-	await act(async () => {
-		await fireEvent.press(screen.getByRole('button', { name: t.dashboard.resetDates }));
+
+describe('DashboardPage', () => {
+	it('uses the existing company tabs and scopes dashboard data to the selected company', async () => {
+		await render(<DashboardPage />);
+		expect(screen.getByText('Company tabs')).toBeOnTheScreen();
+		expect(lastScope()).toMatchObject({ company_id: 5, devise: 'MAD' });
+		expect(screen.queryByText('Facturation')).not.toBeOnTheScreen();
 	});
-	expect(lastScope().project).toBeUndefined();
-	expect(lastScope().date_from).not.toBe('2026-01-01');
+
+	it('changes the server currency and clears company-specific filters when switching company', async () => {
+		const view = await render(<DashboardPage />);
+		await fireEvent.press(screen.getByRole('radio', { name: 'EUR' }));
+		expect(lastScope()).toMatchObject({ devise: 'EUR' });
+		mockPage.company = 8;
+		mockPage.foreign = false;
+		await view.rerender(<DashboardPage key="company-8" />);
+		expect(lastScope()).toMatchObject({ company_id: 8, devise: 'MAD' });
+		expect(screen.queryByRole('radio', { name: 'EUR' })).not.toBeOnTheScreen();
+	});
+
+	it('applies dates and project to requests, then restores the web default date range on reset', async () => {
+		await render(<DashboardPage />);
+		const t = translations.fr;
+		await fireEvent.press(screen.getByRole('button', { name: t.dataGrid.toolbarFilters }));
+		await fireEvent.changeText(screen.getByLabelText(t.dashboard.dateFrom), '2026-01-01');
+		await fireEvent.changeText(screen.getByLabelText(t.dashboard.filterProject), 'Atlas');
+		await fireEvent(screen.getByLabelText(t.dashboard.filterProject), 'endEditing');
+		expect(lastScope()).toMatchObject({ date_from: '2026-01-01', project: 'Atlas' });
+		await act(async () => {
+			await fireEvent.press(screen.getByRole('button', { name: t.dashboard.resetDates }));
+		});
+		expect(lastScope().project).toBeUndefined();
+		expect(lastScope().date_from).not.toBe('2026-01-01');
+	});
 });

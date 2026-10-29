@@ -34,95 +34,97 @@ beforeEach(() => {
 	remove.mockReturnValue({ unwrap: () => Promise.resolve() });
 });
 
-it('validates a name, trims it, and returns the new city ID to its parent', async () => {
-	await render(<EntityCrudControls {...props} selectedItem={null} />);
-	expect(screen.queryByRole('button', { name: `${t.common.update} Ville` })).toBeNull();
-	await fireEvent.press(screen.getByRole('button', { name: `${t.common.add} Ville` }));
-	await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
-	expect(add).not.toHaveBeenCalled();
-	expect(screen.getByRole('alert')).toHaveTextContent(t.addEntityModal.requiredError('Ville'));
-	await fireEvent.changeText(screen.getByLabelText(t.addEntityModal.fieldLabel('Ville')), '  Rabat  ');
-	await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
-	await waitFor(() => expect(onAdd).toHaveBeenCalledWith(3));
-	expect(add).toHaveBeenCalledWith({ data: { nom: 'Rabat' } });
-	expect(screen.queryByTestId('entity-name-sheet')).toBeNull();
-});
-
-it('prefills and updates the selected entity', async () => {
-	await render(<EntityCrudControls {...props} />);
-	await fireEvent.press(screen.getByRole('button', { name: `${t.common.update} Ville` }));
-	expect(screen.getByLabelText(t.addEntityModal.fieldLabel('Ville'))).toHaveProp('value', 'Casablanca');
-	await fireEvent.changeText(screen.getByLabelText(t.addEntityModal.fieldLabel('Ville')), 'Rabat');
-	await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
-	await waitFor(() => expect(edit).toHaveBeenCalledWith({ id: 2, data: { nom: 'Rabat' } }));
-	expect(onAdd).not.toHaveBeenCalled();
-});
-
-it('requires confirmation before deleting and lets the parent clear its selected value', async () => {
-	await render(<EntityCrudControls {...props} />);
-	await fireEvent.press(screen.getByRole('button', { name: `${t.common.delete} Ville` }));
-	expect(remove).not.toHaveBeenCalled();
-	await fireEvent.press(screen.getByRole('button', { name: t.common.cancel }));
-	expect(remove).not.toHaveBeenCalled();
-	await fireEvent.press(screen.getByRole('button', { name: `${t.common.delete} Ville` }));
-	await fireEvent.press(screen.getByRole('button', { name: t.common.delete }));
-	await waitFor(() => expect(onDelete).toHaveBeenCalledTimes(1));
-	expect(remove).toHaveBeenCalledWith({ id: 2 });
-});
-
-it('retains the open editor and entered value on a failed API request', async () => {
-	edit.mockReturnValue({
-		unwrap: () => Promise.reject({ status: 400, data: { details: { nom: ['City already exists'] } } }),
+describe('EntityCrudControls', () => {
+	it('validates a name, trims it, and returns the new city ID to its parent', async () => {
+		await render(<EntityCrudControls {...props} selectedItem={null} />);
+		expect(screen.queryByRole('button', { name: `${t.common.update} Ville` })).toBeNull();
+		await fireEvent.press(screen.getByRole('button', { name: `${t.common.add} Ville` }));
+		await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
+		expect(add).not.toHaveBeenCalled();
+		expect(screen.getByRole('alert')).toHaveTextContent(t.addEntityModal.requiredError('Ville'));
+		await fireEvent.changeText(screen.getByLabelText(t.addEntityModal.fieldLabel('Ville')), '  Rabat  ');
+		await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
+		await waitFor(() => expect(onAdd).toHaveBeenCalledWith(3));
+		expect(add).toHaveBeenCalledWith({ data: { nom: 'Rabat' } });
+		expect(screen.queryByTestId('entity-name-sheet')).toBeNull();
 	});
-	await render(<EntityCrudControls {...props} />);
-	await fireEvent.press(screen.getByRole('button', { name: `${t.common.update} Ville` }));
-	await fireEvent.changeText(screen.getByLabelText(t.addEntityModal.fieldLabel('Ville')), 'Rabat');
-	await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
-	await waitFor(() => expect(mockError).toHaveBeenCalledWith('City already exists'));
-	expect(screen.getByLabelText(t.addEntityModal.fieldLabel('Ville'))).toHaveProp('value', 'Rabat');
-	expect(screen.getByRole('alert')).toHaveTextContent('City already exists');
-});
 
-it('prevents repeated requests and dismissal until the pending save finishes', async () => {
-	let finish!: () => void;
-	edit.mockReturnValue({
-		unwrap: () =>
-			new Promise<void>((resolve) => {
-				finish = resolve;
-			}),
+	it('prefills and updates the selected entity', async () => {
+		await render(<EntityCrudControls {...props} />);
+		await fireEvent.press(screen.getByRole('button', { name: `${t.common.update} Ville` }));
+		expect(screen.getByLabelText(t.addEntityModal.fieldLabel('Ville'))).toHaveProp('value', 'Casablanca');
+		await fireEvent.changeText(screen.getByLabelText(t.addEntityModal.fieldLabel('Ville')), 'Rabat');
+		await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
+		await waitFor(() => expect(edit).toHaveBeenCalledWith({ id: 2, data: { nom: 'Rabat' } }));
+		expect(onAdd).not.toHaveBeenCalled();
 	});
-	await render(<EntityCrudControls {...props} />);
-	await fireEvent.press(screen.getByRole('button', { name: `${t.common.update} Ville` }));
-	await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
-	await waitFor(() => expect(edit).toHaveBeenCalledTimes(1));
-	await fireEvent.press(screen.getByRole('button', { name: t.common.close }));
-	expect(screen.getByTestId('entity-name-sheet')).toBeOnTheScreen();
-	await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
-	expect(edit).toHaveBeenCalledTimes(1);
-	await act(async () => finish());
-	await waitFor(() => expect(screen.queryByTestId('entity-name-sheet')).toBeNull());
-});
 
-it('keeps Add text-only and exposes edit/delete directly only after selection', async () => {
-	const { rerender } = await render(<EntityCrudControls {...props} selectedItem={null} />);
-	expect(screen.getByRole('button', { name: `${t.common.add} Ville` })).toHaveTextContent(t.common.add);
-	expect(screen.container.queryAll((node) => node.props.name === 'add')).toHaveLength(0);
-	expect(screen.queryByRole('button', { name: `${t.common.update} Ville` })).toBeNull();
-	expect(screen.queryByRole('button', { name: `${t.common.delete} Ville` })).toBeNull();
-	await rerender(<EntityCrudControls {...props} />);
-	expect(screen.queryByRole('menuitem')).toBeNull();
-	expect(screen.getByRole('button', { name: `${t.common.update} Ville` })).toBeOnTheScreen();
-	expect(screen.getByRole('button', { name: `${t.common.delete} Ville` })).toBeOnTheScreen();
-	expect(screen.queryByRole('button', { name: `${t.common.moreActions} (Ville)` })).toBeNull();
-	expect(edit).not.toHaveBeenCalled();
-	expect(remove).not.toHaveBeenCalled();
-});
+	it('requires confirmation before deleting and lets the parent clear its selected value', async () => {
+		await render(<EntityCrudControls {...props} />);
+		await fireEvent.press(screen.getByRole('button', { name: `${t.common.delete} Ville` }));
+		expect(remove).not.toHaveBeenCalled();
+		await fireEvent.press(screen.getByRole('button', { name: t.common.cancel }));
+		expect(remove).not.toHaveBeenCalled();
+		await fireEvent.press(screen.getByRole('button', { name: `${t.common.delete} Ville` }));
+		await fireEvent.press(screen.getByRole('button', { name: t.common.delete }));
+		await waitFor(() => expect(onDelete).toHaveBeenCalledTimes(1));
+		expect(remove).toHaveBeenCalledWith({ id: 2 });
+	});
 
-it('offers compact icon actions with accessible names for crowded form labels', async () => {
-	await render(<EntityCrudControls {...props} iconOnly />);
-	const button = screen.getByRole('button', { name: `${t.common.add} Ville` });
-	expect(button).not.toHaveTextContent(t.common.add);
-	await fireEvent.press(button);
-	expect(screen.getByTestId('entity-name-sheet')).toBeOnTheScreen();
-	expect(screen.getByLabelText(t.addEntityModal.fieldLabel('Ville'))).toBeOnTheScreen();
+	it('retains the open editor and entered value on a failed API request', async () => {
+		edit.mockReturnValue({
+			unwrap: () => Promise.reject({ status: 400, data: { details: { nom: ['City already exists'] } } }),
+		});
+		await render(<EntityCrudControls {...props} />);
+		await fireEvent.press(screen.getByRole('button', { name: `${t.common.update} Ville` }));
+		await fireEvent.changeText(screen.getByLabelText(t.addEntityModal.fieldLabel('Ville')), 'Rabat');
+		await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
+		await waitFor(() => expect(mockError).toHaveBeenCalledWith('City already exists'));
+		expect(screen.getByLabelText(t.addEntityModal.fieldLabel('Ville'))).toHaveProp('value', 'Rabat');
+		expect(screen.getByRole('alert')).toHaveTextContent('City already exists');
+	});
+
+	it('prevents repeated requests and dismissal until the pending save finishes', async () => {
+		let finish!: () => void;
+		edit.mockReturnValue({
+			unwrap: () =>
+				new Promise<void>((resolve) => {
+					finish = resolve;
+				}),
+		});
+		await render(<EntityCrudControls {...props} />);
+		await fireEvent.press(screen.getByRole('button', { name: `${t.common.update} Ville` }));
+		await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
+		await waitFor(() => expect(edit).toHaveBeenCalledTimes(1));
+		await fireEvent.press(screen.getByRole('button', { name: t.common.close }));
+		expect(screen.getByTestId('entity-name-sheet')).toBeOnTheScreen();
+		await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
+		expect(edit).toHaveBeenCalledTimes(1);
+		await act(async () => finish());
+		await waitFor(() => expect(screen.queryByTestId('entity-name-sheet')).toBeNull());
+	});
+
+	it('keeps Add text-only and exposes edit/delete directly only after selection', async () => {
+		const { rerender } = await render(<EntityCrudControls {...props} selectedItem={null} />);
+		expect(screen.getByRole('button', { name: `${t.common.add} Ville` })).toHaveTextContent(t.common.add);
+		expect(screen.container.queryAll((node) => node.props.name === 'add')).toHaveLength(0);
+		expect(screen.queryByRole('button', { name: `${t.common.update} Ville` })).toBeNull();
+		expect(screen.queryByRole('button', { name: `${t.common.delete} Ville` })).toBeNull();
+		await rerender(<EntityCrudControls {...props} />);
+		expect(screen.queryByRole('menuitem')).toBeNull();
+		expect(screen.getByRole('button', { name: `${t.common.update} Ville` })).toBeOnTheScreen();
+		expect(screen.getByRole('button', { name: `${t.common.delete} Ville` })).toBeOnTheScreen();
+		expect(screen.queryByRole('button', { name: `${t.common.moreActions} (Ville)` })).toBeNull();
+		expect(edit).not.toHaveBeenCalled();
+		expect(remove).not.toHaveBeenCalled();
+	});
+
+	it('offers compact icon actions with accessible names for crowded form labels', async () => {
+		await render(<EntityCrudControls {...props} iconOnly />);
+		const button = screen.getByRole('button', { name: `${t.common.add} Ville` });
+		expect(button).not.toHaveTextContent(t.common.add);
+		await fireEvent.press(button);
+		expect(screen.getByTestId('entity-name-sheet')).toBeOnTheScreen();
+		expect(screen.getByLabelText(t.addEntityModal.fieldLabel('Ville'))).toBeOnTheScreen();
+	});
 });

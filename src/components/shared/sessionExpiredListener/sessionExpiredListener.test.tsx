@@ -13,30 +13,6 @@ jest.mock('@/auth', () => {
 		auth: createAuth(create(), { read: async () => null, write: async () => {} }),
 	};
 });
-it('uses the current language for expiry, ignores ordinary logout, and unsubscribes on unmount', async () => {
-	const toast = { onSuccess: jest.fn(), onError: jest.fn() };
-	const content = (language: 'fr' | 'en') => (
-		<LanguageContext.Provider value={{ language, t: translations[language], setLanguage: jest.fn() }}>
-			<ToastContext.Provider value={toast}>
-				<SessionExpiredListener />
-			</ToastContext.Provider>
-		</LanguageContext.Provider>
-	);
-	const view = await render(content('fr'));
-	await view.rerender(content('en'));
-	await act(async () => {
-		await auth.signOut(true);
-	});
-	expect(toast.onError).not.toHaveBeenCalled();
-	await act(async () => {
-		await auth.expire();
-	});
-	expect(toast.onError).toHaveBeenCalledTimes(1);
-	expect(toast.onError).toHaveBeenCalledWith(translations.en.shared.sessionExpired);
-	await view.unmount();
-	await auth.expire();
-	expect(toast.onError).toHaveBeenCalledTimes(1);
-});
 
 const renderWithToast = async (toast: ToastContextType) =>
 	await render(
@@ -46,6 +22,31 @@ const renderWithToast = async (toast: ToastContextType) =>
 	);
 
 describe('SessionExpiredListener', () => {
+	it('uses the current language for expiry, ignores ordinary logout, and unsubscribes on unmount', async () => {
+		const toast = { onSuccess: jest.fn(), onError: jest.fn() };
+		const content = (language: 'fr' | 'en') => (
+			<LanguageContext.Provider value={{ language, t: translations[language], setLanguage: jest.fn() }}>
+				<ToastContext.Provider value={toast}>
+					<SessionExpiredListener />
+				</ToastContext.Provider>
+			</LanguageContext.Provider>
+		);
+		const view = await render(content('fr'));
+		await view.rerender(content('en'));
+		await act(async () => {
+			await auth.signOut(true);
+		});
+		expect(toast.onError).not.toHaveBeenCalled();
+		await act(async () => {
+			await auth.expire();
+		});
+		expect(toast.onError).toHaveBeenCalledTimes(1);
+		expect(toast.onError).toHaveBeenCalledWith(translations.en.shared.sessionExpired);
+		await view.unmount();
+		await auth.expire();
+		expect(toast.onError).toHaveBeenCalledTimes(1);
+	});
+
 	it('keeps one listener and uses the latest toast and language', async () => {
 		const subscribeExpired = auth.subscribeExpired;
 		const removeListener = jest.fn();
@@ -80,6 +81,7 @@ describe('SessionExpiredListener', () => {
 			addListener.mockRestore();
 		}
 	});
+
 	it('renders nothing (null)', async () => {
 		const toast: ToastContextType = { onSuccess: jest.fn(), onError: jest.fn() };
 		const { toJSON } = await renderWithToast(toast);

@@ -16,6 +16,7 @@ type RtkApiLike = {
 	middleware: Middleware;
 };
 
+// Isolated store for API tests. The application uses makeStore in store/store.ts.
 export const setupApiStore = (api: RtkApiLike, extraMiddleware: Middleware[] = []) => {
 	const sagaMiddleware = createSagaMiddleware();
 

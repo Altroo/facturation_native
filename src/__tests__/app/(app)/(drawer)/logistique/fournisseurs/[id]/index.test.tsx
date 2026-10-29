@@ -36,55 +36,61 @@ beforeEach(async () => {
 	await syncLogistiqueScreen();
 });
 
-it('uses shared detail cards and limits linked dossiers to the current supplier and company', async () => {
-	await render(<Page />);
-	expect(screen.getByText(logisticsSupplier.nom)).toBeOnTheScreen();
-	expect(screen.getByText(logisticsSupplier.email)).toBeOnTheScreen();
-	expect(screen.getByText('LOG-007')).toBeOnTheScreen();
-	expect(screen.getByText('En retard')).toBeOnTheScreen();
-	expect(useGetLogistiqueInfiniteListInfiniteQuery).toHaveBeenCalledWith(
-		expect.objectContaining({ company_id: 5, fournisseur_record: 9 }),
-		expect.objectContaining({ skip: false }),
-	);
-	expect(screen.queryByText(t.logistique.colFournisseur)).toBeNull();
-	await fireEvent.press(screen.getByRole('button', { name: t.common.edit }));
-	expect(router.push).toHaveBeenCalledWith(LOGISTIQUE_SUPPLIER_EDIT(9, 5));
-});
-it('sends history search/sorting to Django and uses the parent scroll to load another page', async () => {
-	await render(<Page />);
-	const toolbar = jest.mocked(DataGridToolbar).mock.calls.at(-1)![0];
-	await act(() => {
-		toolbar.setSearchTerm('LOG-01');
-		toolbar.sorting!.onSortModelChange([{ field: 'date_prevue', sort: 'desc' }]);
+describe('LogistiqueSupplierViewPage', () => {
+	it('uses shared detail cards and limits linked dossiers to the current supplier and company', async () => {
+		await render(<Page />);
+		expect(screen.getByText(logisticsSupplier.nom)).toBeOnTheScreen();
+		expect(screen.getByText(logisticsSupplier.email)).toBeOnTheScreen();
+		expect(screen.getByText('LOG-007')).toBeOnTheScreen();
+		expect(screen.getByText('En retard')).toBeOnTheScreen();
+		expect(useGetLogistiqueInfiniteListInfiniteQuery).toHaveBeenCalledWith(
+			expect.objectContaining({ company_id: 5, fournisseur_record: 9 }),
+			expect.objectContaining({ skip: false }),
+		);
+		expect(screen.queryByText(t.logistique.colFournisseur)).toBeNull();
+		await fireEvent.press(screen.getByRole('button', { name: t.common.edit }));
+		expect(router.push).toHaveBeenCalledWith(LOGISTIQUE_SUPPLIER_EDIT(9, 5));
 	});
-	expect(useGetLogistiqueInfiniteListInfiniteQuery).toHaveBeenLastCalledWith(
-		expect.objectContaining({ search: 'LOG-01', ordering: '-date_prevue', fournisseur_record: 9, company_id: 5 }),
-		expect.anything(),
-	);
-	jest.mocked(DetailsPage).mock.calls.at(-1)![0].onEndReached?.();
-	expect(state.orders.fetchNextPage).toHaveBeenCalledTimes(1);
-});
-it('hides management actions for readers while keeping the details visible', async () => {
-	state.role = 'Lecture';
-	await syncLogistiqueScreen();
-	await render(<Page />);
-	expect(screen.getByText(logisticsSupplier.nom)).toBeOnTheScreen();
-	expect(screen.queryByRole('button', { name: t.common.edit })).toBeNull();
-	expect(screen.queryByRole('button', { name: t.common.delete })).toBeNull();
-});
-it('prevents foreign-company data and its dossier requests from being displayed', async () => {
-	state.supplierDetail.currentData = { ...logisticsSupplier, company: 99 };
-	await syncLogistiqueScreen();
-	await render(<Page />);
-	expect(screen.queryByText(logisticsSupplier.email)).toBeNull();
-	expect(useGetLogistiqueInfiniteListInfiniteQuery).toHaveBeenCalledWith(
-		expect.anything(),
-		expect.objectContaining({ skip: true }),
-	);
-});
-it('uses the same compact deletion guard as the list', async () => {
-	await render(<Page />);
-	await fireEvent.press(screen.getByRole('button', { name: t.common.delete }));
-	expect(screen.getByText(t.logistique.supplierInUse)).toBeOnTheScreen();
-	expect(screen.getAllByRole('button', { name: t.common.delete }).at(-1)).toBeDisabled();
+
+	it('sends history search/sorting to Django and uses the parent scroll to load another page', async () => {
+		await render(<Page />);
+		const toolbar = jest.mocked(DataGridToolbar).mock.calls.at(-1)![0];
+		await act(() => {
+			toolbar.setSearchTerm('LOG-01');
+			toolbar.sorting!.onSortModelChange([{ field: 'date_prevue', sort: 'desc' }]);
+		});
+		expect(useGetLogistiqueInfiniteListInfiniteQuery).toHaveBeenLastCalledWith(
+			expect.objectContaining({ search: 'LOG-01', ordering: '-date_prevue', fournisseur_record: 9, company_id: 5 }),
+			expect.anything(),
+		);
+		jest.mocked(DetailsPage).mock.calls.at(-1)![0].onEndReached?.();
+		expect(state.orders.fetchNextPage).toHaveBeenCalledTimes(1);
+	});
+
+	it('hides management actions for readers while keeping the details visible', async () => {
+		state.role = 'Lecture';
+		await syncLogistiqueScreen();
+		await render(<Page />);
+		expect(screen.getByText(logisticsSupplier.nom)).toBeOnTheScreen();
+		expect(screen.queryByRole('button', { name: t.common.edit })).toBeNull();
+		expect(screen.queryByRole('button', { name: t.common.delete })).toBeNull();
+	});
+
+	it('prevents foreign-company data and its dossier requests from being displayed', async () => {
+		state.supplierDetail.currentData = { ...logisticsSupplier, company: 99 };
+		await syncLogistiqueScreen();
+		await render(<Page />);
+		expect(screen.queryByText(logisticsSupplier.email)).toBeNull();
+		expect(useGetLogistiqueInfiniteListInfiniteQuery).toHaveBeenCalledWith(
+			expect.anything(),
+			expect.objectContaining({ skip: true }),
+		);
+	});
+
+	it('uses the same compact deletion guard as the list', async () => {
+		await render(<Page />);
+		await fireEvent.press(screen.getByRole('button', { name: t.common.delete }));
+		expect(screen.getByText(t.logistique.supplierInUse)).toBeOnTheScreen();
+		expect(screen.getAllByRole('button', { name: t.common.delete }).at(-1)).toBeDisabled();
+	});
 });

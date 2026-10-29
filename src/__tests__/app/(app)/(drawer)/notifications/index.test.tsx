@@ -110,6 +110,7 @@ describe('notification inbox', () => {
 		await waitFor(() => expect(store.getState().notification.unreadCount).toBe(2));
 		await screen.findByText('Company changed');
 	};
+
 	it('shows an empty full-page inbox without a mark-all action', async () => {
 		adapter.mockImplementation(async (config) =>
 			response(
@@ -131,6 +132,7 @@ describe('notification inbox', () => {
 		expect(screen.queryByTestId('notifications-sheet')).toBeNull();
 		expect(adapter.mock.calls.some(([config]) => config.method === 'post')).toBe(false);
 	});
+
 	it.each(['undetermined', 'granted', 'denied'] as const)(
 		'checks OS permission on authenticated mount and prompts only when %s needs it',
 		async (status) => {
@@ -156,6 +158,7 @@ describe('notification inbox', () => {
 			}
 		},
 	);
+
 	it('creates the Android channel before checking and requesting notification permission', async () => {
 		const platform = jest.replaceProperty(Platform, 'OS', 'android');
 		jest.mocked(getPermissionsAsync).mockResolvedValue({ status: 'undetermined' } as never);
@@ -184,6 +187,7 @@ describe('notification inbox', () => {
 			platform.restore();
 		}
 	});
+
 	it('reports notification permission setup failure through the error toast', async () => {
 		const platform = jest.replaceProperty(Platform, 'OS', 'ios');
 		jest.mocked(getPermissionsAsync).mockRejectedValueOnce(new Error('Permission unavailable'));
@@ -198,6 +202,7 @@ describe('notification inbox', () => {
 			platform.restore();
 		}
 	});
+
 	it('loads on demand, appends older notifications, and refreshes the first page when reopened', async () => {
 		await open();
 		expect(screen.queryByRole('button', { name: 'Page précédente' })).toBeNull();
@@ -226,6 +231,7 @@ describe('notification inbox', () => {
 			true,
 		);
 	});
+
 	it('refreshes back to the newest server page when pulled down', async () => {
 		await open();
 		await fireEvent(screen.getByTestId('notifications-list'), 'endReached');
@@ -249,6 +255,7 @@ describe('notification inbox', () => {
 			adapter.mock.calls.filter(([config]) => config.url === '/notifications/').map(([config]) => config.params.page),
 		).toEqual([1, 2, 1]);
 	});
+
 	it('marks one notification before navigating to an implemented mobile destination', async () => {
 		await open();
 		await fireEvent.press(screen.getByText('Company changed'));
@@ -305,6 +312,7 @@ describe('notification inbox', () => {
 			adapter.mock.calls.filter(([config]) => config.url === '/notifications/').map(([config]) => config.params.page),
 		).toEqual([1, 2]);
 	});
+
 	it('keeps the inbox and unread state on failed acknowledgement instead of navigating', async () => {
 		await open();
 		failMark = true;

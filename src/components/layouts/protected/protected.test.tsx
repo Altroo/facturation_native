@@ -45,17 +45,17 @@ describe('Protected component', () => {
 		expect(screen.getByText(/Vous n'avez pas la permission d'accéder à cette page/i)).toBeOnTheScreen();
 		expect(screen.queryByText('Secret Content')).not.toBeOnTheScreen();
 	});
-});
 
-it('waits for the profile before evaluating permissions', async () => {
-	(useAppSelector as jest.Mock).mockReturnValue({});
-	(usePermission as jest.Mock).mockReturnValue({ is_staff: false });
-	await render(
-		<Protected>
-			<Text>Secret Content</Text>
-		</Protected>,
-	);
-	expect(screen.getByRole('progressbar')).toBeOnTheScreen();
-	expect(screen.queryByText('Secret Content')).toBeNull();
-	expect(screen.queryByText('Accès Refusé')).toBeNull();
+	it('waits for the profile before evaluating permissions', async () => {
+		(useAppSelector as jest.Mock).mockReturnValue({});
+		(usePermission as jest.Mock).mockReturnValue({ is_staff: false });
+		await render(
+			<Protected>
+				<Text>Secret Content</Text>
+			</Protected>,
+		);
+		expect(screen.getByRole('progressbar')).toBeOnTheScreen();
+		expect(screen.queryByText('Secret Content')).toBeNull();
+		expect(screen.queryByText('Accès Refusé')).toBeNull();
+	});
 });

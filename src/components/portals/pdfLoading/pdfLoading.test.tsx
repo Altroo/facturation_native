@@ -31,46 +31,48 @@ beforeEach(() => {
 });
 afterEach(() => jest.restoreAllMocks());
 
-it('stays absent when no PDF is being opened and reacts to shared loading changes', async () => {
-	await render(<PdfLoading />);
-	expect(screen.queryByTestId('pdf-loading-overlay')).toBeNull();
-	await act(() => {
+describe('PdfLoading', () => {
+	it('stays absent when no PDF is being opened and reacts to shared loading changes', async () => {
+		await render(<PdfLoading />);
+		expect(screen.queryByTestId('pdf-loading-overlay')).toBeNull();
+		await act(() => {
+			mockLoading = true;
+			for (const listener of mockListeners) listener();
+		});
+		expect(screen.getByRole('progressbar', { name: translations.fr.common.loading })).toBeOnTheScreen();
+		expect(screen.getByTestId('pdf-loading-overlay')).toHaveProp('accessibilityViewIsModal', true);
+		await act(() => {
+			mockLoading = false;
+			for (const listener of mockListeners) listener();
+		});
+		expect(screen.queryByTestId('pdf-loading-overlay')).toBeNull();
+	});
+
+	it.each(['light', 'dark'] as const)('uses the existing circular loader with the %s theme', async (mode) => {
+		mockMode = mode;
 		mockLoading = true;
-		for (const listener of mockListeners) listener();
+		await render(<PdfLoading />);
+		expect(screen.getByTestId('api-loader')).toHaveProp('color', colors.brand);
+		expect(screen.getByTestId('api-backdrop')).toHaveStyle({
+			backgroundColor: mode === 'dark' ? colors.panel : colors.white,
+			flex: 0,
+		});
+		expect(screen.queryByRole('button')).toBeNull();
 	});
-	expect(screen.getByRole('progressbar', { name: translations.fr.common.loading })).toBeOnTheScreen();
-	expect(screen.getByTestId('pdf-loading-overlay')).toHaveProp('accessibilityViewIsModal', true);
-	await act(() => {
-		mockLoading = false;
-		for (const listener of mockListeners) listener();
+
+	it('releases its subscription when the app root unmounts', async () => {
+		const view = await render(<PdfLoading />);
+		expect(mockListeners.size).toBe(1);
+		await view.unmount();
+		expect(mockListeners.size).toBe(0);
 	});
-	expect(screen.queryByTestId('pdf-loading-overlay')).toBeNull();
-});
 
-it.each(['light', 'dark'] as const)('uses the existing circular loader with the %s theme', async (mode) => {
-	mockMode = mode;
-	mockLoading = true;
-	await render(<PdfLoading />);
-	expect(screen.getByTestId('api-loader')).toHaveProp('color', colors.brand);
-	expect(screen.getByTestId('api-backdrop')).toHaveStyle({
-		backgroundColor: mode === 'dark' ? colors.panel : colors.white,
-		flex: 0,
+	it.each(['ios', 'android', 'web'] as const)('uses the window overlay only on iOS, platform=%s', async (platform) => {
+		jest.replaceProperty(Platform, 'OS', platform);
+		mockLoading = true;
+		await render(<PdfLoading />);
+		if (platform === 'ios') expect(screen.getByTestId('pdf-window-overlay')).toBeOnTheScreen();
+		else expect(screen.queryByTestId('pdf-window-overlay')).toBeNull();
+		expect(screen.getByRole('progressbar', { name: translations.fr.common.loading })).toBeOnTheScreen();
 	});
-	expect(screen.queryByRole('button')).toBeNull();
-});
-
-it('releases its subscription when the app root unmounts', async () => {
-	const view = await render(<PdfLoading />);
-	expect(mockListeners.size).toBe(1);
-	await view.unmount();
-	expect(mockListeners.size).toBe(0);
-});
-
-it.each(['ios', 'android', 'web'] as const)('uses the window overlay only on iOS, platform=%s', async (platform) => {
-	jest.replaceProperty(Platform, 'OS', platform);
-	mockLoading = true;
-	await render(<PdfLoading />);
-	if (platform === 'ios') expect(screen.getByTestId('pdf-window-overlay')).toBeOnTheScreen();
-	else expect(screen.queryByTestId('pdf-window-overlay')).toBeNull();
-	expect(screen.getByRole('progressbar', { name: translations.fr.common.loading })).toBeOnTheScreen();
 });

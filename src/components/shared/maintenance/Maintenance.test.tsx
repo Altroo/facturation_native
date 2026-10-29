@@ -34,14 +34,14 @@ describe('Maintenance', () => {
 		expect(screen.getByText('Maintenance en cours')).toBeOnTheScreen();
 		expect(screen.getByText(/Nous effectuons actuellement une maintenance sur E\.B\.H Facturation/i)).toBeOnTheScreen();
 	});
-});
 
-it('keeps maintenance open when native Back requests dismissal', async () => {
-	mockedUseAppSelector.mockReturnValue(true);
-	await render(<Maintenance />);
-	await fireEvent(
-		screen.container.queryAll((node) => typeof node.props.onRequestClose === 'function')[0]!,
-		'requestClose',
-	);
-	expect(screen.getByTestId('maintenance-gate')).toBeOnTheScreen();
+	it('keeps maintenance open when native Back requests dismissal', async () => {
+		mockedUseAppSelector.mockReturnValue(true);
+		await render(<Maintenance />);
+		await fireEvent(
+			screen.container.queryAll((node) => typeof node.props.onRequestClose === 'function')[0]!,
+			'requestClose',
+		);
+		expect(screen.getByTestId('maintenance-gate')).toBeOnTheScreen();
+	});
 });

@@ -129,68 +129,70 @@ beforeEach(() => {
 	for (const [key, value] of Object.entries(fixtures)) mockResults[key] = { currentData: value };
 });
 
-it.each([
-	KPICardsSection,
-	MonthlyObjectivesSection,
-	FinancialCharts,
-	CommercialCharts,
-	OperationalCharts,
-	CashFlowCharts,
-	ClientCharts,
-	DiscountMarginCharts,
-	GlobalCharts,
-])('renders %p with live data and applies every filter to each request', async (Component) => {
-	await render(<Component {...props} />);
-	expect(screen.getAllByText('Native chart').length).toBeGreaterThan(0);
-	for (const hook of Object.values(queries)) {
-		if (jest.isMockFunction(hook)) for (const call of hook.mock.calls) expect(call[0]).toEqual(props.dateParams);
-	}
-});
-
-it('clamps goal rings above 100% without changing the displayed percentage', async () => {
-	await render(<MonthlyObjectivesSection {...props} />);
-	expect(jest.mocked(Doughnut).mock.calls[0]![0]).toMatchObject({
-		centerLabel: '120.0%',
-		data: { datasets: [{ data: [100, 0] }] },
+describe('Dashboard Charts', () => {
+	it.each([
+		KPICardsSection,
+		MonthlyObjectivesSection,
+		FinancialCharts,
+		CommercialCharts,
+		OperationalCharts,
+		CashFlowCharts,
+		ClientCharts,
+		DiscountMarginCharts,
+		GlobalCharts,
+	])('renders %p with live data and applies every filter to each request', async (Component) => {
+		await render(<Component {...props} />);
+		expect(screen.getAllByText('Native chart').length).toBeGreaterThan(0);
+		for (const hook of Object.values(queries)) {
+			if (jest.isMockFunction(hook)) for (const call of hook.mock.calls) expect(call[0]).toEqual(props.dateParams);
+		}
 	});
-});
 
-it('uses each currency-specific KPI and retains all web sparkline values', async () => {
-	mockResults.KPICardsWithTrends.currentData = {
-		...fixtures.KPICardsWithTrends,
-		currency_data: {
-			EUR: { ...fixtures.KPICardsWithTrends, current_month_revenue: { value: 1149560, trend: [7, 8, 9] } },
-		},
-	};
-	await render(<KPICardsSection {...props} />);
-	expect(screen.getByText('1 149 560,00')).toBeOnTheScreen();
-	expect(jest.mocked(Line).mock.calls[0]![0].data.datasets[0].data).toEqual([7, 8, 9]);
-});
-
-it('preserves the receivables categories and the real current document scope', async () => {
-	await render(<FinancialCharts {...props} />);
-	expect(jest.mocked(Bar).mock.calls[0]![0]).toMatchObject({
-		stacked: true,
-		data: { datasets: [{ data: [30] }, { data: [50] }, { data: [20] }] },
+	it('clamps goal rings above 100% without changing the displayed percentage', async () => {
+		await render(<MonthlyObjectivesSection {...props} />);
+		expect(jest.mocked(Doughnut).mock.calls[0]![0]).toMatchObject({
+			centerLabel: '120.0%',
+			data: { datasets: [{ data: [100, 0] }] },
+		});
 	});
-	expect(screen.getByText(translations.fr.dashboard.currentDocumentScope('26/10/2026'))).toBeOnTheScreen();
-});
 
-it('shows quote status percentages without replacing the API counts', async () => {
-	mockResults.QuoteConversionRate.currentData = [
-		{ status: 'Accepté', count: 1 },
-		{ status: 'Envoyé', count: 1 },
-	];
-	await render(<CommercialCharts {...props} />);
-	expect(jest.mocked(Doughnut).mock.calls[0]![0]).toMatchObject({
-		showPercentages: true,
-		data: { labels: ['Accepté', 'Envoyé'], datasets: [{ data: [1, 1] }] },
+	it('uses each currency-specific KPI and retains all web sparkline values', async () => {
+		mockResults.KPICardsWithTrends.currentData = {
+			...fixtures.KPICardsWithTrends,
+			currency_data: {
+				EUR: { ...fixtures.KPICardsWithTrends, current_month_revenue: { value: 1149560, trend: [7, 8, 9] } },
+			},
+		};
+		await render(<KPICardsSection {...props} />);
+		expect(screen.getByText('1 149 560,00')).toBeOnTheScreen();
+		expect(jest.mocked(Line).mock.calls[0]![0].data.datasets[0].data).toEqual([7, 8, 9]);
 	});
-});
 
-it('does not keep the previous filter scope visible while a new request has no current data', async () => {
-	mockResults.MonthlyRevenueEvolution = {};
-	await render(<FinancialCharts {...props} />);
-	expect(screen.getByText(translations.fr.dashboard.noRevenue)).toBeOnTheScreen();
-	expect(Line).not.toHaveBeenCalled();
+	it('preserves the receivables categories and the real current document scope', async () => {
+		await render(<FinancialCharts {...props} />);
+		expect(jest.mocked(Bar).mock.calls[0]![0]).toMatchObject({
+			stacked: true,
+			data: { datasets: [{ data: [30] }, { data: [50] }, { data: [20] }] },
+		});
+		expect(screen.getByText(translations.fr.dashboard.currentDocumentScope('26/10/2026'))).toBeOnTheScreen();
+	});
+
+	it('shows quote status percentages without replacing the API counts', async () => {
+		mockResults.QuoteConversionRate.currentData = [
+			{ status: 'Accepté', count: 1 },
+			{ status: 'Envoyé', count: 1 },
+		];
+		await render(<CommercialCharts {...props} />);
+		expect(jest.mocked(Doughnut).mock.calls[0]![0]).toMatchObject({
+			showPercentages: true,
+			data: { labels: ['Accepté', 'Envoyé'], datasets: [{ data: [1, 1] }] },
+		});
+	});
+
+	it('does not keep the previous filter scope visible while a new request has no current data', async () => {
+		mockResults.MonthlyRevenueEvolution = {};
+		await render(<FinancialCharts {...props} />);
+		expect(screen.getByText(translations.fr.dashboard.noRevenue)).toBeOnTheScreen();
+		expect(Line).not.toHaveBeenCalled();
+	});
 });

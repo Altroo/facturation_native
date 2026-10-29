@@ -6,7 +6,7 @@ import {
 	useGetFactureClientUnpaidInfiniteListInfiniteQuery,
 } from '@/store/services/factureClient';
 import { translations } from '@/translations';
-import { createQueryMock } from '@/store/setupQuery';
+import { createQueryMock } from '@/__tests__/setupQuery';
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
 jest.mock('@expo/vector-icons', () => ({ MaterialIcons: 'Icon' }));
 jest.mock(
@@ -137,44 +137,48 @@ beforeEach(async () => {
 	).default;
 	nativeMethods.measureInWindow.mockImplementation((callback) => callback(200, 200, 44, 44));
 });
-it('uses only the unpaid endpoint without subscribing to the full invoice list', async () => {
-	await render(<FactureClientListPage />);
-	expect(useGetFactureClientUnpaidInfiniteListInfiniteQuery).toHaveBeenLastCalledWith(
-		expect.objectContaining({ company_id: 5 }),
-		expect.objectContaining({ skip: false }),
-	);
-	expect(useGetFactureClientInfiniteListInfiniteQuery).not.toHaveBeenCalled();
-	expect(screen.getByText('INV7/26')).toBeOnTheScreen();
-	expect(screen.getByText('7 000,00 MAD')).toBeOnTheScreen();
-	expect(screen.queryByRole('checkbox')).toBeNull();
-});
-it('keeps unpaid-list actions aligned with the web without exposing bulk deletion or printing', async () => {
-	await render(<FactureClientListPage />);
-	await fireEvent.press(screen.getAllByRole('button', { name: t.common.moreActions })[0]);
-	expect(screen.queryByRole('menuitem', { name: t.common.print })).toBeNull();
-	expect(screen.getByRole('menuitem', { name: t.facturesClient.labelBonLivraison })).toBeEnabled();
-	expect(screen.getByRole('menuitem', { name: t.common.edit })).toBeOnTheScreen();
-});
 
-it('owns unpaid search, scrolling, refresh and the reset when changing company', async () => {
-	await render(<FactureClientListPage />);
-	await fireEvent.press(screen.getByRole('radio', { name: 'EUR' }));
-	await fireEvent.press(screen.getByLabelText(t.common.search));
-	await fireEvent.changeText(screen.getByPlaceholderText(t.dataGrid.searchPlaceholder), 'Atlas');
-	await fireEvent(screen.getByPlaceholderText(t.dataGrid.searchPlaceholder), 'submitEditing');
-	expect(useGetFactureClientUnpaidInfiniteListInfiniteQuery).toHaveBeenLastCalledWith(
-		expect.objectContaining({ company_id: 5, search: 'Atlas' }),
-		expect.objectContaining({ skip: false }),
-	);
-	await fireEvent(screen.getByTestId('facture-client-grid'), 'endReached');
-	expect(fetchNextPage).toHaveBeenCalledTimes(1);
-	await fireEvent(screen.getByTestId('facture-client-grid'), 'refresh');
-	expect(refetch).toHaveBeenCalledTimes(1);
-	await fireEvent.press(screen.getByText('Switch company'));
-	expect(useGetFactureClientUnpaidInfiniteListInfiniteQuery).toHaveBeenLastCalledWith(
-		expect.objectContaining({ company_id: 11, search: '' }),
-		expect.objectContaining({ skip: false }),
-	);
-	expect(screen.getByRole('radio', { name: 'MAD', checked: true })).toBeOnTheScreen();
-	expect(useGetFactureClientInfiniteListInfiniteQuery).not.toHaveBeenCalled();
+describe('FactureClientUnpaidListPage', () => {
+	it('uses only the unpaid endpoint without subscribing to the full invoice list', async () => {
+		await render(<FactureClientListPage />);
+		expect(useGetFactureClientUnpaidInfiniteListInfiniteQuery).toHaveBeenLastCalledWith(
+			expect.objectContaining({ company_id: 5 }),
+			expect.objectContaining({ skip: false }),
+		);
+		expect(useGetFactureClientInfiniteListInfiniteQuery).not.toHaveBeenCalled();
+		expect(screen.getByText('INV7/26')).toBeOnTheScreen();
+		expect(screen.getByText('7 000,00 MAD')).toBeOnTheScreen();
+		expect(screen.queryByRole('checkbox')).toBeNull();
+	});
+
+	it('keeps unpaid-list actions aligned with the web without exposing bulk deletion or printing', async () => {
+		await render(<FactureClientListPage />);
+		await fireEvent.press(screen.getAllByRole('button', { name: t.common.moreActions })[0]);
+		expect(screen.queryByRole('menuitem', { name: t.common.print })).toBeNull();
+		expect(screen.getByRole('menuitem', { name: t.facturesClient.labelBonLivraison })).toBeEnabled();
+		expect(screen.getByRole('menuitem', { name: t.common.edit })).toBeOnTheScreen();
+	});
+
+	it('owns unpaid search, scrolling, refresh and the reset when changing company', async () => {
+		await render(<FactureClientListPage />);
+		await fireEvent.press(screen.getByRole('radio', { name: 'EUR' }));
+		await fireEvent.press(screen.getByLabelText(t.common.search));
+		await fireEvent.changeText(screen.getByPlaceholderText(t.dataGrid.searchPlaceholder), 'Atlas');
+		await fireEvent(screen.getByPlaceholderText(t.dataGrid.searchPlaceholder), 'submitEditing');
+		expect(useGetFactureClientUnpaidInfiniteListInfiniteQuery).toHaveBeenLastCalledWith(
+			expect.objectContaining({ company_id: 5, search: 'Atlas' }),
+			expect.objectContaining({ skip: false }),
+		);
+		await fireEvent(screen.getByTestId('facture-client-grid'), 'endReached');
+		expect(fetchNextPage).toHaveBeenCalledTimes(1);
+		await fireEvent(screen.getByTestId('facture-client-grid'), 'refresh');
+		expect(refetch).toHaveBeenCalledTimes(1);
+		await fireEvent.press(screen.getByText('Switch company'));
+		expect(useGetFactureClientUnpaidInfiniteListInfiniteQuery).toHaveBeenLastCalledWith(
+			expect.objectContaining({ company_id: 11, search: '' }),
+			expect.objectContaining({ skip: false }),
+		);
+		expect(screen.getByRole('radio', { name: 'MAD', checked: true })).toBeOnTheScreen();
+		expect(useGetFactureClientInfiniteListInfiniteQuery).not.toHaveBeenCalled();
+	});
 });

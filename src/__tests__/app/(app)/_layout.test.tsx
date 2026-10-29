@@ -9,7 +9,6 @@ import { Stack, router } from 'expo-router';
 import { renderRouter, screen, waitFor } from 'expo-router/testing-library';
 import AuthenticatedLayout from '@/app/(app)/_layout';
 import DrawerStackLayout, { unstable_settings as drawerSettings } from '@/app/(app)/(drawer)/_layout';
-
 import type { UserClass } from '@/models/classes';
 import { translations } from '@/translations';
 
@@ -79,33 +78,38 @@ const setup = async (required: boolean, initialUrl: string) => {
 	);
 	return { store, rendered };
 };
-it('redirects an authenticated default-password account from a cold private link to password settings', async () => {
-	const { rendered } = await setup(true, '/users');
-	await screen.findByText('Change password');
-	expect(screen.queryByText('User list')).toBeNull();
-	expect(rendered.getPathname()).toBe('/settings/password');
-});
-it('allows the password screen and releases other screens once the password flag is cleared', async () => {
-	const { store, rendered } = await setup(true, '/settings/password');
-	await screen.findByText('Change password');
-	await act(() => router.push('/users'));
-	await waitFor(() => expect(rendered.getPathname()).toBe('/settings/password'));
-	expect(screen.queryByText('User list')).toBeNull();
-	await act(() => store.dispatch(setProfil(profile(false))));
-	await act(() => router.push('/users'));
-	await screen.findByText('User list');
-	expect(rendered.getPathname()).toBe('/users');
-});
-it('reacts when a refreshed profile requires password change after navigation', async () => {
-	const { store, rendered } = await setup(false, '/users');
-	await screen.findByText('User list');
-	await act(() => store.dispatch(setProfil(profile(true))));
-	await screen.findByText('Change password');
-	expect(rendered.getPathname()).toBe('/settings/password');
-});
 
-it('uses the company details title on the company detail screen', async () => {
-	await setup(false, '/companies/4');
-	await screen.findByText('Company details');
-	expect(screen.getByRole('header', { name: translations.fr.companies.detailsTitle })).toBeOnTheScreen();
+describe('AuthenticatedLayout', () => {
+	it('redirects an authenticated default-password account from a cold private link to password settings', async () => {
+		const { rendered } = await setup(true, '/users');
+		await screen.findByText('Change password');
+		expect(screen.queryByText('User list')).toBeNull();
+		expect(rendered.getPathname()).toBe('/settings/password');
+	});
+
+	it('allows the password screen and releases other screens once the password flag is cleared', async () => {
+		const { store, rendered } = await setup(true, '/settings/password');
+		await screen.findByText('Change password');
+		await act(() => router.push('/users'));
+		await waitFor(() => expect(rendered.getPathname()).toBe('/settings/password'));
+		expect(screen.queryByText('User list')).toBeNull();
+		await act(() => store.dispatch(setProfil(profile(false))));
+		await act(() => router.push('/users'));
+		await screen.findByText('User list');
+		expect(rendered.getPathname()).toBe('/users');
+	});
+
+	it('reacts when a refreshed profile requires password change after navigation', async () => {
+		const { store, rendered } = await setup(false, '/users');
+		await screen.findByText('User list');
+		await act(() => store.dispatch(setProfil(profile(true))));
+		await screen.findByText('Change password');
+		expect(rendered.getPathname()).toBe('/settings/password');
+	});
+
+	it('uses the company details title on the company detail screen', async () => {
+		await setup(false, '/companies/4');
+		await screen.findByText('Company details');
+		expect(screen.getByRole('header', { name: translations.fr.companies.detailsTitle })).toBeOnTheScreen();
+	});
 });

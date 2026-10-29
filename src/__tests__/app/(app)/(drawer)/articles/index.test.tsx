@@ -13,8 +13,10 @@ jest.mock('@/components/shared/articlesList/articlesList', () => {
 	};
 });
 
-it('opens the shared list in active mode', async () => {
-	await render(<ArticlesListPage />);
-	expect(screen.getByText('Active articles')).toBeOnTheScreen();
-	expect(screen.queryByText('Archived articles')).toBeNull();
+describe('ArticlesListPage', () => {
+	it('opens the shared list in active mode', async () => {
+		await render(<ArticlesListPage />);
+		expect(screen.getByText('Active articles')).toBeOnTheScreen();
+		expect(screen.queryByText('Archived articles')).toBeNull();
+	});
 });

@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Platform } from 'react-native';
 import { translations } from '@/translations';
+import DocumentPdfModal from './documentPdfModal';
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
 jest.mock('expo-image', () => ({ Image: jest.requireActual('react-native').Image }));
 jest.mock(
@@ -10,7 +11,6 @@ jest.mock(
 jest.mock('@/providers/themeProvider', () => ({ useColorMode: () => ({ mode: 'dark' }) }));
 const t = translations.fr;
 
-import DocumentPdfModal from './documentPdfModal';
 const mockError = jest.fn();
 const mockOpen = jest.fn();
 const mockClose = jest.fn();
@@ -24,80 +24,88 @@ beforeEach(() => {
 	jest.clearAllMocks();
 	mockOpen.mockResolvedValue(true);
 });
-it('sends the chosen PDF format and language without exposing backend codes', async () => {
-	await render(<DocumentPdfModal onClose={mockClose} onOpen={mockOpen} />);
-	expect(screen.getAllByRole('radio')).toHaveLength(7);
-	expect(screen.getByRole('radio', { name: t.common.pdfWithDiscount })).toBeChecked();
-	expect(screen.getByRole('radio', { name: t.pdf.french })).toBeChecked();
-	await fireEvent.press(screen.getByRole('radio', { name: t.common.pdfWithUnitWithoutDiscount }));
-	await fireEvent.press(screen.getByRole('radio', { name: t.pdf.english }));
-	expect(screen.getByRole('radio', { name: t.common.pdfWithDiscount })).not.toBeChecked();
-	expect(screen.getByRole('radio', { name: t.pdf.english })).toBeChecked();
-	expect(mockOpen).not.toHaveBeenCalled();
-	const onDismiss = screen.getByTestId('document-pdf-modal').props.onDismiss;
-	await fireEvent.press(screen.getByRole('button', { name: t.pdf.generatePdf }));
-	expect(mockOpen).not.toHaveBeenCalled();
-	await act(() => onDismiss());
-	await waitFor(() => expect(mockOpen).toHaveBeenCalledWith('avec_unite_sans_remise', 'en'));
-	expect(mockClose).toHaveBeenCalledTimes(1);
-});
-it('keeps the default format and French language when generating immediately', async () => {
-	await render(<DocumentPdfModal onClose={mockClose} onOpen={mockOpen} />);
-	const onDismiss = screen.getByTestId('document-pdf-modal').props.onDismiss;
-	await fireEvent.press(screen.getByRole('button', { name: t.pdf.generatePdf }));
-	await act(() => onDismiss());
-	await waitFor(() => expect(mockOpen).toHaveBeenCalledWith('avec_remise', 'fr'));
-});
-it('closes without requesting a PDF when cancelled', async () => {
-	await render(<DocumentPdfModal onClose={mockClose} onOpen={mockOpen} />);
-	await fireEvent.press(screen.getByRole('button', { name: t.common.close }));
-	expect(mockClose).toHaveBeenCalledTimes(1);
-	expect(mockOpen).not.toHaveBeenCalled();
-});
-it('shows a recoverable toast when preview fails', async () => {
-	mockOpen.mockResolvedValue(false);
-	await render(<DocumentPdfModal onClose={mockClose} onOpen={mockOpen} />);
-	const onDismiss = screen.getByTestId('document-pdf-modal').props.onDismiss;
-	await fireEvent.press(screen.getByRole('button', { name: t.pdf.generatePdf }));
-	await act(() => onDismiss());
-	await waitFor(() => expect(mockError).toHaveBeenCalledWith(t.errors.documentOpenError));
-	expect(mockClose).toHaveBeenCalledTimes(1);
-});
 
-it('offers only languages for delivery notes and waits for sheet dismissal before preview', async () => {
-	await render(<DocumentPdfModal normal onClose={mockClose} onOpen={mockOpen} />);
-	expect(screen.getAllByRole('radio')).toHaveLength(3);
-	expect(screen.queryByText(t.pdf.format)).toBeNull();
-	expect(screen.queryByRole('button', { name: t.pdf.generatePdf })).toBeNull();
-	const onDismiss = screen.getByTestId('document-pdf-modal').props.onDismiss;
-	await fireEvent.press(screen.getByRole('radio', { name: t.pdf.dutch }));
-	expect(mockOpen).not.toHaveBeenCalled();
-	await act(() => onDismiss());
-	await waitFor(() => expect(mockOpen).toHaveBeenCalledWith('normal', 'nl'));
-	await act(() => onDismiss());
-	expect(mockOpen).toHaveBeenCalledTimes(1);
-});
+describe('DocumentPdfModal', () => {
+	it('sends the chosen PDF format and language without exposing backend codes', async () => {
+		await render(<DocumentPdfModal onClose={mockClose} onOpen={mockOpen} />);
+		expect(screen.getAllByRole('radio')).toHaveLength(7);
+		expect(screen.getByRole('radio', { name: t.common.pdfWithDiscount })).toBeChecked();
+		expect(screen.getByRole('radio', { name: t.pdf.french })).toBeChecked();
+		await fireEvent.press(screen.getByRole('radio', { name: t.common.pdfWithUnitWithoutDiscount }));
+		await fireEvent.press(screen.getByRole('radio', { name: t.pdf.english }));
+		expect(screen.getByRole('radio', { name: t.common.pdfWithDiscount })).not.toBeChecked();
+		expect(screen.getByRole('radio', { name: t.pdf.english })).toBeChecked();
+		expect(mockOpen).not.toHaveBeenCalled();
+		const onDismiss = screen.getByTestId('document-pdf-modal').props.onDismiss;
+		await fireEvent.press(screen.getByRole('button', { name: t.pdf.generatePdf }));
+		expect(mockOpen).not.toHaveBeenCalled();
+		await act(() => onDismiss());
+		await waitFor(() => expect(mockOpen).toHaveBeenCalledWith('avec_unite_sans_remise', 'en'));
+		expect(mockClose).toHaveBeenCalledTimes(1);
+	});
 
-it('uses the just-tapped delivery language immediately on Android without waiting for onDismiss', async () => {
-	jest.replaceProperty(Platform, 'OS', 'android');
-	await render(<DocumentPdfModal normal onClose={mockClose} onOpen={mockOpen} />);
-	await fireEvent.press(screen.getByRole('radio', { name: t.pdf.dutch }));
-	await waitFor(() => expect(mockOpen).toHaveBeenCalledWith('normal', 'nl'));
-	expect(mockClose).toHaveBeenCalledTimes(1);
-});
-it('keeps immediate French delivery printing available even though French is initially selected', async () => {
-	await render(<DocumentPdfModal normal onClose={mockClose} onOpen={mockOpen} />);
-	const onDismiss = screen.getByTestId('document-pdf-modal').props.onDismiss;
-	await fireEvent.press(screen.getByRole('radio', { name: t.pdf.french }));
-	await act(() => onDismiss());
-	expect(mockOpen).toHaveBeenCalledWith('normal', 'fr');
-});
-it('handles a rejected delivery preview through the same error toast and close path', async () => {
-	mockOpen.mockRejectedValue(new Error('Viewer unavailable'));
-	await render(<DocumentPdfModal normal onClose={mockClose} onOpen={mockOpen} />);
-	const onDismiss = screen.getByTestId('document-pdf-modal').props.onDismiss;
-	await fireEvent.press(screen.getByRole('radio', { name: t.pdf.english }));
-	await act(() => onDismiss());
-	await waitFor(() => expect(mockError).toHaveBeenCalledWith(t.errors.documentOpenError));
-	expect(mockClose).toHaveBeenCalledTimes(1);
+	it('keeps the default format and French language when generating immediately', async () => {
+		await render(<DocumentPdfModal onClose={mockClose} onOpen={mockOpen} />);
+		const onDismiss = screen.getByTestId('document-pdf-modal').props.onDismiss;
+		await fireEvent.press(screen.getByRole('button', { name: t.pdf.generatePdf }));
+		await act(() => onDismiss());
+		await waitFor(() => expect(mockOpen).toHaveBeenCalledWith('avec_remise', 'fr'));
+	});
+
+	it('closes without requesting a PDF when cancelled', async () => {
+		await render(<DocumentPdfModal onClose={mockClose} onOpen={mockOpen} />);
+		await fireEvent.press(screen.getByRole('button', { name: t.common.close }));
+		expect(mockClose).toHaveBeenCalledTimes(1);
+		expect(mockOpen).not.toHaveBeenCalled();
+	});
+
+	it('shows a recoverable toast when preview fails', async () => {
+		mockOpen.mockResolvedValue(false);
+		await render(<DocumentPdfModal onClose={mockClose} onOpen={mockOpen} />);
+		const onDismiss = screen.getByTestId('document-pdf-modal').props.onDismiss;
+		await fireEvent.press(screen.getByRole('button', { name: t.pdf.generatePdf }));
+		await act(() => onDismiss());
+		await waitFor(() => expect(mockError).toHaveBeenCalledWith(t.errors.documentOpenError));
+		expect(mockClose).toHaveBeenCalledTimes(1);
+	});
+
+	it('offers only languages for delivery notes and waits for sheet dismissal before preview', async () => {
+		await render(<DocumentPdfModal normal onClose={mockClose} onOpen={mockOpen} />);
+		expect(screen.getAllByRole('radio')).toHaveLength(3);
+		expect(screen.queryByText(t.pdf.format)).toBeNull();
+		expect(screen.queryByRole('button', { name: t.pdf.generatePdf })).toBeNull();
+		const onDismiss = screen.getByTestId('document-pdf-modal').props.onDismiss;
+		await fireEvent.press(screen.getByRole('radio', { name: t.pdf.dutch }));
+		expect(mockOpen).not.toHaveBeenCalled();
+		await act(() => onDismiss());
+		await waitFor(() => expect(mockOpen).toHaveBeenCalledWith('normal', 'nl'));
+		await act(() => onDismiss());
+		expect(mockOpen).toHaveBeenCalledTimes(1);
+	});
+
+	it('uses the just-tapped delivery language immediately on Android without waiting for onDismiss', async () => {
+		jest.replaceProperty(Platform, 'OS', 'android');
+		await render(<DocumentPdfModal normal onClose={mockClose} onOpen={mockOpen} />);
+		await fireEvent.press(screen.getByRole('radio', { name: t.pdf.dutch }));
+		await waitFor(() => expect(mockOpen).toHaveBeenCalledWith('normal', 'nl'));
+		expect(mockClose).toHaveBeenCalledTimes(1);
+	});
+
+	it('keeps immediate French delivery printing available even though French is initially selected', async () => {
+		await render(<DocumentPdfModal normal onClose={mockClose} onOpen={mockOpen} />);
+		const onDismiss = screen.getByTestId('document-pdf-modal').props.onDismiss;
+		await fireEvent.press(screen.getByRole('radio', { name: t.pdf.french }));
+		await act(() => onDismiss());
+		expect(mockOpen).toHaveBeenCalledWith('normal', 'fr');
+	});
+
+	it('handles a rejected delivery preview through the same error toast and close path', async () => {
+		mockOpen.mockRejectedValue(new Error('Viewer unavailable'));
+		await render(<DocumentPdfModal normal onClose={mockClose} onOpen={mockOpen} />);
+		const onDismiss = screen.getByTestId('document-pdf-modal').props.onDismiss;
+		await fireEvent.press(screen.getByRole('radio', { name: t.pdf.english }));
+		await act(() => onDismiss());
+		await waitFor(() => expect(mockError).toHaveBeenCalledWith(t.errors.documentOpenError));
+		expect(mockClose).toHaveBeenCalledTimes(1);
+	});
 });

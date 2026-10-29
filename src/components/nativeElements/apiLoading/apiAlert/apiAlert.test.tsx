@@ -4,29 +4,35 @@ import { translations } from '@/translations';
 jest.mock('@/utils/hooks', () => ({
 	useLanguage: () => ({ t: jest.requireActual<typeof import('@/translations')>('@/translations').translations.fr }),
 }));
-it('displays backend global errors without exposing their internal field names', async () => {
-	await render(<ApiAlert errorDetails={{ detail: 'Compte indisponible', non_field_errors: ['Opération refusée'] }} />);
-	expect(screen.getByRole('alert')).toHaveTextContent(/Compte indisponible/);
-	expect(screen.getByRole('alert')).toHaveTextContent(/Opération refusée/);
-	expect(screen.getByRole('alert')).not.toHaveTextContent('non_field_errors');
-});
-it('labels each field error and preserves all messages', async () => {
-	await render(<ApiAlert errorDetails={{ first_name: ['Obligatoire', 'Trop court'], email: 'Invalide' }} />);
-	expect(screen.getByRole('alert')).toHaveTextContent(/First name : Obligatoire/);
-	expect(screen.getByRole('alert')).toHaveTextContent(/First name : Trop court/);
-	expect(screen.getByRole('alert')).toHaveTextContent(/Email : Invalide/);
-});
 const emptyDetails: ApiAlertProps['errorDetails'][] = [undefined, null, '', '  ', {}, { detail: [' '] }];
-it.each(emptyDetails)('uses the translated fallback for empty details: %j', async (errorDetails) => {
-	await render(<ApiAlert errorDetails={errorDetails} />);
-	expect(screen.getByRole('alert')).toHaveTextContent(translations.fr.common.genericError);
-});
-it('displays plain backend messages', async () => {
-	await render(<ApiAlert errorDetails="Cette entreprise est introuvable." />);
-	expect(screen.getByRole('alert')).toHaveTextContent('Cette entreprise est introuvable.');
-});
 
 describe('ApiAlert', () => {
+	it('displays backend global errors without exposing their internal field names', async () => {
+		await render(
+			<ApiAlert errorDetails={{ detail: 'Compte indisponible', non_field_errors: ['Opération refusée'] }} />,
+		);
+		expect(screen.getByRole('alert')).toHaveTextContent(/Compte indisponible/);
+		expect(screen.getByRole('alert')).toHaveTextContent(/Opération refusée/);
+		expect(screen.getByRole('alert')).not.toHaveTextContent('non_field_errors');
+	});
+
+	it('labels each field error and preserves all messages', async () => {
+		await render(<ApiAlert errorDetails={{ first_name: ['Obligatoire', 'Trop court'], email: 'Invalide' }} />);
+		expect(screen.getByRole('alert')).toHaveTextContent(/First name : Obligatoire/);
+		expect(screen.getByRole('alert')).toHaveTextContent(/First name : Trop court/);
+		expect(screen.getByRole('alert')).toHaveTextContent(/Email : Invalide/);
+	});
+
+	it.each(emptyDetails)('uses the translated fallback for empty details: %j', async (errorDetails) => {
+		await render(<ApiAlert errorDetails={errorDetails} />);
+		expect(screen.getByRole('alert')).toHaveTextContent(translations.fr.common.genericError);
+	});
+
+	it('displays plain backend messages', async () => {
+		await render(<ApiAlert errorDetails="Cette entreprise est introuvable." />);
+		expect(screen.getByRole('alert')).toHaveTextContent('Cette entreprise est introuvable.');
+	});
+
 	it('renders error messages when errorDetails contains an "error" array', async () => {
 		const errorDetails = { error: ['Invalid request', 'Missing fields'] };
 

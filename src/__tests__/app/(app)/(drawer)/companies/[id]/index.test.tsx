@@ -1,4 +1,4 @@
-import { createQueryMock } from '@/store/setupQuery';
+import { createQueryMock } from '@/__tests__/setupQuery';
 import account, { setProfil } from '@/store/slices/accountSlice';
 import companies, { setUserCompanies } from '@/store/slices/companiesSlice';
 import _init, { setAuthenticated } from '@/store/slices/_initSlice';
@@ -153,154 +153,162 @@ beforeEach(() => {
 afterEach(() => {
 	sagaTasks.splice(0).forEach((task) => task.cancel());
 });
-it('keeps managers in separate panels and uses their cropped or original photo', async () => {
-	await setup({
-		...company,
-		admins: company.admins.map((manager, index) => ({
-			...manager,
-			avatar: `https://example.invalid/manager-${index}.png`,
-			avatar_cropped: index === 0 ? 'https://example.invalid/manager-cropped.png' : null,
-		})),
-	});
-	const panels = screen.getAllByTestId('managed-by-details');
-	expect(panels).toHaveLength(2);
-	expect(within(panels[0]).getByRole('button', { name: 'Test Creator' })).not.toBeDisabled();
-	expect(within(panels[1]).getByRole('button', { name: 'Other Manager' })).not.toBeDisabled();
-	const photos = screen.container.queryAll(
-		(node) => node.type === 'Image' && ['Test Creator', 'Other Manager'].includes(node.props.accessibilityLabel),
-	);
-	expect(photos.map((photo) => photo.props.source.uri)).toEqual([
-		'https://example.invalid/manager-cropped.png',
-		'https://example.invalid/manager-1.png',
-	]);
-	expect(screen.queryByText(/^ID:/)).toBeNull();
-});
 
-it('shows original company fields and manager permissions and cancelling confirmation does not suspend anything', async () => {
-	const store = await setup();
-	expect(screen.queryByText(/^ID:/)).toBeNull();
-	expect(screen.getByText(company.ICE)).toBeOnTheScreen();
-	expect(screen.getByText(company.numero_du_compte)).toBeOnTheScreen();
-	expect(screen.getByText('Test Creator')).toBeOnTheScreen();
-	expect(screen.getAllByText(translations.fr.managedByTable.invoiceValidation)).toHaveLength(2);
-	await openModal();
-	expect(screen.getByText(translations.fr.companies.suspendModalTitle)).toBeOnTheScreen();
-	expect(suspend).not.toHaveBeenCalled();
-	await fireEvent.press(
-		within(screen.getByTestId('action-modal')).getByRole('button', { name: translations.fr.common.cancel }),
+describe('CompaniesViewPage', () => {
+	it('keeps managers in separate panels and uses their cropped or original photo', async () => {
+		await setup({
+			...company,
+			admins: company.admins.map((manager, index) => ({
+				...manager,
+				avatar: `https://example.invalid/manager-${index}.png`,
+				avatar_cropped: index === 0 ? 'https://example.invalid/manager-cropped.png' : null,
+			})),
+		});
+		const panels = screen.getAllByTestId('managed-by-details');
+		expect(panels).toHaveLength(2);
+		expect(within(panels[0]).getByRole('button', { name: 'Test Creator' })).not.toBeDisabled();
+		expect(within(panels[1]).getByRole('button', { name: 'Other Manager' })).not.toBeDisabled();
+		const photos = screen.container.queryAll(
+			(node) => node.type === 'Image' && ['Test Creator', 'Other Manager'].includes(node.props.accessibilityLabel),
+		);
+		expect(photos.map((photo) => photo.props.source.uri)).toEqual([
+			'https://example.invalid/manager-cropped.png',
+			'https://example.invalid/manager-1.png',
+		]);
+		expect(screen.queryByText(/^ID:/)).toBeNull();
+	});
+
+	it('shows original company fields and manager permissions and cancelling confirmation does not suspend anything', async () => {
+		const store = await setup();
+		expect(screen.queryByText(/^ID:/)).toBeNull();
+		expect(screen.getByText(company.ICE)).toBeOnTheScreen();
+		expect(screen.getByText(company.numero_du_compte)).toBeOnTheScreen();
+		expect(screen.getByText('Test Creator')).toBeOnTheScreen();
+		expect(screen.getAllByText(translations.fr.managedByTable.invoiceValidation)).toHaveLength(2);
+		await openModal();
+		expect(screen.getByText(translations.fr.companies.suspendModalTitle)).toBeOnTheScreen();
+		expect(suspend).not.toHaveBeenCalled();
+		await fireEvent.press(
+			within(screen.getByTestId('action-modal')).getByRole('button', { name: translations.fr.common.cancel }),
+		);
+		expect(screen.queryByTestId('action-modal')).toBeNull();
+		expect(suspend).not.toHaveBeenCalled();
+		expect(companyApi.endpoints.getUserCompanies.initiate).not.toHaveBeenCalled();
+		expect(store.getState().companies.user_companies).toEqual(memberships);
+	});
+
+	it.each(['logo', 'cachet'] as const)(
+		'opens the original %s from the cropped thumbnail and closes the preview',
+		async (image) => {
+			await setup();
+			const label = image === 'logo' ? translations.fr.companies.logoLabel : translations.fr.companies.stampLabel;
+			await fireEvent.press(screen.getByRole('button', { name: label }));
+			const preview = screen.getAllByLabelText(label).find((element) => element.props.source?.uri === company[image]);
+			expect(preview).toBeDefined();
+			expect(preview).toHaveProp('resizeMode', 'contain');
+
+			await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.close }));
+			expect(screen.queryByRole('button', { name: translations.fr.common.close })).toBeNull();
+			expect(screen.getByRole('button', { name: label })).toBeOnTheScreen();
+		},
 	);
-	expect(screen.queryByTestId('action-modal')).toBeNull();
-	expect(suspend).not.toHaveBeenCalled();
-	expect(companyApi.endpoints.getUserCompanies.initiate).not.toHaveBeenCalled();
-	expect(store.getState().companies.user_companies).toEqual(memberships);
-});
-it.each(['logo', 'cachet'] as const)(
-	'opens the original %s from the cropped thumbnail and closes the preview',
-	async (image) => {
+
+	it('suspends only after confirmation, dispatches the membership update and returns to the company list', async () => {
+		const store = await setup();
+		await openModal();
+		await confirm();
+		await waitFor(() => expect(mockSuccess).toHaveBeenCalledWith(translations.fr.companies.suspendSuccess));
+		expect(suspend).toHaveBeenCalledWith({ id: 4 });
+		expect(companyApi.endpoints.getUserCompanies.initiate).not.toHaveBeenCalled();
+		expect(store.getState().companies.user_companies).toEqual([remainingMembership]);
+		expect(screen.queryByTestId('action-modal')).toBeNull();
+		expect(router.dismissTo).toHaveBeenCalledWith('/companies');
+	});
+
+	it('closes the confirmation on a failed suspend, without changing memberships or navigating', async () => {
+		suspend.mockReturnValue({ unwrap: () => Promise.reject(new Error('Server failed')) });
+		const store = await setup();
+		await openModal();
+		await confirm();
+		await waitFor(() => expect(mockError).toHaveBeenCalledWith(translations.fr.companies.suspendError));
+		expect(screen.queryByTestId('action-modal')).toBeNull();
+		expect(mockError).toHaveBeenCalledWith(translations.fr.companies.suspendError);
+		expect(store.getState().companies.user_companies).toEqual(memberships);
+		expect(companyApi.endpoints.getUserCompanies.initiate).not.toHaveBeenCalled();
+		expect(router.dismissTo).not.toHaveBeenCalled();
+	});
+
+	it('finishes suspension without starting a separate membership request', async () => {
+		const store = await setup();
+		await openModal();
+		await confirm();
+		await waitFor(() => expect(mockSuccess).toHaveBeenCalledWith(translations.fr.companies.suspendSuccess));
+		expect(store.getState().companies.user_companies).toEqual([remainingMembership]);
+		expect(mockError).not.toHaveBeenCalled();
+		expect(router.dismissTo).toHaveBeenCalledWith('/companies');
+	});
+
+	it('identifies a manager with empty names using the original fallback without an ID field', async () => {
+		await setup({ ...company, admins: [{ ...company.admins[0], first_name: '', last_name: '' }] });
+		expect(screen.getByText('Utilisateur 7')).toBeOnTheScreen();
+		expect(screen.queryByText(/^ID:/)).toBeNull();
+	});
+
+	it('submits only once while a detail destructive request is unresolved, then permits retry after failure', async () => {
+		let reject!: (error: Error) => void;
+		suspend.mockReturnValueOnce({
+			unwrap: () =>
+				new Promise((_, rejectRequest) => {
+					reject = rejectRequest;
+				}),
+		});
 		await setup();
-		const label = image === 'logo' ? translations.fr.companies.logoLabel : translations.fr.companies.stampLabel;
-		await fireEvent.press(screen.getByRole('button', { name: label }));
-		const preview = screen.getAllByLabelText(label).find((element) => element.props.source?.uri === company[image]);
-		expect(preview).toBeDefined();
-		expect(preview).toHaveProp('resizeMode', 'contain');
-
-		await fireEvent.press(screen.getByRole('button', { name: translations.fr.common.close }));
-		expect(screen.queryByRole('button', { name: translations.fr.common.close })).toBeNull();
-		expect(screen.getByRole('button', { name: label })).toBeOnTheScreen();
-	},
-);
-it('suspends only after confirmation, dispatches the membership update and returns to the company list', async () => {
-	const store = await setup();
-	await openModal();
-	await confirm();
-	await waitFor(() => expect(mockSuccess).toHaveBeenCalledWith(translations.fr.companies.suspendSuccess));
-	expect(suspend).toHaveBeenCalledWith({ id: 4 });
-	expect(companyApi.endpoints.getUserCompanies.initiate).not.toHaveBeenCalled();
-	expect(store.getState().companies.user_companies).toEqual([remainingMembership]);
-	expect(screen.queryByTestId('action-modal')).toBeNull();
-	expect(router.dismissTo).toHaveBeenCalledWith('/companies');
-});
-it('closes the confirmation on a failed suspend, without changing memberships or navigating', async () => {
-	suspend.mockReturnValue({ unwrap: () => Promise.reject(new Error('Server failed')) });
-	const store = await setup();
-	await openModal();
-	await confirm();
-	await waitFor(() => expect(mockError).toHaveBeenCalledWith(translations.fr.companies.suspendError));
-	expect(screen.queryByTestId('action-modal')).toBeNull();
-	expect(mockError).toHaveBeenCalledWith(translations.fr.companies.suspendError);
-	expect(store.getState().companies.user_companies).toEqual(memberships);
-	expect(companyApi.endpoints.getUserCompanies.initiate).not.toHaveBeenCalled();
-	expect(router.dismissTo).not.toHaveBeenCalled();
-});
-it('finishes suspension without starting a separate membership request', async () => {
-	const store = await setup();
-	await openModal();
-	await confirm();
-	await waitFor(() => expect(mockSuccess).toHaveBeenCalledWith(translations.fr.companies.suspendSuccess));
-	expect(store.getState().companies.user_companies).toEqual([remainingMembership]);
-	expect(mockError).not.toHaveBeenCalled();
-	expect(router.dismissTo).toHaveBeenCalledWith('/companies');
-});
-
-it('identifies a manager with empty names using the original fallback without an ID field', async () => {
-	await setup({ ...company, admins: [{ ...company.admins[0], first_name: '', last_name: '' }] });
-	expect(screen.getByText('Utilisateur 7')).toBeOnTheScreen();
-	expect(screen.queryByText(/^ID:/)).toBeNull();
-});
-
-it('submits only once while a detail destructive request is unresolved, then permits retry after failure', async () => {
-	let reject!: (error: Error) => void;
-	suspend.mockReturnValueOnce({
-		unwrap: () =>
-			new Promise((_, rejectRequest) => {
-				reject = rejectRequest;
-			}),
+		await openModal();
+		const button = within(screen.getByTestId('action-modal')).getByRole('button', {
+			name: translations.fr.companies.suspendBtn,
+		});
+		await fireEvent.press(button);
+		await fireEvent.press(button);
+		expect(suspend).toHaveBeenCalledTimes(1);
+		await act(async () => reject(new Error('Server failed')));
+		expect(mockError).toHaveBeenCalledWith(translations.fr.companies.suspendError);
+		expect(screen.queryByTestId('action-modal')).toBeNull();
+		suspend.mockReturnValueOnce({ unwrap: () => Promise.resolve() });
+		await openModal();
+		await confirm();
+		await waitFor(() => expect(mockSuccess).toHaveBeenCalled());
+		expect(suspend).toHaveBeenCalledTimes(2);
 	});
-	await setup();
-	await openModal();
-	const button = within(screen.getByTestId('action-modal')).getByRole('button', {
-		name: translations.fr.companies.suspendBtn,
-	});
-	await fireEvent.press(button);
-	await fireEvent.press(button);
-	expect(suspend).toHaveBeenCalledTimes(1);
-	await act(async () => reject(new Error('Server failed')));
-	expect(mockError).toHaveBeenCalledWith(translations.fr.companies.suspendError);
-	expect(screen.queryByTestId('action-modal')).toBeNull();
-	suspend.mockReturnValueOnce({ unwrap: () => Promise.resolve() });
-	await openModal();
-	await confirm();
-	await waitFor(() => expect(mockSuccess).toHaveBeenCalled());
-	expect(suspend).toHaveBeenCalledTimes(2);
-});
 
-it.each(['loading', 'error'])('keeps edit actions hidden while the original detail state is %s', async (state) => {
-	const store = await setup();
-	await mockCompanyQuery.setResult({
-		currentData: undefined,
-		isLoading: state === 'loading',
-		error: state === 'error' ? { status_code: 404, message: 'Missing', details: {} } : undefined,
-		refetch: jest.fn(),
-	} as never);
-	await screen.rerender(
-		<Provider store={store}>
-			<CompaniesView />
-		</Provider>,
-	);
-	expect(screen.queryByRole('button', { name: translations.fr.common.edit })).toBeNull();
-	expect(screen.getByRole(state === 'loading' ? 'progressbar' : 'alert')).toBeOnTheScreen();
-});
-it('keeps edit navigation and relies on the header for Back', async () => {
-	await setup();
-	expect(screen.queryByRole('button', { name: translations.fr.companies.backToList })).toBeNull();
-	const actions = within(screen.getByTestId('details-page-actions'));
-	expect(actions.getAllByRole('button').map((button) => button.props.accessibilityLabel)).toEqual([
-		translations.fr.companies.suspendBtn,
-		translations.fr.common.edit,
-	]);
-	expect(screen.queryByRole('button', { name: translations.fr.common.delete })).toBeNull();
-	expect(within(screen.getByTestId('details-page')).queryByTestId('details-page-actions')).toBeNull();
-	expect(within(screen.getByTestId('page-action-bar')).getByTestId('details-page-actions')).toBeOnTheScreen();
-	await fireEvent.press(actions.getByRole('button', { name: translations.fr.common.edit }));
-	expect(router.push).toHaveBeenCalledWith({ pathname: '/companies/form', params: { id: '4' } });
+	it.each(['loading', 'error'])('keeps edit actions hidden while the original detail state is %s', async (state) => {
+		const store = await setup();
+		await mockCompanyQuery.setResult({
+			currentData: undefined,
+			isLoading: state === 'loading',
+			error: state === 'error' ? { status_code: 404, message: 'Missing', details: {} } : undefined,
+			refetch: jest.fn(),
+		} as never);
+		await screen.rerender(
+			<Provider store={store}>
+				<CompaniesView />
+			</Provider>,
+		);
+		expect(screen.queryByRole('button', { name: translations.fr.common.edit })).toBeNull();
+		expect(screen.getByRole(state === 'loading' ? 'progressbar' : 'alert')).toBeOnTheScreen();
+	});
+
+	it('keeps edit navigation and relies on the header for Back', async () => {
+		await setup();
+		expect(screen.queryByRole('button', { name: translations.fr.companies.backToList })).toBeNull();
+		const actions = within(screen.getByTestId('details-page-actions'));
+		expect(actions.getAllByRole('button').map((button) => button.props.accessibilityLabel)).toEqual([
+			translations.fr.companies.suspendBtn,
+			translations.fr.common.edit,
+		]);
+		expect(screen.queryByRole('button', { name: translations.fr.common.delete })).toBeNull();
+		expect(within(screen.getByTestId('details-page')).queryByTestId('details-page-actions')).toBeNull();
+		expect(within(screen.getByTestId('page-action-bar')).getByTestId('details-page-actions')).toBeOnTheScreen();
+		await fireEvent.press(actions.getByRole('button', { name: translations.fr.common.edit }));
+		expect(router.push).toHaveBeenCalledWith({ pathname: '/companies/form', params: { id: '4' } });
+	});
 });

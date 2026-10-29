@@ -61,140 +61,142 @@ const scrollTo = async (x: number) => {
 	});
 };
 
-it('does not show scroll buttons when the company tabs fit', async () => {
-	await setup(280);
-	expect(screen.getAllByRole('tab')).toHaveLength(3);
-	expect(screen.queryByRole('button', { name: t.common.companiesScrollLeft })).toBeNull();
-	expect(screen.queryByRole('button', { name: t.common.companiesScrollRight })).toBeNull();
-});
-
-it('scrolls through companies without changing the selected company and disables each end', async () => {
-	const scrollView = await setup();
-	expect(screen.getByRole('button', { name: t.common.companiesScrollLeft })).toBeDisabled();
-	await fireEvent.press(screen.getByRole('button', { name: t.common.companiesScrollRight }));
-	expect(scrollView.scrollTo).toHaveBeenLastCalledWith({ x: expect.closeTo(169.6), animated: true });
-	expect(screen.getByRole('tab', { name: 'Atlas', selected: true })).toBeOnTheScreen();
-	expect(screen.getByText('Company 1: Caissier')).toBeOnTheScreen();
-
-	await scrollTo(388);
-	expect(screen.getByRole('button', { name: t.common.companiesScrollRight })).toBeDisabled();
-	expect(screen.getByRole('button', { name: t.common.companiesScrollLeft })).toBeEnabled();
-	await fireEvent.press(screen.getByRole('button', { name: t.common.companiesScrollLeft }));
-	expect(scrollView.scrollTo).toHaveBeenLastCalledWith({ x: expect.closeTo(218.4), animated: true });
-
-	await scrollTo(350);
-	await fireEvent.press(screen.getByRole('button', { name: t.common.companiesScrollRight }));
-	expect(scrollView.scrollTo).toHaveBeenLastCalledWith({ x: 388, animated: true });
-});
-
-it('brings a partially hidden tab into view and passes its company and role to the page', async () => {
-	const scrollView = await setup();
-	const horizon = screen.getByRole('tab', { name: 'Horizon' });
-	await fireEvent(horizon, 'layout', {
-		nativeEvent: { layout: { x: 200, y: 0, width: 200, height: 56 } },
+describe('CompanyDocumentsWrapperList', () => {
+	it('does not show scroll buttons when the company tabs fit', async () => {
+		await setup(280);
+		expect(screen.getAllByRole('tab')).toHaveLength(3);
+		expect(screen.queryByRole('button', { name: t.common.companiesScrollLeft })).toBeNull();
+		expect(screen.queryByRole('button', { name: t.common.companiesScrollRight })).toBeNull();
 	});
-	await fireEvent.press(horizon);
-	expect(screen.getByRole('tab', { name: 'Horizon', selected: true })).toBeOnTheScreen();
-	expect(screen.getByText('Company 2: Commercial')).toBeOnTheScreen();
-	expect(scrollView.scrollTo).toHaveBeenLastCalledWith({ x: 188, animated: true });
 
-	// The company page remounts its tab control. Native measures the new
-	// viewport before reporting the selected tab's new font/layout.
-	await fireEvent.layout(screen.getByLabelText(t.common.companiesTabs), { width: 212, height: 56 });
+	it('scrolls through companies without changing the selected company and disables each end', async () => {
+		const scrollView = await setup();
+		expect(screen.getByRole('button', { name: t.common.companiesScrollLeft })).toBeDisabled();
+		await fireEvent.press(screen.getByRole('button', { name: t.common.companiesScrollRight }));
+		expect(scrollView.scrollTo).toHaveBeenLastCalledWith({ x: expect.closeTo(169.6), animated: true });
+		expect(screen.getByRole('tab', { name: 'Atlas', selected: true })).toBeOnTheScreen();
+		expect(screen.getByText('Company 1: Caissier')).toBeOnTheScreen();
 
-	// The selected font can make the tab wider after the press.
-	await fireEvent(screen.getByRole('tab', { name: 'Horizon' }), 'layout', {
-		nativeEvent: { layout: { x: 200, y: 0, width: 212, height: 56 } },
+		await scrollTo(388);
+		expect(screen.getByRole('button', { name: t.common.companiesScrollRight })).toBeDisabled();
+		expect(screen.getByRole('button', { name: t.common.companiesScrollLeft })).toBeEnabled();
+		await fireEvent.press(screen.getByRole('button', { name: t.common.companiesScrollLeft }));
+		expect(scrollView.scrollTo).toHaveBeenLastCalledWith({ x: expect.closeTo(218.4), animated: true });
+
+		await scrollTo(350);
+		await fireEvent.press(screen.getByRole('button', { name: t.common.companiesScrollRight }));
+		expect(scrollView.scrollTo).toHaveBeenLastCalledWith({ x: 388, animated: true });
 	});
-	expect(scrollView.scrollTo).toHaveBeenLastCalledWith({ x: 200, animated: true });
 
-	await scrollTo(388);
-	const atlas = screen.getByRole('tab', { name: 'Atlas' });
-	await fireEvent(atlas, 'layout', {
-		nativeEvent: { layout: { x: 0, y: 0, width: 200, height: 56 } },
+	it('brings a partially hidden tab into view and passes its company and role to the page', async () => {
+		const scrollView = await setup();
+		const horizon = screen.getByRole('tab', { name: 'Horizon' });
+		await fireEvent(horizon, 'layout', {
+			nativeEvent: { layout: { x: 200, y: 0, width: 200, height: 56 } },
+		});
+		await fireEvent.press(horizon);
+		expect(screen.getByRole('tab', { name: 'Horizon', selected: true })).toBeOnTheScreen();
+		expect(screen.getByText('Company 2: Commercial')).toBeOnTheScreen();
+		expect(scrollView.scrollTo).toHaveBeenLastCalledWith({ x: 188, animated: true });
+
+		// The company page remounts its tab control. Native measures the new
+		// viewport before reporting the selected tab's new font/layout.
+		await fireEvent.layout(screen.getByLabelText(t.common.companiesTabs), { width: 212, height: 56 });
+
+		// The selected font can make the tab wider after the press.
+		await fireEvent(screen.getByRole('tab', { name: 'Horizon' }), 'layout', {
+			nativeEvent: { layout: { x: 200, y: 0, width: 212, height: 56 } },
+		});
+		expect(scrollView.scrollTo).toHaveBeenLastCalledWith({ x: 200, animated: true });
+
+		await scrollTo(388);
+		const atlas = screen.getByRole('tab', { name: 'Atlas' });
+		await fireEvent(atlas, 'layout', {
+			nativeEvent: { layout: { x: 0, y: 0, width: 200, height: 56 } },
+		});
+		await fireEvent.press(atlas);
+		expect(screen.getByText('Company 1: Caissier')).toBeOnTheScreen();
+		expect(scrollView.scrollTo).toHaveBeenLastCalledWith({ x: 0, animated: true });
 	});
-	await fireEvent.press(atlas);
-	expect(screen.getByText('Company 1: Caissier')).toBeOnTheScreen();
-	expect(scrollView.scrollTo).toHaveBeenLastCalledWith({ x: 0, animated: true });
-});
 
-it('restores the selected company after leaving the page and opening it again', async () => {
-	const view = await renderTabs();
-	await fireEvent.press(await screen.findByRole('tab', { name: 'Horizon' }));
-	expect(AsyncStorage.setItem).toHaveBeenCalledWith('selectedCompanyIndex', '1');
-	await view.unmount();
+	it('restores the selected company after leaving the page and opening it again', async () => {
+		const view = await renderTabs();
+		await fireEvent.press(await screen.findByRole('tab', { name: 'Horizon' }));
+		expect(AsyncStorage.setItem).toHaveBeenCalledWith('selectedCompanyIndex', '1');
+		await view.unmount();
 
-	await renderTabs();
-	expect(await screen.findByRole('tab', { name: 'Horizon', selected: true })).toBeOnTheScreen();
-	expect(screen.getByText('Company 2: Commercial')).toBeOnTheScreen();
-});
+		await renderTabs();
+		expect(await screen.findByRole('tab', { name: 'Horizon', selected: true })).toBeOnTheScreen();
+		expect(screen.getByText('Company 2: Commercial')).toBeOnTheScreen();
+	});
 
-it('waits for the saved selection before rendering company-specific content', async () => {
-	let finishRestore: (value: string | null) => void = () => {};
-	jest.mocked(AsyncStorage.getItem).mockImplementationOnce(
-		() =>
-			new Promise((resolve) => {
-				finishRestore = resolve;
-			}),
+	it('waits for the saved selection before rendering company-specific content', async () => {
+		let finishRestore: (value: string | null) => void = () => {};
+		jest.mocked(AsyncStorage.getItem).mockImplementationOnce(
+			() =>
+				new Promise((resolve) => {
+					finishRestore = resolve;
+				}),
+		);
+		await renderTabs();
+		expect(screen.queryByText('Company 1: Caissier')).toBeNull();
+		expect(screen.queryAllByRole('tab')).toHaveLength(0);
+
+		await act(async () => finishRestore('2'));
+		expect(await screen.findByRole('tab', { name: 'Nova Services', selected: true })).toBeOnTheScreen();
+		expect(screen.getByText('Company 3: Caissier')).toBeOnTheScreen();
+	});
+
+	it('reveals the restored tab when its position arrives before the viewport measurement', async () => {
+		await AsyncStorage.setItem('selectedCompanyIndex', '2');
+		await renderTabs();
+		const tab = await screen.findByRole('tab', { name: 'Nova Services', selected: true });
+		await fireEvent(tab, 'layout', {
+			nativeEvent: { layout: { x: 400, y: 0, width: 200, height: 56 } },
+		});
+		const scrollView = ScrollView.prototype as ComponentRef<typeof ScrollView>;
+		jest.mocked(scrollView.scrollTo).mockClear();
+		await fireEvent(screen.getByLabelText(t.common.companiesTabs), 'layout', {
+			nativeEvent: { layout: { x: 0, y: 0, width: 212, height: 56 } },
+		});
+		expect(scrollView.scrollTo).toHaveBeenLastCalledWith({ x: 388, animated: true });
+	});
+
+	it.each(['-1', '1.5', 'invalid', '99'])(
+		'falls back to the first company for an invalid saved index: %s',
+		async (index) => {
+			await AsyncStorage.setItem('selectedCompanyIndex', index);
+			await renderTabs();
+			expect(await screen.findByRole('tab', { name: 'Atlas', selected: true })).toBeOnTheScreen();
+			expect(screen.getByText('Company 1: Caissier')).toBeOnTheScreen();
+		},
 	);
-	await renderTabs();
-	expect(screen.queryByText('Company 1: Caissier')).toBeNull();
-	expect(screen.queryAllByRole('tab')).toHaveLength(0);
 
-	await act(async () => finishRestore('2'));
-	expect(await screen.findByRole('tab', { name: 'Nova Services', selected: true })).toBeOnTheScreen();
-	expect(screen.getByText('Company 3: Caissier')).toBeOnTheScreen();
-});
-
-it('reveals the restored tab when its position arrives before the viewport measurement', async () => {
-	await AsyncStorage.setItem('selectedCompanyIndex', '2');
-	await renderTabs();
-	const tab = await screen.findByRole('tab', { name: 'Nova Services', selected: true });
-	await fireEvent(tab, 'layout', {
-		nativeEvent: { layout: { x: 400, y: 0, width: 200, height: 56 } },
-	});
-	const scrollView = ScrollView.prototype as ComponentRef<typeof ScrollView>;
-	jest.mocked(scrollView.scrollTo).mockClear();
-	await fireEvent(screen.getByLabelText(t.common.companiesTabs), 'layout', {
-		nativeEvent: { layout: { x: 0, y: 0, width: 212, height: 56 } },
-	});
-	expect(scrollView.scrollTo).toHaveBeenLastCalledWith({ x: 388, animated: true });
-});
-
-it.each(['-1', '1.5', 'invalid', '99'])(
-	'falls back to the first company for an invalid saved index: %s',
-	async (index) => {
-		await AsyncStorage.setItem('selectedCompanyIndex', index);
+	it('keeps company selection usable when storage cannot be read or written', async () => {
+		jest.mocked(AsyncStorage.getItem).mockRejectedValueOnce(new Error('Storage unavailable'));
 		await renderTabs();
 		expect(await screen.findByRole('tab', { name: 'Atlas', selected: true })).toBeOnTheScreen();
-		expect(screen.getByText('Company 1: Caissier')).toBeOnTheScreen();
-	},
-);
 
-it('keeps company selection usable when storage cannot be read or written', async () => {
-	jest.mocked(AsyncStorage.getItem).mockRejectedValueOnce(new Error('Storage unavailable'));
-	await renderTabs();
-	expect(await screen.findByRole('tab', { name: 'Atlas', selected: true })).toBeOnTheScreen();
+		jest.mocked(AsyncStorage.setItem).mockRejectedValueOnce(new Error('Storage unavailable'));
+		await fireEvent.press(screen.getByRole('tab', { name: 'Horizon' }));
+		expect(screen.getByText('Company 2: Commercial')).toBeOnTheScreen();
+	});
 
-	jest.mocked(AsyncStorage.setItem).mockRejectedValueOnce(new Error('Storage unavailable'));
-	await fireEvent.press(screen.getByRole('tab', { name: 'Horizon' }));
-	expect(screen.getByText('Company 2: Commercial')).toBeOnTheScreen();
-});
-
-it('opens the requested notification company instead of the saved tab, then permits switching', async () => {
-	await AsyncStorage.setItem('selectedCompanyIndex', '0');
-	await render(
-		<CompanyDocumentsWrapperList requestedCompanyId={3}>
-			{(company) => (
-				<View>
-					{company.tabs}
-					<Text>{`Selected ${company.company_id}`}</Text>
-				</View>
-			)}
-		</CompanyDocumentsWrapperList>,
-	);
-	expect(await screen.findByRole('tab', { name: 'Nova Services', selected: true })).toBeOnTheScreen();
-	expect(screen.getByText('Selected 3')).toBeOnTheScreen();
-	await fireEvent.press(screen.getByRole('tab', { name: 'Horizon' }));
-	expect(screen.getByText('Selected 2')).toBeOnTheScreen();
+	it('opens the requested notification company instead of the saved tab, then permits switching', async () => {
+		await AsyncStorage.setItem('selectedCompanyIndex', '0');
+		await render(
+			<CompanyDocumentsWrapperList requestedCompanyId={3}>
+				{(company) => (
+					<View>
+						{company.tabs}
+						<Text>{`Selected ${company.company_id}`}</Text>
+					</View>
+				)}
+			</CompanyDocumentsWrapperList>,
+		);
+		expect(await screen.findByRole('tab', { name: 'Nova Services', selected: true })).toBeOnTheScreen();
+		expect(screen.getByText('Selected 3')).toBeOnTheScreen();
+		await fireEvent.press(screen.getByRole('tab', { name: 'Horizon' }));
+		expect(screen.getByText('Selected 2')).toBeOnTheScreen();
+	});
 });

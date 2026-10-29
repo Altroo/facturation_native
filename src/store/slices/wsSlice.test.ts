@@ -19,12 +19,12 @@ describe('wsSlice reducer', () => {
 			serverVersion: null,
 		});
 	});
-});
 
-it('keeps the bundled version separate from the announced mobile release', () => {
-	const initial = reducer(undefined, { type: 'test' });
-	const announced = reducer(initial, setWSServerVersion('3.6.2'));
-	expect(announced.localVersion).toBe(APP_VERSION);
-	expect(announced.serverVersion).toBe('3.6.2');
-	expect(reducer(announced, setWSServerVersion('invalid')).serverVersion).toBe('3.6.2');
+	it('keeps the bundled version separate from the announced mobile release', () => {
+		const initial = reducer(undefined, { type: 'test' });
+		const announced = reducer(initial, setWSServerVersion('3.6.2'));
+		expect(announced.localVersion).toBe(APP_VERSION);
+		expect(announced.serverVersion).toBe('3.6.2');
+		expect(reducer(announced, setWSServerVersion('invalid')).serverVersion).toBe('3.6.2');
+	});
 });

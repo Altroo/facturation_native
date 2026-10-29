@@ -11,114 +11,119 @@ jest.mock('@/components/shared/aiAssistantControl/aiAssistantControl', () => ({
 	default: jest.fn(() => null),
 }));
 
-it('connects eligible native field identifiers to the same assistant without bypassing Formik', async () => {
-	jest.mocked(AiAssistantControl).mockClear();
-	const onChangeText = jest.fn();
-	await render(
-		<CustomTextInput
-			nativeID="designation"
-			label="Designation"
-			value="Source"
-			maxLength={120}
-			aiContext="article"
-			onChangeText={onChangeText}
-		/>,
-	);
-	expect(AiAssistantControl).toHaveBeenCalled();
-	const props = jest.mocked(AiAssistantControl).mock.calls[0][0];
-	expect(props).toMatchObject({ value: 'Source', context: 'article', maxLength: 120 });
-	props.onApply('Suggestion');
-	expect(onChangeText).toHaveBeenCalledWith('Suggestion');
-});
-
-it.each([
-	{ nativeID: 'email', keyboardType: 'email-address' as const },
-	{ nativeID: 'designation', disabled: true },
-	{ nativeID: 'designation', readOnly: true },
-	{ nativeID: 'designation', secureTextEntry: true },
-	{ nativeID: 'designation', ai: false },
-	{ nativeID: 'designation', keyboardType: 'numeric' as const },
-])('excludes identifiers, locked fields, passwords and explicit opt-outs: %j', async (props) => {
-	jest.mocked(AiAssistantControl).mockClear();
-	await render(<CustomTextInput {...props} value="Source" onChangeText={jest.fn()} />);
-	expect(AiAssistantControl).not.toHaveBeenCalled();
-});
-it('shows the original required marker without changing the input accessible name', async () => {
-	await render(<CustomTextInput label="Email" required value="" />);
-	expect(screen.getByText('Email *')).toBeOnTheScreen();
-	expect(screen.getByLabelText('Email')).toHaveProp('value', '');
-});
-it('labels the input and forwards editing, blur and native input options', async () => {
-	const onChangeText = jest.fn();
-	const onBlur = jest.fn();
-	await render(
-		<CustomTextInput
-			label="Email"
-			value=""
-			placeholder="Email professionnel"
-			keyboardType="email-address"
-			maxLength={120}
-			onChangeText={onChangeText}
-			onBlur={onBlur}
-		/>,
-	);
-	const input = screen.getByLabelText('Email');
-	expect(screen.getByPlaceholderText('Email professionnel')).toBe(input);
-	expect(input).toHaveProp('keyboardType', 'email-address');
-	expect(input).toHaveProp('maxLength', 120);
-	await fireEvent.changeText(input, 'user@example.invalid');
-	await fireEvent(input, 'blur', { nativeEvent: { text: 'user@example.invalid' } });
-	expect(onChangeText).toHaveBeenCalledWith('user@example.invalid');
-	expect(onBlur).toHaveBeenCalledTimes(1);
-});
-it('keeps boolean error separate from helperText and restores normal helper feedback after correction', async () => {
-	const view = await render(<CustomTextInput label="Email" value="invalid" error helperText="Email invalide" />);
-	expect(screen.getByRole('alert')).toHaveTextContent('Email invalide');
-	expect(screen.getByLabelText('Email')).toHaveProp('value', 'invalid');
-	await view.rerender(
-		<CustomTextInput
-			label="Email"
-			value="valid@example.invalid"
-			error={false}
-			helperText="Utilisez votre email professionnel"
-		/>,
-	);
-	expect(screen.queryByRole('alert')).toBeNull();
-	expect(screen.getByText('Utilisez votre email professionnel')).toBeOnTheScreen();
-});
-it('prevents editing with disabled and keeps original startIcon/endIcon accessories visible', async () => {
-	const onChangeText = jest.fn();
-	await render(
-		<CustomTextInput
-			label="Identifiant"
-			value="USER-1"
-			disabled
-			onChangeText={onChangeText}
-			startIcon={<Text>Account icon</Text>}
-			endIcon={<Text>Compte vérifié</Text>}
-		/>,
-	);
-	const input = screen.getByLabelText('Identifiant');
-	expect(input).toHaveProp('editable', false);
-	expect(input).toHaveProp('accessibilityState', { disabled: true });
-	await fireEvent.changeText(input, 'OTHER');
-	expect(onChangeText).not.toHaveBeenCalled();
-	expect(screen.getByText('Account icon')).toBeOnTheScreen();
-	expect(screen.getByText('Compte vérifié')).toBeOnTheScreen();
-	expect(input).toHaveProp('value', 'USER-1');
-});
-it('supports multiline content without replacing native input options', async () => {
-	await render(
-		<CustomTextInput label="Adresse" value={'Rue 1\nCasablanca'} multiline numberOfLines={3} textAlign="right" />,
-	);
-	const input = screen.getByLabelText('Adresse');
-	expect(input).toHaveProp('multiline', true);
-	expect(input).toHaveProp('numberOfLines', 3);
-	expect(input).toHaveProp('textAlign', 'right');
-	expect(input).toHaveProp('value', 'Rue 1\nCasablanca');
-});
-
 describe('CustomTextInput', () => {
+	it('connects eligible native field identifiers to the same assistant without bypassing Formik', async () => {
+		jest.mocked(AiAssistantControl).mockClear();
+		const onChangeText = jest.fn();
+		await render(
+			<CustomTextInput
+				nativeID="designation"
+				label="Designation"
+				value="Source"
+				maxLength={120}
+				aiContext="article"
+				onChangeText={onChangeText}
+			/>,
+		);
+		expect(AiAssistantControl).toHaveBeenCalled();
+		const props = jest.mocked(AiAssistantControl).mock.calls[0][0];
+		expect(props).toMatchObject({ value: 'Source', context: 'article', maxLength: 120 });
+		props.onApply('Suggestion');
+		expect(onChangeText).toHaveBeenCalledWith('Suggestion');
+	});
+
+	it.each([
+		{ nativeID: 'email', keyboardType: 'email-address' as const },
+		{ nativeID: 'designation', disabled: true },
+		{ nativeID: 'designation', readOnly: true },
+		{ nativeID: 'designation', secureTextEntry: true },
+		{ nativeID: 'designation', ai: false },
+		{ nativeID: 'designation', keyboardType: 'numeric' as const },
+	])('excludes identifiers, locked fields, passwords and explicit opt-outs: %j', async (props) => {
+		jest.mocked(AiAssistantControl).mockClear();
+		await render(<CustomTextInput {...props} value="Source" onChangeText={jest.fn()} />);
+		expect(AiAssistantControl).not.toHaveBeenCalled();
+	});
+
+	it('shows the original required marker without changing the input accessible name', async () => {
+		await render(<CustomTextInput label="Email" required value="" />);
+		expect(screen.getByText('Email *')).toBeOnTheScreen();
+		expect(screen.getByLabelText('Email')).toHaveProp('value', '');
+	});
+
+	it('labels the input and forwards editing, blur and native input options', async () => {
+		const onChangeText = jest.fn();
+		const onBlur = jest.fn();
+		await render(
+			<CustomTextInput
+				label="Email"
+				value=""
+				placeholder="Email professionnel"
+				keyboardType="email-address"
+				maxLength={120}
+				onChangeText={onChangeText}
+				onBlur={onBlur}
+			/>,
+		);
+		const input = screen.getByLabelText('Email');
+		expect(screen.getByPlaceholderText('Email professionnel')).toBe(input);
+		expect(input).toHaveProp('keyboardType', 'email-address');
+		expect(input).toHaveProp('maxLength', 120);
+		await fireEvent.changeText(input, 'user@example.invalid');
+		await fireEvent(input, 'blur', { nativeEvent: { text: 'user@example.invalid' } });
+		expect(onChangeText).toHaveBeenCalledWith('user@example.invalid');
+		expect(onBlur).toHaveBeenCalledTimes(1);
+	});
+
+	it('keeps boolean error separate from helperText and restores normal helper feedback after correction', async () => {
+		const view = await render(<CustomTextInput label="Email" value="invalid" error helperText="Email invalide" />);
+		expect(screen.getByRole('alert')).toHaveTextContent('Email invalide');
+		expect(screen.getByLabelText('Email')).toHaveProp('value', 'invalid');
+		await view.rerender(
+			<CustomTextInput
+				label="Email"
+				value="valid@example.invalid"
+				error={false}
+				helperText="Utilisez votre email professionnel"
+			/>,
+		);
+		expect(screen.queryByRole('alert')).toBeNull();
+		expect(screen.getByText('Utilisez votre email professionnel')).toBeOnTheScreen();
+	});
+
+	it('prevents editing with disabled and keeps original startIcon/endIcon accessories visible', async () => {
+		const onChangeText = jest.fn();
+		await render(
+			<CustomTextInput
+				label="Identifiant"
+				value="USER-1"
+				disabled
+				onChangeText={onChangeText}
+				startIcon={<Text>Account icon</Text>}
+				endIcon={<Text>Compte vérifié</Text>}
+			/>,
+		);
+		const input = screen.getByLabelText('Identifiant');
+		expect(input).toHaveProp('editable', false);
+		expect(input).toHaveProp('accessibilityState', { disabled: true });
+		await fireEvent.changeText(input, 'OTHER');
+		expect(onChangeText).not.toHaveBeenCalled();
+		expect(screen.getByText('Account icon')).toBeOnTheScreen();
+		expect(screen.getByText('Compte vérifié')).toBeOnTheScreen();
+		expect(input).toHaveProp('value', 'USER-1');
+	});
+
+	it('supports multiline content without replacing native input options', async () => {
+		await render(
+			<CustomTextInput label="Adresse" value={'Rue 1\nCasablanca'} multiline numberOfLines={3} textAlign="right" />,
+		);
+		const input = screen.getByLabelText('Adresse');
+		expect(input).toHaveProp('multiline', true);
+		expect(input).toHaveProp('numberOfLines', 3);
+		expect(input).toHaveProp('textAlign', 'right');
+		expect(input).toHaveProp('value', 'Rue 1\nCasablanca');
+	});
+
 	it('keeps addresses to two visible lines and remarks to four without truncating their values', async () => {
 		await render(
 			<>
@@ -141,6 +146,7 @@ describe('CustomTextInput', () => {
 		expect(addressHeight).toBeGreaterThan(48);
 		expect(addressHeight).toBeLessThan(remarkHeight);
 	});
+
 	it('passes its ref to the input element', async () => {
 		const ref = createRef<TextInputInstance>();
 		await render(<CustomTextInput ref={ref} id="custom-input" value="" onChangeText={() => {}} />);

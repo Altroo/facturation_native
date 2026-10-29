@@ -13,8 +13,10 @@ jest.mock('@/components/shared/clientsList/clientsList', () => {
 	};
 });
 
-it('opens the shared list in archived mode', async () => {
-	await render(<ClientsArchivedPage />);
-	expect(screen.getByText('Archived clients')).toBeOnTheScreen();
-	expect(screen.queryByText('Active clients')).toBeNull();
+describe('ClientsArchivedPage', () => {
+	it('opens the shared list in archived mode', async () => {
+		await render(<ClientsArchivedPage />);
+		expect(screen.getByText('Archived clients')).toBeOnTheScreen();
+		expect(screen.queryByText('Active clients')).toBeNull();
+	});
 });

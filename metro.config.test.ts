@@ -39,23 +39,25 @@ const resolveImport = (origin: string, platform: string) =>
 		),
 	);
 
-it.each(['ios', 'android'])('keeps Expo Asset connected to the real native registry on %s', (platform) => {
-	expect(resolveImport('node_modules/expo-asset/build/Asset.js', platform)).toEqual({
-		type: 'sourceFile',
-		filePath: nativeEntry,
+describe('Metro configuration', () => {
+	it.each(['ios', 'android'])('keeps Expo Asset connected to the real native registry on %s', (platform) => {
+		expect(resolveImport('node_modules/expo-asset/build/Asset.js', platform)).toEqual({
+			type: 'sourceFile',
+			filePath: nativeEntry,
+		});
 	});
-});
 
-it('still resolves native app components through Uniwind for Tailwind classes', () => {
-	expect(resolveImport('src/app/_layout.tsx', 'ios')).toEqual({
-		type: 'sourceFile',
-		filePath: uniwindEntry,
+	it('still resolves native app components through Uniwind for Tailwind classes', () => {
+		expect(resolveImport('src/app/_layout.tsx', 'ios')).toEqual({
+			type: 'sourceFile',
+			filePath: uniwindEntry,
+		});
 	});
-});
 
-it('preserves the web resolver for Expo Asset', () => {
-	expect(resolveImport('node_modules/expo-asset/build/Asset.js', 'web')).toEqual({
-		type: 'sourceFile',
-		filePath: webEntry,
+	it('preserves the web resolver for Expo Asset', () => {
+		expect(resolveImport('node_modules/expo-asset/build/Asset.js', 'web')).toEqual({
+			type: 'sourceFile',
+			filePath: webEntry,
+		});
 	});
 });

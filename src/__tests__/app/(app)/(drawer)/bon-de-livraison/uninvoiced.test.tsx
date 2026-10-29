@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import BonDeLivraisonListPage from '@/app/(app)/(drawer)/bon-de-livraison/uninvoiced';
 import { useGetBonDeLivraisonUninvoicedInfiniteListInfiniteQuery } from '@/store/services/bonDeLivraison';
 import { translations } from '@/translations';
-import { createQueryMock } from '@/store/setupQuery';
+import { createQueryMock } from '@/__tests__/setupQuery';
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
 jest.mock('@expo/vector-icons', () => ({ MaterialIcons: 'Icon' }));
 jest.mock(
@@ -109,30 +109,34 @@ beforeEach(async () => {
 	).default;
 	nativeMethods.measureInWindow.mockImplementation((callback) => callback(200, 200, 44, 44));
 });
-it('loads uninvoiced notes through the dedicated endpoint without bulk deletion or printing', async () => {
-	await render(<BonDeLivraisonListPage />);
-	expect(useGetBonDeLivraisonUninvoicedInfiniteListInfiniteQuery).toHaveBeenLastCalledWith(
-		expect.objectContaining({ company_id: 5 }),
-		expect.objectContaining({ skip: false }),
-	);
-	expect(screen.queryByRole('checkbox')).toBeNull();
-	await fireEvent.press(screen.getAllByRole('button', { name: t.common.moreActions })[0]);
-	expect(screen.getAllByRole('menuitem').map((item) => item.props.accessibilityLabel)).toEqual([
-		t.common.edit,
-		t.common.delete,
-	]);
-});
-it('sends search to the server and supports pull-to-refresh and infinite loading', async () => {
-	await render(<BonDeLivraisonListPage />);
-	await fireEvent.press(screen.getByLabelText(t.common.search));
-	await fireEvent.changeText(screen.getByPlaceholderText(t.dataGrid.searchPlaceholder), 'Atlas');
-	await fireEvent(screen.getByPlaceholderText(t.dataGrid.searchPlaceholder), 'submitEditing');
-	expect(useGetBonDeLivraisonUninvoicedInfiniteListInfiniteQuery).toHaveBeenLastCalledWith(
-		expect.objectContaining({ company_id: 5, search: 'Atlas' }),
-		expect.anything(),
-	);
-	await fireEvent(screen.getByTestId('bon-de-livraison-grid'), 'endReached');
-	expect(fetchNextPage).toHaveBeenCalledTimes(1);
-	await fireEvent(screen.getByTestId('bon-de-livraison-grid'), 'refresh');
-	expect(refetch).toHaveBeenCalledTimes(1);
+
+describe('BonDeLivraisonUninvoicedListPage', () => {
+	it('loads uninvoiced notes through the dedicated endpoint without bulk deletion or printing', async () => {
+		await render(<BonDeLivraisonListPage />);
+		expect(useGetBonDeLivraisonUninvoicedInfiniteListInfiniteQuery).toHaveBeenLastCalledWith(
+			expect.objectContaining({ company_id: 5 }),
+			expect.objectContaining({ skip: false }),
+		);
+		expect(screen.queryByRole('checkbox')).toBeNull();
+		await fireEvent.press(screen.getAllByRole('button', { name: t.common.moreActions })[0]);
+		expect(screen.getAllByRole('menuitem').map((item) => item.props.accessibilityLabel)).toEqual([
+			t.common.edit,
+			t.common.delete,
+		]);
+	});
+
+	it('sends search to the server and supports pull-to-refresh and infinite loading', async () => {
+		await render(<BonDeLivraisonListPage />);
+		await fireEvent.press(screen.getByLabelText(t.common.search));
+		await fireEvent.changeText(screen.getByPlaceholderText(t.dataGrid.searchPlaceholder), 'Atlas');
+		await fireEvent(screen.getByPlaceholderText(t.dataGrid.searchPlaceholder), 'submitEditing');
+		expect(useGetBonDeLivraisonUninvoicedInfiniteListInfiniteQuery).toHaveBeenLastCalledWith(
+			expect.objectContaining({ company_id: 5, search: 'Atlas' }),
+			expect.anything(),
+		);
+		await fireEvent(screen.getByTestId('bon-de-livraison-grid'), 'endReached');
+		expect(fetchNextPage).toHaveBeenCalledTimes(1);
+		await fireEvent(screen.getByTestId('bon-de-livraison-grid'), 'refresh');
+		expect(refetch).toHaveBeenCalledTimes(1);
+	});
 });
