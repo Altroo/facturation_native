@@ -345,6 +345,8 @@ const CompanyDocumentFormContent = (props: Props) => {
 		}));
 	const modes = (modesQuery.currentData ?? []).map((mode) => ({ code: mode.nom, value: String(mode.id) }));
 	const selectedMode = modes.find((mode) => mode.value === String(formik.values.mode_paiement)) ?? null;
+	// Derive errors from the current Formik result, as on web. Copying them into
+	// separate state would leave a corrected quantity showing its previous error.
 	const lineErrors: Record<string, string> = {};
 	formik.values.lignes.forEach((_line, index) => {
 		for (const name of ['quantity', 'prix_vente', 'remise']) {

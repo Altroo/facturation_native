@@ -6,6 +6,7 @@ import { translations } from '@/translations';
 import type { CompanyClass } from '@/models/classes';
 import type { DocumentData } from '@/types/companyDocumentsTypes';
 import { AutocompleteDropdownContextProvider, toggleAutocomplete } from '@/__tests__/setupAutocomplete';
+import { INPUT_REQUIRED, INPUT_PRICE_VENTE_ACHAT } from '@/utils/formValidationErrorMessages';
 
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
 jest.mock(
@@ -135,6 +136,22 @@ const delivery: DocumentData = {
 };
 
 describe('CompanyDocumentFormContent', () => {
+	it.each(['devis', 'facture-pro-forma', 'facture-client', 'bon-de-livraison'] as const)(
+		'clears a corrected quantity error without hiding the remaining price error on %s',
+		async (documentType) => {
+			await setup({ ...props(), documentType, id: 7, rawData: delivery });
+			await fireEvent.changeText(screen.getByLabelText(t.documentForm.colQuantite), '');
+			await fireEvent.changeText(screen.getByLabelText(`${t.documentForm.colPrixUnitaire} (MAD)`), '1');
+			await fireEvent.press(screen.getByRole('button', { name: t.common.save }));
+			await waitFor(() => expect(screen.getByText(INPUT_REQUIRED)).toBeOnTheScreen());
+			await fireEvent.changeText(screen.getByLabelText(t.documentForm.colQuantite), '150');
+			await waitFor(() => expect(screen.queryByText(INPUT_REQUIRED)).toBeNull());
+			expect(screen.getByText(INPUT_PRICE_VENTE_ACHAT)).toBeOnTheScreen();
+			await fireEvent.changeText(screen.getByLabelText(`${t.documentForm.colPrixUnitaire} (MAD)`), '100');
+			await waitFor(() => expect(screen.queryByText(INPUT_PRICE_VENTE_ACHAT)).toBeNull());
+		},
+	);
+
 	it.each(['devis', 'facture-pro-forma', 'facture-client', 'bon-de-livraison'] as const)(
 		'creates %s with the correct API fields and destination',
 		async (documentType) => {
