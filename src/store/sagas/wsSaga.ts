@@ -17,7 +17,7 @@ import { notificationApi } from '@/store/services/notification';
 import { incrementUnreadCount, setLatestNotification } from '@/store/slices/notificationSlice';
 import type { Action } from 'redux';
 import type { NotificationType } from '@/types/notificationTypes';
-import Logo from '../../../assets/facturation-logo.png';
+import Icon from '../../../assets/icon.png';
 
 type WSChannelAction = Action & {
 	maintenance?: boolean;
@@ -33,7 +33,7 @@ function* showNotification(notification: NotificationType): SagaIterator {
 			if (typeof window !== 'undefined' && 'Notification' in window && window.Notification.permission === 'granted') {
 				new window.Notification(notification.title, {
 					body: notification.message,
-					icon: Asset.fromModule(Logo).uri,
+					icon: Asset.fromModule(Icon).uri,
 				});
 			}
 			return;

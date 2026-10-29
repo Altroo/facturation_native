@@ -1,6 +1,7 @@
 import Poppins from '../../assets/fonts/Poppins-Regular.ttf';
 import PoppinsMedium from '../../assets/fonts/Poppins-Medium.ttf';
 import PoppinsSemiBold from '../../assets/fonts/Poppins-SemiBold.ttf';
+import { useEffect } from 'react';
 import Logo from '../../assets/facturation-logo.png';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import ApiProgress from '@/components/nativeElements/apiLoading/apiProgress/apiProgress';
@@ -34,6 +35,7 @@ import { accountLogoutAction } from '@/store/actions/accountActions';
 import { colors, fonts } from '@/utils/themes';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import { dismissDropDownsOnOutsidePress } from '@/components/nativeElements/customDropDownSelect/customDropDownSelect';
+import AppSplash from '@/components/shared/appSplash/appSplash';
 
 // Keep the native launch screen above React until local resources and preferences are ready.
 void SplashScreen.preventAutoHideAsync().catch((error: unknown) => {
@@ -46,7 +48,8 @@ export const RootNavigator = () => {
 	const { status, error } = useAppSelector(getInitState);
 	const { t } = useLanguage();
 	const { mode } = useColorMode();
-	if (status === 'booting' || status === 'signingOut') return <ApiProgress />;
+	if (status === 'booting') return <AppSplash />;
+	if (status === 'signingOut') return <ApiProgress />;
 	if (status === 'unavailable')
 		return (
 			<ScrollView
@@ -109,6 +112,10 @@ export const RootNavigator = () => {
 };
 
 const RootLayout = () => {
+	const reduceMotion = useReducedMotion();
+	useEffect(() => {
+		SplashScreen.setOptions({ fade: !reduceMotion, duration: reduceMotion ? 0 : 180 });
+	}, [reduceMotion]);
 	const [loaded, error] = useFonts({
 		...MaterialIcons.font,
 		[fonts.regular]: Poppins,
@@ -118,8 +125,8 @@ const RootLayout = () => {
 	const [assets, assetError] = useAssets([Logo]);
 	if ((!loaded && !error) || (!assets && !assetError))
 		return (
-			<View className="flex-1 items-center justify-center bg-white">
-				<ActivityIndicator color={colors.brand} />
+			<View className="flex-1 items-center justify-center" style={{ backgroundColor: colors.splashBackground }}>
+				<ActivityIndicator color={colors.splashForeground} />
 			</View>
 		);
 	return (

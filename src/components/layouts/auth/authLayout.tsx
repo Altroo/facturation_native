@@ -9,7 +9,8 @@ import { useColorMode } from '@/providers/themeProvider';
 import { AuthThemeToggle } from '@/components/shared/themeToggle/themeToggle';
 import LanguageSwitcher from '@/components/shared/languageSwitcher/languageSwitcher';
 import Logo from '../../../../assets/facturation-logo.png';
-import { colors } from '@/utils/themes';
+import { brandLogoStyle, colors } from '@/utils/themes';
+import { expo } from '../../../../app.json';
 
 type Props = {
 	children: ReactNode;
@@ -24,7 +25,7 @@ const AuthLayout = (props: Props) => {
 	return (
 		<View className="flex-1 bg-white dark:bg-night">
 			<SafeAreaView style={{ flex: 1 }}>
-				<View className="flex-row items-center gap-1 px-6 pb-2 pt-4">
+				<View className="flex-row items-center gap-1 px-6 pt-4">
 					{backHref && (
 						<Pressable
 							accessibilityRole="button"
@@ -47,11 +48,21 @@ const AuthLayout = (props: Props) => {
 					style={{ flex: 1 }}
 					keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
 					keyboardShouldPersistTaps="handled"
-					contentContainerStyle={{ flexGrow: 1, padding: 24 }}
+					contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingBottom: 24 }}
 				>
-					<View className="mx-auto w-full max-w-md flex-1 justify-start gap-6 pb-10 pt-8">
-						<View className="gap-5">
-							<Image source={Logo} className="h-20 w-16 self-center" resizeMode="contain" />
+					<View className="mx-auto w-full max-w-md flex-1 justify-start gap-5 pb-10">
+						<View>
+							{/* Keep the logo equally spaced from the toolbar and the authentication title. */}
+							<View testID="auth-brand" style={{ paddingVertical: 16 }}>
+								<Image
+									source={Logo}
+									accessible
+									accessibilityRole="image"
+									accessibilityLabel={expo.name}
+									style={brandLogoStyle}
+									resizeMode="contain"
+								/>
+							</View>
 							{!!title && (
 								<View className="gap-2">
 									<Text className="font-poppins-semibold text-3xl text-ink dark:text-slate-100">{title}</Text>

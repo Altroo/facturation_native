@@ -21,7 +21,7 @@
 			"package": "ma.facturation.mobile",
 			"adaptiveIcon": {
 				"foregroundImage": "./assets/android-icon-foreground.png",
-				"backgroundColor": "#ffffff"
+				"backgroundColor": "#041843"
 			}
 		},
 		"web": {
@@ -60,11 +60,14 @@
 				"expo-splash-screen",
 				{
 					"image": "./assets/facturation-logo.png",
-					"imageWidth": 120,
+					"imageWidth": 320,
 					"resizeMode": "contain",
-					"backgroundColor": "#ffffff",
+					"backgroundColor": "#041843",
+					"android": {
+						"image": "./assets/android-icon-foreground.png"
+					},
 					"dark": {
-						"backgroundColor": "#121722"
+						"backgroundColor": "#041843"
 					}
 				}
 			],

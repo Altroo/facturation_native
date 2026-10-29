@@ -2,6 +2,9 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import Maintenance from './Maintenance';
 import { useAppSelector } from '@/utils/hooks';
+import Logo from '../../../../assets/facturation-logo.png';
+import { translations } from '@/translations';
+import { brandLogoStyle } from '@/utils/themes';
 
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
 
@@ -31,6 +34,12 @@ describe('Maintenance', () => {
 		await render(<Maintenance />);
 
 		expect(screen.getByTestId('maintenance-gate')).toBeOnTheScreen();
+		expect(screen.getByRole('image', { name: translations.fr.maintenance.logoAlt })).toHaveProp('source', Logo);
+		expect(screen.getByRole('image', { name: translations.fr.maintenance.logoAlt })).toHaveStyle(brandLogoStyle);
+		expect(screen.getByRole('image', { name: translations.fr.maintenance.logoAlt })).toHaveProp(
+			'resizeMode',
+			'contain',
+		);
 		expect(screen.getByText('Maintenance en cours')).toBeOnTheScreen();
 		expect(screen.getByText(/Nous effectuons actuellement une maintenance sur E\.B\.H Facturation/i)).toBeOnTheScreen();
 	});

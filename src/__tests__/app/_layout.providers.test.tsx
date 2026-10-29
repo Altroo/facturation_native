@@ -21,7 +21,11 @@ jest.mock('expo-asset', () => ({
 	...jest.requireActual<typeof import('expo-asset')>('expo-asset'),
 	useAssets: jest.fn(),
 }));
-jest.mock('expo-splash-screen', () => ({ preventAutoHideAsync: jest.fn(async () => true), hide: jest.fn() }));
+jest.mock('expo-splash-screen', () => ({
+	preventAutoHideAsync: jest.fn(async () => true),
+	setOptions: jest.fn(),
+	hide: jest.fn(),
+}));
 jest.mock('react-native-gesture-handler', () => ({
 	GestureHandlerRootView: jest.requireActual<typeof import('react-native')>('react-native').View,
 }));

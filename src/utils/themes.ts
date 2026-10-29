@@ -4,6 +4,8 @@ import type { DataGridTheme } from 'expo-flash-datagrid';
 export const colors = {
 	brand: '#0274d7',
 	brandDisabled: '#93c5fd',
+	splashBackground: '#041843',
+	splashForeground: '#e9bf5b',
 	ink: '#0d070b',
 	night: '#121722',
 	panel: '#222c3d',
@@ -92,6 +94,9 @@ export const fonts = {
 
 // Text fields and both kinds of picker share their value/placeholder typography.
 export const inputTextStyle = { fontFamily: fonts.regular, fontSize: 16 } as const;
+
+// Match the square source so the complete logo and wordmark retain their proportions.
+export const brandLogoStyle = { width: 160, height: 160, maxWidth: '100%', alignSelf: 'center' } as const;
 
 export const dataGridThemes: Record<'light' | 'dark', DataGridTheme> = {
 	light: {

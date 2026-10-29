@@ -37,7 +37,7 @@ import {
 } from 'expo-notifications';
 
 jest.mock('expo-asset', () => ({
-	Asset: { fromModule: jest.fn(() => ({ uri: 'asset:/facturation-logo.png' })) },
+	Asset: { fromModule: jest.fn(() => ({ uri: 'asset:/icon.png' })) },
 }));
 jest.mock('expo-notifications', () => ({
 	getPermissionsAsync: jest.fn(),
@@ -439,7 +439,7 @@ describe('watchWS saga', () => {
 			if (permission === 'granted') {
 				expect(BrowserNotification).toHaveBeenCalledWith(notification.title, {
 					body: notification.message,
-					icon: 'asset:/facturation-logo.png',
+					icon: 'asset:/icon.png',
 				});
 			} else expect(BrowserNotification).not.toHaveBeenCalled();
 			expect(actions).toContainEqual(setLatestNotification(notification));

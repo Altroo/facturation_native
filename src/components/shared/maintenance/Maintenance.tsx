@@ -4,7 +4,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useAppSelector, useLanguage } from '@/utils/hooks';
 import { getWSMaintenanceState } from '@/store/selectors';
 import Logo from '../../../../assets/facturation-logo.png';
-import { colors } from '@/utils/themes';
+import { brandLogoStyle, colors } from '@/utils/themes';
 
 const Maintenance: FC = () => {
 	const maintenance = useAppSelector(getWSMaintenanceState);
@@ -22,8 +22,11 @@ const Maintenance: FC = () => {
 			>
 				<Image
 					source={Logo}
+					accessible
+					accessibilityRole="image"
 					accessibilityLabel={t.maintenance.logoAlt}
-					className="mb-8 h-24 w-24 self-center"
+					className="mb-8"
+					style={brandLogoStyle}
 					resizeMode="contain"
 				/>
 				<View className="gap-3 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-panel">

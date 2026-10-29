@@ -1,6 +1,8 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { Platform, Pressable, Text } from 'react-native';
 import AuthLayout from './authLayout';
+import Logo from '../../../../assets/facturation-logo.png';
+import { expo } from '../../../../app.json';
 
 jest.mock(
 	'react-native-safe-area-context',
@@ -25,6 +27,15 @@ describe('AuthLayout', () => {
 			</AuthLayout>,
 		);
 		expect(screen.getByText('Préférences')).toBeOnTheScreen();
+		expect(screen.getByRole('image', { name: expo.name })).toHaveProp('source', Logo);
+		expect(screen.getByRole('image', { name: expo.name })).toHaveStyle({ width: 160, height: 160 });
+		expect(screen.getByRole('image', { name: expo.name })).toHaveProp('resizeMode', 'contain');
+		expect(screen.getByTestId('auth-brand')).toHaveStyle({ paddingVertical: 16 });
+		expect(
+			screen.container.queryAll((node) => node.type === 'RCTScrollView')[0]!.props.contentContainerStyle,
+		).toMatchObject({
+			paddingHorizontal: 24,
+		});
 		await fireEvent.press(screen.getByRole('button', { name: 'Connexion' }));
 		expect(submit).toHaveBeenCalledTimes(1);
 		expect(screen.container.queryAll((node) => node.type === 'RCTScrollView')[0]!.props.keyboardShouldPersistTaps).toBe(

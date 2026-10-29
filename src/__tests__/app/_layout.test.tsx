@@ -86,7 +86,8 @@ describe('RootLayout', () => {
 
 	it('restores first, guards private pages, and removes them on logout', async () => {
 		const { store } = await setup();
-		expect(screen.getByText(translations.fr.common.loading)).toBeOnTheScreen();
+		expect(screen.getByTestId('app-splash')).toBeOnTheScreen();
+		expect(screen.getByLabelText(translations.fr.common.loading)).toBeOnTheScreen();
 		expect(screen.queryByText('Private dashboard')).toBeNull();
 		await act(() => store.dispatch(initToken()));
 		await screen.findByText('Public login');
