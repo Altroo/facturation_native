@@ -25,17 +25,20 @@ import {
 import type { DateFilterParams } from '@/types/dashboardTypes';
 import { getProfilState } from '@/store/selectors';
 import { useAppSelector, useLanguage } from '@/utils/hooks';
-import { dashboardChartColors as C, dashboardPieColors } from '@/utils/rawData';
-import { colors } from '@/utils/themes';
+import { colors, dashboardChartColors as C, dashboardPieColors } from '@/utils/themes';
 import { formatNumber, formatNumberWithSpaces } from '@/utils/helpers';
 import { DASHBOARD_OBJECTIFS_MENSUELS } from '@/utils/routes';
 import { Line, Bar, Doughnut } from '@/components/shared/themedCharts/themedCharts';
 import PrimaryLoadingButton from '@/components/nativeElements/buttons/primaryLoadingButton/primaryLoadingButton';
 import ChartCard from './chartCard';
 
-type Props = { dateParams: DateFilterParams; company_id: number; devise: 'MAD' | 'EUR' | 'USD' };
-
 const money = (value: number, currency: string) => `${formatNumber(value)} ${currency}`;
+
+type Props = {
+	dateParams: DateFilterParams;
+	company_id: number;
+	devise: 'MAD' | 'EUR' | 'USD';
+};
 
 export const KPICardsSection = (props: Props) => {
 	const { t } = useLanguage();

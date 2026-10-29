@@ -1,4 +1,4 @@
-import { type ComponentProps, type ReactNode } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 import { FlatList, RefreshControl, Text, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import CompanyDocumentsWrapperList from '@/components/shared/company-documents-list/companyDocumentsWrapperList';
@@ -13,8 +13,7 @@ import { useGetLogistiqueDashboardQuery } from '@/store/services/logistique';
 import { useInitAccessToken } from '@/contexts/InitContext';
 import { useLanguage } from '@/utils/hooks';
 import { formatNumberWithSpaces, parseNumber } from '@/utils/helpers';
-import { dashboardChartColors as C, dashboardPieColors } from '@/utils/rawData';
-import { colors, listSpacing } from '@/utils/themes';
+import { colors, listSpacing, dashboardChartColors as C, dashboardPieColors } from '@/utils/themes';
 
 type Props = {
 	company_id: number;
