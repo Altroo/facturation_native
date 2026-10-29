@@ -16,6 +16,7 @@ import {
 	SHORT_INPUT_REQUIRED,
 	INPUT_QUANTITY_INT,
 	POURCENTAGE_INPUT_INVALID,
+	TVA_INPUT_INVALID,
 } from '@/utils/formValidationErrorMessages';
 
 const base64ImageField = z.url().or(z.string().startsWith('data:image/')).nullable().optional();
@@ -105,6 +106,22 @@ const optionalNumberField = (min: number = 1, max?: number) =>
 			.min(min, { error: INPUT_MIN(min) })
 			.max(max ?? Number.MAX_SAFE_INTEGER)
 			.optional(),
+	);
+
+const optionalTVANumberField = (min: number = 1, max?: number) =>
+	z.preprocess(
+		(val) => {
+			if (val === '' || val === undefined) return undefined;
+			if (val === null) return null;
+			return Number(val);
+		},
+		z
+			.number({ error: TVA_INPUT_INVALID })
+			.refine((val) => Number.isFinite(val), { error: TVA_INPUT_INVALID })
+			.min(min, { error: INPUT_MIN(min) })
+			.max(max ?? Number.MAX_SAFE_INTEGER, { error: INPUT_MAX(max ?? Number.MAX_SAFE_INTEGER) })
+			.optional()
+			.nullable(),
 	);
 
 const stockDecimalField = (minimum?: number) =>
@@ -369,7 +386,7 @@ export const articleSchema = z
 		prix_vente: optionalArticlePriceField,
 		prix_vente_base: z.enum(['HT', 'TTC']).default('HT'),
 		devise_prix_vente: z.enum(['MAD', 'EUR', 'USD']).default('MAD'),
-		tva: optionalNumberField(0).nullable(),
+		tva: optionalTVANumberField(0),
 		stock_minimum: optionalNumberField(0).default(0),
 		remarque: optionalTextField(2, 2000).nullable(),
 		globalError: optionalTextField(1, 500),
