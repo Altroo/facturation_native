@@ -15,3 +15,13 @@ jest.mock('uniwind', () => ({ Uniwind: { setTheme: jest.fn() } }));
 // Native font loading is outside the scope of component behavior tests.
 jest.mock('@expo/vector-icons/Ionicons', () => 'Icon');
 jest.mock('react-native-keyboard-controller', () => jest.requireActual('react-native-keyboard-controller/jest'));
+// Jest has no device notification service. Avoid importing Expo Go's push registration side effects.
+// Notification behavior tests override these defaults with their own permission and scheduling cases.
+jest.mock('expo-notifications', () => ({
+	AndroidImportance: { DEFAULT: 3 },
+	getPermissionsAsync: jest.fn().mockResolvedValue({ status: 'granted' }),
+	requestPermissionsAsync: jest.fn().mockResolvedValue({ status: 'granted' }),
+	setNotificationChannelAsync: jest.fn().mockResolvedValue(null),
+	scheduleNotificationAsync: jest.fn().mockResolvedValue('test-notification'),
+	setNotificationHandler: jest.fn(),
+}));
