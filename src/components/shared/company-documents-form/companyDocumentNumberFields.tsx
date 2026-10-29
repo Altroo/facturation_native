@@ -24,6 +24,7 @@ const CompanyDocumentNumberFields = (props: Props) => {
 					<CustomTextInput
 						{...props.numberInput}
 						label={t.documentForm.fieldNumeroLabel}
+						keyboardType={props.numberInput.keyboardType ?? 'default'}
 						compact
 						startIcon={<MaterialIcons name="tag" size={20} color={colors.slate[400]} />}
 					/>
@@ -33,6 +34,7 @@ const CompanyDocumentNumberFields = (props: Props) => {
 						<CustomTextInput
 							{...props.yearInput}
 							label={t.documentForm.fieldAnneeLabel}
+							keyboardType={props.yearInput.keyboardType ?? 'number-pad'}
 							compact
 							startIcon={<MaterialIcons name="event" size={20} color={colors.slate[400]} />}
 						/>

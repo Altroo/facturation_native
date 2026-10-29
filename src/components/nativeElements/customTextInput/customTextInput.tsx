@@ -93,6 +93,10 @@ const CustomTextInput = (props: CustomTextInputProps) => {
 				</Text>
 			)}
 			<View
+				// The autocomplete provider treats bubbling touch-end events as outside
+				// taps and blurs its last controller. Don't let an editing tap dismiss
+				// Android's keyboard just as this field (or its step buttons) receives it.
+				onTouchEnd={disabled || props.readOnly ? undefined : (event) => event.stopPropagation()}
 				className={
 					'min-w-0 flex-row items-center overflow-hidden rounded-xl border ' +
 					(error ? 'border-red-500 ' : 'border-slate-300 dark:border-slate-600 ') +

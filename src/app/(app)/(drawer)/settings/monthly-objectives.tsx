@@ -114,6 +114,7 @@ const MonthlyObjectivesForm = (props: Props) => {
 					))}
 					<CustomNumberInput
 						label={t.monthlyObjectives.fieldFacturesLabel}
+						keyboardType="number-pad"
 						value={formik.values.objectif_factures}
 						onChangeText={formik.handleChange('objectif_factures')}
 						onBlur={formik.handleBlur('objectif_factures')}

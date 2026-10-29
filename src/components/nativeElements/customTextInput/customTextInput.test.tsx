@@ -1,7 +1,7 @@
 import { createRef } from 'react';
 import type { TextInputInstance } from 'react-native';
 import { fireEvent, render, screen } from '@testing-library/react-native';
-import { Text } from 'react-native';
+import { Text, View } from 'react-native';
 import CustomTextInput from './customTextInput';
 import AiAssistantControl from '@/components/shared/aiAssistantControl/aiAssistantControl';
 
@@ -12,6 +12,21 @@ jest.mock('@/components/shared/aiAssistantControl/aiAssistantControl', () => ({
 }));
 
 describe('CustomTextInput', () => {
+	it('keeps editing taps local while labels still dismiss outside overlays', async () => {
+		const onOutsideTouch = jest.fn();
+		await render(
+			<View onTouchEnd={onOutsideTouch}>
+				<CustomTextInput label="Email" value="" onChangeText={jest.fn()} />
+			</View>,
+		);
+		const event = { stopPropagation: jest.fn() };
+		await fireEvent(screen.getByLabelText('Email'), 'touchEnd', event);
+		expect(onOutsideTouch).not.toHaveBeenCalled();
+		expect(event.stopPropagation).toHaveBeenCalledTimes(1);
+		await fireEvent(screen.getByText('Email'), 'touchEnd', event);
+		expect(onOutsideTouch).toHaveBeenCalledTimes(1);
+	});
+
 	it('connects eligible native field identifiers to the same assistant without bypassing Formik', async () => {
 		jest.mocked(AiAssistantControl).mockClear();
 		const onChangeText = jest.fn();

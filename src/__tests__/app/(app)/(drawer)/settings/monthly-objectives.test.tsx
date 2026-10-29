@@ -64,6 +64,9 @@ describe('MonthlyObjectivesPage', () => {
 
 	it('treats an unconfigured company as a new form and saves the same payload as the web', async () => {
 		await render(<MonthlyObjectivesPage />);
+		expect(screen.getByLabelText(t.monthlyObjectives.fieldFacturesLabel)).toHaveProp('keyboardType', 'number-pad');
+		expect(screen.getByLabelText(t.monthlyObjectives.fieldCALabel)).toHaveProp('keyboardType', 'decimal-pad');
+		expect(screen.getByLabelText(t.monthlyObjectives.fieldConversionLabel)).toHaveProp('keyboardType', 'decimal-pad');
 		await fireEvent.changeText(screen.getByLabelText(t.monthlyObjectives.fieldCALabel), '1000');
 		await fireEvent.changeText(screen.getByLabelText(t.monthlyObjectives.fieldFacturesLabel), '5');
 		await fireEvent.changeText(screen.getByLabelText(t.monthlyObjectives.fieldConversionLabel), '50');

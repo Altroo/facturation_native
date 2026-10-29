@@ -3,12 +3,75 @@ import { Platform, type TextInputInstance } from 'react-native';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import CustomNumberInput from './customNumberInput';
 import { translations } from '@/translations';
+import {
+	AutocompleteDropdown,
+	AutocompleteDropdownContextProvider,
+	type IAutocompleteDropdownRef,
+} from 'react-native-autocomplete-dropdown';
 
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'Icon');
 jest.mock('@/providers/themeProvider', () => ({ useColorMode: () => ({ mode: 'dark' }) }));
 const t = translations.fr;
 
 describe('CustomNumberInput', () => {
+	it.each([false, true])(
+		'keeps field taps away from autocomplete outside-blur handling, formatted=%s',
+		async (formatted) => {
+			const controller = createRef<IAutocompleteDropdownRef>();
+			await render(
+				<AutocompleteDropdownContextProvider>
+					<AutocompleteDropdown controller={controller} dataSet={null} />
+					<CustomNumberInput formatted={formatted} label="Quantity" value="12" onChangeText={jest.fn()} />
+				</AutocompleteDropdownContextProvider>,
+			);
+			const blur = jest.spyOn(controller.current!, 'blur');
+			const close = jest.spyOn(controller.current!, 'close');
+			const event = { stopPropagation: jest.fn() };
+			await fireEvent(screen.getByLabelText('Quantity'), 'touchEnd', event);
+			expect(blur).not.toHaveBeenCalled();
+			expect(close).not.toHaveBeenCalled();
+			expect(event.stopPropagation).toHaveBeenCalledTimes(1);
+			await fireEvent(screen.getByRole('button', { name: t.common.increaseValue('Quantity') }), 'touchEnd', event);
+			expect(event.stopPropagation).toHaveBeenCalledTimes(2);
+			expect(blur).not.toHaveBeenCalled();
+			// Only the editable row is protected. Labels and other outside taps still
+			// reach the provider and close its previous suggestions.
+			await fireEvent(screen.getByText('Quantity'), 'touchEnd', event);
+			expect(blur).toHaveBeenCalledTimes(1);
+			expect(close).toHaveBeenCalledTimes(1);
+		},
+	);
+
+	it.each([false, true])('keeps the same native input while focusing and editing, formatted=%s', async (formatted) => {
+		const ref = createRef<TextInputInstance>();
+		const onBlur = jest.fn();
+		const Field = () => {
+			const [value, setValue] = useState('12');
+			const [focused, setFocused] = useState(false);
+			return (
+				<CustomNumberInput
+					ref={ref}
+					formatted={formatted}
+					label="Quantity"
+					value={value}
+					onChangeText={setValue}
+					onFocus={() => setFocused(true)}
+					onBlur={onBlur}
+					helperText={focused ? 'Editing' : undefined}
+				/>
+			);
+		};
+		await render(<Field />);
+		const input = ref.current;
+		await fireEvent(screen.getByLabelText('Quantity'), 'focus', { nativeEvent: { text: '12' } });
+		expect(ref.current).toBe(input);
+		expect(screen.getByLabelText('Quantity')).toHaveProp('keyboardType', 'decimal-pad');
+		await fireEvent.changeText(screen.getByLabelText('Quantity'), '123');
+		expect(ref.current).toBe(input);
+		expect(screen.getByLabelText('Quantity')).toHaveProp('value', '123');
+		expect(onBlur).not.toHaveBeenCalled();
+	});
+
 	it('keeps formatted quantities in sync with step buttons while focused', async () => {
 		const Field = () => {
 			const [value, setValue] = useState('999.25');

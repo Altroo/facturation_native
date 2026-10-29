@@ -21,6 +21,8 @@ describe('CompanyDocumentNumberFields', () => {
 				reset={{ loading: false, disabled: false, onPress: reset }}
 			/>,
 		);
+		expect(screen.getByLabelText(t.documentForm.fieldNumeroLabel)).toHaveProp('keyboardType', 'default');
+		expect(screen.getByLabelText(t.documentForm.fieldAnneeLabel)).toHaveProp('keyboardType', 'number-pad');
 		await fireEvent.changeText(screen.getByLabelText(t.documentForm.fieldNumeroLabel), 'AV002');
 		await fireEvent.changeText(screen.getByLabelText(t.documentForm.fieldAnneeLabel), '27');
 		expect(numberChange).toHaveBeenCalledWith('AV002');
